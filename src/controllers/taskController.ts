@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import handleAsync from '../utils/handleAsync'; // Adjust the import path as necessary
 import Task from '../models/task';
 import { RequestCustom } from 'user';
+import { transformDocumentImages } from '../utils/transformUtils';
 
 export const createTask = handleAsync(async (req: RequestCustom, res: Response) => {
   // 创建一个新任务，将用户ID作为任务的user字段
@@ -30,12 +31,18 @@ export const getAllTasks = handleAsync(async (req: Request, res: Response) => {
     queryConditions.platform = platform;
   }
 
-  // 使用过滤条件执行查询
-  const tasks = await Task.find(queryConditions);
+  // 使用过滤条件执行查询，并填充user字段以获取用户详情
+  const tasks = await Task.find(queryConditions).populate('user');
+
+  // 假设transformDocumentImages可以处理填充了user的任务数组，并且将针对每个任务的file字段进行操作
+  // 如果transformDocumentImages不支持处理填充后的字段，请在此之前进行必要的调整或者直接操作file字段
+  const modifiedTasks = await transformDocumentImages(tasks, 'file');
 
   // 返回查询结果
-  res.status(200).json({ success: true, data: tasks });
+  res.status(200).json({ success: true, data: modifiedTasks });
 });
+
+
 
 export const getTaskById = handleAsync(async (req: Request, res: Response) => {
   const task = await Task.findById(req.params.id);

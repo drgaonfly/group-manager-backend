@@ -63,7 +63,7 @@ export const uploadFileToS3 = handleAsync(async (req: CustomRequest, res: Respon
   res.json({
     success: true,
     message: 'File uploaded successfully',
-    data: { signedURL },
+    data: { signedURL, file: key },
   });
 });
 
@@ -92,6 +92,6 @@ export const uploadFileToOSS = handleAsync(async (req: CustomRequest, res: Respo
 
   res.json({
     success: true,
-    data: signedURL
+    data: { signedURL, file: ossPath },
   });
 });

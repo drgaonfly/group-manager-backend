@@ -14,14 +14,14 @@ export interface ITask extends Document {
 
 const TaskSchema: Schema = new Schema({
   country: { type: String, required: true },
-  platform: { type: String, required: true },
+  platform: { type: String, required: false },
   file: { type: String, required: true },
   user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  quantity: { type: Number, required: true },
-  store: { type: String, required: true },
-  orderNumber: { type: String, required: true },
-  amount: { type: Number, required: true },
-  buyerAccount: { type: String, required: true },
+  quantity: { type: Number, required: false },
+  store: { type: String, required: false },
+  orderNumber: { type: String, required: false },
+  amount: { type: Number, required: false },
+  buyerAccount: { type: String, required: false },
 }, { timestamps: true });
 
 export default mongoose.model<ITask>('Task', TaskSchema);
