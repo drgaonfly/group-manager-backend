@@ -45,12 +45,11 @@ export const getAllTasks = handleAsync(async (req: Request, res: Response) => {
   // 使用过滤条件执行查询，并填充user字段以获取用户详情
   const tasks = await Task.find(queryConditions).populate('user');
 
-  // 假设transformDocumentImages可以处理填充了user的任务数组，并且将针对每个任务的file字段进行操作
-  // 如果transformDocumentImages不支持处理填充后的字段，请在此之前进行必要的调整或者直接操作file字段
-  const modifiedTasks = await transformDocumentImages(tasks, 'file');
-
+  // 使用定义的函数来处理 file 字段
+  const modifiedFileTasks = await transformDocumentImages(tasks, ['file', 'uploadedFile']);
+  
   // 返回查询结果
-  res.status(200).json({ success: true, data: modifiedTasks });
+  res.status(200).json({ success: true, data: modifiedFileTasks });
 });
 
 

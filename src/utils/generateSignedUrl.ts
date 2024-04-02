@@ -46,9 +46,5 @@ export async function generateSignedUrlForOSS(filePath: string): Promise<string>
 }
 
 export async function generateSignedUrl(filePath: string): Promise<string> {
-  if (filePath.startsWith('taskOssUploads')) {
-      return generateSignedUrlForOSS(filePath);
-  } else {
-      return generateSignedUrlForS3(filePath);
-  }
+  return generateSignedUrlForOSS(filePath);
 }
