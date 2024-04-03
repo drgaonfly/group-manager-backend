@@ -17,13 +17,13 @@ jobs:
       - name: Send Email
         uses: hilarion5/send-mail@v1
         with:
-          smtp-server: smtp.mailgun.org
-          smtp-port: 465
+          smtp-server: smtp.gmail.com
+          smtp-port: 587
           smtp-secure: true
           from-email: hfpp2012@gmail.com
           to-email: ganweiliang@swqztech.com
-          username: postmaster@sandbox09de08ecb12d45b98b940177c4541054.mailgun.org
-          password: 21961d72ea25a9e8fff4bbd50945139a
+          username: hfpp2012@gmail.com
+          password: ${{ secrets.SMTP_PASSWORD }}
           subject: task system github action
           body: 部署成功
           html: |
