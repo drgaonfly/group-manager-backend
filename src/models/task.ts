@@ -8,13 +8,12 @@ export interface ITask extends Document {
   user: Schema.Types.ObjectId; // 对User模型的引用
   orderTime: Date; // 下单时间
   orderTimeType: 'NormalOrder' | 'SpecificTimeOrder'; // 下单时间类型
-  orderType: 'NormalOrder' | 'AbnormalOrder'
   orderNote?: string; // 下单备注，可选字段
   reviewType?: 'NormalReview' | 'ReviewAfterModification'; // 评价类型
   reviewFile?: string; // 评价文件路径或URL，用于评价后补
   status: 'Active' | 'Cancelled'; // 任务状态
   quantity: number; // 单量
-  abnormalReasons?: string[]; // 非正常下单原因
+  orderType: ('NormalOrder' | 'ContactForVolumeWeight' | 'ContactForInventory' | 'ContactForPrice')[];
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
 }
@@ -25,7 +24,6 @@ const TaskSchema: Schema = new Schema({
   file: { type: String, required: true },
   uploadedFile: { type: String, required: false },
   user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  orderType: { type: String, required: true, enum: ['NormalOrder', 'AbnormalOrder'], default: 'NormalOrder' }, // 下单时间类型
   orderTime: { type: Date, required: false },
   orderTimeType: { type: String, required: true, enum: ['NormalOrder', 'SpecificTimeOrder'], default: 'NormalOrder' }, // 下单时间类型
   orderNote: { type: String, required: false, default: '' }, // 下单备注，默认为空字符串
@@ -33,7 +31,7 @@ const TaskSchema: Schema = new Schema({
   reviewFile: { type: String, required: false }, // 评价文件路径或URL，可选字段
   status: { type: String, required: true, enum: ['Active', 'Cancelled'], default: 'Active' }, // 任务状态
   quantity: { type: Number, required: true }, // 单量
-  abnormalReasons: [{ type: String, required: false }]
+  orderType: [{ type: String, enum: ['NormalOrder', 'ContactForVolumeWeight', 'ContactForInventory', 'ContactForPrice'] }] // 非正常下单原因
 }, { timestamps: true });
 
 export default mongoose.model<ITask>('Task', TaskSchema);
