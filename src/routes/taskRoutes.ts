@@ -6,7 +6,7 @@ import { ROLES } from '../constants';
 const router = express.Router();
 
 router.post('/', protect, allow([ROLES.Customer, ROLES.Admin]), createTask);
-router.get('/', protect, allow([ROLES.Customer, ROLES.Admin]), getAllTasks);
+router.get('/', protect, allow([ROLES.Customer, ROLES.Admin, ROLES.OrderClerk]), getAllTasks);
 router.get('/:id', protect, allow([ROLES.Customer, ROLES.Admin]), getTaskById);
 router.put('/:id', protect, allow([ROLES.Customer, ROLES.Admin]), updateTask);
 router.delete('/:id', protect, allow([ROLES.Customer, ROLES.Admin]), deleteTask);

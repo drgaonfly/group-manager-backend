@@ -4,6 +4,7 @@ import handleAsync from '../utils/handleAsync'; // Adjust the import path as nec
 import Task from '../models/task';
 import { RequestCustom } from 'user';
 import { transformDocumentImages } from '../utils/transformUtils';
+import { ROLES } from '../constants';
 // import { processExcelFile } from '../utils/processExcelFile';
 
 export const createTask = handleAsync(async (req: RequestCustom, res: Response) => {
@@ -28,9 +29,13 @@ export const createTask = handleAsync(async (req: RequestCustom, res: Response) 
   res.status(201).json({ success: true, data: savedTask });
 });
 
-export const getAllTasks = handleAsync(async (req: Request, res: Response) => {
+export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response) => {
   // 从请求的查询参数中获取country, platform和status
   const { country, platform, status, _id, orderTimeType, reviewType, orderType } = req.query;
+  
+  // 假设用户信息和角色存储在req.user中
+  const userRole = req.user.role; // 获取用户角色
+  const userId = req.user._id; // 假设用户ID存储在_req.user._id_中
 
   // 构建一个查询对象，仅当提供了相应的查询参数时才添加对应的过滤条件
   const queryConditions: any = {};
@@ -56,6 +61,11 @@ export const getAllTasks = handleAsync(async (req: Request, res: Response) => {
     queryConditions.orderType = { $in: orderType };
   }
 
+  // 如果用户角色是CUSTOMER，限制查询仅返回该用户的任务
+  if (userRole === ROLES.Customer) {
+    queryConditions.user = userId; // 假设任务文档中有一个`user`字段存储用户ID
+  }
+
   // 使用过滤条件执行查询，并填充user字段以获取用户详情
   const tasks = await Task.find(queryConditions).populate('user');
 
@@ -65,6 +75,7 @@ export const getAllTasks = handleAsync(async (req: Request, res: Response) => {
   // 返回查询结果，指定要返回的字段
   res.status(200).json({ success: true, data: modifiedFileTasks });
 });
+
 
 export const getTaskById = handleAsync(async (req: Request, res: Response) => {
   const task = await Task.findById(req.params.id);
