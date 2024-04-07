@@ -1,6 +1,8 @@
 import ossClient from "./oss";
 import XLSX from 'xlsx';
 import fs from 'fs';
+import path from 'path';
+import ExcelJS from 'exceljs';
 
 export const processExcelFile = async (ossKey: string): Promise<string> => {
   // 从OSS下载文件
@@ -32,4 +34,53 @@ export const processExcelFile = async (ossKey: string): Promise<string> => {
   fs.unlinkSync(tempDownloadPath);
 
   return newOssKey; // 返回新文件在OSS上的路径
+};
+
+export const handleExcelTask = async (ossKey: string): Promise<string> => {
+  const tempDownloadPath = path.join('/tmp', path.basename(ossKey));
+
+  try {
+   // Download the file from OSS to the temporary directory
+   const result = await ossClient.get(ossKey, tempDownloadPath);
+
+   // Check if the file was downloaded successfully
+   if (result.res.status !== 200) {
+     throw new Error('Failed to download the file from OSS');
+   }
+
+    // Initialize a new workbook and read the existing Excel file
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(tempDownloadPath);
+
+    // Create a new worksheet with headers
+    const newSheet = workbook.addWorksheet('New Data Sheet');
+    newSheet.columns = [
+      { header: '店铺名字', key: 'storeName', width: 15 },
+      { header: '订单号', key: 'orderNumber', width: 15 },
+      { header: '金额', key: 'amount', width: 10 },
+      { header: '买手号', key: 'buyerId', width: 15 }
+    ];
+
+    // Add a row directly below the headers
+    newSheet.addRow({ storeName: 'Store A', orderNumber: '1001', amount: 200, buyerId: 'B001' });
+
+    // Write the workbook to a buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Upload the modified file to OSS
+    const newOssKey = `modified-${ossKey}`;
+    await ossClient.put(newOssKey, buffer);
+
+    // Clean up the temporary file
+    fs.unlinkSync(tempDownloadPath);
+
+    return newOssKey; // Return the new file's OSS path
+  } catch (error) {
+    console.error("Error handling Excel task:", error);
+    // Ensure cleanup even in the case of an error
+    if (fs.existsSync(tempDownloadPath)) {
+      fs.unlinkSync(tempDownloadPath);
+    }
+    throw new Error('Failed to process Excel file');
+  }
 };

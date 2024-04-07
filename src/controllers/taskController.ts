@@ -5,6 +5,8 @@ import Task from '../models/task';
 import { RequestCustom } from 'user';
 import { transformDocumentImages } from '../utils/transformUtils';
 import { ROLES } from '../constants';
+import { handleExcelTask } from '../utils/processExcelFile';
+import { generateSignedUrlForOSS } from '../utils/generateSignedUrl';
 // import { processExcelFile } from '../utils/processExcelFile';
 
 export const createTask = handleAsync(async (req: RequestCustom, res: Response) => {
@@ -156,7 +158,7 @@ export const cancelTask = handleAsync(async (req: RequestCustom, res: Response) 
   }
 
   // If within the time limit, update the task's status to 'Cancelled'
-const updatedTask = await Task.findByIdAndUpdate(id, { status: 'Cancelled' }, { new: true });
+  const updatedTask = await Task.findByIdAndUpdate(id, { status: 'Cancelled' }, { new: true });
 
   // Though we've already checked for task existence, it's good practice to still check the update result
   if (!updatedTask) {
@@ -168,3 +170,21 @@ const updatedTask = await Task.findByIdAndUpdate(id, { status: 'Cancelled' }, { 
   res.status(200).json({ success: true, data: updatedTask });
 });
 
+
+export const downloadUpdatedTaskFile = handleAsync(async (req: Request, res: Response) => {
+  const taskId = req.body.taskId; // 使用POST方法，因此从req.body获取taskId
+  const task = await Task.findById(taskId);
+  
+  if (!task || !task.file) {
+    res.status(404).send('Task not found or file missing');
+    return;
+  }
+
+  const newOssKey = await handleExcelTask(task.file);
+  const signedURL = await generateSignedUrlForOSS(newOssKey);
+
+  res.json({
+    success: true,
+    data: { signedURL, file: newOssKey },
+  });
+});
