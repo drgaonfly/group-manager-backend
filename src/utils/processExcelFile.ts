@@ -62,7 +62,7 @@ export const handleExcelTask = async (ossKey: string): Promise<string> => {
     ];
 
     // Add a row directly below the headers
-    newSheet.addRow({ storeName: 'Store A', orderNumber: '1001', amount: 200, buyerId: 'B001' });
+    // newSheet.addRow({ storeName: 'Store A', orderNumber: '1001', amount: 200, buyerId: 'B001' });
 
     // Write the workbook to a buffer
     const buffer = await workbook.xlsx.writeBuffer();
