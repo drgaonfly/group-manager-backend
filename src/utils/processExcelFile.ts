@@ -111,13 +111,14 @@ export async function readExcelData(ossKey: string): Promise<IBill[]> {
 
     // Start reading from the second row, assuming the first row contains headers
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber > 1) { // Skip header row
+      // Assuming the first row is the header and actual data starts from the second row
+      if (rowNumber > 1) {
         const bill: IBill = {
-          storeName: row.getCell('店铺名字').text,
-          orderNumber: row.getCell('订单号').text,
-          amount: +row.getCell('金额').value,
-          buyerId: row.getCell('买手号').text,
-        };
+          storeName: row.getCell(1).text,    // '店铺名字' is in the first column
+          orderNumber: row.getCell(2).text,  // '订单号' is in the second column
+          amount: +row.getCell(3).value,     // '金额' is in the third column
+          buyerId: row.getCell(4).text,      // '买手号' is in the fourth column
+        } as IBill;
         bills.push(bill);
       }
     });

@@ -70,6 +70,7 @@ export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response)
   // Fetching tasks with pagination applied
   const tasks = await Task.find(queryConditions)
     .populate('user')
+    .populate('bills')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize);
 
@@ -177,8 +178,8 @@ export const downloadUpdatedTaskFile = handleAsync(async (req: Request, res: Res
   const task = await Task.findById(taskId);
   
   if (!task || !task.file) {
-    res.status(404).send('Task not found or file missing');
-    return;
+    res.status(404)
+    throw new Error('Task not found or file missing');
   }
 
   const newOssKey = await handleExcelTask(task.file);
@@ -191,29 +192,35 @@ export const downloadUpdatedTaskFile = handleAsync(async (req: Request, res: Res
 });
 
 export const uploadBillFile = handleAsync(async (req: Request, res: Response) => {
-  const taskId = req.body.taskId;
-  const task = await Task.findById(taskId);
+  const taskId = req.body._id;
+  const task = await Task.findById(taskId)
 
   if (!task) {
-    res.status(404).send('Task not found');
-    return;
+    res.status(404);
+    throw new Error("Task not found")
   }
 
   if (task.billFile) {
-    res.status(400).send('Bill file already uploaded for this task');
-    return;
+    res.status(400)
+    throw new Error('Bill file already uploaded for this task');
   }
 
   // Save the received billFile to the task
   task.billFile = req.body.billFile;
-  await task.save();
 
   // Read data from the stored Excel file (assumes `task.billFile` is a path to the file)
-  const bills = await readExcelData(task.billFile);
+ const billsData = await readExcelData(task.billFile);
 
-  // Save each bill to the database
-  const savePromises = bills.map((billData) => new Bill({ ...billData, task: task._id }).save());
-  await Promise.all(savePromises);
+  // Save each bill to the database and collect their IDs
+  const savedBills = await Promise.all(
+    billsData.map((billData) => new Bill({ ...billData, task: task._id }).save())
+  );
+  const billIds = savedBills.map(bill => bill._id);
+
+  // Add the saved bill's IDs to the task's bills array
+  task.bills.push(...billIds);
+  
+  await task.save();
 
   res.json({
     success: true,

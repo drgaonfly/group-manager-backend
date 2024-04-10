@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { IBill } from './bill';
 
 export interface ITask extends Document {
   country: string;
@@ -17,6 +18,7 @@ export interface ITask extends Document {
   orderType: ('NormalOrder' | 'ContactForVolumeWeight' | 'ContactForInventory' | 'ContactForPrice')[];
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
+  bills: IBill['_id'][];
 }
 
 const TaskSchema: Schema = new Schema({
@@ -41,7 +43,11 @@ const TaskSchema: Schema = new Schema({
   orderType: {
     type: [{ type: String, enum: ['NormalOrder', 'ContactForVolumeWeight', 'ContactForInventory', 'ContactForPrice'] }],
     default: ['NormalOrder']
-  }
+  },
+  bills: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Bill'
+  }]
 }, { timestamps: true });
 
 export default mongoose.model<ITask>('Task', TaskSchema);
