@@ -3,6 +3,7 @@ import XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import ExcelJS from 'exceljs';
+import { IBill } from "../models/bill";
 
 export const processExcelFile = async (ossKey: string): Promise<string> => {
   // 从OSS下载文件
@@ -84,3 +85,53 @@ export const handleExcelTask = async (ossKey: string): Promise<string> => {
     throw new Error('Failed to process Excel file');
   }
 };
+
+export async function readExcelData(ossKey: string): Promise<IBill[]> {
+  const tempDownloadPath = path.join('/tmp', path.basename(ossKey));
+
+  try {
+    // Download the file from OSS to the temporary directory
+    const result = await ossClient.get(ossKey, tempDownloadPath);
+
+    // Check if the file was downloaded successfully
+    if (result.res.status !== 200) {
+      throw new Error('Failed to download the file from OSS');
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(tempDownloadPath);
+
+    // Ensure the worksheet exists
+    const worksheet = workbook.getWorksheet('New Data Sheet');
+    if (!worksheet) {
+      throw new Error('Worksheet "New Data Sheet" not found');
+    }
+
+    const bills: IBill[] = [];
+
+    // Start reading from the second row, assuming the first row contains headers
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber > 1) { // Skip header row
+        const bill: IBill = {
+          storeName: row.getCell('店铺名字').text,
+          orderNumber: row.getCell('订单号').text,
+          amount: +row.getCell('金额').value,
+          buyerId: row.getCell('买手号').text,
+        };
+        bills.push(bill);
+      }
+    });
+
+    // Clean up the temporary file
+    fs.unlinkSync(tempDownloadPath);
+
+    return bills;
+  } catch (error) {
+    console.error("Error reading Excel data:", error);
+    // Ensure cleanup even in the case of an error
+    if (fs.existsSync(tempDownloadPath)) {
+      fs.unlinkSync(tempDownloadPath);
+    }
+    throw error;
+  }
+}

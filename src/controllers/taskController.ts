@@ -5,8 +5,9 @@ import Task from '../models/task';
 import { RequestCustom } from 'user';
 import { transformDocumentImages } from '../utils/transformUtils';
 import { ROLES } from '../constants';
-import { handleExcelTask } from '../utils/processExcelFile';
+import { handleExcelTask, readExcelData } from '../utils/processExcelFile';
 import { generateSignedUrlForOSS } from '../utils/generateSignedUrl';
+import Bill from '../models/bill';
 // import { processExcelFile } from '../utils/processExcelFile';
 
 export const createTask = handleAsync(async (req: RequestCustom, res: Response) => {
@@ -186,5 +187,37 @@ export const downloadUpdatedTaskFile = handleAsync(async (req: Request, res: Res
   res.json({
     success: true,
     data: { signedURL, file: newOssKey },
+  });
+});
+
+export const uploadBillFile = handleAsync(async (req: Request, res: Response) => {
+  const taskId = req.body.taskId;
+  const task = await Task.findById(taskId);
+
+  if (!task) {
+    res.status(404).send('Task not found');
+    return;
+  }
+
+  if (task.billFile) {
+    res.status(400).send('Bill file already uploaded for this task');
+    return;
+  }
+
+  // Save the received billFile to the task
+  task.billFile = req.body.billFile;
+  await task.save();
+
+  // Read data from the stored Excel file (assumes `task.billFile` is a path to the file)
+  const bills = await readExcelData(task.billFile);
+
+  // Save each bill to the database
+  const savePromises = bills.map((billData) => new Bill({ ...billData, task: task._id }).save());
+  await Promise.all(savePromises);
+
+  res.json({
+    success: true,
+    message: 'Bills saved successfully',
+    data: task
   });
 });

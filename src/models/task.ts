@@ -5,6 +5,7 @@ export interface ITask extends Document {
   platform: string;
   file: string; // 假设这可能是一个URL或文件路径
   uploadedFile: string; // 上传文件路径或URL
+  billFile?: string; // 账单文件路径或URL，可选字段
   user: Schema.Types.ObjectId; // 对User模型的引用
   orderTime: Date; // 下单时间
   orderTimeType: 'NormalOrder' | 'SpecificTimeOrder'; // 下单时间类型
@@ -35,8 +36,12 @@ const TaskSchema: Schema = new Schema({
     enum: ['Active', 'Cancelled', 'Processing', 'Completed', 'Issue'],
     default: 'Active'
   },
+  billFile: { type: String, required: false }, // 新增账单文件字段，可选
   quantity: { type: Number, required: true }, // 单量
-  orderType: [{ type: String, enum: ['NormalOrder', 'ContactForVolumeWeight', 'ContactForInventory', 'ContactForPrice'] }] // 非正常下单原因
+  orderType: {
+    type: [{ type: String, enum: ['NormalOrder', 'ContactForVolumeWeight', 'ContactForInventory', 'ContactForPrice'] }],
+    default: ['NormalOrder']
+  }
 }, { timestamps: true });
 
 export default mongoose.model<ITask>('Task', TaskSchema);
