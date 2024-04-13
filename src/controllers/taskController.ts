@@ -20,6 +20,14 @@ export const createTask = handleAsync(async (req: RequestCustom, res: Response) 
 
   // 判断请求体中是否提供了user，如果提供了就使用该user，否则使用认证用户的_id
   const userId = req.body.user || req.user._id;
+ 
+  // 如果有uploadTime，使用正则表达式提取年月日
+  if (req.body.uploadTime) {
+    const dateMatch = req.body.uploadTime.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      req.body.uploadTime = dateMatch[0]; // 如果找到匹配项，则只保留年月日
+    }
+  }
 
   // 创建新任务时，使用确定的userId
   const taskData = { ...req.body, user: userId };
@@ -34,11 +42,14 @@ export const createTask = handleAsync(async (req: RequestCustom, res: Response) 
 
 export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response) => {
   // Extracting pagination parameters or providing default values
-  const { current = '1', pageSize = '10', country, platform, status, _id, orderTimeType, reviewType, orderType } = req.query;
+  const { current = '1', pageSize = '10', country, uploadTime, platform, status, _id, orderTimeType, reviewType, orderType } = req.query;
 
   const queryConditions: any = {};
   if (country) {
     queryConditions.country = country;
+  }
+  if (uploadTime) {
+    queryConditions.uploadTime = uploadTime;
   }
   if (platform) {
     queryConditions.platform = platform;
@@ -98,11 +109,20 @@ export const getTaskById = handleAsync(async (req: Request, res: Response) => {
 });
 
 export const updateTask = handleAsync(async (req: Request, res: Response) => {
+  // 检查是否有uploadTime传入，并用正则表达式提取年月日部分
+  if (req.body.uploadTime) {
+    const dateMatch = req.body.uploadTime.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      req.body.uploadTime = dateMatch[0]; // 如果找到匹配项，则只保留年月日
+    }
+  }
+
   const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!task) {
-    res.status(404);
-    throw new Error('Task not found');
+    res.status(404).send({ success: false, message: 'Task not found' });
+    return; // 直接返回防止后续执行
   }
+
   res.status(200).json({ success: true, data: task });
 });
 
@@ -213,7 +233,12 @@ export const uploadBillFile = handleAsync(async (req: Request, res: Response) =>
 
   // Save each bill to the database and collect their IDs
   const savedBills = await Promise.all(
-    billsData.map((billData) => new Bill({ ...billData, task: task._id }).save())
+    billsData.map((billData) => new Bill({ 
+      ...billData,
+      task: task._id,
+      country: task.country,
+      uploadTime: task.uploadTime
+    }).save())
   );
   const billIds = savedBills.map(bill => bill._id);
 

@@ -10,6 +10,7 @@ export interface ITask extends Document {
   user: Schema.Types.ObjectId; // 对User模型的引用
   orderTime: Date; // 下单时间
   orderTimeType: 'NormalOrder' | 'SpecificTimeOrder'; // 下单时间类型
+  uploadTime: string; // 文件上传时间
   orderNote?: string; // 下单备注，可选字段
   reviewType?: 'NormalReview' | 'ReviewAfterModification'; // 评价类型
   reviewFile?: string; // 评价文件路径或URL，用于评价后补
@@ -47,7 +48,8 @@ const TaskSchema: Schema = new Schema({
   bills: [{
     type: Schema.Types.ObjectId,
     ref: 'Bill'
-  }]
+  }],
+  uploadTime: { type: String, required: true }, // 新增上传时间字段
 }, { timestamps: true });
 
 export default mongoose.model<ITask>('Task', TaskSchema);

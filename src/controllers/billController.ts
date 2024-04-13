@@ -30,7 +30,9 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
     storeName, 
     orderNumber, 
     buyerId, 
-    task  // Assuming you pass taskId to filter by specific task
+    task,
+    country,
+    uploadTime
   } = req.query;
 
   const queryConditions: any = {};
@@ -47,16 +49,19 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
   if (task) {
     queryConditions.task = task; // Filtering by task ID
   }
+  if (country) {
+    queryConditions.country = country; // Filtering by country within the task document
+  }
+  if (uploadTime) {
+    queryConditions.uploadTime = uploadTime;
+  }
 
   // Calculate the total number of bills that match the query conditions
   const total = await Bill.countDocuments(queryConditions);
 
   // Retrieve bills with pagination and populate task details
   const bills = await Bill.find(queryConditions)
-    .populate({
-      path: 'task',
-      select: 'title status createdAt' // Only fetch necessary fields from the task
-    })
+    .populate("task") // Ensure to populate necessary task fields
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
@@ -70,6 +75,7 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
     pageSize: +pageSize
   });
 });
+
 
 export const updateBill = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;

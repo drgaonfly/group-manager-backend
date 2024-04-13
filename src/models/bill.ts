@@ -9,6 +9,8 @@ export interface IBill extends Document {
   task?: mongoose.Schema.Types.ObjectId;  // 关联的任务ID
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
+  country?: string; // Country of the task
+  uploadTime?: string; // Time the bill was uploaded
 }
 
 // Mongoose schema definition for Bill
@@ -36,6 +38,14 @@ const billSchema = new mongoose.Schema<IBill>({
     type: mongoose.Schema.Types.ObjectId,
     required: true,
     ref: 'Task'  // Assuming a Task model exists
+  },
+  country: {
+    type: String,
+    required: false
+  },
+  uploadTime: {
+    type: String,
+    required: false
   }
 }, { timestamps: true });
 
