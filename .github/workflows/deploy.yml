@@ -13,7 +13,7 @@ jobs:
           username: root
           password: )3zE_2VQe%Nks9M?
           port: 22
-          script: cd /www/wwwroot/ordersystem-new.2024fc.xyz/task-backend && git pull --rebase origin main && /www/server/nodejs/v20.12.0/bin/pnpm install && npm run build && pm2 restart dist/index.js
+          script: cd /www/wwwroot/ordersystem-new.2024fc.xyz/task-backend && git pull --rebase origin main && /www/server/nodejs/v20.12.0/bin/pnpm install && npm run build && cp -a src/uploads dist && pm2 restart dist/index.js
       - name: Send Email
         uses: hilarion5/send-mail@v1
         with:
