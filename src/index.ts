@@ -12,7 +12,7 @@ import billRoutes from './routes/billRoutes';
 import emptyPackageRoutes from './routes/emptyPackageRoutes';
 
 import setupDB from "./utils/db";
-import { handleFileUpload, uploadFileToOSS, uploadFileToS3 } from './routes/uploadController';
+import uploadRoutes from './routes/uploadRoutes';
 
 dotenv.config();
 
@@ -37,12 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/empty-packages', emptyPackageRoutes);
-
-if (process.env.FILE_STORAGE === 'aliyun') {
-  app.post('/api/upload', handleFileUpload, uploadFileToOSS);
-} else {
-  app.post('/api/upload', handleFileUpload, uploadFileToS3);
-}
+app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

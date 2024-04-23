@@ -95,3 +95,26 @@ export const uploadFileToOSS = handleAsync(async (req: CustomRequest, res: Respo
     data: { signedURL, file: ossPath },
   });
 });
+
+export const getOssCredentials = handleAsync(async (req: Request, res: Response) => {
+  // Set the policy expiration time
+  const policy = {
+    expiration: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(), // Expires in 30 minutes
+    conditions: [
+      ['content-length-range', 0, 1048576000], // Limit upload size to no more than 1000MB
+    ]
+  };
+
+  const result = await ossClient.calculatePostSignature(policy) as any;
+ 
+  const host = `https://${process.env.OSS_BUCKET}.oss-cn-hongkong.aliyuncs.com`;
+  
+  res.json({
+    accessId: process.env.OSS_ACCESS_KEY_ID,
+    policy: result.policy,
+    signature: result.Signature,
+    host,
+    dir: 'user-dir/',
+    expire: new Date().getTime() + 30 * 60 * 1000, // Front-end use expiration time (milliseconds)
+  });
+})
