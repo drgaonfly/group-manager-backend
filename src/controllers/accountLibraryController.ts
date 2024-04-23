@@ -15,13 +15,14 @@ export const createAccount = handleAsync(async (req: RequestCustom, res: Respons
 });
 
 export const getAllAccounts = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10', country, platform, address, accountNumber } = req.query;
+  const { current = '1', pageSize = '10', country, platform, address, accountNumber, assignedTime } = req.query;
 
   const queryConditions: any = {};
   if (country) queryConditions.country = country;
   if (platform) queryConditions.platform = platform;
   if (address) queryConditions.address = address;
   if (accountNumber) queryConditions.accountNumber = accountNumber;
+  if (assignedTime) queryConditions.assignedTime = assignedTime;
 
   const currentNum = parseInt(current as string, 10);
   const pageSizeNum = parseInt(pageSize as string, 10);

@@ -10,6 +10,7 @@ export interface IAccountLibrary extends Document {
   storeAccount: string;  // Store account associated with this account
   createdAt?: Date;    // Time of document creation
   updatedAt?: Date;    // Time the document was last updated
+  assignedTime?: string;
 }
 
 // Mongoose schema definition for AccountLibrary
@@ -43,6 +44,10 @@ const accountLibrarySchema = new mongoose.Schema<IAccountLibrary>({
     type: String,
     required: true,
     trim: true
+  },
+  assignedTime: {
+    type: String,
+    required: false
   }
 }, { timestamps: true });
 
