@@ -5,9 +5,13 @@ import AccountAssignment from '../models/accountAssignment';  // 确保路径正
 import { RequestCustom } from 'user';
 
 export const createAssignment = handleAsync(async (req: RequestCustom, res: Response) => {
+  // Get the current date and format it as YYYY-MM-DD
+  const currentDate = new Date().toISOString().split('T')[0]; // This will give you a date string like "2024-04-03"
+
   const assignmentData = new AccountAssignment({
     ...req.body,
-    user: req.body.user || req.user._id,  // Assuming 'user' is authenticated and attached to req
+    assignedTime: currentDate, // Use the formatted date as the assigned time
+    user: req.body.user || req.user._id, // Assuming 'user' is authenticated and attached to req
   });
 
   const savedAssignment = await assignmentData.save();
@@ -29,6 +33,7 @@ export const getAllAssignments = handleAsync(async (req: Request, res: Response)
 
   const total = await AccountAssignment.countDocuments(queryConditions);
   const assignments = await AccountAssignment.find(queryConditions)
+    .populate("accountLibraries")
     .skip((currentNum - 1) * pageSizeNum)
     .limit(pageSizeNum);
 

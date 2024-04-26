@@ -204,6 +204,9 @@ export const downloadUpdatedTaskFile = handleAsync(async (req: Request, res: Res
 
   const newOssKey = await handleExcelTask(task.file);
   const signedURL = await generateSignedUrlForOSS(newOssKey);
+  
+  task.status = 'Processing';
+  await task.save(); // Make sure to save the update
 
   res.json({
     success: true,

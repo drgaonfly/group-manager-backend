@@ -12,6 +12,7 @@ import taskRoutes from './routes/taskRoutes';
 import billRoutes from './routes/billRoutes';
 import emptyPackageRoutes from './routes/emptyPackageRoutes';
 import accountLibraryRoutes from './routes/accountLibraryRoutes';
+import accountAssignmentRoutes from './routes/accountAssignmentRoutes';
 
 import setupDB from "./utils/db";
 import uploadRoutes from './routes/uploadRoutes';
@@ -41,6 +42,7 @@ app.use('/api/bills', billRoutes);
 app.use('/api/empty-packages', emptyPackageRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/accounts', accountLibraryRoutes);
+app.use('/api/assignments', accountAssignmentRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
