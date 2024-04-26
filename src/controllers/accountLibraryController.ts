@@ -47,8 +47,8 @@ export const getAccountById = handleAsync(async (req: Request, res: Response) =>
   const account = await AccountLibrary.findById(req.params.id);
 
   if (!account) {
-    res.status(404).send({ success: false, message: 'Account not found' });
-    return;
+    res.status(404)
+    throw new Error('Account not found');
   }
 
   res.status(200).json({ success: true, data: account });
@@ -58,8 +58,8 @@ export const updateAccount = handleAsync(async (req: Request, res: Response) => 
   const account = await AccountLibrary.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
   if (!account) {
-    res.status(404).send({ success: false, message: 'Account not found' });
-    return;
+    res.status(404)
+    throw new Error('Account not found');
   }
 
   res.status(200).json({ success: true, data: account });
@@ -69,8 +69,8 @@ export const deleteAccount = handleAsync(async (req: Request, res: Response) => 
   const account = await AccountLibrary.findByIdAndDelete(req.params.id);
 
   if (!account) {
-    res.status(404).send({ success: false, message: 'Account not found' });
-    return;
+    res.status(404)
+    throw new Error('Account not found');
   }
 
   res.status(200).json({ success: true, message: 'Account deleted successfully' });
@@ -80,8 +80,8 @@ export const deleteMultipleAccounts = handleAsync(async (req: Request, res: Resp
   const { ids } = req.body; // Array of account IDs to delete
 
   if (!ids || !ids.length) {
-    res.status(400).send({ success: false, message: 'No account IDs provided to delete' });
-    return;
+    res.status(400)
+    throw new Error('No account IDs provided to delete');
   }
 
   const result = await AccountLibrary.deleteMany({ _id: { $in: ids } });
@@ -96,7 +96,7 @@ export const deleteMultipleAccounts = handleAsync(async (req: Request, res: Resp
 
 
 
-export const uploadAccountLibrary = handleAsync(async (req: Request, res: Response) => {
+export const uploadAccountLibrary = handleAsync(async (req: RequestCustom, res: Response) => {
   const file = req.body.file;
  
   if (!file) {
@@ -133,7 +133,8 @@ export const uploadAccountLibrary = handleAsync(async (req: Request, res: Respon
         platform: mappedPlatform ? mappedPlatform : account.platform,
         accountNumber: account.accountNumber,
         loginAccount: account.loginAccount,
-        loginPassword: account.loginPassword
+        loginPassword: account.loginPassword,
+        user: req.user._id
       }).save();
     })
   );

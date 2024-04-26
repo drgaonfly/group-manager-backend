@@ -7,8 +7,8 @@ export const createBill = handleAsync(async (req: Request, res: Response) => {
   const { storeName, orderNumber, amount, buyerId, task } = req.body;
 
   if (!task) {
-    res.status(400).json({ success: false, message: '任务ID未提供' });
-    return;
+    res.status(400)
+    throw new Error('任务ID未提供');
   }
 
   const newBill = new Bill({
@@ -81,8 +81,8 @@ export const updateBill = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const updatedBill = await Bill.findByIdAndUpdate(id, req.body, { new: true });
   if (!updatedBill) {
-    res.status(404).send({ message: 'Bill not found' });
-    return;
+    res.status(404)
+    throw new Error('Bill not found');
   }
   res.json({ success: true, data: updatedBill });
 });
@@ -91,8 +91,8 @@ export const deleteBill = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const deletedBill = await Bill.findByIdAndDelete(id);
   if (!deletedBill) {
-    res.status(404).send({ message: 'Bill not found' });
-    return;
+    res.status(404)
+    throw new Error('Bill not found');
   }
   res.status(200).json({ success: true, message: 'Bill successfully deleted' });
 });
@@ -101,8 +101,8 @@ export const deleteMultipleBills = handleAsync(async (req: Request, res: Respons
   const { ids } = req.body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
-    res.status(400).send({ message: 'Invalid request: No IDs provided' });
-    return;
+    res.status(400)
+    throw new Error('Invalid request: No IDs provided');
   }
 
   const result = await Bill.deleteMany({ _id: { $in: ids } });

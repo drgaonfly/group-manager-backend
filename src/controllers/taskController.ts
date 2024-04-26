@@ -211,7 +211,7 @@ export const downloadUpdatedTaskFile = handleAsync(async (req: Request, res: Res
   });
 });
 
-export const uploadBillFile = handleAsync(async (req: Request, res: Response) => {
+export const uploadBillFile = handleAsync(async (req: RequestCustom, res: Response) => {
   const taskId = req.body._id;
   const task = await Task.findById(taskId).populate('bills')
 
@@ -237,7 +237,8 @@ export const uploadBillFile = handleAsync(async (req: Request, res: Response) =>
       ...billData,
       task: task._id,
       country: task.country,
-      uploadTime: task.uploadTime
+      uploadTime: task.uploadTime,
+      user: req.user._id
     }).save())
   );
   const billIds = savedBills.map(bill => bill._id);

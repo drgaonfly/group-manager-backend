@@ -63,8 +63,8 @@ export const getEmptyPackageById = handleAsync(async (req: Request, res: Respons
   const emptyPackage = await EmptyPackage.findById(req.params.id);
 
   if (!emptyPackage) {
-    res.status(404).send({ success: false, message: 'Empty package not found' });
-    return;
+    res.status(404)
+    throw new Error('Empty package not found');
   }
 
   res.status(200).json({ success: true, data: emptyPackage });
@@ -74,8 +74,8 @@ export const updateEmptyPackage = handleAsync(async (req: Request, res: Response
   const emptyPackage = await EmptyPackage.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
   if (!emptyPackage) {
-    res.status(404).send({ success: false, message: 'Empty package not found' });
-    return;
+    res.status(404)
+    throw new Error('Empty package not found');
   }
 
   res.status(200).json({ success: true, data: emptyPackage });
@@ -85,8 +85,8 @@ export const deleteEmptyPackage = handleAsync(async (req: Request, res: Response
   const emptyPackage = await EmptyPackage.findByIdAndDelete(req.params.id);
 
   if (!emptyPackage) {
-    res.status(404).send({ success: false, message: 'Empty package not found' });
-    return;
+    res.status(404)
+    throw new Error('Empty package not found');
   }
 
   res.status(200).json({ success: true, message: 'Empty package deleted successfully' });
@@ -96,15 +96,15 @@ export const deleteMultipleEmptyPackages = handleAsync(async (req: Request, res:
   const { ids } = req.body; // Array of empty package IDs to delete
 
   if (!ids || !ids.length) {
-    res.status(400).send({ success: false, message: 'No empty package IDs provided to delete' });
-    return;
+    res.status(400)
+    throw new Error('No empty package IDs provided to delete');
   }
 
   const result = await EmptyPackage.deleteMany({ _id: { $in: ids } });
 
   if (result.deletedCount === 0) {
-    res.status(404).send({ success: false, message: 'No empty packages found to delete' });
-    return;
+    res.status(404)
+    throw new Error('No empty packages found to delete');
   }
 
   res.json({ success: true, message: `${result.deletedCount} empty packages deleted successfully` });

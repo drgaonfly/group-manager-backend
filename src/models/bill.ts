@@ -11,6 +11,7 @@ export interface IBill extends Document {
   updatedAt?: Date; // Time the document was last updated
   country?: string; // Country of the task
   uploadTime?: string; // Time the bill was uploaded
+  user: mongoose.Schema.Types.ObjectId;
 }
 
 // Mongoose schema definition for Bill
@@ -46,6 +47,11 @@ const billSchema = new mongoose.Schema<IBill>({
   uploadTime: {
     type: String,
     required: false
+  },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User'  // Assuming a User model exists
   }
 }, { timestamps: true });
 
