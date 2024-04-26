@@ -17,7 +17,7 @@ export const createEmptyPackage = handleAsync(async (req: RequestCustom, res: Re
 
 export const getAllEmptyPackages = handleAsync(async (req: Request, res: Response) => {
   // Extracting pagination and filter parameters or providing default values
-  const { current = '1', pageSize = '10', country, _id, platform } = req.query;
+  const { current = '1', pageSize = '10', isProcessed, country, _id, platform } = req.query;
 
   const queryConditions: any = {};
   if (country) {
@@ -25,6 +25,9 @@ export const getAllEmptyPackages = handleAsync(async (req: Request, res: Respons
   }
   if (platform) {
     queryConditions.platform = platform;
+  }
+  if (typeof isProcessed === 'string' && isProcessed !== '') {
+    queryConditions.isProcessed = isProcessed === 'true';  // Convert 'true'/'false' string from query to boolean
   }
   if (_id) {
     queryConditions._id = _id;

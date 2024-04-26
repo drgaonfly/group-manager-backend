@@ -10,10 +10,16 @@ export interface IEmptyPackage extends Document {
   user: mongoose.Schema.Types.ObjectId;  // Reference to the User model
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
+  isProcessed: boolean;  // Whether the package has been processed
 }
 
 // Mongoose schema definition for EmptyPackage
 const emptyPackageSchema = new mongoose.Schema<IEmptyPackage>({
+  isProcessed: {
+    type: Boolean,
+    required: true,
+    default: false  // Initially, packages are not processed
+  },
   pdfFile: {
     type: String,
     required: false,  // Not every empty package may have a PDF
