@@ -12,8 +12,24 @@ export const createAssignment = handleAsync(async (req: RequestCustom, res: Resp
   const assignmentData = new AccountAssignment({
     ...req.body,
     assignedTime: currentDate, // Use the formatted date as the assigned time
+    numberOfAccounts: req.body.accountLibraries.length,
     user: req.body.user || req.user._id, // Assuming 'user' is authenticated and attached to req
   });
+
+  // Set the assignedTime and isAssigned properties for each account in the account library list
+  const accountLibraryList = req.body.accountLibraries;
+  if (accountLibraryList && accountLibraryList.length > 0) {
+    assignmentData.accountLibraries = [];
+    for (const accountLibraryId of accountLibraryList) {
+      const accountLibrary = await AccountLibrary.findById(accountLibraryId);
+      if (accountLibrary) {
+        accountLibrary.assignedTime = currentDate;
+        accountLibrary.isAssigned = true;
+        await accountLibrary.save();
+        assignmentData.accountLibraries.push(accountLibrary);
+      }
+    }
+  }
 
   const savedAssignment = await assignmentData.save();
   res.status(201).json({ success: true, data: savedAssignment });
