@@ -224,7 +224,7 @@ export const uploadBillFile = handleAsync(async (req: RequestCustom, res: Respon
     throw new Error("Task not found")
   }
 
-  if (task.billFile) {
+  if (process.env.NODE_ENV === 'production' && task.billFile) {
     res.status(400)
     throw new Error('Bill file already uploaded for this task');
   }
@@ -236,6 +236,8 @@ export const uploadBillFile = handleAsync(async (req: RequestCustom, res: Respon
   const billsData = await readExcelData(task.billFile);
  
   const user = await User.findById(task.user);
+  
+  console.log('1', user.priceList)
   
   const priceTableEntry = user.priceList.find(entry => entry.country === task.country);
 
