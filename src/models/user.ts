@@ -26,7 +26,6 @@ const priceListSchema = new mongoose.Schema({
   exchangeRate: { type: Number, required: false },
   serviceFee: { type: Number, required: false },
   country: { type: String, required: true },
-  platform: { type: String, required: true },
 });
 
 const userSchema = new mongoose.Schema({
