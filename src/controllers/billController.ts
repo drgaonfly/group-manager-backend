@@ -8,7 +8,6 @@ import ossClient from '../utils/oss';
 import fs from "fs"
 import { generateSignedUrlForOSS } from '../utils/generateSignedUrl';
 import { countryMapping } from '../constants';
-import { ITask } from '../models/task';
 import { IUser } from '../models/user';
 
 export const createBill = handleAsync(async (req: Request, res: Response) => {
@@ -155,14 +154,15 @@ export const exportBillsToExcel = handleAsync(async (req: Request, res: Response
 
   // Retrieve all bills that match the query conditions
   const bills = await Bill.find(queryConditions)
-    .populate("task") // Ensure to populate necessary task fields
     .populate("customer") // Populate the customer field if needed
     .exec();
+    
+  const countryMappingReverse = Object.fromEntries(Object.entries(countryMapping).map(([key, value]) => [value, key]));
 
   const billsPlainObjects = bills.map((bill: IBill) => ({
-    '关联任务': bill.task ? (bill.task as ITask)._id : '无',
+    '关联任务': bill.task.toString(),
     '客户': bill.customer && (bill.customer as IUser).email ? (bill.customer as IUser).email : '未知',
-    '国家': countryMapping.reverse()[bill.country],
+    '国家': countryMappingReverse[bill.country],
     '订单号': bill.orderNumber,
     '下单时间': bill.uploadTime,
     '店铺名': bill.storeName,
