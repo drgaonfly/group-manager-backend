@@ -11,6 +11,7 @@ export interface IAfterSalesOrder extends Document {
   user: mongoose.Schema.Types.ObjectId | IUser;  // New field for the user
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
+  status: 'Pending' | 'Processing' | 'Approved';  // New field for the status
 }
 
 // Mongoose schema definition for AfterSalesOrder
@@ -37,7 +38,12 @@ const afterSalesOrderSchema = new mongoose.Schema<IAfterSalesOrder>({
     type: mongoose.Schema.Types.ObjectId,
     required: true,
     ref: 'User'  // Assuming a User model exists
-  }
+  },
+  status: {
+    type: String,
+    enum: ['Pending', 'Processing', 'Approved'],
+    default: 'Pending'
+  },
 }, { timestamps: true });
 
 // Mongoose model for AfterSalesOrder

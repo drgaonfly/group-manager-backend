@@ -17,6 +17,7 @@ import accountAssignmentRoutes from './routes/accountAssignmentRoutes';
 import setupDB from "./utils/db";
 import uploadRoutes from './routes/uploadRoutes';
 import accountAssignmentRecordRoutes from './routes/accountAssignmentRecordRoutes';
+import afterSalesOrderRoutes from './routes/afterSalesOrderRoutes';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/accounts', accountLibraryRoutes);
 app.use('/api/assignments', accountAssignmentRoutes);
 app.use('/api/assignment-records', accountAssignmentRecordRoutes);
+app.use('/api/after-sales-orders', afterSalesOrderRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
