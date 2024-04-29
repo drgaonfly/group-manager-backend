@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import handleAsync from '../utils/handleAsync';
 import AfterSalesOrder from '../models/afterSalesOrder';
 import { RequestCustom } from 'user';
-import { transformDocumentImages } from '../utils/transformUtils';
+// import { transformDocumentImages } from '../utils/transformUtils';
 
 // Create an after sales order
 export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res: Response) => {
@@ -44,14 +44,14 @@ export const getAfterSalesOrders = handleAsync(async (req: Request, res: Respons
   const total = await AfterSalesOrder.countDocuments(queryConditions);
 
   // Retrieve after sales orders with pagination and populate related bill and user data
-  let orders = await AfterSalesOrder.find(queryConditions)
+  const orders = await AfterSalesOrder.find(queryConditions)
     .populate('bill')
     .populate('user')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
     
-    orders = await transformDocumentImages(orders, ['image']);
+    // orders = await transformDocumentImages(orders, ['image']);
 
   // Send response with order data, total count, and pagination details
   res.json({
@@ -107,11 +107,39 @@ export const deleteMultipleAfterSalesOrders = handleAsync(async (req: Request, r
   });
 });
 
+export const reviewAfterSalesOrder = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;  // Using req.params to get the id from the route parameter
+  const { status, rejectionReason } = req.body;  // Get status and rejectionReason from the request body
+
+  // Check if status is either 'Approved' or 'Rejected'
+  if (!['Approved', 'Rejected'].includes(status)) {
+    res.status(400);
+    throw new Error('Invalid status. Status should be either "Approved" or "Rejected".');
+  }
+
+  // If status is 'Rejected', rejectionReason must be provided
+  if (status === 'Rejected' && !rejectionReason) {
+    res.status(400);
+    throw new Error('Rejection reason is required when status is "Rejected".');
+  }
+
+  const updatedOrder = await AfterSalesOrder.findByIdAndUpdate(id, { status, rejectionReason }, { new: true })
+    .populate('bill')
+    .populate('user');
+
+  if (!updatedOrder) {
+    res.status(404);
+    throw new Error('After Sales Order not found');
+  }
+  res.json({ success: true, data: updatedOrder });
+});
+
 
 export default {
   createAfterSalesOrder,
   getAfterSalesOrders,
   updateAfterSalesOrder,
   deleteAfterSalesOrder,
-  deleteMultipleAfterSalesOrders
+  deleteMultipleAfterSalesOrders,
+  reviewAfterSalesOrder
 };

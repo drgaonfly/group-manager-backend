@@ -3,7 +3,8 @@ import {
   createAfterSalesOrder,
   getAfterSalesOrders,
   updateAfterSalesOrder,
-  deleteAfterSalesOrder
+  deleteAfterSalesOrder,
+  reviewAfterSalesOrder
 } from '../controllers/afterSalesOrderController';
 import { protect, allow } from '../middlewares/authMiddleware';
 import { ROLES } from "../constants";
@@ -20,5 +21,9 @@ router
   .get(protect, allow([ROLES.Admin]), updateAfterSalesOrder)  // Get details of a specific after sales order
   .put(protect, allow(ROLES.Admin), updateAfterSalesOrder)  // Update an after sales order
   .delete(protect, allow(ROLES.Admin), deleteAfterSalesOrder);  // Delete a specific after sales order
+
+router
+  .route('/:id/review')
+  .put(protect, allow(ROLES.Admin), reviewAfterSalesOrder);
 
 export default router;
