@@ -28,7 +28,8 @@ export const getAfterSalesOrders = handleAsync(async (req: Request, res: Respons
     pageSize = '10',
     bill, // Assuming bill ID can be a filter
     status,
-  } = req.query as { current: string; status: string; pageSize: string; bill?: string };
+    orderNumber,
+  } = req.query as { current: string; orderNumber: string; status: string; pageSize: string; bill?: string };
 
   const queryConditions: any = {};
   if (bill) {
@@ -36,6 +37,9 @@ export const getAfterSalesOrders = handleAsync(async (req: Request, res: Respons
   }
   if (status) {
     queryConditions.status = status;
+  }
+  if (orderNumber) {
+    queryConditions.orderNumber = orderNumber;
   }
 
   // More complex filters can be implemented here if needed.

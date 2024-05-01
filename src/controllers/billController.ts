@@ -42,7 +42,7 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
     task,
     country,
     uploadTime,
-    afterSales
+    afterSales,
   } = req.query;
 
   const queryConditions: any = {};
@@ -61,6 +61,9 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
   }
   if (country) {
     queryConditions.country = country; // Filtering by country within the task document
+  }
+  if (uploadTime) {
+    queryConditions.uploadTime = uploadTime;
   }
   if (uploadTime) {
     queryConditions.uploadTime = uploadTime;
@@ -224,6 +227,7 @@ export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res:
     refundAmount,
     image,
     bill: id,
+    orderNumber: billExists.orderNumber,
     user: req.body.user || req.user._id,
   });
 

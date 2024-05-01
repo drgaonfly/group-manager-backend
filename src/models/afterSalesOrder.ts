@@ -13,6 +13,7 @@ export interface IAfterSalesOrder extends Document {
   updatedAt?: Date; // Time the document was last updated
   status: 'Pending' | 'Processing' | 'Approved' | 'Rejected';  // New field for the status
   rejectionReason?: string;
+  orderNumber: string;
 }
 
 // Mongoose schema definition for AfterSalesOrder
@@ -47,6 +48,11 @@ const afterSalesOrderSchema = new mongoose.Schema<IAfterSalesOrder>({
   },
   rejectionReason: {
     type: String,
+    trim: true
+  },
+  orderNumber: {
+    type: String,
+    required: true,
     trim: true
   },
 }, { timestamps: true });
