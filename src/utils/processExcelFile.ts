@@ -6,6 +6,7 @@ import ExcelJS from 'exceljs';
 import { IBill } from "../models/bill";
 import { IAccountLibrary } from "../models/accountLibrary";
 import { IPriceList, IUser } from "../models/user";
+import { countryMapping } from "../constants";
 
 export const processExcelFile = async (ossKey: string): Promise<string> => {
   // 从OSS下载文件
@@ -249,7 +250,7 @@ export async function readUserExcelData(ossKey: string): Promise<IUser[]> {
   }
 }
 
-export async function readPriceExcelData(ossKey: string): Promise<{email: string, priceList: IPriceList[]}[]> {
+export async function readPriceExcelData(ossKey: string): Promise<{ email: string, priceList: IPriceList[] }[]> {
   const tempDownloadPath = path.join('/tmp', path.basename(ossKey));
   const emailRegex = /[\w-.]+@([\w-]+\.)+[\w-]{2,4}/g;
 
@@ -281,9 +282,20 @@ export async function readPriceExcelData(ossKey: string): Promise<{email: string
         const match = possibleEmail.match(emailRegex);
         const email = match ? match[0].trim() : null;
 
+
         if (email) {
+          const countryInChinese = row.getCell(2).text.trim();
+          let countryInEnglish = '';
+
+          if (countryInChinese.includes('河内')) {
+            countryInEnglish = countryMapping['越南河内'];
+          } else if (countryInChinese.includes('胡志明')) {
+            countryInEnglish = countryMapping['越南胡志明'];
+          } else {
+            countryInEnglish = countryMapping[countryInChinese];
+          }
           const priceList: IPriceList = {
-            country: row.getCell(2).text.trim(), // Country is in the second column
+            country: countryInEnglish, // Country is in the second column
             exchangeRate: parseFloat(row.getCell(3).text.trim()), // Exchange rate is in the third column
             serviceFee: parseFloat(row.getCell(4).text.trim()), // Service fee is in the fourth column
           };

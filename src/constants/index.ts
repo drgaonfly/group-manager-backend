@@ -6,7 +6,7 @@ export const ROLES = {
   FinancialStaff: 'FINANCIAL_STAFF',
 } as const;
 
-export const countryMapping = {
+export const countryMapping: { [key: string]: string } = {
   '越南胡志明': 'Vietnam Ho Chi Minh',
   '越南河内': 'Vietnam Hanoi',
   '泰国': 'Thailand',
