@@ -11,7 +11,7 @@ import { countryMapping } from '../constants';
 import { IUser } from '../models/user';
 import AfterSalesOrder from '../models/afterSalesOrder';
 import { RequestCustom } from 'user';
-import Task from '../models/task';
+import Task, { ITask } from '../models/task';
 
 export const createBill = handleAsync(async (req: Request, res: Response) => {
   const { storeName, orderNumber, amount, buyerId, task } = req.body;
@@ -98,9 +98,17 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
     .exec();
 
   // Send response with bill data, total count, and pagination details
+  const processedBills = await Promise.all(bills.map(async (bill) => {
+    const task = bill.task as ITask;
+    if (task && task.billFile) {
+      task.billFile = await generateSignedUrl(task.billFile);
+    }
+    return bill;
+  }));
+
   res.json({
     success: true,
-    data: bills,
+    data: processedBills,
     total,
     current: +current,
     pageSize: +pageSize
