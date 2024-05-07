@@ -11,6 +11,7 @@ import { countryMapping } from '../constants';
 import { IUser } from '../models/user';
 import AfterSalesOrder from '../models/afterSalesOrder';
 import { RequestCustom } from 'user';
+import Task from '../models/task';
 
 export const createBill = handleAsync(async (req: Request, res: Response) => {
   const { storeName, orderNumber, amount, buyerId, task } = req.body;
@@ -57,7 +58,13 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
     queryConditions.buyerId = buyerId;
   }
   if (task) {
-    queryConditions.task = task; // Filtering by task ID
+    // Find the task with the given code
+    const taskDocument = await Task.findOne({ code: task });
+
+    if (taskDocument) {
+      // Use the id of the found task to filter bills
+      queryConditions.task = taskDocument._id;
+    }
   }
   if (country) {
     queryConditions.country = country; // Filtering by country within the task document
