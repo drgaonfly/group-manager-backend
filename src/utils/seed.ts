@@ -5,12 +5,12 @@ import mongoose from 'mongoose';
 import {ROLES} from "../constants";
 
 const seedUsers = [
-  { email: 'superadmin@2024fc.xyz', password: 'superadmin2024', role: ROLES.SuperAdmin },
-  { email: 'customer@2024fc.xyz', password: 'customer2024', role: ROLES.Customer },
-  { email: 'orderclerk@2024fc.xyz', password: 'orderclerk2024', role: ROLES.OrderClerk },
-  { email: 'finance@2024fc.xyz', password: 'finance2024', role: ROLES.FinancialStaff },
-  { email: 'user@2024fc.xyz', password: 'password123' }, // A user without a specified role defaults to a general user role, if applicable
-  { email: 'admin@2024fc.xyz', password: 'password123', role: ROLES.Admin }, // A user without a specified role defaults to a general user role, if applicable
+  { email: 'superadmin@2024fc.xyz', password: 'superadmin2024', role: ROLES.SuperAdmin, name: 'Super Admin' },
+  { email: 'customer@2024fc.xyz', password: 'customer2024', role: ROLES.Customer, name: 'Customer' },
+  { email: 'orderclerk@2024fc.xyz', password: 'orderclerk2024', role: ROLES.OrderClerk, name: 'Order Clerk' },
+  { email: 'finance@2024fc.xyz', password: 'finance2024', role: ROLES.FinancialStaff, name: 'Financial Staff' },
+  { email: 'user@2024fc.xyz', password: 'password123', name: 'General User' }, // A user without a specified role defaults to a general user role, if applicable
+  { email: 'admin@2024fc.xyz', password: 'password123', role: ROLES.Admin, name: 'Admin' }, // A user without a specified role defaults to a general user role, if applicable
   // 更多用户...
 ];
 

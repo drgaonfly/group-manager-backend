@@ -1,4 +1,5 @@
 import mongoose, { Document } from 'mongoose';
+import { IUser } from './user';
 
 // TypeScript interface for EmptyPackage
 export interface IEmptyPackage extends Document {
@@ -7,7 +8,7 @@ export interface IEmptyPackage extends Document {
   country: string;  // Country associated with the empty package
   platform: string;  // Platform the empty package is posted on
   quantity: number;  // Number of empty packages
-  user: mongoose.Schema.Types.ObjectId;  // Reference to the User model
+  user: mongoose.Schema.Types.ObjectId | IUser;  // Reference to the User model
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
   isProcessed: boolean;  // Whether the package has been processed

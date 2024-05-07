@@ -10,7 +10,7 @@ import {RequestCustom} from "user";
 const login = handleAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ $or: [{ email }, { name: email }] });
 
   if (!user) {
     res.status(400);
