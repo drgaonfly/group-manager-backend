@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import handleAsync from '../utils/handleAsync';
 import AfterSalesOrder from '../models/afterSalesOrder';
 import { RequestCustom } from 'user';
-import { transformDocumentImages } from '../utils/transformUtils';
+import { transformDocumentImages } from '@src/utils/transformUtils';
 
 // Create an after sales order
 export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res: Response) => {
