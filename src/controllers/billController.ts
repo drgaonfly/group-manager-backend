@@ -54,7 +54,8 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
     queryConditions.storeName = { $regex: storeName, $options: 'i' }; // Case-insensitive search
   }
   if (orderNumber) {
-    queryConditions.orderNumber = orderNumber;
+    const orderNumbers = (orderNumber as string).split(/[\s,]+/);  // Split the string by spaces and commas
+    queryConditions.orderNumber = { $in: orderNumbers };  // Find any documents where orderNumber is in the array
   }
   if (buyerId) {
     queryConditions.buyerId = buyerId;
