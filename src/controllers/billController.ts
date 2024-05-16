@@ -271,8 +271,6 @@ export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res:
 
 export const updateBillsBulk = handleAsync(async (req: Request, res: Response) => {
   const { ids, isSigned, isReviewed } = req.body;
-  console.log("first", isSigned)
-  console.log("first", isReviewed)
 
   // 构建更新条件
   const filter = { _id: { $in: ids } };
