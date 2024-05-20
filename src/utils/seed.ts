@@ -11,7 +11,7 @@ const seedUsers = [
   { email: 'finance@2024fc.xyz', password: 'finance2024', role: ROLES.FinancialStaff, name: 'Financial Staff' },
   { email: 'user@2024fc.xyz', password: 'password123', name: 'General User' }, // A user without a specified role defaults to a general user role, if applicable
   { email: 'admin@2024fc.xyz', password: 'password123', role: ROLES.Admin, name: 'Admin' }, // A user without a specified role defaults to a general user role, if applicable
-  // 更多用户...
+  { email: 'newuser@2024fc.xyz', password: 'newuser2024', name: 'New User' }, // Add a new user with name 'New User'
 ];
 
 const createUsers = async (): Promise<void> => {
@@ -21,7 +21,7 @@ const createUsers = async (): Promise<void> => {
 
     for (const user of seedUsers) {
       const hashedPassword = await bcrypt.hash(user.password, 12);
-      await User.create({ email: user.email, password: hashedPassword, role: user.role });
+      await User.create({ email: user.email, password: hashedPassword, role: user.role, name: user.name });
     }
 
     console.log('All users have been created successfully!');
