@@ -89,53 +89,69 @@ export const handleExcelTask = async (ossKey: string): Promise<string> => {
   }
 };
 
+
 export async function readExcelData(ossKey: string): Promise<IBill[]> {
-  const tempDownloadPath = path.join('/tmp', path.basename(ossKey));
-
   try {
-    // Download the file from OSS to the temporary directory
-    const result = await ossClient.get(ossKey, tempDownloadPath);
+    const result = await ossClient.getStream(ossKey);
+    const stream = result.stream;
 
-    // Check if the file was downloaded successfully
     if (result.res.status !== 200) {
       throw new Error('Failed to download the file from OSS');
     }
 
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(tempDownloadPath);
-
-    // Ensure the worksheet exists
-    const worksheet = workbook.getWorksheet('New Data Sheet');
-    if (!worksheet) {
-      throw new Error('Worksheet "New Data Sheet" not found');
-    }
-
+    const options = {
+      worksheets: 'emit',
+    };
+    const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(stream, options);
     const bills: IBill[] = [];
+    let worksheetCounter = 0;
 
-    // Start reading from the second row, assuming the first row contains headers
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      // Assuming the first row is the header and actual data starts from the second row
-      if (rowNumber > 1) {
-        const bill: IBill = {
-          storeName: row.getCell(1).text.trim(),    // '店铺名字' is in the first column
-          orderNumber: row.getCell(2).text.trim(),  // '订单号' is in the second column
-          amount: +row.getCell(3).value,     // '金额' is in the third column
-          buyerId: row.getCell(4).text.trim(),      // '买手号' is in the fourth column
-        } as IBill;
-        bills.push(bill);
-      }
+    return new Promise((resolve, reject) => {
+      workbookReader.on('worksheet', worksheet => {
+        worksheetCounter++;
+        if (worksheetCounter !== 2) {
+          return;
+        }
+
+        worksheet.on('row', row => {
+          if (row.number > 1) {
+            const storeName = row.getCell(1).value?.toString().trim();
+            const orderNumber = row.getCell(2).value?.toString().trim();
+            const amount = typeof row.getCell(3).value === 'number' ? row.getCell(3).value : 0;
+            const buyerId = row.getCell(4).value?.toString().trim();
+
+            console.log('storeName:', storeName);
+            console.log('orderNumber:', orderNumber);
+            console.log('amount:', amount);
+            console.log('buyerId:', buyerId);
+
+            if (!storeName || !orderNumber || !buyerId || amount === 0) {
+              return;
+            }
+
+            const bill: IBill = {
+              storeName,
+              orderNumber,
+              amount,
+              buyerId,
+            } as IBill;
+            bills.push(bill);
+          }
+        });
+      });
+
+      workbookReader.on('end', () => {
+        resolve(bills);
+      });
+
+      workbookReader.on('error', (err) => {
+        reject(err);
+      });
+
+      workbookReader.read();
     });
-
-    // Clean up the temporary file
-    fs.unlinkSync(tempDownloadPath);
-
-    return bills;
   } catch (error) {
     console.error("Error reading Excel data:", error);
-    // Ensure cleanup even in the case of an error
-    if (fs.existsSync(tempDownloadPath)) {
-      fs.unlinkSync(tempDownloadPath);
-    }
     throw error;
   }
 }
