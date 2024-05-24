@@ -14,6 +14,7 @@ export interface IAfterSalesOrder extends Document {
   status: 'Pending' | 'Processing' | 'Approved' | 'Rejected';  // New field for the status
   rejectionReason?: string;
   orderNumber: string;
+  applicationTime: string;
 }
 
 // Mongoose schema definition for AfterSalesOrder
@@ -55,6 +56,7 @@ const afterSalesOrderSchema = new mongoose.Schema<IAfterSalesOrder>({
     required: true,
     trim: true
   },
+  applicationTime: { type: String, required: true },
 }, { timestamps: true });
 
 // Mongoose model for AfterSalesOrder

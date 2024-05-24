@@ -240,7 +240,14 @@ export const exportBillsToExcel = handleAsync(async (req: Request, res: Response
 
 
 export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res: Response) => {
-  const { reason, refundAmount, id } = req.body;
+  const { reason, refundAmount, id, applicationTime } = req.body;
+  
+  if (applicationTime) {
+    const dateMatch = applicationTime.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      req.body.applicationTime = dateMatch[0]; // 如果找到匹配项，则只保留年月日
+    }
+  }
 
   const billExists = await Bill.findById(id);
 
@@ -253,6 +260,7 @@ export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res:
     reason,
     refundAmount,
     bill: id,
+    applicationTime: req.body.applicationTime,
     orderNumber: billExists.orderNumber,
     user: req.body.user || req.user._id,
   });
