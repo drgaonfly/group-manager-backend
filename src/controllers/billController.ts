@@ -123,9 +123,12 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
 });
 
 
-export const updateBill = handleAsync(async (req: Request, res: Response) => {
+export const updateBill = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
-  const updatedBill = await Bill.findByIdAndUpdate(id, req.body, { new: true });
+  const updatedBill = await Bill.findByIdAndUpdate(id, {
+    ...req.body,
+    user: req.user._id
+  }, { new: true });
   if (!updatedBill) {
     res.status(404)
     throw new Error('Bill not found');
@@ -242,7 +245,7 @@ export const exportBillsToExcel = handleAsync(async (req: Request, res: Response
 
 export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res: Response) => {
   const { reason, refundAmount, id, applicationTime } = req.body;
-  
+
   if (applicationTime) {
     const dateMatch = applicationTime.match(/(\d{4}-\d{2}-\d{2})/);
     if (dateMatch) {
@@ -282,7 +285,7 @@ export const updateBillsBulk = handleAsync(async (req: Request, res: Response) =
 
   // 构建更新条件
   const filter = { _id: { $in: ids } };
-  
+
   // 构建更新内容
   const update: any = {};
   if (isSigned !== undefined) {
