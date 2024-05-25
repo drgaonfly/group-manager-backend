@@ -97,6 +97,7 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
         { path: 'user' }   // Populate the user field in the task document
       ]
     })
+    .populate("user", "-password")
     .populate("customer") // Populate the customer field if needed
     .sort('-createdAt')  // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
