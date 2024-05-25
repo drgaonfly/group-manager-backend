@@ -269,7 +269,7 @@ export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res:
   await afterSalesOrder.save();
 
   // Update the bill to set afterSales to true
-  await Bill.findByIdAndUpdate(id, { afterSales: true });
+  await Bill.findByIdAndUpdate(id, { afterSales: true, user: req.user._id });
 
   res.json({
     success: true,
