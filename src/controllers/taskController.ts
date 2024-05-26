@@ -73,7 +73,7 @@ export const createTask = handleAsync(async (req: RequestCustom, res: Response) 
 
 export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response) => {
   // Extracting pagination parameters or providing default values
-  const { current = '1', pageSize = '10', country, uploadTime, platform, status, code, orderTimeType, reviewType, orderType } = req.query;
+  const { current = '1', pageSize = '10', country, user, uploadTime, platform, status, code, orderTimeType, reviewType, orderType } = req.query;
 
   const queryConditions: any = {};
   if (country) {
@@ -99,6 +99,13 @@ export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response)
   }
   if (orderType) {
     queryConditions.orderType = { $in: orderType }; // Assuming orderType could be a CSV of order types
+  }
+  
+  if (user) {
+    const foundUser = await User.findOne({ name: user });
+    if (foundUser) {
+      queryConditions.user = foundUser._id;
+    }
   }
 
   // Role-based query restriction for customer role
