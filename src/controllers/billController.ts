@@ -129,14 +129,26 @@ export const getBills = handleAsync(async (req: Request, res: Response) => {
 
 export const updateBill = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
-  const updatedBill = await Bill.findByIdAndUpdate(id, {
-    ...req.body,
-    user: req.user._id
-  }, { new: true });
-  if (!updatedBill) {
+  const bill = await Bill.findById(id);
+  if (!bill) {
     res.status(404)
     throw new Error('Bill not found');
   }
+
+  // Update the bill with the request body
+  Object.assign(bill, req.body);
+  bill.user = req.user._id;
+
+  // Add a new operation record
+  bill.operations.push({
+    user: req.user._id,
+    operation: 'updateBill',
+    operationTime: new Date()
+  });
+
+  // Save the bill
+  const updatedBill = await bill.save();
+
   res.json({ success: true, data: updatedBill });
 });
 
@@ -275,8 +287,22 @@ export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res:
 
   await afterSalesOrder.save();
 
-  // Update the bill to set afterSales to true
-  await Bill.findByIdAndUpdate(id, { afterSales: true, user: req.user._id });
+  // Find the bill
+  const bill = await Bill.findById(id);
+
+  // Update the bill
+  bill.afterSales = true;
+  bill.user = req.user._id;
+
+  // Add a new operation record
+  bill.operations.push({
+    user: req.user._id,
+    operation: 'applyAfterSales',
+    operationTime: new Date()
+  });
+
+  // Save the bill
+  await bill.save();
 
   res.json({
     success: true,
