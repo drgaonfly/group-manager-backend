@@ -100,7 +100,7 @@ export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response)
   if (orderType) {
     queryConditions.orderType = { $in: orderType }; // Assuming orderType could be a CSV of order types
   }
-  
+
   if (user) {
     const foundUser = await User.findOne({ name: user });
     if (foundUser) {
@@ -311,6 +311,9 @@ export const uploadBillFile = handleAsync(async (req: RequestCustom, res: Respon
 
   // Add the saved bill's IDs to the task's bills array
   task.bills.push(...billIds);
+
+  // Set the lastBillUploadTime to the current time
+  task.lastBillUploadTime = new Date();
 
   await task.save();
 

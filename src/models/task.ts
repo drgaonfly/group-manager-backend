@@ -19,6 +19,7 @@ export interface ITask extends Document {
   orderType: ('NormalOrder' | 'ContactForVolumeWeight' | 'ContactForInventory' | 'ContactForPrice')[];
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
+  lastBillUploadTime?: Date;
   bills: IBill['_id'][];
   code: string; 
 }
@@ -52,6 +53,7 @@ const TaskSchema: Schema = new Schema({
   }],
   uploadTime: { type: String, required: true }, // 新增上传时间字段
   code: { type: String, required: true },
+  lastBillUploadTime: { type: Date, required: false }
 }, { timestamps: true });
 
 export default mongoose.model<ITask>('Task', TaskSchema);
