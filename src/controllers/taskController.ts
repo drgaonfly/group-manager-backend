@@ -73,7 +73,7 @@ export const createTask = handleAsync(async (req: RequestCustom, res: Response) 
 
 export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response) => {
   // Extracting pagination parameters or providing default values
-  const { current = '1', pageSize = '10', country, user, uploadTime, platform, status, code, orderTimeType, reviewType, orderType } = req.query;
+  const { current = '1', pageSize = '10', country, user, billUploader, uploadTime, platform, status, code, orderTimeType, reviewType, orderType } = req.query;
 
   const queryConditions: any = {};
   if (country) {
@@ -100,6 +100,12 @@ export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response)
   if (orderType) {
     queryConditions.orderType = { $in: orderType }; // Assuming orderType could be a CSV of order types
   }
+  if (billUploader) {
+    const foundBillUser = await User.findOne({ name: billUploader });
+    if (foundBillUser) {
+      queryConditions.billUploader = foundBillUser._id;
+    }
+  }
 
   if (user) {
     const foundUser = await User.findOne({ name: user });
@@ -119,6 +125,7 @@ export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response)
   // Fetching tasks with pagination applied
   const tasks = await Task.find(queryConditions)
     .populate('user', '-password')
+    .populate('billUploader', '-password')
     .populate('bills')
     .sort('-createdAt')  // Add this line to sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
@@ -314,6 +321,9 @@ export const uploadBillFile = handleAsync(async (req: RequestCustom, res: Respon
 
   // Set the lastBillUploadTime to the current time
   task.lastBillUploadTime = new Date();
+
+  // Set the billUploader to the current user
+  task.billUploader = req.user._id;
 
   await task.save();
 

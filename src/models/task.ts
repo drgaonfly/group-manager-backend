@@ -22,6 +22,7 @@ export interface ITask extends Document {
   lastBillUploadTime?: Date;
   bills: IBill['_id'][];
   code: string; 
+  billUploader?: Schema.Types.ObjectId; // 新增上传账单的操作员字段
 }
 
 const TaskSchema: Schema = new Schema({
@@ -53,7 +54,8 @@ const TaskSchema: Schema = new Schema({
   }],
   uploadTime: { type: String, required: true }, // 新增上传时间字段
   code: { type: String, required: true },
-  lastBillUploadTime: { type: Date, required: false }
+  lastBillUploadTime: { type: Date, required: false },
+  billUploader: { type: Schema.Types.ObjectId, ref: 'User', required: false }, // 新增上传账单的操作员字段
 }, { timestamps: true });
 
 export default mongoose.model<ITask>('Task', TaskSchema);
