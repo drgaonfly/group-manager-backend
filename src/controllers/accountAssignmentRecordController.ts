@@ -7,7 +7,7 @@ import ossClient from '../utils/oss';
 import { resolve } from 'path';
 import XLSX from 'xlsx';
 import fs from 'fs';
-import { IAccountLibrary } from '../models/accountLibrary';
+import AccountLibrary, { IAccountLibrary } from '../models/accountLibrary';
 import { IUser } from '../models/user';
 import { countryMapping } from '../constants';
 
@@ -23,7 +23,7 @@ export const createAccountAssignmentRecord = handleAsync(async (req: RequestCust
 
 // Get all AccountAssignmentRecords
 export const getAllAccountAssignmentRecords = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10', country, platform, storeAccount, assignedTime } = req.query;
+  const { current = '1', pageSize = '10', country, platform, storeAccount, assignedTime, accountNumber, loginAccount } = req.query;
 
   const queryConditions: any = {};
   if (country) queryConditions.country = country;
@@ -31,16 +31,40 @@ export const getAllAccountAssignmentRecords = handleAsync(async (req: Request, r
   if (assignedTime) queryConditions.assignedTime = assignedTime;
   if (storeAccount) queryConditions.storeAccount = storeAccount;
 
+  if (accountNumber) {
+    // Find the accountLibrary with the given accountNumber
+    const accountLibrary = await AccountLibrary.findOne({ accountNumber: accountNumber });
+    if (accountLibrary) {
+      // If found, use its _id in the query conditions
+      queryConditions.accountLibrary = accountLibrary._id;
+    } else {
+      res.status(200).json({ success: true, data: [], total: 0 });
+      return;
+    }
+  }
+
+  if (loginAccount) {
+    // Find the accountLibrary with the given accountNumber
+    const accountLibrary = await AccountLibrary.findOne({ loginAccount: loginAccount });
+    if (accountLibrary) {
+      // If found, use its _id in the query conditions
+      queryConditions.accountLibrary = accountLibrary._id;
+    } else {
+      res.status(200).json({ success: true, data: [], total: 0 });
+      return;
+    }
+  }
+
   const currentNum = parseInt(current as string, 10);
   const pageSizeNum = parseInt(pageSize as string, 10);
 
   const total = await AccountAssignmentRecord.countDocuments(queryConditions);
   const records = await AccountAssignmentRecord.find(queryConditions)
-    .sort('-createdAt')  // Add this line to sort by creation time in descending order
+    .populate('user', '-password')
+    .populate('accountLibrary')
+    .sort('-createdAt')
     .skip((currentNum - 1) * pageSizeNum)
     .limit(pageSizeNum)
-    .populate('user', '-password')
-    .populate('accountLibrary');
 
   res.status(200).json({
     success: true,
@@ -102,7 +126,7 @@ export const exportAccountAssignmentRecordsToExcel = handleAsync(async (req: Req
     .populate("user")
     .populate("accountLibrary")
     .exec();
-    
+
   const countryMappingReverse = Object.fromEntries(Object.entries(countryMapping).map(([key, value]) => [value, key]));
 
   const recordsPlainObjects = await Promise.all(records.map(async (record: IAccountAssignmentRecord) => {
