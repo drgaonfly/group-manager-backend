@@ -147,18 +147,18 @@ export const exportAccountAssignmentRecordsToExcel = handleAsync(async (req: Req
   const countryMappingReverse = Object.fromEntries(Object.entries(countryMapping).map(([key, value]) => [value, key]));
 
   // Group records by account library
-const groupedRecords = records.reduce((groups, record) => {
-  if (!record.accountLibrary) {
-    return groups;
-  }
+  const groupedRecords = records.reduce((groups, record) => {
+    if (!record.accountLibrary) {
+      return groups;
+    }
 
-  const key = (record.accountLibrary as IAccountLibrary)._id.toString();
-  if (!groups[key]) {
-    groups[key] = [];
-  }
-  groups[key].push(record);
-  return groups;
-}, {} as Record<string, IAccountAssignmentRecord[]>);
+    const key = (record.accountLibrary as IAccountLibrary)._id.toString();
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(record);
+    return groups;
+  }, {} as Record<string, IAccountAssignmentRecord[]>);
 
   console.log(groupedRecords)
 
