@@ -10,8 +10,6 @@ import fs from 'fs';
 import AccountLibrary, { IAccountLibrary } from '../models/accountLibrary';
 import { IUser } from '../models/user';
 import { countryMapping } from '../constants';
-import { CloudWatchLogs } from 'aws-sdk';
-
 // Create a new AccountAssignmentRecord
 export const createAccountAssignmentRecord = handleAsync(async (req: RequestCustom, res: Response) => {
   const record: IAccountAssignmentRecord = new AccountAssignmentRecord({
