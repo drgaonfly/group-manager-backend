@@ -26,7 +26,7 @@ function generateDateRange(startDateStr: string, endDateStr: string): string[] {
   const endDateFormatted = new Date(endDateStr).toISOString().slice(0, 10);
 
   const dates: string[] = [];
-  let currentDate = new Date(startDateFormatted);
+  const currentDate = new Date(startDateFormatted);
   const endDate = new Date(endDateFormatted);
 
   while (currentDate <= endDate) {
