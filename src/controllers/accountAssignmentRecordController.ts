@@ -22,6 +22,19 @@ export const createAccountAssignmentRecord = handleAsync(async (req: RequestCust
   res.status(201).json({ success: true, data: savedRecord });
 });
 
+function generateDateRange(startDateStr: string, endDateStr: string): string[] {
+  const dates: string[] = [];
+  let currentDate = new Date(startDateStr);
+  const endDate = new Date(endDateStr);
+
+  while (currentDate <= endDate) {
+      dates.push(currentDate.toISOString().slice(0, 10));
+      currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dates;
+}
+
 // Get all AccountAssignmentRecords
 export const getAllAccountAssignmentRecords = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10', country, platform, storeAccount, assignedTime, accountNumber, loginAccount } = req.query;
@@ -29,7 +42,11 @@ export const getAllAccountAssignmentRecords = handleAsync(async (req: Request, r
   const queryConditions: any = {};
   if (country) queryConditions.country = country;
   if (platform) queryConditions.platform = platform;
-  if (assignedTime) queryConditions.assignedTime = assignedTime;
+  if (assignedTime && (assignedTime as string[]).length === 2) {
+    const dates = generateDateRange((assignedTime as string[])[0], (assignedTime as string[])[1]);
+  
+    queryConditions.assignedTime = { $in: dates };
+  }
   if (storeAccount) queryConditions.storeAccount = storeAccount;
 
   if (accountNumber) {
@@ -134,8 +151,10 @@ export const exportAccountAssignmentRecordsToExcel = handleAsync(async (req: Req
   if (platform) {
     queryConditions.platform = platform;
   }
-  if (assignedTime) {
-    queryConditions.assignedTime = assignedTime;
+  if (assignedTime && (assignedTime as string[]).length === 2) {
+    const dates = generateDateRange((assignedTime as string[])[0], (assignedTime as string[])[1]);
+  
+    queryConditions.assignedTime = { $in: dates };
   }
   if (storeAccount) {
     queryConditions.storeAccount = storeAccount;
@@ -256,12 +275,12 @@ export const uploadAccountAssignmentRecords = handleAsync(async (req: RequestCus
       newRecord.accountLibrary = accountLibraryRecord._id;
       newRecord.country = country;
       newRecord.platform = platform;
-  
+
       const existingRecord = await AccountAssignmentRecord.findOne({
         accountLibrary: newRecord.accountLibrary,
         assignedTime: newRecord.assignedTime,
       });
-  
+
       if (existingRecord) {
         if (existingRecord.storeAccount !== newRecord.storeAccount || existingRecord.user !== newRecord.user) {
           await AccountAssignmentRecord.findOneAndUpdate(
