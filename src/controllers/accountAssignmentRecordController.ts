@@ -8,10 +8,9 @@ import { resolve } from 'path';
 import XLSX from 'xlsx';
 import fs from 'fs';
 import AccountLibrary, { IAccountLibrary } from '../models/accountLibrary';
-import User, { IUser } from '../models/user';
+import { IUser } from '../models/user';
 import { countryMapping } from '../constants';
 import { readAccountAssignmentRecordExcelData } from '../utils/processExcelFile';
-import { mapCountryAndPlatform } from '../utils/mapCountryAndPlatform';
 // Create a new AccountAssignmentRecord
 export const createAccountAssignmentRecord = handleAsync(async (req: RequestCustom, res: Response) => {
   const record: IAccountAssignmentRecord = new AccountAssignmentRecord({
