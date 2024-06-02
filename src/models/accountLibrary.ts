@@ -1,12 +1,6 @@
 import mongoose, { Document } from 'mongoose';
+import { IAccountAssignmentRecord } from './accountAssignmentRecord';
 
-interface IAccountAssignmentRecord {
-  storeAccount: string;
-  assignedTime: string;
-  username: string;
-}
-
-// TypeScript interface for AccountLibrary
 export interface IAccountLibrary extends Document {
   country: string;     // Country associated with the account
   platform: string;    // Platform where the account is used
@@ -20,7 +14,7 @@ export interface IAccountLibrary extends Document {
   user: mongoose.Schema.Types.ObjectId;
   storeAccount?: string;
   isAbnormal: boolean; // 是否异常
-  accountAssignmentRecords: IAccountAssignmentRecord[]
+  accountAssignmentRecords: Partial<IAccountAssignmentRecord>[]
 }
 
 // Mongoose schema definition for AccountLibrary

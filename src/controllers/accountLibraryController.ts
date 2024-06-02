@@ -4,7 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import AccountLibrary from '../models/accountLibrary';  // Updated import to use AccountLibrary model
 import { RequestCustom } from 'user';
 import { readAccountExcelData } from '../utils/processExcelFile';
-import { countryMapping, platformMapping } from '../constants';
+import { mapCountryAndPlatform } from '../utils/mapCountryAndPlatform';
 
 export const createAccount = handleAsync(async (req: RequestCustom, res: Response) => {
   const accountData = new AccountLibrary({
@@ -117,28 +117,11 @@ export const uploadAccountLibrary = handleAsync(async (req: RequestCustom, res: 
   // Save each account to the database
   const savedAccounts = await Promise.all(
     accountData.map((account) => {
-      let mappedCountry = account.country.trim();
-
-      const standardPlatform = account.platform.toLowerCase().replace(/^\w/, c => c.toUpperCase());
-      const mappedPlatform = platformMapping[standardPlatform];
-
-      // 处理传入数据中的特定地区名称
-      if (account.country.includes('河内')) {
-        mappedCountry = '越南河内';
-      } else if (account.country.includes('胡志明')) {
-        mappedCountry = '越南胡志明';
-      }
-
-      // 使用countryMapping对象进行映射
-      Object.keys(countryMapping).forEach((region) => {
-        if (mappedCountry.includes(region)) {
-          mappedCountry = countryMapping[region as keyof typeof countryMapping];
-        }
-      });
+      const { country, platform } = mapCountryAndPlatform(account)
 
       return new AccountLibrary({
-        country: mappedCountry,
-        platform: mappedPlatform ? mappedPlatform : account.platform,
+        country,
+        platform,
         accountNumber: account.accountNumber,
         loginAccount: account.loginAccount,
         loginPassword: account.loginPassword,

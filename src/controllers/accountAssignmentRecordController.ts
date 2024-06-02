@@ -8,9 +8,10 @@ import { resolve } from 'path';
 import XLSX from 'xlsx';
 import fs from 'fs';
 import AccountLibrary, { IAccountLibrary } from '../models/accountLibrary';
-import { IUser } from '../models/user';
-import { countryMapping, platformMapping } from '../constants';
+import User, { IUser } from '../models/user';
+import { countryMapping } from '../constants';
 import { readAccountAssignmentRecordExcelData } from '../utils/processExcelFile';
+import { mapCountryAndPlatform } from '../utils/mapCountryAndPlatform';
 // Create a new AccountAssignmentRecord
 export const createAccountAssignmentRecord = handleAsync(async (req: RequestCustom, res: Response) => {
   const record: IAccountAssignmentRecord = new AccountAssignmentRecord({
@@ -231,18 +232,49 @@ export const uploadAccountAssignmentRecords = handleAsync(async (req: RequestCus
 
   const recordData = await readAccountAssignmentRecordExcelData(file);
 
-  // // Save each record to the database
-  // const savedRecords = await Promise.all(
-  //   recordData.map((record) => {
-  //     return new AccountAssignmentRecord({
-  //       storeAccount: record.storeAccount,
-  //       assignedTime: record.assignedTime,
-  //       accountLibrary: record.accountLibrary,
-  //       user: req.user._id
-  //     }).save();
-  //   })
-  // );
-  // const recordIds = savedRecords.map(record => record._id);
+  for (const record of recordData) {
+    const { country, platform } = mapCountryAndPlatform(record)
+
+    const accountLibraryRecord = await AccountLibrary.findOne({
+      accountNumber: record.accountNumber,
+      loginAccount: record.loginAccount,
+      loginPassword: record.loginPassword
+    });
+
+    if (!accountLibraryRecord) {
+      continue;
+    }
+
+    for (const newRecord of record.accountAssignmentRecords) {
+      const user = await User.findOne({ name: newRecord.username });
+
+      if (!user) {
+        continue;
+      }
+
+      newRecord.user = user._id; // Assuming the user object has an id property
+      newRecord.accountLibrary = accountLibraryRecord._id;
+      newRecord.country = country;
+      newRecord.platform = platform;
+  
+      const existingRecord = await AccountAssignmentRecord.findOne({
+        accountLibrary: newRecord.accountLibrary,
+        assignedTime: newRecord.assignedTime,
+      });
+  
+      if (existingRecord) {
+        if (existingRecord.storeAccount !== newRecord.storeAccount || existingRecord.user !== newRecord.user) {
+          await AccountAssignmentRecord.findOneAndUpdate(
+            { _id: existingRecord._id }, // find a document with that filter
+            newRecord, // document to insert when nothing was found
+            { new: true, upsert: true, runValidators: true }, // options
+          );
+        }
+      } else {
+        await AccountAssignmentRecord.create(newRecord);
+      }
+    }
+  }
 
   res.json({
     success: true,

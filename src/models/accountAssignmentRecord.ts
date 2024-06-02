@@ -10,6 +10,7 @@ export interface IAccountAssignmentRecord extends Document {
   assignedTime: string;      // Time when the account was assigned
   accountLibrary: IAccountLibrary; // Reference to the account library
   user: mongoose.Schema.Types.ObjectId | IUser;  // Reference to the User model
+  username?: string;
 }
 
 const accountAssignmentRecordSchema = new mongoose.Schema<IAccountAssignmentRecord>({
