@@ -130,10 +130,19 @@ export const deleteMultipleAssignments = handleAsync(async (req: Request, res: R
 
 export const findAvailableAccounts = handleAsync(async (req: Request, res: Response) => {
   const { country, numberOfAccounts, platform } = req.body;
+  // 获取今天的日期
+  const today = new Date().toISOString().slice(0, 10);
 
   // 查询满足条件且未分配的账号
   const availableAccounts = await AccountLibrary.aggregate([
-    { $match: { country, platform, isAbnormal: false } },
+    {
+      $match: {
+        country,
+        platform,
+        isAbnormal: false,
+        assignedTime: { $ne: today }
+      }
+    },
     { $sample: { size: numberOfAccounts } }
   ]);
 
