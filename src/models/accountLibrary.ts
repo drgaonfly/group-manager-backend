@@ -28,11 +28,6 @@ const accountLibrarySchema = new mongoose.Schema<IAccountLibrary>({
     required: true,
     trim: true
   },
-  storeAccount: {
-    type: String,
-    required: false,
-    trim: true
-  },
   accountNumber: {
     type: String,
     required: false,
@@ -47,10 +42,6 @@ const accountLibrarySchema = new mongoose.Schema<IAccountLibrary>({
     type: String,
     required: true,
     trim: true
-  },
-  assignedTime: {
-    type: String,
-    required: false
   },
   isAbnormal: {
     type: Boolean,

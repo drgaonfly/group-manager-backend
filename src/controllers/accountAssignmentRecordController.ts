@@ -8,9 +8,10 @@ import { resolve } from 'path';
 import XLSX from 'xlsx';
 import fs from 'fs';
 import AccountLibrary, { IAccountLibrary } from '../models/accountLibrary';
-import { IUser } from '../models/user';
+import User, { IUser } from '../models/user';
 import { countryMapping } from '../constants';
 import { readAccountAssignmentRecordExcelData } from '../utils/processExcelFile';
+import { mapCountryAndPlatform } from '../utils/mapCountryAndPlatform';
 // Create a new AccountAssignmentRecord
 export const createAccountAssignmentRecord = handleAsync(async (req: RequestCustom, res: Response) => {
   const record: IAccountAssignmentRecord = new AccountAssignmentRecord({
@@ -265,56 +266,56 @@ export const uploadAccountAssignmentRecords = handleAsync(async (req: RequestCus
 
   console.log(recordData);
 
-  // for (const record of recordData) {
-  //   const { country, platform } = mapCountryAndPlatform(record)
+  for (const record of recordData) {
+    const { country, platform } = mapCountryAndPlatform(record)
 
-  //   const accountLibraryRecord = await AccountLibrary.findOne({
-  //     accountNumber: record.accountNumber,
-  //     loginAccount: record.loginAccount,
-  //     loginPassword: record.loginPassword
-  //   });
+    const accountLibraryRecord = await AccountLibrary.findOne({
+      accountNumber: record.accountNumber,
+      loginAccount: record.loginAccount,
+      loginPassword: record.loginPassword
+    });
 
-  //   if (!accountLibraryRecord) {
-  //     continue;
-  //   }
+    if (!accountLibraryRecord) {
+      continue;
+    }
 
-  //   for (const newRecord of record.accountAssignmentRecords) {
-  //     const user = await User.findOne({ name: newRecord.username });
+    for (const newRecord of record.accountAssignmentRecords) {
+      const user = await User.findOne({ name: newRecord.username });
 
-  //     if (!user) {
-  //       continue;
-  //     }
+      if (!user) {
+        continue;
+      }
 
-  //     const currentYear = new Date().getFullYear();
+      const currentYear = new Date().getFullYear();
 
-  //     newRecord.user = user._id; // Assuming the user object has an id property
-  //     newRecord.accountLibrary = accountLibraryRecord._id;
-  //     newRecord.country = country;
-  //     newRecord.platform = platform;
+      newRecord.user = user._id; // Assuming the user object has an id property
+      newRecord.accountLibrary = accountLibraryRecord._id;
+      newRecord.country = country;
+      newRecord.platform = platform;
 
-  //     // Convert assignedTime to MM-DD format
-  //     newRecord.assignedTime = `${currentYear}-${new Date(newRecord.assignedTime).toISOString().slice(5, 10)}`;
+      // Convert assignedTime to MM-DD format
+      newRecord.assignedTime = `${currentYear}-${new Date(newRecord.assignedTime).toISOString().slice(5, 10)}`;
 
-  //     const existingRecord = await AccountAssignmentRecord.findOne({
-  //       accountLibrary: newRecord.accountLibrary,
-  //       assignedTime: newRecord.assignedTime,
-  //     });
+      const existingRecord = await AccountAssignmentRecord.findOne({
+        accountLibrary: newRecord.accountLibrary,
+        assignedTime: newRecord.assignedTime,
+      });
 
-  //     if (existingRecord) {
-  //       if (existingRecord.storeAccount !== newRecord.storeAccount || existingRecord.user !== newRecord.user) {
-  //         const { assignedTime, ...restOfNewRecord } = newRecord; // remove assignedTime from newRecord
+      if (existingRecord) {
+        if (existingRecord.storeAccount !== newRecord.storeAccount || existingRecord.user !== newRecord.user) {
+          const { assignedTime, ...restOfNewRecord } = newRecord; // remove assignedTime from newRecord
 
-  //         await AccountAssignmentRecord.findOneAndUpdate(
-  //           { _id: existingRecord._id }, // find a document with that filter
-  //           restOfNewRecord, // document to insert when nothing was found
-  //           { new: true, upsert: true, runValidators: true }, // options
-  //         );
-  //       }
-  //     } else {
-  //       await AccountAssignmentRecord.create(newRecord);
-  //     }
-  //   }
-  // }
+          await AccountAssignmentRecord.findOneAndUpdate(
+            { _id: existingRecord._id }, // find a document with that filter
+            restOfNewRecord, // document to insert when nothing was found
+            { new: true, upsert: true, runValidators: true }, // options
+          );
+        }
+      } else {
+        await AccountAssignmentRecord.create(newRecord);
+      }
+    }
+  }
 
   res.json({
     success: true,

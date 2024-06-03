@@ -24,7 +24,6 @@ export const createAssignment = handleAsync(async (req: RequestCustom, res: Resp
     for (const accountLibraryId of accountLibraryList) {
       const accountLibrary = await AccountLibrary.findById(accountLibraryId);
       if (accountLibrary) {
-        accountLibrary.assignedTime = currentDate;
         accountLibrary.storeAccount = assignmentData.storeAccount;
         await accountLibrary.save();
         assignmentData.accountLibraries.push(accountLibrary);
@@ -47,7 +46,7 @@ export const createAssignment = handleAsync(async (req: RequestCustom, res: Resp
 });
 
 export const getAllAssignments = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10', country, platform, numberOfAccounts, storeAccount, assignedTime } = req.query;
+  const { current = '1', pageSize = '10', country, platform, numberOfAccounts, storeAccount, sorter, assignedTime } = req.query;
 
   const queryConditions: any = {};
   if (country) queryConditions.country = country;
@@ -59,11 +58,19 @@ export const getAllAssignments = handleAsync(async (req: Request, res: Response)
   const currentNum = parseInt(current as string, 10);
   const pageSizeNum = parseInt(pageSize as string, 10);
 
+  let sortCondition = '-createdAt'; // Default sort condition
+  if (sorter) {
+    const sorterObj = JSON.parse(sorter as string);
+    if (sorterObj.assignedTime) {
+      sortCondition = sorterObj.assignedTime === 'descend' ? '-assignedTime' : 'assignedTime';
+    }
+  }
+
   const total = await AccountAssignment.countDocuments(queryConditions);
   const assignments = await AccountAssignment.find(queryConditions)
     .populate("accountLibraries")
     .populate('user', '-password')
-    .sort('-createdAt')  // Add this line to sort by creation time in descending order
+    .sort(sortCondition)
     .skip((currentNum - 1) * pageSizeNum)
     .limit(pageSizeNum);
 
@@ -129,33 +136,41 @@ export const deleteMultipleAssignments = handleAsync(async (req: Request, res: R
 
 
 export const findAvailableAccounts = handleAsync(async (req: Request, res: Response) => {
-  const { country, numberOfAccounts, platform } = req.body;
+  const { country, numberOfAccounts, platform, storeAccount } = req.body;
   // 获取今天的日期
   const today = new Date().toISOString().slice(0, 10);
 
   // 查询满足条件且未分配的账号
   const availableAccounts = await AccountLibrary.aggregate([
     {
+      $lookup: {
+        from: "AccountAssignment",
+        localField: "accountLibraries",
+        foreignField: "accountLibraries",
+        as: "accountAssignment"
+      }
+    },
+    {
+      $unwind: "$accountAssignment"
+    },
+    {
+      $lookup: {
+        from: "storeAccount",
+        localField: "accountAssignment.storeAccount",
+        foreignField: "_id",
+        as: "accountAssignment.storeAccount"
+      }
+    },
+    {
       $match: {
+        "accountAssignment": { $eq: [] },
         country,
         platform,
-        isAbnormal: false,
-        assignedTime: { $ne: today }
+        isAbnormal: false
       }
     },
     { $sample: { size: numberOfAccounts } }
   ]);
-
-  // 如果没有找到足够的账号，返回错误信息
-  if (availableAccounts.length < numberOfAccounts) {
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const accountsWithOldAssignments = await AccountLibrary.aggregate([
-      { $match: { country, platform, assignedTime: { $lt: oneMonthAgo }, isAbnormal: false } },
-      { $sample: { size: numberOfAccounts - availableAccounts.length } }
-    ]);
-    availableAccounts.push(...accountsWithOldAssignments);
-  }
 
   // 返回查找到的账号
   res.status(200).json({

@@ -17,18 +17,13 @@ export const createAccount = handleAsync(async (req: RequestCustom, res: Respons
 });
 
 export const getAllAccounts = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10', sorter, country, platform, storeAccount, isAssigned, isAbnormal, loginAccount, accountNumber, assignedTime } = req.query;
+  const { current = '1', pageSize = '10', country, platform, isAbnormal, loginAccount, accountNumber, assignedTime } = req.query;
 
   const queryConditions: any = {};
   if (country) queryConditions.country = country;
   if (platform) queryConditions.platform = platform;
   if (loginAccount) queryConditions.loginAccount = loginAccount;
   if (accountNumber) queryConditions.accountNumber = accountNumber;
-  if (assignedTime) queryConditions.assignedTime = assignedTime;
-  if (storeAccount) queryConditions.storeAccount = storeAccount;
-  if (typeof isAssigned === 'string' && isAssigned !== '') {
-    queryConditions.isAssigned = isAssigned === 'true';  // Convert 'true'/'false' string from query to boolean
-  }
   if (typeof isAbnormal === 'string' && isAbnormal !== '') {
     queryConditions.isAbnormal = isAbnormal === 'true';  // Convert 'true'/'false' string from query to boolean
   }
@@ -36,19 +31,10 @@ export const getAllAccounts = handleAsync(async (req: Request, res: Response) =>
   const currentNum = parseInt(current as string, 10);
   const pageSizeNum = parseInt(pageSize as string, 10);
 
-
-  let sortCondition = '-createdAt'; // Default sort condition
-  if (sorter) {
-    const sorterObj = JSON.parse(sorter as string);
-    if (sorterObj.assignedTime) {
-      sortCondition = sorterObj.assignedTime === 'descend' ? '-assignedTime' : 'assignedTime';
-    }
-  }
-
   const total = await AccountLibrary.countDocuments(queryConditions);
   const accounts = await AccountLibrary.find(queryConditions)
     .populate('user', '-password')
-    .sort(sortCondition)  // Add this line to sort by creation time in descending order
+    .sort('-createdAt')
     .skip((currentNum - 1) * pageSizeNum)
     .limit(pageSizeNum);;
 
