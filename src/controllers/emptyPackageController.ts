@@ -192,13 +192,10 @@ export const exportEmptyPackagesToExcel = handleAsync(async (req: Request, res: 
   const countryMappingReverse = Object.fromEntries(Object.entries(countryMapping).map(([key, value]) => [value, key]));
 
   const emptyPackagesPlainObjects = await Promise.all(emptyPackages.map(async (emptyPackage: IEmptyPackage) => {
-    const fileUrl = await generateSignedUrl(emptyPackage.file, 7 * 24 * 60 * 60);
-
     return {
       '编号': emptyPackage.code,
       '国家': countryMappingReverse[emptyPackage.country],
       '平台': emptyPackage.platform,
-      '文件': fileUrl,
       '上传用户': (emptyPackage.user as IUser)?.name,
       '单量': emptyPackage.quantity,
       '是否处理': emptyPackage.isProcessed ? '是' : '否',
