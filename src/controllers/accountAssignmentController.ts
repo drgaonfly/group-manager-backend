@@ -7,9 +7,6 @@ import AccountLibrary from '../models/accountLibrary';
 import AccountAssignmentRecord from '../models/accountAssignmentRecord';
 
 export const createAssignment = handleAsync(async (req: RequestCustom, res: Response) => {
-  // Get the current date and format it as YYYY-MM-DD
-  const currentDate = new Date().toISOString().split('T')[0]; // This will give you a date string like "2024-04-03"
-
   // Set the assignedTime and isAssigned properties for each account in the account library list
   const accountLibraryList = req.body.accountLibraries;
   if (accountLibraryList && accountLibraryList.length > 0) {
@@ -20,7 +17,7 @@ export const createAssignment = handleAsync(async (req: RequestCustom, res: Resp
           country: accountLibrary.country,
           platform: accountLibrary.platform,
           storeAccount: req.body.storeAccount,
-          assignedTime: currentDate,
+          assignedTime: req.body.assignedTime.split(" ")[0],
           accountLibrary: accountLibrary._id,
           user: req.body.user || req.user._id,
         });
@@ -128,20 +125,35 @@ export const findAvailableAccounts = handleAsync(async (req: Request, res: Respo
   // 将 assignedTime 转换为年月日格式
   const assignedDate = new Date(assignedTime).toISOString().split('T')[0];
 
-  // 从 AccountAssignmentRecord 表中取出所有的 accountLibrary
+  // 从 AccountLibrary 表中取出所有的 accountLibrary
+  const allAccounts = await AccountLibrary.find({
+    country,
+    platform,
+    isAbnormal: false
+  });
+
+  const allAccountLibraries = allAccounts.map(account => account._id.toString());
+  console.log("allAccountLibraries", allAccountLibraries)
+
+  // 从 AccountAssignmentRecord 表中取出已分配的 accountLibrary
   const assignedRecords = await AccountAssignmentRecord.find({
     storeAccount,
     assignedTime: assignedDate
   });
 
-  const assignedAccountLibraries = assignedRecords.map(record => record.accountLibrary);
 
-  // 使用这些 accountLibrary 去查询 AccountLibrary 表
+  // 将取出的 accountLibrary 形成一个数组
+  const assignedAccountLibraries = assignedRecords.map(record => record.accountLibrary.toString());
+  console.log("assignedAccountLibraries", assignedAccountLibraries)
+
+  // 去掉已分配的 accountLibrary
+  const availableAccountLibraries = allAccountLibraries.filter(library => !assignedAccountLibraries.includes(library));
+
+  console.log("availableAccountLibraries", availableAccountLibraries)
+
+  // 使用 availableAccountLibraries 去查询 AccountLibrary 表，并限制结果数量为 numberOfAccounts
   const availableAccounts = await AccountLibrary.find({
-    _id: { $nin: assignedAccountLibraries },
-    country,
-    platform,
-    isAbnormal: false
+    _id: { $in: availableAccountLibraries }
   }).limit(numberOfAccounts);
 
   // 返回查找到的账号
