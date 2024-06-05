@@ -206,7 +206,9 @@ export const exportBillsToExcel = handleAsync(async (req: Request, res: Response
     queryConditions.country = country; // Filtering by country within the task document
   }
   if (uploadTime) {
-    queryConditions.uploadTime = uploadTime;
+    const date = new Date(uploadTime as string);
+    const formattedDate = date.toISOString().split('T')[0];
+    queryConditions.uploadTime = formattedDate;
   }
 
   // Retrieve all bills that match the query conditions
@@ -219,7 +221,7 @@ export const exportBillsToExcel = handleAsync(async (req: Request, res: Response
 
   const billsPlainObjects = bills.map((bill: IBill) => ({
     '关联任务': (bill.task as ITask).code,
-    '客户': bill.customer && (bill.customer as IUser).email ? (bill.customer as IUser).email : '未知',
+    '客户': bill.customer && (bill.customer as IUser).name ? (bill.customer as IUser).name : '未知',
     '国家': countryMappingReverse[bill.country],
     '订单号': bill.orderNumber,
     '下单时间': bill.uploadTime,
