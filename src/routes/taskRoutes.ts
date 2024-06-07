@@ -1,5 +1,5 @@
 import express from 'express';
-import { createTask, getAllTasks, getTaskById, updateTask, deleteTask, deleteMultipleTasks, cancelTask, downloadUpdatedTaskFile, uploadBillFile } from '../controllers/taskController'; // Adjust the import path as necessary
+import { createTask, getAllTasks, getTaskById, updateTask, deleteTask, deleteMultipleTasks, cancelTask, downloadUpdatedTaskFile, uploadBillFile, claimTask } from '../controllers/taskController'; // Adjust the import path as necessary
 import { allow, protect } from '../middlewares/authMiddleware';
 import { ROLES } from '../constants';
 
@@ -15,5 +15,6 @@ router.patch('/download-task', protect, allow([ROLES.OrderClerk, ROLES.Admin]), 
 router.patch('/:id/cancel', protect, allow([ROLES.Customer, ROLES.Admin]), cancelTask);
 
 router.post('/upload-bills', protect, allow([ROLES.Admin, ROLES.OrderClerk]), uploadBillFile);
+router.patch('/:id/claim', protect, allow([ROLES.OrderClerk, ROLES.Admin]), claimTask);
 
 export default router;

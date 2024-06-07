@@ -333,3 +333,23 @@ export const uploadBillFile = handleAsync(async (req: RequestCustom, res: Respon
     data: task
   });
 });
+
+export const claimTask = handleAsync(async (req: Request, res: Response) => {
+  const task = await Task.findById(req.params.id);
+  if (!task) {
+    res.status(404).send({ success: false, message: 'Task not found' });
+    return;
+  }
+
+  if (task.status === 'Processing') {
+    res.status(400).send({ success: false, message: 'Task is already being processed' });
+    return;
+  }
+
+  task.status = 'Processing';
+  await task.save();
+
+  const downloadUrl = await generateSignedUrl(task.file);
+
+  res.status(200).json({ success: true, downloadUrl });
+});
