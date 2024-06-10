@@ -1,9 +1,10 @@
 export const ROLES = {
   SuperAdmin: 'SUPER_ADMIN',
-  Admin: 'ADMIN', // Added Admin role
+  Admin: 'ADMIN',
   Customer: 'CUSTOMER',
-  OrderClerk: 'ORDER_CLERK',
-  FinancialStaff: 'FINANCIAL_STAFF',
+  OrderPlacer: 'ORDER_PLACER', // New role for placing orders
+  Reviewer: 'REVIEWER', // New role for reviewing orders
+  CustomerService: 'CUSTOMER_SERVICE', // New role for customer service
 } as const;
 
 export const countryMapping: { [key: string]: string } = {
