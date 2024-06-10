@@ -14,18 +14,3 @@ jobs:
           password: )3zE_2VQe%Nks9M?
           port: 22
           script: cd /www/wwwroot/ordersystem-new.2024fc.xyz/task-backend && git pull --rebase origin main && /www/server/nodejs/v20.12.0/bin/pnpm install && git checkout -f . && npm run build && cp -a src/uploads dist && pm2 restart dist/index.js
-      - name: Send Email
-        uses: hilarion5/send-mail@v1
-        with:
-          smtp-server: mail.makewebsite.shop
-          smtp-port: 465
-          smtp-secure: true
-          from-email: info@makewebsite.shop
-          to-email: ganweiliang@swqztech.com
-          username: info@makewebsite.shop
-          password: )e%n|ic*31*q
-          subject: task system github action
-          body: 部署成功
-          html: |
-            <h1>github action</h1>
-            <p>task system</p>
