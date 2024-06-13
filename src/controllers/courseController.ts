@@ -4,6 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import Course from '../models/course';  // Updated import to use Course model
 import { RequestCustom } from 'user';
 import { transformDocumentImages } from '../utils/transformUtils';
+import { ROLES } from '../constants';
 
 export const createCourse = handleAsync(async (req: RequestCustom, res: Response) => {
   const courseData = new Course({
@@ -15,7 +16,7 @@ export const createCourse = handleAsync(async (req: RequestCustom, res: Response
   res.status(201).json({ success: true, data: savedCourse });
 });
 
-export const getAllCourses = handleAsync(async (req: Request, res: Response) => {
+export const getAllCourses = handleAsync(async (req: RequestCustom, res: Response) => {
   // Extracting pagination and filter parameters or providing default values
   const { current = '1', pageSize = '10', title, _id } = req.query;
 
@@ -25,6 +26,10 @@ export const getAllCourses = handleAsync(async (req: Request, res: Response) => 
   }
   if (_id) {
     queryConditions._id = _id;
+  }
+
+  if (req.user.role !== ROLES.Admin && req.user.role !== ROLES.SuperAdmin) {
+    queryConditions.videoType = req.user.role;
   }
 
   // Convert current and pageSize to numbers to use in skip and limit
