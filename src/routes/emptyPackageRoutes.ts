@@ -16,7 +16,7 @@ const router = express.Router();
 
 // Define the routes for the EmptyPackage operations
 router.post('/', protect, allow([ROLES.Customer, ROLES.Admin]), createEmptyPackage);
-router.get('/', protect, allow([ROLES.Customer, ROLES.Admin,ROLES.CustomerService]), getAllEmptyPackages);
+router.get('/', protect, allow([ROLES.Customer, ROLES.Admin, ROLES.CustomerService]), getAllEmptyPackages);
 router.get('/export', protect, allow([ROLES.Admin]), exportEmptyPackagesToExcel);
 router.get('/:id', protect, allow([ROLES.Customer, ROLES.Admin]), getEmptyPackageById);
 router.route('/bulk-setting')

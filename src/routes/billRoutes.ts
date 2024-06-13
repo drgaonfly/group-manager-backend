@@ -17,7 +17,7 @@ const router: Router = express.Router();
 // Define routes for bill-related actions
 router
   .route('/')
-  .get(protect, allow(ROLES.Admin), getBills)  // Get list of bills
+  .get(protect, allow([ROLES.Admin, ROLES.Customer, ROLES.CustomerService, ROLES.OrderPlacer, ROLES.Reviewer]), getBills)  // Get list of bills
   .delete(protect, allow(ROLES.Admin), deleteMultipleBills)    // Delete multiple bills
   .post(protect, allow(ROLES.Admin), createBill);                // Add a new bill
 
