@@ -8,13 +8,13 @@ const router = express.Router();
 router.post('/', protect, allow([ROLES.Customer, ROLES.Admin]), createTask);
 router.get('/', protect, allow([ROLES.Customer, ROLES.Admin, ROLES.CustomerService, ROLES.OrderPlacer, ROLES.Reviewer]), getAllTasks);
 router.get('/:id', protect, allow([ROLES.Customer, ROLES.Admin]), getTaskById);
-router.put('/:id', protect, allow([ROLES.Customer, ROLES.Admin]), updateTask);
+router.put('/:id', protect, allow([ROLES.Customer, ROLES.Admin, ROLES.CustomerService]), updateTask);
 router.delete('/:id', protect, allow([ROLES.Admin]), deleteTask);
 router.delete('/', protect, allow([ROLES.Admin]), deleteMultipleTasks);
-router.patch('/download-task', protect, allow([ROLES.Admin]), downloadUpdatedTaskFile);
-router.patch('/:id/cancel', protect, allow([ROLES.Customer, ROLES.Admin]), cancelTask);
+router.patch('/download-task', protect, allow([ROLES.Admin, ROLES.CustomerService]), downloadUpdatedTaskFile);
+router.patch('/:id/cancel', protect, allow([ROLES.Customer, ROLES.Admin, ROLES.CustomerService]), cancelTask);
 
-router.post('/upload-bills', protect, allow([ROLES.Admin]), uploadBillFile);
-router.patch('/:id/claim', protect, allow([ROLES.Admin]), claimTask);
+router.post('/upload-bills', protect, allow([ROLES.Admin, ROLES.CustomerService]), uploadBillFile);
+router.patch('/:id/claim', protect, allow([ROLES.Admin, ROLES.CustomerService]), claimTask);
 
 export default router;
