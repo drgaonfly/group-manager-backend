@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import { exclude } from '../utils/handleData';
 import { readPriceExcelData, readUserExcelData } from '../utils/processExcelFile';
 import { ROLES } from '../constants';
+import { RequestCustom } from 'user';
 
 const getUsers = handleAsync(async (req: Request, res: Response) => {
   // 假设这些值来自于请求参数
@@ -53,8 +54,18 @@ const getUsers = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-const addUser = handleAsync(async (req: Request, res: Response) => {
+const addUser = handleAsync(async (req: RequestCustom, res: Response) => {
   const { name, email, password, role, priceList } = req.body;
+
+  if (role === ROLES.SuperAdmin && req.user.role !== ROLES.SuperAdmin) {
+    res.status(403);
+    throw new Error('Only superadmin can create other superadmins');
+  }
+
+  if (role !== ROLES.Customer && req.user.role === ROLES.CustomerService) {
+    res.status(403);
+    throw new Error('Customer service can only create customers');
+  }
 
   const userExists = await User.findOne({ email });
 
