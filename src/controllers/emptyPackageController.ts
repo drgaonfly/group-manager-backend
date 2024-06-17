@@ -74,6 +74,11 @@ export const getAllEmptyPackages = handleAsync(async (req: RequestCustom, res: R
   if (req.user.role !== ROLES.Admin && req.user.role !== ROLES.SuperAdmin) {
     queryConditions.name = req.user.role;
   }
+
+  if (req.user.role === ROLES.Customer) {
+    queryConditions.user = req.user._id;
+  }
+
   if (user) {
     const foundUser = await User.findOne({ name: user });
     if (foundUser) {
