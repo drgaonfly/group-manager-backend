@@ -128,7 +128,14 @@ export const deleteMultipleAfterSalesOrders = handleAsync(async (req: Request, r
 
 export const reviewAfterSalesOrder = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;  // Using req.params to get the id from the route parameter
-  const { status, rejectionReason } = req.body;  // Get status and rejectionReason from the request body
+  const { status, rejectionReason, reviewTime } = req.body;  // Get status and rejectionReason from the request body
+
+  if (reviewTime) {
+    const dateMatch = reviewTime.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      req.body.reviewTime = dateMatch[0]; // 如果找到匹配项，则只保留年月日
+    }
+  }
 
   // Check if status is either 'Approved' or 'Rejected'
   if (!['Approved', 'Rejected'].includes(status)) {
@@ -142,7 +149,7 @@ export const reviewAfterSalesOrder = handleAsync(async (req: Request, res: Respo
     throw new Error('Rejection reason is required when status is "Rejected".');
   }
 
-  const updatedOrder = await AfterSalesOrder.findByIdAndUpdate(id, { status, rejectionReason }, { new: true })
+  const updatedOrder = await AfterSalesOrder.findByIdAndUpdate(id, { status, reviewTime: req.body.reviewTime, rejectionReason }, { new: true })
     .populate('bill')
     .populate('user', '-password');
 
@@ -150,6 +157,9 @@ export const reviewAfterSalesOrder = handleAsync(async (req: Request, res: Respo
     res.status(404);
     throw new Error('After Sales Order not found');
   }
+
+  
+
   res.json({ success: true, data: updatedOrder });
 });
 

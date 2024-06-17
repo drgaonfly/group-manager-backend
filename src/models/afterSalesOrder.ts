@@ -15,6 +15,7 @@ export interface IAfterSalesOrder extends Document {
   rejectionReason?: string;
   orderNumber: string;
   applicationTime: string;
+  reviewTime: string;
 }
 
 // Mongoose schema definition for AfterSalesOrder
@@ -57,6 +58,7 @@ const afterSalesOrderSchema = new mongoose.Schema<IAfterSalesOrder>({
     trim: true
   },
   applicationTime: { type: String, required: true },
+  reviewTime: { type: String, required: false },
 }, { timestamps: true });
 
 // Mongoose model for AfterSalesOrder
