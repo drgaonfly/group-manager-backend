@@ -26,6 +26,6 @@ router
 
 router
   .route('/:id/review')
-  .put(protect, allow([ROLES.Admin, ROLES.CustomerService, ROLES.OrderPlacer, ROLES.Reviewer]), reviewAfterSalesOrder);
+  .put(protect, allow([ROLES.Admin, ROLES.CustomerService]), reviewAfterSalesOrder);
 
 export default router;
