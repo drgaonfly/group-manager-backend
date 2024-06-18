@@ -164,6 +164,8 @@ export const reviewAfterSalesOrder = handleAsync(async (req: Request, res: Respo
     // @ts-expect-error
     const { _id, ...billData } = updatedOrder.bill._doc; // 从 updatedOrder.bill._doc 中排除 _id 属性
 
+    console.log(_id)
+
     const bill = new Bill({
       ...billData, // 使用排除了 _id 的 billData
       uploadTime: reviewTime,
