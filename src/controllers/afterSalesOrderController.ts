@@ -4,7 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import AfterSalesOrder from '../models/afterSalesOrder';
 import { RequestCustom } from 'user';
 import { transformDocumentImages } from '../utils/transformUtils';
-import Bill, { IBill } from '../models/bill';
+import Bill from '../models/bill';
 
 // Create an after sales order
 export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res: Response) => {
@@ -161,7 +161,7 @@ export const reviewAfterSalesOrder = handleAsync(async (req: Request, res: Respo
 
   // 创建新的账单记录
   if (status === 'Approved') {
-    // @ts-ignore
+    // @ts-expect-error
     const { _id, ...billData } = updatedOrder.bill._doc; // 从 updatedOrder.bill._doc 中排除 _id 属性
 
     const bill = new Bill({
