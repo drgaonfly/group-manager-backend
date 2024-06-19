@@ -128,10 +128,11 @@ export const findAvailableAccounts = handleAsync(async (req: Request, res: Respo
   // 将日期对象转换为北京时间并格式化为年月日格式
   const assignedDate = parsedDateTime.tz("Asia/Shanghai").format('YYYY-MM-DD');
 
+  console.log(assignedDate)
+
   // 从 AccountAssignmentRecord 表中取出已分配的 accountLibrary
   const assignedRecords = await AccountAssignmentRecord.find({
     storeAccount,
-    assignedTime: assignedDate
   });
 
   // 将取出的 accountLibrary 形成一个数组
