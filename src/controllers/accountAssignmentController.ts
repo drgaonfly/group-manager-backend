@@ -5,6 +5,7 @@ import AccountAssignment from '../models/accountAssignment';  // 确保路径正
 import { RequestCustom } from 'user';
 import AccountLibrary from '../models/accountLibrary';
 import AccountAssignmentRecord from '../models/accountAssignmentRecord';
+import moment from 'moment-timezone';
 
 export const createAssignment = handleAsync(async (req: RequestCustom, res: Response) => {
   // Set the assignedTime and isAssigned properties for each account in the account library list
@@ -122,8 +123,10 @@ export const deleteMultipleAssignments = handleAsync(async (req: Request, res: R
 export const findAvailableAccounts = handleAsync(async (req: Request, res: Response) => {
   const { country, numberOfAccounts, platform, storeAccount, assignedTime } = req.body;
 
-  // 将 assignedTime 转换为年月日格式
-  const assignedDate = new Date(assignedTime).toISOString().split('T')[0];
+
+  const parsedDateTime = moment((assignedTime as string).replace(/"/g, ''));
+  // 将日期对象转换为北京时间并格式化为年月日格式
+  const assignedDate = parsedDateTime.tz("Asia/Shanghai").format('YYYY-MM-DD');
 
   // 从 AccountLibrary 表中取出所有的 accountLibrary
   const allAccounts = await AccountLibrary.find({
