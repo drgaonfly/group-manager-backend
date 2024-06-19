@@ -12,6 +12,7 @@ import { IUser } from '../models/user';
 import AfterSalesOrder from '../models/afterSalesOrder';
 import { RequestCustom } from 'user';
 import Task, { ITask } from '../models/task';
+import moment from 'moment-timezone';
 
 export const createBill = handleAsync(async (req: Request, res: Response) => {
   const { storeName, orderNumber, amount, buyerId, task } = req.body;
@@ -211,9 +212,11 @@ export const exportBillsToExcel = handleAsync(async (req: Request, res: Response
   }
   if (uploadTime) {
     console.log(uploadTime)
-    const date = new Date(JSON.parse(uploadTime as string));
-    const formattedDate = date.toISOString().split('T')[0];
-    queryConditions.uploadTime = formattedDate;
+
+    const parsedDateTime = moment((uploadTime as string).replace(/"/g, ''));
+    // 将日期对象转换为北京时间并格式化为年月日格式
+    const beijingDate = parsedDateTime.tz("Asia/Shanghai").format('YYYY-MM-DD');
+    queryConditions.uploadTime = beijingDate;
   }
 
   // Retrieve all bills that match the query conditions
