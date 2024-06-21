@@ -205,6 +205,7 @@ export const exportEmptyPackagesToExcel = handleAsync(async (req: Request, res: 
 
   const emptyPackages = await EmptyPackage.find(queryConditions)
     .populate("user")
+    .populate("operator")
     .exec();
 
   const countryMappingReverse = Object.fromEntries(Object.entries(countryMapping).map(([key, value]) => [value, key]));
@@ -221,11 +222,11 @@ export const exportEmptyPackagesToExcel = handleAsync(async (req: Request, res: 
       '金额': '',
       '备注4': '',
       '支付金额': '',
-      '上传人 ID': '',
+      '上传人 ID': (emptyPackage.operator as IUser)?.name,
       '上传时间': emptyPackage.uploadTime,
       '平台': emptyPackage.platform,
       '是否处理': emptyPackage.isProcessed ? '是' : '否',
-      '备注': ''
+      '备注': emptyPackage.note,
     };
   }));
 
