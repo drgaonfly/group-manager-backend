@@ -145,7 +145,7 @@ export const deleteMultipleAssignmentRecords = handleAsync(async (req: Request, 
 });
 
 export const exportAccountAssignmentRecordsToExcel = handleAsync(async (req: Request, res: Response) => {
-  const { country, platform, storeAccount, assignedTime } = req.query;
+  const { country, platform, storeAccount, assignedTime, accountNumber, loginAccount  } = req.query;
 
   const queryConditions: any = {};
   if (country) {
@@ -153,6 +153,32 @@ export const exportAccountAssignmentRecordsToExcel = handleAsync(async (req: Req
   }
   if (platform) {
     queryConditions.platform = platform;
+  }
+
+  if (storeAccount) queryConditions.storeAccount = storeAccount;
+
+  if (accountNumber) {
+    // Find the accountLibrary with the given accountNumber
+    const accountLibrary = await AccountLibrary.findOne({ accountNumber: accountNumber });
+    if (accountLibrary) {
+      // If found, use its _id in the query conditions
+      queryConditions.accountLibrary = accountLibrary._id;
+    } else {
+      res.status(200).json({ success: true, data: [], total: 0 });
+      return;
+    }
+  }
+
+  if (loginAccount) {
+    // Find the accountLibrary with the given accountNumber
+    const accountLibrary = await AccountLibrary.findOne({ loginAccount: loginAccount });
+    if (accountLibrary) {
+      // If found, use its _id in the query conditions
+      queryConditions.accountLibrary = accountLibrary._id;
+    } else {
+      res.status(200).json({ success: true, data: [], total: 0 });
+      return;
+    }
   }
 
   let dates: any[];
