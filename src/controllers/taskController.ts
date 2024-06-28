@@ -92,7 +92,7 @@ export const createTask = handleAsync(async (req: RequestCustom, res: Response) 
 
 export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response) => {
   // Extracting pagination parameters or providing default values
-  const { current = '1', pageSize = '10', country, user, billUploader, uploadTime, platform, status, code, orderTimeType, reviewType, orderType } = req.query;
+  const { current = '1', pageSize = '10', customer, country, user, billUploader, uploadTime, platform, status, code, orderTimeType, reviewType, orderType } = req.query;
 
   const queryConditions: any = {};
   if (country) {
@@ -123,6 +123,13 @@ export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response)
     const foundBillUser = await User.findOne({ name: billUploader });
     if (foundBillUser) {
       queryConditions.billUploader = foundBillUser._id;
+    }
+  }
+
+  if (customer) {
+    const foundCustomer = await User.findOne({ name: customer });
+    if (foundCustomer) {
+      queryConditions.customer = foundCustomer._id;
     }
   }
 
