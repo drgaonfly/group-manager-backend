@@ -16,6 +16,6 @@ router.patch('/:id/cancel', protect, allow([ROLES.Customer, ROLES.Admin, ROLES.C
 
 router.post('/upload-bills', protect, allow([ROLES.Admin, ROLES.CustomerService, ROLES.OrderPlacer]), uploadBillFile);
 router.post('/get-bills-data', protect, allow([ROLES.Admin, ROLES.CustomerService, ROLES.OrderPlacer]), getBillsData);
-router.patch('/:id/claim', protect, allow([ROLES.Admin, ROLES.CustomerService]), claimTask);
+router.patch('/:id/claim', protect, allow([ROLES.Admin, ROLES.CustomerService, ROLES.OrderPlacer]), claimTask);
 
 export default router;
