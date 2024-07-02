@@ -297,7 +297,22 @@ export const getBillsData = handleAsync(async (req: RequestCustom, res: Response
 
   // Save the received billFile to the task
   task.billFile = req.body.billFile;
+  const oldBillFilePath = task.billFile;
+  const billDir = path.dirname(oldBillFilePath);
 
+  const billExt = path.extname(oldBillFilePath);
+
+  // 创建新的文件路径
+  const newBillFilePath = path.join(billDir, `${task.code}ZD${billExt}`);
+
+  // 复制对象到新的文件路径
+  await ossClient.copy(newBillFilePath, oldBillFilePath);
+
+  // 删除原来的对象
+  await ossClient.delete(oldBillFilePath);
+
+  // 更新 task.billFile
+  task.billFile = newBillFilePath;
   await task.save();
 
   // Read data from the stored Excel file (assumes `task.billFile` is a path to the file)
