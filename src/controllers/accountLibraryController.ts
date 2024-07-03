@@ -1,10 +1,16 @@
 // src/controllers/accountLibraryController.ts
 import { Request, Response } from 'express';
 import handleAsync from '../utils/handleAsync';
-import AccountLibrary from '../models/accountLibrary';  // Updated import to use AccountLibrary model
+import AccountLibrary, { IAccountLibrary } from '../models/accountLibrary';  // Updated import to use AccountLibrary model
 import { RequestCustom } from 'user';
 import { readAccountExcelData } from '../utils/processExcelFile';
 import { mapCountryAndPlatform } from '../utils/mapCountryAndPlatform';
+import * as XLSX from 'xlsx';
+import { resolve } from 'path';
+import ossClient from '../utils/oss';
+import fs from "fs"
+import { generateSignedUrl } from '../utils/generateSignedUrl';
+import moment from 'moment-timezone';
 
 export const createAccount = handleAsync(async (req: RequestCustom, res: Response) => {
   const accountData = new AccountLibrary({
@@ -55,6 +61,72 @@ export const getAllAccounts = handleAsync(async (req: Request, res: Response) =>
     total,
     current: currentNum,
     pageSize: pageSizeNum
+  });
+});
+
+export const exportAccountsToExcel = handleAsync(async (req: Request, res: Response) => {
+  const { country, platform, isAbnormal, loginAccount, accountNumber, createdAt } = req.query;
+
+  const queryConditions: any = {};
+  if (country) queryConditions.country = country;
+  if (platform) queryConditions.platform = platform;
+
+  if (createdAt) {
+    const parsedDateTime = moment((createdAt as string).replace(/"/g, ''));
+    const beijingDateStart = parsedDateTime.tz("Asia/Shanghai").startOf('day').toDate();
+    const beijingDateEnd = parsedDateTime.tz("Asia/Shanghai").endOf('day').toDate();
+
+    queryConditions.createdAt = {
+      $gte: beijingDateStart,
+      $lt: beijingDateEnd
+    };
+  }
+  if (loginAccount) queryConditions.loginAccount = loginAccount;
+  if (accountNumber) queryConditions.accountNumber = accountNumber;
+  if (typeof isAbnormal === 'string' && isAbnormal !== '') {
+    queryConditions.isAbnormal = isAbnormal === 'true';  // Convert 'true'/'false' string from query to boolean
+  }
+
+  // Retrieve all accounts that match the query conditions
+  const accounts = await AccountLibrary.find(queryConditions)
+    .sort('-createdAt')
+    .exec();
+
+  const accountsPlainObjects = accounts.map((account: IAccountLibrary) => ({
+    '国家': account.country,
+    '平台': account.platform,
+    '订单账号': account.accountNumber,
+    '登录账号': account.loginAccount,
+    '登录密码': account.loginPassword,
+    '备注': account.remark,
+    '异常': account.isAbnormal ? '是' : '否',
+    '创建时间': account.createdAt,
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(accountsPlainObjects);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Accounts");
+
+  const timestamp = Date.now();
+  const path = resolve('/tmp', `accounts-${timestamp}.xlsx`);
+  XLSX.writeFile(wb, path);
+
+  // Read the file into a buffer
+  const buffer = fs.readFileSync(path);
+
+  // Upload the file to OSS
+  const newOssKey = `accounts-${timestamp}.xlsx`;
+  await ossClient.put(newOssKey, buffer);
+
+  // Clean up the temporary file
+  fs.unlinkSync(path);
+
+  // Generate the URL of the uploaded file
+  const signedURL = await generateSignedUrl(newOssKey);
+
+  res.json({
+    success: true,
+    data: { signedURL, file: newOssKey },
   });
 });
 
