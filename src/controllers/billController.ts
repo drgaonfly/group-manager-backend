@@ -270,6 +270,49 @@ export const exportBillsToExcel = handleAsync(async (req: Request, res: Response
 });
 
 
+export const deleteBills = handleAsync(async (req: Request, res: Response) => {
+  const {
+    storeName,
+    orderNumber,
+    buyerId,
+    task,
+    country,
+    uploadTime
+  } = req.body;
+
+  const queryConditions: any = {};
+  // Adding filters for storeName, orderNumber, buyerId, and task
+  if (storeName) {
+    queryConditions.storeName = { $regex: storeName, $options: 'i' }; // Case-insensitive search
+  }
+  if (orderNumber) {
+    queryConditions.orderNumber = orderNumber;
+  }
+  if (buyerId) {
+    queryConditions.buyerId = buyerId;
+  }
+  if (task) {
+    queryConditions.task = task; // Filtering by task ID
+  }
+  if (country) {
+    queryConditions.country = country; // Filtering by country within the task document
+  }
+  if (uploadTime) {
+    const parsedDateTime = moment((uploadTime as string).replace(/"/g, ''));
+    // 将日期对象转换为北京时间并格式化为年月日格式
+    const beijingDate = parsedDateTime.tz("Asia/Shanghai").format('YYYY-MM-DD');
+    queryConditions.uploadTime = beijingDate;
+  }
+
+  // Delete the bills that match the query conditions
+  const deleteResult = await Bill.deleteMany(queryConditions);
+
+  res.json({
+    success: true,
+    data: { deletedCount: deleteResult.deletedCount },
+  });
+});
+
 export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res: Response) => {
   const { reason, refundAmount, id, applicationTime } = req.body;
 

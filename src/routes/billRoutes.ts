@@ -7,7 +7,8 @@ import {
   deleteMultipleBills,
   exportBillsToExcel,
   createAfterSalesOrder,
-  updateBillsBulk
+  updateBillsBulk,
+  deleteBills
 } from '../controllers/billController';
 import { protect, allow } from '../middlewares/authMiddleware';
 import { ROLES } from "../constants";
@@ -20,6 +21,8 @@ router
   .get(protect, allow([ROLES.Admin, ROLES.Customer, ROLES.CustomerService, ROLES.OrderPlacer, ROLES.Reviewer]), getBills)  // Get list of bills
   .delete(protect, allow(ROLES.Admin), deleteMultipleBills)    // Delete multiple bills
   .post(protect, allow(ROLES.Admin), createBill);                // Add a new bill
+
+router.delete('/delete-records', protect, allow([ROLES.SuperAdmin]), deleteBills);
 
 router
   .route('/export')
