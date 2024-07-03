@@ -23,7 +23,7 @@ export const createAccount = handleAsync(async (req: RequestCustom, res: Respons
 });
 
 export const getAllAccounts = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10', country, platform, isAbnormal, loginAccount, accountNumber, createdAt } = req.query;
+  const { current = '1', pageSize = '10', country, platform, isAbnormal, loginAccount, accountNumber, createdAt, sorter } = req.query;
 
   const queryConditions: any = {};
   if (country) queryConditions.country = country;
@@ -49,11 +49,19 @@ export const getAllAccounts = handleAsync(async (req: Request, res: Response) =>
   const pageSizeNum = parseInt(pageSize as string, 10);
 
   const total = await AccountLibrary.countDocuments(queryConditions);
+  let sortCondition = '-createdAt'; // Default sort condition
+  if (sorter) {
+    const sorterObj = JSON.parse(sorter as string);
+    if (sorterObj.createdAt) {
+      sortCondition = sorterObj.createdAt === 'descend' ? '-createdAt' : 'createdAt';
+    }
+  }
+
   const accounts = await AccountLibrary.find(queryConditions)
     .populate('user', '-password')
-    .sort('-createdAt')
+    .sort(sortCondition)
     .skip((currentNum - 1) * pageSizeNum)
-    .limit(pageSizeNum);;
+    .limit(pageSizeNum);
 
   res.status(200).json({
     success: true,
