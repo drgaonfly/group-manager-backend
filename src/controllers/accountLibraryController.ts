@@ -49,11 +49,14 @@ export const getAllAccounts = handleAsync(async (req: Request, res: Response) =>
   const pageSizeNum = parseInt(pageSize as string, 10);
 
   const total = await AccountLibrary.countDocuments(queryConditions);
+
   let sortCondition = '-createdAt'; // Default sort condition
   if (sorter) {
     const sorterObj = JSON.parse(sorter as string);
     if (sorterObj.createdAt) {
       sortCondition = sorterObj.createdAt === 'descend' ? '-createdAt' : 'createdAt';
+    } else if (sorterObj.accountNumber) {
+      sortCondition = sorterObj.accountNumber === 'descend' ? '-accountNumber' : 'accountNumber';
     }
   }
 
