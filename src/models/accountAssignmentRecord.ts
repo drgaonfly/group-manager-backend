@@ -45,6 +45,8 @@ const accountAssignmentRecordSchema = new mongoose.Schema<IAccountAssignmentReco
   }
 }, { timestamps: true });
 
+accountAssignmentRecordSchema.index({ assignedTime: 1, accountLibrary: 1 }, { unique: true });
+
 // Mongoose model for AccountAssignmentRecord
 const AccountAssignmentRecord = mongoose.model<IAccountAssignmentRecord>('AccountAssignmentRecord', accountAssignmentRecordSchema);
 
