@@ -142,27 +142,47 @@ export const getBills = handleAsync(async (req: RequestCustom, res: Response) =>
 
 export const updateBill = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
-  const bill = await Bill.findById(id);
-  if (!bill) {
+  const update = { ...req.body, user: req.user._id };
+
+  // Get the old bill
+  const oldBill = await Bill.findById(id);
+
+  if (!oldBill) {
     res.status(404)
     throw new Error('Bill not found');
   }
 
-  // Update the bill with the request body
-  Object.assign(bill, req.body);
-  bill.user = req.user._id;
+  // Check if isSigned or isReviewed has changed
+  if (req.body.isSigned !== undefined && req.body.isSigned !== oldBill.isSigned) {
+    oldBill.operations.push({
+      user: req.user._id,
+      operation: 'changeIsSigned',
+      operationTime: new Date()
+    });
+  }
+
+  if (req.body.isReviewed !== undefined && req.body.isReviewed !== oldBill.isReviewed) {
+    oldBill.operations.push({
+      user: req.user._id,
+      operation: 'changeIsReviewed',
+      operationTime: new Date()
+    });
+  }
 
   // Add a new operation record
-  bill.operations.push({
+  oldBill.operations.push({
     user: req.user._id,
     operation: 'updateBill',
     operationTime: new Date()
   });
 
-  // Save the bill
-  const updatedBill = await bill.save();
+  // Save the old bill to store the operations
+  await oldBill.save();
 
-  res.json({ success: true, data: updatedBill });
+  // Update the bill and get the new bill
+  const updatedBill = await Bill.findByIdAndUpdate(id, update, { new: true, runValidators: true });
+
+  res.status(200).json({ success: true, data: updatedBill });
 });
 
 export const deleteBill = handleAsync(async (req: Request, res: Response) => {
@@ -373,26 +393,41 @@ export const createAfterSalesOrder = handleAsync(async (req: RequestCustom, res:
   });
 });
 
-export const updateBillsBulk = handleAsync(async (req: Request, res: Response) => {
+export const updateBillsBulk = handleAsync(async (req: RequestCustom, res: Response) => {
   const { ids, isSigned, isReviewed } = req.body;
 
   // 构建更新条件
   const filter = { _id: { $in: ids } };
 
-  // 构建更新内容
-  const update: any = {};
-  if (isSigned !== undefined) {
-    update.isSigned = isSigned;
-  }
-  if (isReviewed !== undefined) {
-    update.isReviewed = isReviewed;
-  }
+  // Find all bills that match the filter
+  const bills = await Bill.find(filter);
 
-  // 执行更新操作
-  const result = await Bill.updateMany(filter, update);
+  // Update each bill
+  for (const bill of bills) {
+    if (isSigned !== undefined && isSigned !== bill.isSigned) {
+      bill.isSigned = isSigned;
+      bill.operations.push({
+        user: req.user._id,
+        operation: 'changeIsSigned',
+        operationTime: new Date()
+      });
+    }
+
+    if (isReviewed !== undefined && isReviewed !== bill.isReviewed) {
+      bill.isReviewed = isReviewed;
+      bill.operations.push({
+        user: req.user._id,
+        operation: 'changeIsReviewed',
+        operationTime: new Date()
+      });
+    }
+
+    // Save the bill
+    await bill.save();
+  }
 
   res.json({
     success: true,
-    data: result,
+    data: bills,
   });
 });
