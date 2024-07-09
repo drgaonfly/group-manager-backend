@@ -152,6 +152,7 @@ export const getAllTasks = handleAsync(async (req: RequestCustom, res: Response)
 
   if (req.user.role === ROLES.OrderPlacer) {
     queryConditions.claimer = req.user._id;
+    queryConditions.status = 'Processing';
   }
 
   // Count total tasks matching the query conditions for pagination
