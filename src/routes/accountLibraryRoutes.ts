@@ -7,7 +7,8 @@ import {
   deleteAccount,
   deleteMultipleAccounts,
   uploadAccountLibrary,
-  exportAccountsToExcel
+  exportAccountsToExcel,
+  updateAccountsBulk
 } from '../controllers/accountLibraryController'; // Adjust the import path as necessary
 import { protect, allow } from '../middlewares/authMiddleware';
 import { ROLES } from '../constants';
@@ -18,6 +19,8 @@ const router = express.Router();
 router.post('/', protect, allow([ROLES.Admin]), createAccount);
 router.get('/', protect, allow([ROLES.Admin, ROLES.CustomerService]), getAllAccounts);
 router.get('/export', protect, allow([ROLES.Admin, ROLES.CustomerService]), exportAccountsToExcel);
+router.route('/bulk-setting')
+  .put(protect, allow([ROLES.Admin]), updateAccountsBulk);
 router.get('/:id', protect, allow([ROLES.Admin]), getAccountById);
 router.put('/:id', protect, allow([ROLES.Admin, ROLES.CustomerService]), updateAccount);
 router.delete('/:id', protect, allow([ROLES.Admin]), deleteAccount);

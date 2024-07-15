@@ -235,3 +235,29 @@ export const uploadAccountLibrary = handleAsync(async (req: RequestCustom, res: 
     data: accountIds
   });
 });
+
+export const updateAccountsBulk = handleAsync(async (req: RequestCustom, res: Response) => {
+  const { ids, isAbnormal } = req.body;
+
+  // 构建更新条件
+  const filter = { _id: { $in: ids } };
+
+  // Find all accounts that match the filter
+  const accounts = await AccountLibrary.find(filter);
+
+  // Update each account
+  for (const account of accounts) {
+    if (isAbnormal !== undefined && isAbnormal !== account.isAbnormal) {
+      account.isAbnormal = isAbnormal;
+    }
+
+    // Save the account
+    await account.save();
+  }
+
+  res.json({
+    success: true,
+    data: accounts,
+  });
+});
+
