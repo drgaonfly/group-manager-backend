@@ -58,6 +58,8 @@ export const getAllAccounts = handleAsync(async (req: Request, res: Response) =>
       sortCondition = sorterObj.createdAt === 'descend' ? '-createdAt' : 'createdAt';
     } else if (sorterObj.accountNumber) {
       sortCondition = sorterObj.accountNumber === 'descend' ? '-accountNumber' : 'accountNumber';
+    } else if (sorterObj.updatedAt) {
+      sortCondition = sorterObj.updatedAt === 'descend' ? '-updatedAt' : 'updatedAt';
     }
   }
 
