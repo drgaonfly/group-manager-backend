@@ -114,16 +114,21 @@ export async function readExcelData(ossKey: string): Promise<IBill[]> {
 
         worksheet.on('row', (row: any) => {
           if (row.number > 1) {
-            const storeName = row.getCell(1).value?.toString().trim();
-            const orderNumber = row.getCell(2).value?.toString().trim();
-            const amount = typeof row.getCell(3).value === 'number' ? row.getCell(3).value : 0;
+            const country = row.getCell(1).value?.toString().trim();
+            const taskSheet = row.getCell(2).value?.toString().trim();
+            const storeName = row.getCell(3).value?.toString().trim();
+            const date = row.getCell(4).value?.toString().trim();
+            const remark = row.getCell(5).value?.toString().trim();
+            const orderNumber = row.getCell(6).value?.toString().trim();
+            const amount = typeof row.getCell(7).value === 'number' ? row.getCell(7).value : 0;
             let buyerId = '';
-            const cellValue = row.getCell(4).value;
-            if (typeof cellValue === 'object' && cellValue?.richText) {
-              buyerId = cellValue.richText.map((item: any) => item.text).join('');
-            } else if (typeof cellValue === 'string') {
-              buyerId = cellValue.trim();
+            const buyerIdCellValue = row.getCell(8).value;
+            if (typeof buyerIdCellValue === 'object' && buyerIdCellValue?.richText) {
+              buyerId = buyerIdCellValue.richText.map((item: any) => item.text).join('');
+            } else if (typeof buyerIdCellValue === 'string') {
+              buyerId = buyerIdCellValue.trim();
             }
+            const customerCode = row.getCell(9).value?.toString().trim();
 
             console.dir(buyerId)
 
@@ -131,15 +136,20 @@ export async function readExcelData(ossKey: string): Promise<IBill[]> {
             console.log('orderNumber:', orderNumber);
             console.log('amount:', amount);
 
-            if (!storeName || !orderNumber || !buyerId || amount === 0) {
+            if (!country || !taskSheet || !storeName || !date || !orderNumber || amount === 0 || !buyerId || !customerCode) {
               return;
             }
 
             const bill: IBill = {
+              country,
+              taskSheet,
               storeName,
+              date,
+              remark,
               orderNumber,
               amount,
               buyerId,
+              customerCode,
             } as IBill;
             bills.push(bill);
           }

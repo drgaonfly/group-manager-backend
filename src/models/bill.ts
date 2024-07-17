@@ -4,14 +4,18 @@ import { IUser } from './user';
 
 // TypeScript interface for Bill
 export interface IBill extends Document {
+  country: string;  // 国家
+  taskSheet: string;  // 任务表
   storeName: string;  // 店铺名字
+  date: string;  // 日期
+  remark: string;  // 系统编号
   orderNumber: string;  // 订单号
   amount: number;  // 金额
   buyerId: string;  // 买手号
+  customerCode: string;  // 客户编码
   task?: mongoose.Schema.Types.ObjectId | ITask;  // 关联的任务ID
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
-  country?: string; // Country of the task
   uploadTime?: string; // Time the bill was uploaded
   user: mongoose.Schema.Types.ObjectId | IUser;
   customer: mongoose.Schema.Types.ObjectId | IUser;  // New field for the customer
@@ -105,6 +109,21 @@ const billSchema = new mongoose.Schema<IBill>({
       default: Date.now
     }
   }],
+  taskSheet: {
+    type: String,
+    required: true,
+    trim: false
+  },
+  date: {
+    type: String,
+    required: true,
+    trim: false
+  },
+  remark: {
+    type: String,
+    required: true,
+    trim: false
+  },
 }, { timestamps: true });
 
 // Mongoose model for Bill
