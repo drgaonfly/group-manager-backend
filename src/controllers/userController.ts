@@ -4,7 +4,6 @@ import User from '../models/user';
 import handleAsync from '../utils/handleAsync';
 import bcrypt from "bcrypt";
 import { exclude } from '../utils/handleData';
-import { ROLES } from '../constants';
 import { RequestCustom } from 'user';
 
 const getUsers = handleAsync(async (req: Request, res: Response) => {
@@ -19,17 +18,18 @@ const getUsers = handleAsync(async (req: Request, res: Response) => {
 
 
   if (name) {
-    query.name = { $regex: name, $options: 'i' }; 
+    query.name = { $regex: name, $options: 'i' };
   }
 
   if (live) {
-    query.live = live === 'true'; 
+    query.live = live === 'true';
   }
 
   // 执行查询
   const users = await User.find({
     ...query,
   })
+    .populate("roles")
     .sort('-createdAt')  // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)

@@ -9,6 +9,9 @@ import path from 'path'
 import userRoutes from './routes/userRoutes';
 import roleRoutes from './routes/roleRoutes';
 import authRoutes from './routes/authRoutes';
+import menuRoutes from './routes/menuRoutes';
+import permissionRoutes from './routes/permissionRoutes';
+import permissionGroupRoutes from './routes/permissionGroupRoutes';
 
 import setupDB from "./utils/db";
 import uploadRoutes from './routes/uploadRoutes';
@@ -35,7 +38,10 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/menus', menuRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/permissions',permissionRoutes);
+app.use('/api/permission-groups',permissionGroupRoutes);
 
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));

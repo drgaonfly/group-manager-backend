@@ -6,10 +6,7 @@ export interface IMenu extends Document {
   path: string;
   icon?: string;
   parent?: IMenu;
-  parentId?: number;
-  children: IMenu[];
   permission: IPermission;
-  permissionId: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -19,9 +16,7 @@ const menuSchema = new mongoose.Schema({
   path: { type: String, required: true },
   icon: { type: String },
   parent: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu' },
-  parentId: { type: Number },
-  children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Menu' }],
-  permission: { type: mongoose.Schema.Types.ObjectId, ref: 'Permission' },
+  permission: { type: mongoose.Schema.Types.ObjectId, ref: 'Permission', required: true },
 }, { timestamps: true });
 
 const Menu = mongoose.model<IMenu>('Menu', menuSchema);
