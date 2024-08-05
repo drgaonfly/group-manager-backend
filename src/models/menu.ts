@@ -4,8 +4,7 @@ import { IPermission } from './permission';
 export interface IMenu extends Document {
   name: string;
   path: string;
-  icon?: string;
-  parent?: IMenu;
+  parent: IMenu;
   permission: IPermission;
   createdAt?: Date;
   updatedAt?: Date;
@@ -14,7 +13,6 @@ export interface IMenu extends Document {
 const menuSchema = new mongoose.Schema({
   name: { type: String, required: true },
   path: { type: String, required: true },
-  icon: { type: String },
   parent: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu' },
   permission: { type: mongoose.Schema.Types.ObjectId, ref: 'Permission', required: true },
 }, { timestamps: true });

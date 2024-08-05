@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import Permission from '../models/permission';
 import handleAsync from '../utils/handleAsync';
-import { exclude } from '../utils/handleData';
 
 const getPermissions = handleAsync(async (req: Request, res: Response) => {
   const { name, path, action, current = '1', pageSize = '10' } = req.query;
@@ -32,7 +31,7 @@ const getPermissions = handleAsync(async (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    data: permissions.map(permission => exclude(permission.toObject(), 'permissionGroup')),
+    data: permissions,
     total,
     current: +current,
     pageSize: +pageSize,

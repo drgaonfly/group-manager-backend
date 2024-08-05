@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import PermissionGroup from '../models/permission-group';
+import PermissionGroup from '../models/permissionGroup';
 import handleAsync from '../utils/handleAsync';
 import { exclude } from '../utils/handleData';
 

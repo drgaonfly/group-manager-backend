@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import { IPermission } from './permission';
-import { IDataPermission } from './data-permission';
+import { IDataPermission } from './dataPermission';
 
 export interface IRole extends Document {
   name: string;

@@ -18,11 +18,16 @@ const getMenus = handleAsync(async (req: Request, res: Response) => {
 
   if (parent) {
     query.parent = parent;
+    console.log('hi')
+    console.log(parent)
+  }else{
+    console.log('parent is not exist')
   }
 
   // 执行查询
   const menus = await Menu.find(query)
     .populate("permission")
+    .populate("parent")  // 填充 parent 字段
     .sort('-createdAt')  // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -32,7 +37,7 @@ const getMenus = handleAsync(async (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    data: menus.map(menu => exclude(menu.toObject())),
+    data: menus,
     total,
     current: +current,
     pageSize: +pageSize,
@@ -40,12 +45,11 @@ const getMenus = handleAsync(async (req: Request, res: Response) => {
 });
 
 const addMenu = handleAsync(async (req: Request, res: Response) => {
-  const { name, path, icon, parent, permission } = req.body;
+  const { name, path, parent, permission } = req.body;
 
   const newMenu = new Menu({
     name,
     path,
-    icon,
     parent,
     permission,
   });
@@ -59,7 +63,7 @@ const addMenu = handleAsync(async (req: Request, res: Response) => {
 });
 
 const getMenuById = handleAsync(async (req: Request, res: Response) => {
-  const menu = await Menu.findById(req.params.id).populate("permission");
+  const menu = await Menu.findById(req.params.id).populate("permission").populate("parent");
 
   if (!menu) {
     res.status(404);
@@ -74,13 +78,13 @@ const getMenuById = handleAsync(async (req: Request, res: Response) => {
 
 const updateMenu = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, path, icon, parent, permission } = req.body;
+  const { name, path, parent, permission } = req.body;
 
   const updatedMenu = await Menu.findByIdAndUpdate(
     id,
-    { name, path, icon, parent, permission },
+    { name, path, parent, permission },
     { new: true }
-  ).populate("permission");
+  ).populate("permission").populate("parent");
 
   if (!updatedMenu) {
     res.status(404);

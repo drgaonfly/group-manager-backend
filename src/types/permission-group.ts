@@ -1,5 +1,5 @@
 import {Request} from "express"
-import {IPermissionGroup} from "../models/permission-group";
+import {IPermissionGroup} from "../models/permissionGroup";
 
 
 export interface RequestCustom extends Request

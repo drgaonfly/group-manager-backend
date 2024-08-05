@@ -1,5 +1,5 @@
 import mongoose, { Document } from 'mongoose';
-import { IPermissionGroup } from './permission-group';
+import { IPermissionGroup } from './permissionGroup';
 
 
 export interface IPermission extends Document {
