@@ -53,6 +53,7 @@
     "deploy": "npm run build && npx vercel --prod",
     "lint-staged": "lint-staged",
     "prettier": "prettier --config .prettierrc --write .",
+    "vercel:deploy": "npm run build && cp -a src/uploads dist && npx vercel --prod",
     "prepare": "husky"
   },
   "author": "",
