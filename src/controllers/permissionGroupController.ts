@@ -56,22 +56,6 @@ const getPermissionGroups = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-const addChildrenKeyToPermissionGroup = async (array: string | any[]) => {
-  for (let i = 0; i < array.length; i++) {
-    const permissions = await Permission.find({permissionGroup: array[i]._id}).exec();
-    if (permissions?.length > 0) {
-      if (array[i].children === undefined || array[i].children?.length === 0) {
-        array[i].children = permissions;
-      }
-    }
-
-    if (array[i].children && array[i].children.length > 0) {
-      addChildrenKeyToPermissionGroup(array[i].children);
-    }
-  }
-  return array
-}
-
 
 const getPermissionGroupsList = handleAsync(async (req: Request, res: Response) => {
 
