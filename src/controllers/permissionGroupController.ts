@@ -4,7 +4,6 @@ import handleAsync from '../utils/handleAsync';
 import Permission from '../models/permission';
 
 // 获取权限组列表
-// 获取权限组列表
 const getPermissionGroups = handleAsync(async (req: Request, res: Response) => {
   const { name, parent, current = '1', pageSize = '10' } = req.query;
   const query: any = {};
