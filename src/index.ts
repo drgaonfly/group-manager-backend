@@ -16,6 +16,7 @@ import permissionGroupRoutes from './routes/permissionGroupRoutes';
 import setupDB from "./utils/db";
 import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
+import materialCategoryRoutes from './routes/materialCategoryRoutes';
 
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/permissions',permissionRoutes);
 app.use('/api/permission-groups',permissionGroupRoutes);
 app.use('/api/data-permissions',dataPermissionRoutes);
+app.use('/api/material-categories',materialCategoryRoutes);
 
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));

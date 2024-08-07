@@ -14,6 +14,8 @@ const getChildren = async (parentId: string | null): Promise<IMenu[]> => {
   }));
 };
 
+
+
 const getMenus = handleAsync(async (req: Request, res: Response) => {
   const { name, path, parent, current = '1', pageSize = '10' } = req.query;
 
