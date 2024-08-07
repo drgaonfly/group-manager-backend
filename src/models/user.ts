@@ -1,6 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 
 export interface IUser extends Document {
+  [x: string]: any;
   roles: any;
   email: string;
   password: string;

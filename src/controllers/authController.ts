@@ -64,11 +64,17 @@ const refreshToken = handleAsync(async (req: Request, res: Response) => {
   }
 });
 
+
 const getUserProfile = handleAsync(async (req: RequestCustom, res: Response) => {
   // 确保在请求处理流程中间件中已经添加了解析 JWT 并设置 req.user
-  const user: IUser | null = await User.findById(req.user?._id);
+  const user: IUser | null = await User.findById(req.user?._id)
+    .populate('roles') // 预加载 roles 字段
+    .exec();
 
   if (user) {
+    // 再次预加载 permissions 字段，因为 roles 已经被预加载
+    await user.populate('roles.permissions');
+
     res.json({
       success: true,
       data: {
