@@ -49,7 +49,7 @@ const getMaterialCategories = handleAsync(
         children.map(async (child) => {
           const childWithChildren = child.toObject();
           childWithChildren.children = await getChildren(child._id);
-          return childWithChildren;
+          return await transformDocumentImage(childWithChildren, 'image');
         }),
       );
     };
