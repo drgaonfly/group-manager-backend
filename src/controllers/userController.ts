@@ -2,39 +2,33 @@
 import { Request, Response } from 'express';
 import User from '../models/user';
 import handleAsync from '../utils/handleAsync';
-import bcrypt from "bcrypt";
+import bcrypt from 'bcrypt';
 import { exclude } from '../utils/handleData';
 import { RequestCustom } from 'user';
 
-const buildQuery = (queryParams: any): any => {
+const getUsers = handleAsync(async (req: Request, res: Response) => {
+  const { email, name, live, current = '1', pageSize = '10' } = req.query;
+
   const query: any = {};
 
-  if (queryParams.email) {
-    query.email = { $regex: queryParams.email, $options: 'i' };
+  if (email) {
+    query.email = email;
   }
 
-  if (queryParams.name) {
-    query.name = { $regex: queryParams.name, $options: 'i' };
+  if (name) {
+    query.name = { $regex: name, $options: 'i' };
   }
 
-  if (queryParams.live) {
-    query.live = queryParams.live === 'true';
+  if (live) {
+    query.live = live === 'true';
   }
-
-  return query;
-};
-
-const getUsers = handleAsync(async (req: Request, res: Response) => {
-
-  const { current = '1', pageSize = '10' } = req.query;
- const query = buildQuery(req.query);
 
   // 执行查询
   const users = await User.find({
     ...query,
   })
-    .populate("roles")
-    .sort('-createdAt')  // Sort by creation time in descending order
+    .populate('roles')
+    .sort('-createdAt') // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
@@ -45,7 +39,7 @@ const getUsers = handleAsync(async (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    data: users.map(user => exclude(user.toObject(), 'password')),
+    data: users.map((user) => exclude(user.toObject(), 'password')),
     total,
     current: +current,
     pageSize: +pageSize,
@@ -96,7 +90,7 @@ const getUserById = handleAsync(async (req: Request, res: Response) => {
 
 const updateUser = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  // const { password, name, email, live, roles, priceList } = req.body;
+  const { password, name, email, live, roles, priceList } = req.body;
 
   const user = await User.findById(id);
 
@@ -107,15 +101,17 @@ const updateUser = handleAsync(async (req: Request, res: Response) => {
 
   let hashPassword = user.password;
 
-  if (req.body.password) {
+  if (password) {
     const salt = await bcrypt.genSalt(10);
-    hashPassword = await bcrypt.hash(req.body.password, salt);
+    hashPassword = await bcrypt.hash(password, salt);
   }
+
+  const newRoles = roles ? roles : user.roles;
 
   const updatedUser = await User.findByIdAndUpdate(
     id,
-    { ...req.body },
-    { new: true }
+    { name, email, password: hashPassword, live, roles: newRoles, priceList },
+    { new: true },
   );
 
   res.json({
@@ -123,7 +119,6 @@ const updateUser = handleAsync(async (req: Request, res: Response) => {
     data: updatedUser,
   });
 });
-
 
 const deleteUser = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -156,5 +151,11 @@ const deleteMultipleUsers = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-
-export { deleteMultipleUsers, updateUser, deleteUser, getUsers, addUser, getUserById }
+export {
+  deleteMultipleUsers,
+  updateUser,
+  deleteUser,
+  getUsers,
+  addUser,
+  getUserById,
+};
