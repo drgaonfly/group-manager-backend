@@ -33,31 +33,28 @@ const getPermissionGroups = handleAsync(async (req: Request, res: Response) => {
 
   const total = await PermissionGroup.countDocuments(query).exec();
 
-  const getChildren = async (parentId: string | null): Promise<any[]> => {
+  // 递归函数来获取子权限组
+  const getChildren = async (parentId: string | null) => {
     const children = await PermissionGroup.find({ parent: parentId })
       .populate('parent')
       .exec();
     return Promise.all(
-      children.map(async (child) => ({
-        ...child.toObject(),
-        children: await getChildren(child._id),
-      })),
+      children.map(async (child) => {
+        const childWithChildren = child.toObject();
+        childWithChildren.children = await getChildren(child._id);
+        return childWithChildren;
+      }),
     );
   };
 
-  const getPermissionGroupsWithChildren = async (
-    permissionGroups: any[],
-  ): Promise<any[]> => {
-    return Promise.all(
-      permissionGroups.map(async (permissionGroup) => ({
-        ...permissionGroup.toObject(),
-        children: await getChildren(permissionGroup._id),
-      })),
-    );
-  };
-
-  const permissionGroupsWithChildren =
-    await getPermissionGroupsWithChildren(permissionGroups);
+  // 获取所有权限组及其子权限组
+  const permissionGroupsWithChildren = await Promise.all(
+    permissionGroups.map(async (permissionGroup) => {
+      const groupWithChildren = permissionGroup.toObject();
+      groupWithChildren.children = await getChildren(permissionGroup._id);
+      return groupWithChildren;
+    }),
+  );
 
   res.json({
     success: true,
@@ -71,93 +68,52 @@ const getPermissionGroups = handleAsync(async (req: Request, res: Response) => {
 const getPermissionGroupsList = handleAsync(
   async (req: Request, res: Response) => {
     // 获取所有根权限组
-    const permissionGroups = await PermissionGroup.find({ parent: null })
+    const rootGroups = await PermissionGroup.find({ parent: null })
       .sort('-createdAt') // 按创建时间降序排序
       .exec();
 
-const getPermissionGroupsList = handleAsync(async (req: Request, res: Response) => {
+    const total = await PermissionGroup.countDocuments({ parent: null }).exec();
 
-  // 获取所有根权限组
-  const rootGroups = await PermissionGroup.find({ parent: null })
-    .sort('-createdAt')      // 按创建时间降序排序
-    .exec();
-
-  const total = await PermissionGroup.countDocuments({ parent: null }).exec();
-
-  // 递归函数来获取子权限组
-  const getChildren = async (parentId: string | null) => {
-    const children = await PermissionGroup.find({ parent: parentId }).exec();
-    return Promise.all(children.map(async (child) => {
-      const childWithChildren = child.toObject();
-
-      const permissions = await Permission.find({ PermissionGroup: child._id }).exec();
-      console.log("permissions", permissions)
-      if (permissions.length > 0) {
-        childWithChildren.children = permissions;
-      } else {
-        childWithChildren.children = await getChildren(child._id);
-      }
-
-      return childWithChildren;
-    }));
-  };
-
-  // 获取所有根权限组及其子权限组或权限
-  const permissionGroupsWithChildrenOrPermissions = await Promise.all(rootGroups.map(async (rootGroup) => {
-    const groupWithChildren = rootGroup.toObject();
-
-    groupWithChildren.children = await getChildren(rootGroup._id);
-
-    return groupWithChildren;
-  }));
-
-  res.json({
-    success: true,
-    data: permissionGroupsWithChildrenOrPermissions,
-    total
-  });
-});
-
-    const getChildren = async (parentId: string | null): Promise<any[]> => {
-      const children = await PermissionGroup.find({ parent: parentId })
-        .populate('parent')
-        .exec();
+    // 递归函数来获取子权限组
+    const getChildren = async (parentId: string | null) => {
+      const children = await PermissionGroup.find({ parent: parentId }).exec();
       return Promise.all(
         children.map(async (child) => {
-          const childObj = child.toObject();
+          const childWithChildren = child.toObject();
+
           const permissions = await Permission.find({
-            permissionGroup: child._id,
+            PermissionGroup: child._id,
           }).exec();
-          return {
-            ...childObj,
-            children:
-              permissions.length > 0
-                ? permissions
-                : await getChildren(child._id),
-          };
+          console.log('permissions', permissions);
+          if (permissions.length > 0) {
+            childWithChildren.children = permissions;
+          } else {
+            childWithChildren.children = await getChildren(child._id);
+          }
+
+          return childWithChildren;
         }),
       );
     };
 
-    const getPermissionGroupsWithChildren = async (
-      permissionGroups: any[],
-    ): Promise<any[]> => {
-      return Promise.all(
-        permissionGroups.map(async (permissionGroup) => {
-          const permissionGroupObj = permissionGroup.toObject();
-          const permissions = await Permission.find({
-            permissionGroup: permissionGroup._id,
-          }).exec();
-          return {
-            ...permissionGroupObj,
-            children:
-              permissions.length > 0
-                ? permissions
-                : await getChildren(permissionGroup._id),
-          };
-        }),
-      );
-    };
+    // 获取所有根权限组及其子权限组或权限
+    const permissionGroupsWithChildrenOrPermissions = await Promise.all(
+      rootGroups.map(async (rootGroup) => {
+        const groupWithChildren = rootGroup.toObject();
+
+        groupWithChildren.children = await getChildren(rootGroup._id);
+
+        return groupWithChildren;
+      }),
+    );
+
+    res.json({
+      success: true,
+      data: permissionGroupsWithChildrenOrPermissions,
+      total,
+    });
+  },
+);
 
 // 添加权限组
 const addPermissionGroup = handleAsync(async (req: Request, res: Response) => {
@@ -193,14 +149,15 @@ const getPermissionGroupById = handleAsync(
 );
 
 // 更新权限组
-const updatePermissionGroup = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+const updatePermissionGroup = handleAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
 
-  const updatedPermissionGroup = await PermissionGroup.findByIdAndUpdate(
-    id,
-    { ...req.body },
-    { new: true }
-  ).populate("parent");
+    const updatedPermissionGroup = await PermissionGroup.findByIdAndUpdate(
+      id,
+      { ...req.body },
+      { new: true },
+    ).populate('parent');
 
     if (!updatedPermissionGroup) {
       res.status(404);

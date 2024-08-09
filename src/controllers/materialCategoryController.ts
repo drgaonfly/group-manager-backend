@@ -22,7 +22,6 @@ const getChildren = async (
   );
 };
 
-
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
@@ -57,10 +56,6 @@ const getMaterialCategories = handleAsync(
       .limit(+pageSize)
       .exec();
 
-const getMaterialCategories = handleAsync(
-  async (req: Request, res: Response) => {
-    const { current = '1', pageSize = '10' } = req.query;
-
     const total = await MaterialCategory.countDocuments(query).exec();
 
     // 获取所有分类及其子分类，并处理 image 字段
@@ -72,7 +67,6 @@ const getMaterialCategories = handleAsync(
       }),
     );
 
-
     res.json({
       success: true,
       data: categoriesWithChildren,
@@ -83,27 +77,25 @@ const getMaterialCategories = handleAsync(
   },
 );
 
-const addMaterialCategory = handleAsync(
-  async (req: Request, res: Response) => {
-    const { image, ...rest } = req.body;
+const addMaterialCategory = handleAsync(async (req: Request, res: Response) => {
+  const { image, ...rest } = req.body;
 
-    const newCategory = new MaterialCategory({
-      ...rest,
-      image, // 使用 image 字段初始化 image 属性
-    });
+  const newCategory = new MaterialCategory({
+    ...rest,
+    image, // 使用 image 字段初始化 image 属性
+  });
 
-    console.log('newCategory', newCategory);
+  console.log('newCategory', newCategory);
 
-    const savedCategory = await newCategory.save();
+  const savedCategory = await newCategory.save();
 
-    console.log('savedCategory', savedCategory);
+  console.log('savedCategory', savedCategory);
 
-    res.json({
-      success: true,
-      data: savedCategory,
-    });
-  }
-);
+  res.json({
+    success: true,
+    data: savedCategory,
+  });
+});
 
 const getMaterialCategoryById = handleAsync(
   async (req: Request, res: Response) => {
@@ -132,7 +124,7 @@ const updateMaterialCategory = handleAsync(
     const updatedCategory = await MaterialCategory.findByIdAndUpdate(
       id,
       updateData, // 更新字段和新值
-      { new: true } // 选项：返回更新后的文档
+      { new: true }, // 选项：返回更新后的文档
     );
 
     if (!updatedCategory) {
@@ -144,9 +136,8 @@ const updateMaterialCategory = handleAsync(
       success: true,
       data: updatedCategory,
     });
-  }
+  },
 );
-
 
 const deleteMaterialCategory = handleAsync(
   async (req: Request, res: Response) => {
