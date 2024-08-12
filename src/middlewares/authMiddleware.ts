@@ -46,6 +46,7 @@ const protect = handleAsync(
         }
 
         req.user = user;
+        console.log('User is', user);
         next();
       } catch (error) {
         console.error(error);

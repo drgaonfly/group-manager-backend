@@ -24,7 +24,9 @@ const getChildren = async (parentId: string | null): Promise<IMenu[]> => {
 const fetchMenus = handleAsync(async (req: RequestCustom, res: Response) => {
   const query = buildQuery(req.query);
 
-  const menus = await Menu.find(query).populate('parent');
+  const menus = await Menu.find(query)
+    .populate('parent')
+    .populate('permission');
 
   const menusWithChildren = await Promise.all(
     menus.map(async (menu) => {
@@ -33,8 +35,6 @@ const fetchMenus = handleAsync(async (req: RequestCustom, res: Response) => {
       return menuWithChildren;
     }),
   );
-
-  console.log(menusWithChildren);
 
   res.json({
     success: true,

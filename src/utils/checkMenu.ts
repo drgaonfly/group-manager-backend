@@ -23,10 +23,10 @@ const checkMenu = (menus: IMenu[], user: IUser): IMenu[] => {
         (role: IRole) =>
           role.permissions &&
           role.permissions.some((permission) => {
-            console.log(permission._id.toString());
-            console.log(menu.permission.toString());
-            console.log('\n');
-            return permission._id === menu.permission;
+            return (
+              permission.path === menu.permission.path &&
+              permission.action === menu.permission.action
+            );
           }),
       )
     ) {
