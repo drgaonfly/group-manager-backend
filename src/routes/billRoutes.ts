@@ -12,6 +12,8 @@ import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
 
+router.route('/fetch').get(protect, fetchBills);
+
 router
   .route('/')
   .get(protect, checkPermission, getBills)
