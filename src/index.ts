@@ -17,6 +17,7 @@ import setupDB from './utils/db';
 import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
 import billRoutes from './routes/billRoutes';
+import botRoutes from './routes/botRoutes';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/permission-groups', permissionGroupRoutes);
 app.use('/api/data-permissions', dataPermissionRoutes);
 app.use('/api/bills', billRoutes);
+app.use('/api/bots', botRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
