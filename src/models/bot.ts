@@ -7,6 +7,7 @@ export interface IBot extends Document {
   botName: string; // 机器人名称
   telegramId: string; // telegram ID
   telegramUsername: string; // telegram username
+  description?: string; // 机器人描述
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -42,6 +43,11 @@ const botSchema = new mongoose.Schema(
       type: String,
       required: false,
       comment: 'telegram username',
+    },
+    description: {
+      type: String,
+      required: false,
+      comment: '机器人描述',
     },
   },
   { timestamps: true },
