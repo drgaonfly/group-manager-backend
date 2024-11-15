@@ -1,6 +1,6 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../types';
-import { mainMenu } from '../../../menus/mainMenu';
+import { mainMenu } from '../../menus/mainMenu';
 
 const startCommand = new Composer<MyContext>();
 

@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import createDebug from 'debug';
 import startCommand from './bot/commands/user/start';
+import logger from './bot/middlewares/logger';
+import helpCommand from './bot/commands/user/help';
 
 dotenv.config();
 
@@ -40,12 +42,20 @@ if (SOCKS_PROXY_URL) {
   console.log('Bot 未使用代理。');
 }
 
-bot.use(startCommand);
+bot.use(logger);
+
+bot.use(startCommand.middleware());
+bot.use(helpCommand.middleware());
 
 // bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
 
 // 回复任何消息 "Hi there!"。
 bot.on('message', (ctx) => ctx.reply('Hi there!'));
+
+bot.on('callback_query:data', async (ctx) => {
+  const data = ctx.callbackQuery?.data;
+  await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
+});
 
 const debug = createDebug('bot:dev');
 
