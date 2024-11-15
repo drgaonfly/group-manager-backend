@@ -7,10 +7,12 @@ export interface IBill extends Document {
   transactionType: string; // 交易类型
   createdAt?: Date;
   updatedAt?: Date;
+  isOnline: boolean; // 是否在线
 }
 
 const billSchema = new mongoose.Schema(
   {
+    isOnline: { type: Boolean, required: true, default: false },
     amount: { type: Number, required: true },
     rate: { type: Number, required: true }, // 费率
     fixedRate: { type: Number, required: true }, // 固定汇率

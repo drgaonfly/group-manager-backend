@@ -10,10 +10,12 @@ export interface IBot extends Document {
   description?: string; // 机器人描述
   createdAt?: Date;
   updatedAt?: Date;
+  isOnline: boolean; // 是否在线
 }
 
 const botSchema = new mongoose.Schema(
   {
+    isOnline: { type: Boolean, required: true, default: false },
     botId: {
       type: String,
       required: false,

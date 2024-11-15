@@ -9,10 +9,12 @@ export interface IChat extends Document {
   username?: string; // 用户名
   createdAt?: Date; // 创建时间
   updatedAt?: Date; // 更新时间
+  isOnline: boolean; // 是否在线
 }
 
 const chatSchema = new mongoose.Schema(
   {
+    isOnline: { type: Boolean, required: true, default: false },
     chatId: {
       type: Number,
       required: true,

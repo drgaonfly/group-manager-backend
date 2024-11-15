@@ -11,10 +11,12 @@ export interface ICustomer extends Document {
   balance: number; // 余额
   createdAt?: Date; // 创建时间
   updatedAt?: Date; // 更新时间
+  isOnline: boolean; // 是否在线
 }
 
 const customerSchema = new Schema<ICustomer>(
   {
+    isOnline: { type: Boolean, required: true, default: false },
     userId: {
       type: Number,
       required: true,
