@@ -26,19 +26,6 @@ const buildQuery = async (queryParams: any): Promise<any> => {
   if (queryParams.languageCode) {
     query.languageCode = { $regex: queryParams.languageCode, $options: 'i' };
   }
-
-  if (queryParams.bot) {
-    query.bot = queryParams.bot; // 精确匹配机器人ID
-  }
-  // if (platform) {
-  //   const platformData = await Order.find({ name: platform });
-  //   if (platformData && platformData.length > 0) {
-  //     queryConditions.platform = {
-  //       $in: platformData.map((platform) => platform._id),
-  //     };
-  //   } else {
-  //     res.status(200).json({ success: true, data: [], total: 0 });
-  //   }
   if (queryParams.bot) {
     const botData = await Bot.find({ botName: queryParams.bot });
     if (botData && botData.length > 0) {
