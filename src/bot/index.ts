@@ -6,6 +6,7 @@ import logger from './middlewares/logger';
 import adminComposer from './commands/admin';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
+import { commandsList } from './commandsList';
 
 dotenv.config();
 
@@ -59,6 +60,15 @@ bot.on('callback_query:data', async (ctx) => {
   const data = ctx.callbackQuery?.data;
   await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
 });
+
+bot.api
+  .setMyCommands(commandsList)
+  .then(() => {
+    console.log('命令已设置成功');
+  })
+  .catch((error) => {
+    console.error('设置命令时发生错误:', error);
+  });
 
 const debug = createDebug('bot:dev');
 
