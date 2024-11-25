@@ -21,6 +21,7 @@ const getRoles = handleAsync(async (req: Request, res: Response) => {
 
   const roles = await Role.find(query)
     .populate('permissions')
+    .populate('dataPermissions')
     .sort('-createdAt') // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
