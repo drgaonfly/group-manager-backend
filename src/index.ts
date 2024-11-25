@@ -12,6 +12,7 @@ import authRoutes from './routes/authRoutes';
 import menuRoutes from './routes/menuRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import permissionGroupRoutes from './routes/permissionGroupRoutes';
+import customerRoutes from './routes/customerRoutes';
 
 import setupDB from './utils/db';
 import uploadRoutes from './routes/uploadRoutes';
@@ -41,6 +42,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/permission-groups', permissionGroupRoutes);
 app.use('/api/data-permissions', dataPermissionRoutes);
+app.use('/api/customers', customerRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
