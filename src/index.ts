@@ -17,6 +17,7 @@ import teacherRoutes from './routes/teacherRoutes';
 import lessonRoutes from './routes/lessonsRoutes';
 import commentRoutes from './routes/commentRoutes';
 import vipMemberRoutes from './routes/vipMemberRoutes';
+import resumeRoutes from './routes/resumeRoutes';
 
 import setupDB from './utils/db';
 import uploadRoutes from './routes/uploadRoutes';
@@ -51,6 +52,7 @@ app.use('/api/teachers', teacherRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/vip-members', vipMemberRoutes);
+app.use('/api/resumes', resumeRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
