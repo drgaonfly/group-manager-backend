@@ -142,7 +142,7 @@ const getVipMemberById = handleAsync(async (req: Request, res: Response) => {
 // 更新 VIP 会员
 const updateVipMember = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { level, endDate, isActive, amount } = req.body;
+  const { level, endDate, isActive, amount, customer } = req.body;
 
   try {
     const vipMember = await VipMember.findById(id);
@@ -177,6 +177,15 @@ const updateVipMember = handleAsync(async (req: Request, res: Response) => {
         throw new Error('金额必须是非负数');
       }
       updateData.amount = vipAmount;
+    }
+
+    // 添加客户更新逻辑
+    if (customer) {
+      const customerExists = await Customer.findById(customer);
+      if (!customerExists) {
+        throw new Error('客户不存在');
+      }
+      updateData.customer = customer;
     }
 
     const updatedVipMember = await VipMember.findByIdAndUpdate(id, updateData, {

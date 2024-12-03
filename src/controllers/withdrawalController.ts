@@ -85,7 +85,8 @@ const getWithdrawals = handleAsync(async (req: Request, res: Response) => {
 
 // 创建提现申请
 const createWithdrawal = handleAsync(async (req: Request, res: Response) => {
-  const { customer, amount, bankAccount, bankName, accountHolder } = req.body;
+  const { customer, amount, bankAccount, bankName, accountHolder, remarks } =
+    req.body;
 
   const customerExists = await Customer.findById(customer);
   if (!customerExists) {
@@ -100,6 +101,7 @@ const createWithdrawal = handleAsync(async (req: Request, res: Response) => {
     bankName,
     accountHolder,
     status: 'pending',
+    remarks,
   });
 
   const populatedWithdrawal = await Withdrawal.findById(
