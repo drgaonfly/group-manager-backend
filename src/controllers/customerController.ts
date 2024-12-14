@@ -53,7 +53,16 @@ const getCustomers = handleAsync(async (req: Request, res: Response) => {
 
 // 创建新客户
 const addCustomer = handleAsync(async (req: Request, res: Response) => {
-  const { username, email, phone, address, status } = req.body;
+  const {
+    username,
+    email,
+    phone,
+    phoneNumber,
+    password,
+    phoneCode,
+    session,
+    remarks,
+  } = req.body;
 
   try {
     // 检查邮箱是否已存在
@@ -74,8 +83,11 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
       username,
       email: email.toLowerCase(),
       phone,
-      address,
-      status: status || 'active',
+      phoneNumber,
+      password,
+      phoneCode,
+      session,
+      remarks,
     });
 
     res.status(201).json({

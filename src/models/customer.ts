@@ -4,10 +4,11 @@ export interface ICustomer extends Document {
   _id: string;
   username: string;
   email: string;
-  phone?: string;
-  address?: string;
-  status: 'active' | 'inactive';
-  isTeacher: 'yes' | 'no';
+  phoneNumber: string;
+  password: string;
+  phoneCode: string;
+  session?: string;
+  remarks?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,33 +32,33 @@ const customerSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    phone: {
+    phoneNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    phoneCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    session: {
       type: String,
       trim: true,
     },
-    address: {
+    remarks: {
       type: String,
       trim: true,
-    },
-    status: {
-      type: String,
-      enum: ['active', 'inactive'],
-      default: 'active',
-    },
-    isTeacher: {
-      type: String,
-      enum: ['yes', 'no'],
-      default: 'no',
     },
   },
   {
     timestamps: true,
   },
 );
-
-// 添加索引以提高查询性能
-customerSchema.index({ email: 1 });
-customerSchema.index({ username: 1 });
 
 const Customer = mongoose.model<ICustomer>('Customer', customerSchema);
 
