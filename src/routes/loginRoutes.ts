@@ -4,6 +4,6 @@ import { login } from '../controllers/telegramController';
 
 const router = express.Router();
 
-router.post('/login', login); // 添加新的登录路由
+router.post('/auth/two-factor-login', login); // 添加新的登录路由
 
 export default router;
