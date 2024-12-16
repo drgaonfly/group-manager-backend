@@ -19,8 +19,7 @@ export const sendAuthCode = handleAsync(async (req: Request, res: Response) => {
     new Api.auth.SendCode({
       phoneNumber: phoneNumber,
       apiId: parseInt(process.env.TELEGRAM_API_ID || '94575'),
-      apiHash:
-        process.env.TELEGRAM_API_HASH || 'a3406de8d171bb422bb6ddf3bbd800e2',
+      apiHash: process.env.API_HASH || 'a3406de8d171bb422bb6ddf3bbd800e2',
       settings: new Api.CodeSettings({
         allowFlashcall: true,
         currentNumber: true,
@@ -83,10 +82,10 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     },
   });
 
-  console.log("You should now be connected.");
+  console.log('You should now be connected.');
   const session = client.session.save();
   console.log(client.session.save()); // Save this string to avoid logging in again
-  await client.sendMessage("me", { message: "Hello!" });
+  await client.sendMessage('me', { message: 'Hello!' });
 
   res.json({
     success: true,
