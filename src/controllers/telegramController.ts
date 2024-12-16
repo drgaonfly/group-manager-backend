@@ -39,8 +39,6 @@ export const sendAuthCode = handleAsync(async (req: Request, res: Response) => {
     }),
   );
 
-  await client.disconnect();
-
   res.json({
     success: true,
     data: result,
@@ -73,14 +71,12 @@ export const signIn = handleAsync(async (req: Request, res: Response) => {
   )) as Api.auth.TypeAuthorization;
 
   // 获取会话字符串以供将来使用
-  const sessionString = client.session.save();
-
-  await client.disconnect();
+  // const sessionString = client.session.save();
 
   res.json({
     success: true,
     data: {
-      session: sessionString,
+      // session: sessionString,
       result: signInResult,
     },
   });
@@ -111,17 +107,16 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   });
 
   // 获取会话字符串
-  const sessionString = client.session.save();
+  // const sessionString = client.session.save();
 
   // 发送测试消息到自己
-  await client.sendMessage('me', { message: 'Login successful!' });
+  // await client.sendMessage('me', { message: 'Login successful!' });
 
-  await client.disconnect();
+  // await client.disconnect();
 
   res.json({
     success: true,
     data: {
-      session: sessionString,
       message: 'Login successful',
     },
   });
