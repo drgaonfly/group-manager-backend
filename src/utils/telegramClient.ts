@@ -4,9 +4,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const API_ID = process.env.TELEGRAM_API_ID || '94575';
-const API_HASH =
-  process.env.TELEGRAM_API_HASH || 'a3406de8d171bb422bb6ddf3bbd800e2';
+const API_ID = process.env.API_ID || '94575';
+const API_HASH = process.env.API_HASH || 'a3406de8d171bb422bb6ddf3bbd800e2';
 
 const session = new StringSession('');
 export const client = new TelegramClient(session, parseInt(API_ID), API_HASH, {
