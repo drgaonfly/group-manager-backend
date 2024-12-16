@@ -1,29 +1,26 @@
 import { Request, Response } from 'express';
-import { Api, TelegramClient } from 'telegram';
-import { StringSession } from 'telegram/sessions';
+import { Api } from 'telegram';
 import handleAsync from '../utils/handleAsync';
+import { client } from '../utils/telegramClient';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
-const API_ID = process.env.TELEGRAM_API_ID || '94575';
-const API_HASH =
-  process.env.TELEGRAM_API_HASH || 'a3406de8d171bb422bb6ddf3bbd800e2';
 
 // 发送验证码
 export const sendAuthCode = handleAsync(async (req: Request, res: Response) => {
   const { phoneNumber } = req.body;
 
-  const session = new StringSession('');
-  const client = new TelegramClient(session, parseInt(API_ID), API_HASH, {});
-
-  await client.connect();
+  if (!phoneNumber) {
+    res.status(400);
+    throw new Error('Phone number is required');
+  }
 
   const result = await client.invoke(
     new Api.auth.SendCode({
       phoneNumber: phoneNumber,
-      apiId: parseInt(API_ID),
-      apiHash: API_HASH,
+      apiId: parseInt(process.env.TELEGRAM_API_ID || '94575'),
+      apiHash:
+        process.env.TELEGRAM_API_HASH || 'a3406de8d171bb422bb6ddf3bbd800e2',
       settings: new Api.CodeSettings({
         allowFlashcall: true,
         currentNumber: true,
@@ -33,8 +30,6 @@ export const sendAuthCode = handleAsync(async (req: Request, res: Response) => {
       }),
     }),
   );
-
-  await client.disconnect();
 
   res.json({
     success: true,
@@ -46,10 +41,12 @@ export const sendAuthCode = handleAsync(async (req: Request, res: Response) => {
 export const signIn = handleAsync(async (req: Request, res: Response) => {
   const { phoneNumber, phoneCode, phoneCodeHash } = req.body;
 
-  const session = new StringSession('');
-  const client = new TelegramClient(session, parseInt(API_ID), API_HASH, {});
-
-  await client.connect();
+  if (!phoneNumber || !phoneCode || !phoneCodeHash) {
+    res.status(400);
+    throw new Error(
+      'Phone number, verification code, and code hash are required',
+    );
+  }
 
   const signInResult = (await client.invoke(
     new Api.auth.SignIn({
@@ -59,16 +56,37 @@ export const signIn = handleAsync(async (req: Request, res: Response) => {
     }),
   )) as Api.auth.TypeAuthorization;
 
-  // 获取会话字符串以供将来使用
-  const sessionString = client.session.save();
+  res.json({
+    success: true,
+    data: {
+      result: signInResult,
+    },
+  });
+});
 
-  await client.disconnect();
+export const login = handleAsync(async (req: Request, res: Response) => {
+  const { phoneNumber, password, phoneCode } = req.body;
+
+  if (!phoneNumber || !password || !phoneCode) {
+    res.status(400);
+    throw new Error(
+      'Phone number, password, and verification code are required',
+    );
+  }
+
+  await client.start({
+    phoneNumber: async () => phoneNumber,
+    password: async () => password,
+    phoneCode: async () => phoneCode,
+    onError: (err) => {
+      throw new Error(err.message);
+    },
+  });
 
   res.json({
     success: true,
     data: {
-      session: sessionString,
-      result: signInResult,
+      message: 'Login successful',
     },
   });
 });
