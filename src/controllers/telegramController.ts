@@ -14,6 +14,11 @@ const API_HASH =
 export const sendAuthCode = handleAsync(async (req: Request, res: Response) => {
   const { phoneNumber } = req.body;
 
+  if (!phoneNumber) {
+    res.status(400);
+    throw new Error('Phone number is required');
+  }
+
   const session = new StringSession('');
   const client = new TelegramClient(session, parseInt(API_ID), API_HASH, {});
 
@@ -46,6 +51,14 @@ export const sendAuthCode = handleAsync(async (req: Request, res: Response) => {
 export const signIn = handleAsync(async (req: Request, res: Response) => {
   const { phoneNumber, phoneCode, phoneCodeHash } = req.body;
 
+  // 验证所有必需参数
+  if (!phoneNumber || !phoneCode || !phoneCodeHash) {
+    res.status(400);
+    throw new Error(
+      'Phone number, verification code, and code hash are required',
+    );
+  }
+
   const session = new StringSession('');
   const client = new TelegramClient(session, parseInt(API_ID), API_HASH, {});
 
@@ -76,6 +89,12 @@ export const signIn = handleAsync(async (req: Request, res: Response) => {
 export const login = handleAsync(async (req: Request, res: Response) => {
   const { phoneNumber, password, phoneCode } = req.body;
 
+  // 验证必需参数
+  if (!phoneNumber || !phoneCode) {
+    res.status(400);
+    throw new Error('Phone number and verification code are required');
+  }
+
   const session = new StringSession('');
   const client = new TelegramClient(session, parseInt(API_ID), API_HASH, {
     connectionRetries: 5,
@@ -84,8 +103,8 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   // 使用 start 方法进行登录
   await client.start({
     phoneNumber: async () => phoneNumber,
-    password: async () => password || '',
-    phoneCode: async () => phoneCode || '',
+    password: async () => password,
+    phoneCode: async () => phoneCode,
     onError: (err) => {
       throw new Error(err.message);
     },
