@@ -2,8 +2,8 @@ import mongoose, { Document } from 'mongoose';
 
 export interface ICustomer extends Document {
   _id: string;
-  username: string;
-  email: string;
+  // username: string;
+  // email: string;
   phoneNumber: string;
   password: string;
   phoneCode: string;
@@ -20,19 +20,19 @@ const customerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       auto: true,
     },
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
+    // username: {
+    //   type: String,
+    //   required: true,
+    //   unique: true,
+    //   trim: true,
+    // },
+    // email: {
+    //   type: String,
+    //   required: true,
+    //   unique: true,
+    //   trim: true,
+    //   lowercase: true,
+    // },
     phoneNumber: {
       type: String,
       required: true,

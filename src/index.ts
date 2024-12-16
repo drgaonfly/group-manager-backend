@@ -13,6 +13,7 @@ import menuRoutes from './routes/menuRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import permissionGroupRoutes from './routes/permissionGroupRoutes';
 import customerRoutes from './routes/customerRoutes';
+import telegramsRoutes from './routes/telegramsRoutes';
 
 import setupDB from './utils/db';
 import telegramClient from './utils/telegramClient';
@@ -48,6 +49,8 @@ app.use('/api/data-permissions', dataPermissionRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/telegrams', telegramRoutes);
 app.use('/api/proxys', proxyRoutes);
+
+app.use('/api/two-telegrams', telegramsRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
