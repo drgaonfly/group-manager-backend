@@ -63,41 +63,30 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
     remarks,
   } = req.body;
 
-  try {
-    // 检查proxys是否已存在
-    const proxyExists = await Customer.findOne({ users });
-    if (proxyExists) {
-      res.status(400);
-      throw new Error('该代理已被使用，请使用其他代理');
-    }
-
-    const customer = await Customer.create({
-      users,
-      cookies,
-      ip,
-      certification,
-      phone,
-      phoneNumber,
-      password,
-      phoneCode,
-      session,
-      remarks,
-    });
-
-    res.status(201).json({
-      success: true,
-      data: customer,
-    });
-  } catch (error: any) {
-    if (error.code === 11000) {
-      res.status(400).json({
-        success: false,
-        message: '该代理已被使用，请使用其他代理',
-      });
-    } else {
-      throw error;
-    }
+  // 检查proxys是否已存在
+  const proxyExists = await Customer.findOne({ users });
+  if (proxyExists) {
+    res.status(400);
+    throw new Error('该代理已被使用，请使用其他代理');
   }
+
+  const customer = await Customer.create({
+    users,
+    cookies,
+    ip,
+    certification,
+    phone,
+    phoneNumber,
+    password,
+    phoneCode,
+    session,
+    remarks,
+  });
+
+  res.status(201).json({
+    success: true,
+    data: customer,
+  });
 });
 
 // 获取单个客户
@@ -120,41 +109,30 @@ const updateCustomer = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { users } = req.body;
 
-  try {
-    const customer = await Customer.findById(id);
-    if (!customer) {
-      res.status(404);
-      throw new Error('客户不存在');
-    }
+  const customer = await Customer.findById(id);
+  if (!customer) {
+    res.status(404);
+    throw new Error('客户不存在');
+  }
 
-    // 检查proxys唯一性
-    if (users && users !== customer.users) {
-      const proxyExists = await Customer.findOne({ users, _id: { $ne: id } });
-      if (proxyExists) {
-        res.status(400);
-        throw new Error('该代理已被其他用户使用');
-      }
-    }
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    res.json({
-      success: true,
-      data: updatedCustomer,
-    });
-  } catch (error: any) {
-    if (error.code === 11000) {
-      res.status(400).json({
-        success: false,
-        message: '该代理已被其他用户使用',
-      });
-    } else {
-      throw error;
+  // 检查proxys唯一性
+  if (users && users !== customer.users) {
+    const proxyExists = await Customer.findOne({ users, _id: { $ne: id } });
+    if (proxyExists) {
+      res.status(400);
+      throw new Error('该代理已被其他用户使用');
     }
   }
+
+  const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  res.json({
+    success: true,
+    data: updatedCustomer,
+  });
 });
 
 // 删除客户
