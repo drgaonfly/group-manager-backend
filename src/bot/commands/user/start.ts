@@ -1,7 +1,7 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../types';
 import mainKeyboard from '../../menus/inline/exampleInlineMenu';
-import telegramUser from '../../../models/telegramUser';
+import TelegramUser from '../../../models/telegramUser';
 
 const startCommand = new Composer<MyContext>();
 
@@ -18,7 +18,7 @@ startCommand.command('start', async (ctx) => {
     console.log('form_info', ctx);
 
     // 检查数据库中是否已存在该用户ID
-    const existingUser = await telegramUser.findOne({ id: userId });
+    const existingUser = await TelegramUser.findOne({ id: userId });
 
     if (existingUser) {
       // 如果用户已存在，更新其信息
@@ -37,7 +37,7 @@ startCommand.command('start', async (ctx) => {
       await ctx.reply('您的信息已更新！');
     } else {
       // 如果用户不存在，创建新用户
-      const newTelegramUser = new telegramUser({
+      const newTelegramUser = new TelegramUser({
         userName: userName,
         firstName: firstName,
         id: userId,

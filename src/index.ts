@@ -23,6 +23,7 @@ import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
 import telegramRoutes from './routes/telegramRoutes';
 import proxyRoutes from './routes/proxysRoutes';
+import telegramUsaerRoutes from './routes/telegramUserRoutes';
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use('/api/messages', messagesRoutes);
 app.use('/api/employees', employeeRoutes);
 
 app.use('/api/two-telegrams', telegramsRoutes);
+app.use('/api/telegram-users', telegramUsaerRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 

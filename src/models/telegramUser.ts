@@ -23,9 +23,9 @@ const telegramUserSchema = new mongoose.Schema(
 
 telegramUserSchema.index({ userName: 1, botId: 1 }, { unique: true });
 
-const telegramUser = mongoose.model<ItelegramUser>(
+const TelegramUser = mongoose.model<ItelegramUser>(
   'telegramUser',
   telegramUserSchema,
 );
 
-export default telegramUser;
+export default TelegramUser;
