@@ -1,7 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 
 export interface ItelegramUser extends Document {
-  id: string;
+  // id: string;
   botId: string;
   userName: string;
   firstName: string;
@@ -11,7 +11,7 @@ export interface ItelegramUser extends Document {
 
 const telegramUserSchema = new mongoose.Schema(
   {
-    id: { type: String, required: true }, // Add unique index to id
+    // id: { type: String, required: true },
     userName: { type: String, required: true }, // Add unique index to name
     firstName: { type: String, required: true },
     botId: { type: String, required: true },
