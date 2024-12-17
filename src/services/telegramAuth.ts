@@ -13,6 +13,8 @@ export class TelegramAuthService {
     const browser = await puppeteer.launch({
       headless: false,
       args: ['--no-sandbox'],
+      executablePath:
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     });
     const page = await browser.newPage();
     await page.goto('https://web.telegram.org/k/', {
