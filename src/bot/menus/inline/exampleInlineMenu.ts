@@ -1,7 +1,7 @@
 // src/menus/inline/exampleInlineMenu.ts
 import { InlineKeyboard } from 'grammy';
 
-const mainKeyboard = new InlineKeyboard()
+const exampleInlineMenu = new InlineKeyboard()
   // .text('按钮1', 'button1_callback')
   // .text('按钮2', 'button2_callback')
   // .row()
@@ -9,4 +9,4 @@ const mainKeyboard = new InlineKeyboard()
   .row()
   .url('解除双向对话限制', 'https://spam.2024fc.xyz/');
 
-export default mainKeyboard;
+export default exampleInlineMenu;
