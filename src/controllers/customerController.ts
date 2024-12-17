@@ -6,12 +6,8 @@ import handleAsync from '../utils/handleAsync';
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.username) {
-    query.username = queryParams.username;
-  }
-
-  if (queryParams.email) {
-    query.email = { $regex: queryParams.email, $options: 'i' };
+  if (queryParams.user) {
+    query.user = queryParams.user;
   }
 
   if (queryParams.phone) {
@@ -35,6 +31,7 @@ const getCustomers = handleAsync(async (req: Request, res: Response) => {
   const query = buildQuery(req.query);
 
   const customers = await Customer.find(query)
+    .populate('users')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -54,8 +51,10 @@ const getCustomers = handleAsync(async (req: Request, res: Response) => {
 // 创建新客户
 const addCustomer = handleAsync(async (req: Request, res: Response) => {
   const {
-    username,
-    email,
+    users,
+    cookies,
+    ip,
+    certification,
     phone,
     phoneNumber,
     password,
@@ -65,23 +64,18 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
   } = req.body;
 
   try {
-    // 检查邮箱是否已存在
-    const customerExists = await Customer.findOne({ email });
-    if (customerExists) {
+    // 检查proxys是否已存在
+    const proxyExists = await Customer.findOne({ users });
+    if (proxyExists) {
       res.status(400);
-      throw new Error('该邮箱已被注册，请使用其他邮箱');
-    }
-
-    // 检查用户名是否已存在
-    const usernameExists = await Customer.findOne({ username });
-    if (usernameExists) {
-      // res.status(400);
-      throw new Error('该用户名已被使用，请选择其他用户名');
+      throw new Error('该代理已被使用，请使用其他代理');
     }
 
     const customer = await Customer.create({
-      username,
-      email: email.toLowerCase(),
+      users,
+      cookies,
+      ip,
+      certification,
       phone,
       phoneNumber,
       password,
@@ -96,15 +90,9 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      const message =
-        field === 'email'
-          ? '该邮箱已被注册，请使用其他邮箱'
-          : '该用户名已被使用，请选择其他用户名';
-
       res.status(400).json({
         success: false,
-        message: message,
+        message: '该代理已被使用，请使用其他代理',
       });
     } else {
       throw error;
@@ -130,7 +118,7 @@ const getCustomerById = handleAsync(async (req: Request, res: Response) => {
 // 更新客户
 const updateCustomer = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { email, username } = req.body;
+  const { users } = req.body;
 
   try {
     const customer = await Customer.findById(id);
@@ -139,35 +127,19 @@ const updateCustomer = handleAsync(async (req: Request, res: Response) => {
       throw new Error('客户不存在');
     }
 
-    // 检查邮箱唯一性
-    if (email && email !== customer.email) {
-      const emailExists = await Customer.findOne({ email, _id: { $ne: id } });
-      if (emailExists) {
+    // 检查proxys唯一性
+    if (users && users !== customer.users) {
+      const proxyExists = await Customer.findOne({ users, _id: { $ne: id } });
+      if (proxyExists) {
         res.status(400);
-        throw new Error('该邮箱已被其他用户使用');
+        throw new Error('该代理已被其他用户使用');
       }
     }
 
-    // 检查用户名唯一性
-    if (username && username !== customer.username) {
-      const usernameExists = await Customer.findOne({
-        username,
-        _id: { $ne: id },
-      });
-      if (usernameExists) {
-        res.status(400);
-        throw new Error('该用户名已被其他用户使用');
-      }
-    }
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      id,
-      {
-        ...req.body,
-        email: email?.toLowerCase(),
-      },
-      { new: true, runValidators: true },
-    );
+    const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
 
     res.json({
       success: true,
@@ -175,15 +147,9 @@ const updateCustomer = handleAsync(async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      const message =
-        field === 'email'
-          ? '该邮箱已被其他用户使用'
-          : '该用户名已被其他用户使用';
-
       res.status(400).json({
         success: false,
-        message: message,
+        message: '该代理已被其他用户使用',
       });
     } else {
       throw error;

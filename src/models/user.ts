@@ -7,6 +7,7 @@ export interface IUser extends Document {
   password: string;
   phone: string;
   name: string;
+  inviteCode: string;
   live: boolean;
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
@@ -18,6 +19,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     phone: { type: String, required: false },
     name: { type: String, required: true, unique: true }, // Add unique index to name
+    inviteCode: { type: String, required: false, unique: true },
     live: {
       type: Boolean,
       default: true,

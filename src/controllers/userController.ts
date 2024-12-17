@@ -5,6 +5,19 @@ import handleAsync from '../utils/handleAsync';
 import bcrypt from 'bcrypt';
 import { exclude } from '../utils/handleData';
 import { RequestCustom } from 'user';
+import crypto from 'crypto';
+
+async function generateInviteCode(length: number = 8): Promise<string> {
+  let inviteCode;
+  do {
+    inviteCode = crypto
+      .randomBytes(length)
+      .toString('base64')
+      .replace(/[+/=]/g, '') // 移除特殊字符
+      .slice(0, length); // 确保长度正确
+  } while (await User.findOne({ inviteCode }));
+  return inviteCode;
+}
 
 const getUsers = handleAsync(async (req: Request, res: Response) => {
   const { email, name, live, current = '1', pageSize = '10' } = req.query;
@@ -59,11 +72,14 @@ const addUser = handleAsync(async (req: RequestCustom, res: Response) => {
   const salt = await bcrypt.genSalt(10);
   const hashPassword = await bcrypt.hash(password, salt);
 
+  const inviteCode = await generateInviteCode();
+
   const newUser = new User({
     name,
     email,
     roles,
     password: hashPassword,
+    inviteCode,
   });
 
   const savedUser = await newUser.save();

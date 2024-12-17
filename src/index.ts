@@ -13,10 +13,16 @@ import menuRoutes from './routes/menuRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import permissionGroupRoutes from './routes/permissionGroupRoutes';
 import customerRoutes from './routes/customerRoutes';
+import telegramsRoutes from './routes/telegramsRoutes';
+import messagesRoutes from './routes/messagesRoutes';
+import employeeRoutes from './routes/employeeRoutes';
 
 import setupDB from './utils/db';
+import telegramClient from './utils/telegramClient';
 import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
+import telegramRoutes from './routes/telegramRoutes';
+import proxyRoutes from './routes/proxysRoutes';
 
 dotenv.config();
 
@@ -43,6 +49,12 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/permission-groups', permissionGroupRoutes);
 app.use('/api/data-permissions', dataPermissionRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/telegrams', telegramRoutes);
+app.use('/api/proxys', proxyRoutes);
+app.use('/api/messages', messagesRoutes);
+app.use('/api/employees', employeeRoutes);
+
+app.use('/api/two-telegrams', telegramsRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
@@ -51,6 +63,7 @@ app.use(errorHandler);
 
 const PORT: string | number = process.env.PORT || 5000;
 setupDB();
+telegramClient();
 
 app.listen(PORT, () =>
   console.log(`
