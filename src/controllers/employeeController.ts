@@ -27,6 +27,7 @@ const getEmployees = handleAsync(async (req: Request, res: Response) => {
   const users = await Employee.find({
     ...query,
   })
+    .populate('proxys')
     .populate('roles')
     .sort('-createdAt') // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
@@ -47,7 +48,7 @@ const getEmployees = handleAsync(async (req: Request, res: Response) => {
 });
 
 const addEmployee = handleAsync(async (req: RequestCustom, res: Response) => {
-  const { name, email, password, roles } = req.body;
+  const { name, email, password, roles, proxys } = req.body;
 
   const userExists = await Employee.findOne({ email });
 
@@ -64,6 +65,7 @@ const addEmployee = handleAsync(async (req: RequestCustom, res: Response) => {
     email,
     roles,
     password: hashPassword,
+    proxys,
   });
 
   const savedUser = await newUser.save();
