@@ -70,7 +70,8 @@ export class TelegramAuthService {
 
     console.log('Clicked submit button for phone number');
 
-    // 等待验证码输入框出现
+    // 验证码输入框出现
+    await page.waitForSelector('div.input-field input[type="tel"]');
 
     console.log('Verification code input found, waiting for code...');
 
@@ -104,8 +105,8 @@ export class TelegramAuthService {
     const { page, browser } = session;
 
     // 等待并输入验证码
-    await page.waitForSelector('input.input-field');
-    await page.type('input.input-field', code);
+    await page.waitForSelector('div.input-field input[type="tel"]');
+    await page.type('div.input-field input[type="tel"]', code);
 
     // 等待登录完成
     await page.waitForNavigation({ waitUntil: 'networkidle2' });

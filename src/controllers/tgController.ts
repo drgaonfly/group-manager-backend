@@ -33,6 +33,8 @@ export const enterPhone = handleAsync(async (req: Request, res: Response) => {
  */
 export const enterCode = handleAsync(async (req: Request, res: Response) => {
   const { sessionId, code } = req.body;
+  console.log(`Received sessionId: ${sessionId}`);
+  console.log(`Received code: ${code}`);
 
   if (!sessionId || !code) {
     throw new Error('请提供会话ID和验证码');
