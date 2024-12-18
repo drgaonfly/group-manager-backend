@@ -5,6 +5,7 @@ import handleAsync from '../utils/handleAsync';
 import bcrypt from 'bcrypt';
 import { exclude } from '../utils/handleData';
 import { RequestCustom } from 'user';
+import Role from '../models/role';
 
 const getProxys = handleAsync(async (req: Request, res: Response) => {
   const { email, name, live, current = '1', pageSize = '10' } = req.query;
@@ -23,8 +24,11 @@ const getProxys = handleAsync(async (req: Request, res: Response) => {
     query.live = live === 'true';
   }
 
-  // 添加条件以仅显示角色名称为 "代理" 的代理
-  // query.roles = { $elemMatch: { name: "代理" } }; // 只显示角色名称为 "代理" 的代理
+  // 找到角色为 "代理" 的角色ID
+  const role = await Role.findOne({ name: '代理' });
+  if (role) {
+    query.roles = role._id; // 使用角色ID进行查询
+  }
 
   // 排除带有员工的。
   query.proxy = { $exists: false };
@@ -53,7 +57,7 @@ const getProxys = handleAsync(async (req: Request, res: Response) => {
 });
 
 const addProxy = handleAsync(async (req: RequestCustom, res: Response) => {
-  const { email, password, roles } = req.body;
+  const { email, password, roles, name } = req.body;
 
   const proxyExists = await Proxy.findOne({ email });
 
@@ -71,6 +75,7 @@ const addProxy = handleAsync(async (req: RequestCustom, res: Response) => {
     email,
     roles,
     password: hashPassword,
+    name,
   });
 
   const savedProxy = await newUser.save();
