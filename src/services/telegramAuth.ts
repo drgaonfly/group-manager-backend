@@ -21,7 +21,7 @@ export class TelegramAuthService {
       waitUntil: 'networkidle2',
     });
 
-    console.log('Navigated to Telegram Web');
+    console.log(`Navigating to Telegram with phone number: ${phoneNumber}`);
 
     // 等待并输入手机号
     await page.waitForSelector('input[type="tel"]');

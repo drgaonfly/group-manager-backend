@@ -11,15 +11,18 @@ export const enterPhone = handleAsync(async (req: Request, res: Response) => {
   const { phoneNumber } = req.body;
 
   if (!phoneNumber) {
-    throw new Error('请提供手机号码');
+    res.status(400).json({
+      success: false,
+      message: '请提供手机号码',
+    });
+    return;
   }
 
+  console.log(`Received phone number: ${phoneNumber}`);
   const sessionId = await authService.enterPhoneNumber(phoneNumber);
 
-  res.json({
-    success: true,
-    sessionId,
-  });
+  console.log(`Generated session ID: ${sessionId}`);
+  res.json({ success: true, sessionId });
 });
 
 /**
