@@ -11,7 +11,7 @@ export interface IUser extends Document {
   live: boolean;
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
-  proxys: string; //关联的供应商的用户
+  proxy: string; //关联的供应商的用户
 }
 
 const userSchema = new mongoose.Schema(
@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     phone: { type: String, required: false },
-    name: { type: String, required: false, unique: true }, //改为后台为必选
+    name: { type: String, required: false },
     inviteCode: { type: String, required: false, unique: true },
     live: {
       type: Boolean,
@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    proxys: {
+    proxy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: false,

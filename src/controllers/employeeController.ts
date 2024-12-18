@@ -5,8 +5,9 @@ import handleAsync from '../utils/handleAsync';
 import bcrypt from 'bcrypt';
 import { exclude } from '../utils/handleData';
 import { RequestCustom } from 'user';
+// import { Request } from '../types/express';
 
-const getEmployees = handleAsync(async (req: Request, res: Response) => {
+const getEmployees = handleAsync(async (req: RequestCustom, res: Response) => {
   const { email, name, live, current = '1', pageSize = '10' } = req.query;
 
   const query: any = {};
@@ -23,11 +24,14 @@ const getEmployees = handleAsync(async (req: Request, res: Response) => {
     query.live = live === 'true';
   }
 
+  // 只显示当前代理的员工
+  query.proxy = req.user._id;
+
   // 执行查询
   const users = await Employee.find({
     ...query,
   })
-    .populate('proxys')
+    .populate('proxy')
     .populate('roles')
     .sort('-createdAt') // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
@@ -48,7 +52,7 @@ const getEmployees = handleAsync(async (req: Request, res: Response) => {
 });
 
 const addEmployee = handleAsync(async (req: RequestCustom, res: Response) => {
-  const { name, email, password, roles, proxys } = req.body;
+  const { name, email, password, roles, proxy } = req.body;
 
   const userExists = await Employee.findOne({ email });
 
@@ -65,7 +69,7 @@ const addEmployee = handleAsync(async (req: RequestCustom, res: Response) => {
     email,
     roles,
     password: hashPassword,
-    proxys,
+    proxy,
   });
 
   const savedUser = await newUser.save();

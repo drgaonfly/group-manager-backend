@@ -23,6 +23,12 @@ const getProxys = handleAsync(async (req: Request, res: Response) => {
     query.live = live === 'true';
   }
 
+  // 添加条件以仅显示角色名称为 "代理" 的代理
+  // query.roles = { $elemMatch: { name: "代理" } }; // 只显示角色名称为 "代理" 的代理
+
+  // 排除带有员工的。
+  query.proxy = { $exists: false };
+
   // 执行查询
   const proxys = await Proxy.find({
     ...query,
