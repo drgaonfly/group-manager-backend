@@ -112,21 +112,11 @@ const getCustomerById = handleAsync(async (req: Request, res: Response) => {
 // 更新客户
 const updateCustomer = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { users } = req.body;
 
   const customer = await Customer.findById(id);
   if (!customer) {
     res.status(404);
     throw new Error('客户不存在');
-  }
-
-  // 检查proxys唯一性
-  if (users && users !== customer.users) {
-    const proxyExists = await Customer.findOne({ users, _id: { $ne: id } });
-    if (proxyExists) {
-      res.status(400);
-      throw new Error('该代理已被其他用户使用');
-    }
   }
 
   const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, {
