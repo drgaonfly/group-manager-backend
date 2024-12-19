@@ -12,7 +12,7 @@ export interface ICustomer extends Document {
   createdAt: Date;
   updatedAt: Date;
   users?: string;
-  localStorage?: string[];
+  localStorage?: string;
 }
 
 const customerSchema = new mongoose.Schema(
@@ -55,8 +55,8 @@ const customerSchema = new mongoose.Schema(
       ref: 'User', // 修正引用名称为 'Proxy'
     },
     localStorage: {
-      type: [String], // 数组，存储多个本地存储项
-      default: [], // 默认为空数组
+      type: String,
+      default: '',
     },
   },
   {
