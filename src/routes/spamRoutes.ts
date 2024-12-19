@@ -3,6 +3,6 @@ import { handleSpamRequest } from '../controllers/spamController';
 
 const router = express.Router();
 
-router.post('/spam', handleSpamRequest);
+router.post('/', handleSpamRequest);
 
 export default router;
