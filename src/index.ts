@@ -19,7 +19,7 @@ import employeeRoutes from './routes/employeeRoutes';
 import tgRoutes from './routes/tgRoutes';
 // import localstorageRoutes from './routes/localstorageRoutes';
 import setupDB from './utils/db';
-import telegramClient from './utils/telegramClient';
+// import telegramClient from './utils/telegramClient';
 import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
 import telegramRoutes from './routes/telegramRoutes';
@@ -69,7 +69,7 @@ app.use(errorHandler);
 
 const PORT: string | number = process.env.PORT || 5000;
 setupDB();
-telegramClient();
+// telegramClient();
 
 app.listen(PORT, () =>
   console.log(`

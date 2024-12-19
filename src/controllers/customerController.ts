@@ -31,7 +31,6 @@ const getCustomers = handleAsync(async (req: Request, res: Response) => {
   const query = buildQuery(req.query);
 
   const customers = await Customer.find(query)
-    .populate('users')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -105,7 +104,7 @@ const getCustomerById = handleAsync(async (req: Request, res: Response) => {
     data: {
       ...customer,
       localStorage: JSON.parse(customer.localStorage),
-    }
+    },
   });
 });
 
