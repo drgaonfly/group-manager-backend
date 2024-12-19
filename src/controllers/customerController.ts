@@ -61,6 +61,7 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
     phoneCode,
     session,
     remarks,
+    localStorage,
   } = req.body;
 
   // 检查proxys是否已存在
@@ -71,6 +72,7 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
   }
 
   const customer = await Customer.create({
+    localStorage,
     users,
     cookies,
     ip,

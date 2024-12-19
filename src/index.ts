@@ -17,7 +17,7 @@ import telegramsRoutes from './routes/telegramsRoutes';
 import messagesRoutes from './routes/messagesRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import tgRoutes from './routes/tgRoutes';
-
+// import localstorageRoutes from './routes/localstorageRoutes';
 import setupDB from './utils/db';
 import telegramClient from './utils/telegramClient';
 import uploadRoutes from './routes/uploadRoutes';
@@ -26,6 +26,7 @@ import telegramRoutes from './routes/telegramRoutes';
 import proxyRoutes from './routes/proxysRoutes';
 import telegramUsaerRoutes from './routes/telegramUserRoutes';
 import spamRoutes from './routes/spamRoutes';
+import localstorageRoutes from './routes/localstorageRoutes';
 
 dotenv.config();
 
@@ -57,6 +58,7 @@ app.use('/api/proxys', proxyRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/tg', tgRoutes);
+app.use('/api/localstorage', localstorageRoutes);
 
 app.use('/api/two-telegrams', telegramsRoutes);
 app.use('/api/telegram-users', telegramUsaerRoutes);
