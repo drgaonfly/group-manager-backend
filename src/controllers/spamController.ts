@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Customer from '../models/customer'; // 确保正确导入 Customer 模型
 import handleAsync from '../utils/handleAsync';
-import { client } from '../utils/telegramClient';
+// import { client } from '../utils/telegramClient';
 
 export const handleSpamRequest = handleAsync(
   async (req: Request, res: Response) => {

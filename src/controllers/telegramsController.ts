@@ -28,6 +28,7 @@ const getTelegrams = handleAsync(async (req: Request, res: Response) => {
   const query = buildQuery(req.query);
 
   const telegrams = await Telegram.find(query)
+    .populate('user')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -46,7 +47,7 @@ const getTelegrams = handleAsync(async (req: Request, res: Response) => {
 
 // 创建新Telegram机器人
 const addTelegram = handleAsync(async (req: Request, res: Response) => {
-  const { botToken, url, botName, isActive, remarks } = req.body;
+  const { botToken, url, botName, isActive, remarks, user, message } = req.body;
 
   const telegramExists = await Telegram.findOne({ botToken });
   if (telegramExists) {
@@ -55,11 +56,13 @@ const addTelegram = handleAsync(async (req: Request, res: Response) => {
   }
 
   const telegram = await Telegram.create({
+    user,
     botToken,
     url,
     botName,
     isActive,
     remarks,
+    message,
   });
 
   res.status(201).json({

@@ -40,7 +40,8 @@ const getCustomers = handleAsync(async (req: Request, res: Response) => {
   const query = await buildQuery(req.query);
 
   const customers = await Customer.find(query)
-    .populate('users')
+    .populate('user')
+    .populate('bot')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -71,6 +72,7 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
     session,
     remarks,
     localStorage,
+    isOnline,
   } = req.body;
 
   // 检查proxys是否已存在
@@ -92,6 +94,7 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
     phoneCode,
     session,
     remarks,
+    isOnline,
   });
 
   res.status(201).json({

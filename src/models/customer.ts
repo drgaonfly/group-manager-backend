@@ -11,6 +11,7 @@ export interface ICustomer extends Document {
   session: string;
   ip: string | string[];
   users: mongoose.Schema.Types.ObjectId;
+  isOnline: boolean;
 }
 
 const customerSchema = new mongoose.Schema(
@@ -49,6 +50,14 @@ const customerSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+    bot: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Telegram',
     },
   },
   {

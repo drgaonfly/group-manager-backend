@@ -7,8 +7,10 @@ export interface ITelegram extends Document {
   botName: string;
   isActive: boolean;
   remarks?: string;
+  user: mongoose.Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  message: string;
 }
 
 const telegramSchema = new mongoose.Schema(
@@ -28,16 +30,19 @@ const telegramSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    botName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
     isActive: {
       type: Boolean,
       default: true,
     },
     remarks: {
+      type: String,
+      trim: true,
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    message: {
       type: String,
       trim: true,
     },

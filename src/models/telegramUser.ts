@@ -7,6 +7,7 @@ export interface ItelegramUser extends Document {
   firstName: string;
   botName: string;
   botFirstName: string;
+  bot: mongoose.Schema.Types.ObjectId;
 }
 
 const telegramUserSchema = new mongoose.Schema(
@@ -14,10 +15,11 @@ const telegramUserSchema = new mongoose.Schema(
     // id: { type: String, required: true },
     userName: { type: String, required: true }, // Add unique index to name
     firstName: { type: String, required: true },
-    botId: { type: String, required: true },
-    botName: { type: String, required: true },
-    botFirstName: { type: String, required: true },
     message: { type: String, required: false },
+    bot: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Telegram',
+    },
   },
   { timestamps: true },
 );

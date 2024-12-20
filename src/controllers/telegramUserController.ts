@@ -36,6 +36,7 @@ const getTelegramUsers = handleAsync(async (req: Request, res: Response) => {
   const query = buildQuery(req.query);
 
   const telegramUsers = await TelegramUser.find(query)
+    .populate('bot')
     .sort('-createdAt') // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
