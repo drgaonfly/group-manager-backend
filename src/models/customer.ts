@@ -8,6 +8,7 @@ export interface ICustomer extends Document {
   createdAt: Date;
   updatedAt: Date;
   localStorage?: string;
+  session: string;
   ip: string | string[];
   users: mongoose.Schema.Types.ObjectId;
 }
@@ -22,7 +23,11 @@ const customerSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
+    },
+    session: {
+      type: String,
+      required: false,
     },
     remarks: {
       type: String,
@@ -41,7 +46,7 @@ const customerSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    users: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
