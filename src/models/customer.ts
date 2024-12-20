@@ -9,6 +9,7 @@ export interface ICustomer extends Document {
   updatedAt: Date;
   localStorage?: string;
   ip: string | string[];
+  users: mongoose.Schema.Types.ObjectId;
 }
 
 const customerSchema = new mongoose.Schema(
@@ -39,6 +40,10 @@ const customerSchema = new mongoose.Schema(
     localStorage: {
       type: String,
       default: '',
+    },
+    users: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
   },
   {

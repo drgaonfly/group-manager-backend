@@ -1,24 +1,33 @@
 import { Request, Response } from 'express';
 import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
+import User from '../models/user';
 
 // 构建查询条件
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
-  if (queryParams.user) {
-    query.user = queryParams.user;
+  if (queryParams.phoneNumber) {
+    query.phoneNumber = { $regex: queryParams.phoneNumber, $options: 'i' };
   }
 
-  if (queryParams.phone) {
-    query.phone = { $regex: queryParams.phone, $options: 'i' };
-  }
+  if (queryParams.users) {
+    let searchText;
+    try {
+      const usersParam = JSON.parse(String(queryParams.users));
+      searchText = usersParam.name;
+    } catch (e) {
+      searchText = String(queryParams.users).trim();
+    }
+    const usersData = await User.find({
+      name: { $regex: searchText, $options: 'i' },
+    });
 
-  if (queryParams.status) {
-    query.status = queryParams.status;
-  }
-  if (queryParams.isTeacher) {
-    query.isTeacher = queryParams.isTeacher;
+    if (usersData && usersData.length > 0) {
+      query.users = { $in: usersData.map((users) => users._id) };
+    } else {
+      return null;
+    }
   }
 
   return query;
@@ -28,9 +37,10 @@ const buildQuery = (queryParams: any): any => {
 const getCustomers = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = await buildQuery(req.query);
 
   const customers = await Customer.find(query)
+    .populate('users')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)

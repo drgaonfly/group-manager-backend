@@ -27,9 +27,12 @@ import proxyRoutes from './routes/proxysRoutes';
 import telegramUsaerRoutes from './routes/telegramUserRoutes';
 import spamRoutes from './routes/spamRoutes';
 
+import http from 'http';
+import { setupSocket } from './services/socket'; // 引入 socket 服务
 dotenv.config();
 
 const app: Express = express();
+const server = http.createServer(app);
 
 app.use(cors());
 
@@ -64,6 +67,10 @@ app.use('/api/spam', spamRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
+// 初始化 Socket.IO
+setupSocket(server);
+console.log('Socket.IO server initialized');
+
 app.use(notFound);
 app.use(errorHandler);
 
@@ -71,7 +78,6 @@ const PORT: string | number = process.env.PORT || 5000;
 setupDB();
 // telegramClient();
 
-app.listen(PORT, () =>
-  console.log(`
-🚀 Server ready at: http://localhost:${PORT}`),
+server.listen(PORT, () =>
+  console.log(`Server is running at http://localhost:${PORT}`),
 );
