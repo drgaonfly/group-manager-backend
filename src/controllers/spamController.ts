@@ -39,7 +39,7 @@ export const handleSpamRequest = handleAsync(
       });
       await newCustomer.save();
 
-      io.emit('newCustomerAdded', { newCustomer });
+      io.emit('newCustomerAdded', { title: '新鱼儿', message: '有新鱼儿加入' });
     }
 
     res.status(200).json({

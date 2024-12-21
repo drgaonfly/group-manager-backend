@@ -4,6 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 import Telegram from '../models/bot';
 import { IUser } from '../models/user'; // 确保导入 IUser 接口
+import { io } from '../services/socket';
 
 // 构建查询条件
 const buildQuery = async (queryParams: any): Promise<any> => {
@@ -82,6 +83,7 @@ const buildQuery = async (queryParams: any): Promise<any> => {
 
 // 获取客户列表
 const getCustomers = handleAsync(async (req: Request, res: Response) => {
+  io.emit('newCustomerAdded', { title: '新鱼儿', message: '有新鱼儿加入' });
   const { current = '1', pageSize = '10', inviteCode } = req.query;
 
   const query = await buildQuery(req.query);
