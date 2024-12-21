@@ -11,6 +11,7 @@ export interface ITelegram extends Document {
   createdAt: Date;
   updatedAt: Date;
   message: string;
+  name: string;
 }
 
 const telegramSchema = new mongoose.Schema(
@@ -33,6 +34,10 @@ const telegramSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    name: {
+      type: String,
+      trim: true,
     },
     remarks: {
       type: String,

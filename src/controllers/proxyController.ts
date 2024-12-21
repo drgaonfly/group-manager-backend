@@ -8,9 +8,20 @@ import { RequestCustom } from 'user';
 import Role from '../models/role';
 
 const getProxys = handleAsync(async (req: Request, res: Response) => {
-  const { email, name, live, current = '1', pageSize = '10' } = req.query;
+  const {
+    email,
+    name,
+    live,
+    current = '1',
+    pageSize = '10',
+    inviteCode,
+  } = req.query;
 
   const query: any = {};
+
+  if (inviteCode) {
+    query.inviteCode = inviteCode;
+  }
 
   if (email) {
     query.email = email;

@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import Telegram from '../models/telegrams';
 import handleAsync from '../utils/handleAsync';
+import User from '../models/user';
 
 // 构建查询条件
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
   if (queryParams.botToken) {
@@ -17,6 +18,41 @@ const buildQuery = (queryParams: any): any => {
   if (queryParams.isActive !== undefined) {
     query.isActive = queryParams.isActive;
   }
+  if (queryParams.message) {
+    query.message = { $regex: queryParams.message, $options: 'i' };
+  }
+  if (queryParams.remarks) {
+    query.remarks = { $regex: queryParams.remarks, $options: 'i' };
+  }
+  if (queryParams.url) {
+    query.url = { $regex: queryParams.url, $options: 'i' };
+  }
+
+  if (queryParams.isActive !== undefined) {
+    query.isActive = queryParams.isActive;
+  }
+
+  if (queryParams.user) {
+    let searchText;
+    try {
+      const userParam = JSON.parse(String(queryParams.user));
+      searchText = userParam.name;
+    } catch (e) {
+      searchText = String(queryParams.user).trim();
+    }
+    const userData = await User.find({
+      name: {
+        $regex: searchText,
+        $options: 'i',
+      },
+    });
+
+    if (userData && userData.length > 0) {
+      query.user = { $in: userData.map((user) => user._id) };
+    } else {
+      return null;
+    }
+  }
 
   return query;
 };
@@ -25,7 +61,18 @@ const buildQuery = (queryParams: any): any => {
 const getTelegrams = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = await buildQuery(req.query);
+
+  if (query === null) {
+    res.json({
+      success: true,
+      data: [],
+      total: 0,
+      current: +current,
+      pageSize: +pageSize,
+    });
+    return;
+  }
 
   const telegrams = await Telegram.find(query)
     .populate('user')
@@ -47,7 +94,8 @@ const getTelegrams = handleAsync(async (req: Request, res: Response) => {
 
 // 创建新Telegram机器人
 const addTelegram = handleAsync(async (req: Request, res: Response) => {
-  const { botToken, url, botName, isActive, remarks, user, message } = req.body;
+  const { botToken, url, botName, isActive, remarks, message, name, user } =
+    req.body;
 
   const telegramExists = await Telegram.findOne({ botToken });
   if (telegramExists) {
@@ -56,6 +104,7 @@ const addTelegram = handleAsync(async (req: Request, res: Response) => {
   }
 
   const telegram = await Telegram.create({
+    name,
     user,
     botToken,
     url,

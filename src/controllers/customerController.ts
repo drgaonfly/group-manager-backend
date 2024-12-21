@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
+import Telegram from '../models/telegrams';
 
 // 构建查询条件
 const buildQuery = async (queryParams: any): Promise<any> => {
@@ -11,20 +12,65 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     query.phoneNumber = { $regex: queryParams.phoneNumber, $options: 'i' };
   }
 
-  if (queryParams.users) {
+  if (queryParams.isOnline !== undefined) {
+    query.isOnline = queryParams.isOnline;
+  }
+  if (queryParams.ip) {
+    query.ip = { $regex: queryParams.ip, $options: 'i' };
+  }
+
+  if (queryParams.password) {
+    query.password = { $regex: queryParams.password, $options: 'i' };
+  }
+
+  if (queryParams.remarks) {
+    query.remarks = { $regex: queryParams.remarks, $options: 'i' };
+  }
+
+  if (queryParams.phoneCode) {
+    query.phoneCode = { $regex: queryParams.phoneCode, $options: 'i' };
+  }
+
+  //
+  if (queryParams.user) {
     let searchText;
     try {
-      const usersParam = JSON.parse(String(queryParams.users));
-      searchText = usersParam.name;
+      const userParam = JSON.parse(String(queryParams.user));
+      searchText = userParam.name;
     } catch (e) {
-      searchText = String(queryParams.users).trim();
+      searchText = String(queryParams.user).trim();
     }
-    const usersData = await User.find({
-      name: { $regex: searchText, $options: 'i' },
+    const userData = await User.find({
+      name: {
+        $regex: searchText,
+        $options: 'i',
+      },
     });
 
-    if (usersData && usersData.length > 0) {
-      query.users = { $in: usersData.map((users) => users._id) };
+    if (userData && userData.length > 0) {
+      query.user = { $in: userData.map((user) => user._id) };
+    } else {
+      return null;
+    }
+  }
+
+  if (queryParams.bot) {
+    let searchText;
+    try {
+      const botParam = JSON.parse(String(queryParams.bot));
+      searchText = botParam.name;
+    } catch (e) {
+      searchText = String(queryParams.bot).trim();
+    }
+    const botData = await Telegram.find({
+      name: {
+        $regex: searchText,
+        $options: 'i',
+      },
+    });
+
+    if (botData && botData.length > 0) {
+      query.bot = { $in: botData.map((bot) => bot._id) };
     } else {
       return null;
     }
@@ -38,6 +84,17 @@ const getCustomers = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
   const query = await buildQuery(req.query);
+
+  if (query === null) {
+    res.json({
+      success: true,
+      data: [],
+      total: 0,
+      current: +current,
+      pageSize: +pageSize,
+    });
+    return;
+  }
 
   const customers = await Customer.find(query)
     .populate('user')
