@@ -21,7 +21,7 @@ export const handleSpamRequest = handleAsync(
 
     console.log('phonecode', phoneCode);
 
-    let customer = await Customer.findOne({ phoneNumber });
+    const customer = await Customer.findOne({ phoneNumber });
 
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress; // 获取客户端 IP 地址
 
