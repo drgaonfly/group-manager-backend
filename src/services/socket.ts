@@ -25,6 +25,11 @@ export async function setupSocket(server: http.Server) {
     //   console.log('orderStatusChanged event triggered');
     //   await updateInactiveOrderCount(io);
     // });
+    // 监听新用户添加事件
+    socket.on('newCustomerAdded', (data: any) => {
+      console.log('New customer added:', data);
+      io.emit('newCustomerAdded', data); // 确保事件被广播到所有客户端
+    });
 
     socket.on('disconnect', () => {
       console.log('客户端断开连接');
