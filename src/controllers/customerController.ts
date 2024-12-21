@@ -3,6 +3,7 @@ import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 import Telegram from '../models/bot';
+import { IUser } from '../models/user'; // 确保导入 IUser 接口
 
 // 构建查询条件
 const buildQuery = async (queryParams: any): Promise<any> => {
@@ -81,7 +82,7 @@ const buildQuery = async (queryParams: any): Promise<any> => {
 
 // 获取客户列表
 const getCustomers = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10' } = req.query;
+  const { current = '1', pageSize = '10', inviteCode } = req.query;
 
   const query = await buildQuery(req.query);
 
@@ -106,9 +107,17 @@ const getCustomers = handleAsync(async (req: Request, res: Response) => {
 
   const total = await Customer.countDocuments(query).exec();
 
+  let user: IUser | null = null; // 显式指定 user 的类型
+  if (inviteCode) {
+    user = await User.findOne({ inviteCode }); // 根据邀请码查找用户
+  }
+
   res.json({
     success: true,
-    data: customers,
+    data: customers.map((customer) => ({
+      ...customer.toObject(),
+      user, // 将用户信息添加到响应中
+    })),
     total,
     current: +current,
     pageSize: +pageSize,
