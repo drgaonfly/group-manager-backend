@@ -24,7 +24,7 @@ import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
 import telegramRoutes from './routes/telegramRoutes';
 import proxyRoutes from './routes/proxysRoutes';
-import telegramUsaerRoutes from './routes/telegramUserRoutes';
+import botUserRoutes from './routes/botUserRoutes';
 import spamRoutes from './routes/spamRoutes';
 
 import http from 'http';
@@ -62,7 +62,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/tg', tgRoutes);
 
 app.use('/api/two-telegrams', telegramsRoutes);
-app.use('/api/telegram-users', telegramUsaerRoutes);
+app.use('/api/bot-users', botUserRoutes);
 app.use('/api/spam', spamRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
