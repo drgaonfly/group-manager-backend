@@ -13,7 +13,7 @@ import menuRoutes from './routes/menuRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import permissionGroupRoutes from './routes/permissionGroupRoutes';
 import customerRoutes from './routes/customerRoutes';
-import telegramsRoutes from './routes/telegramsRoutes';
+import botRoutes from './routes/botRoutes';
 import messagesRoutes from './routes/messagesRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import tgRoutes from './routes/tgRoutes';
@@ -61,7 +61,7 @@ app.use('/api/messages', messagesRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/tg', tgRoutes);
 
-app.use('/api/two-telegrams', telegramsRoutes);
+app.use('/api/two-telegrams', botRoutes);
 app.use('/api/bot-users', botUserRoutes);
 app.use('/api/spam', spamRoutes);
 
