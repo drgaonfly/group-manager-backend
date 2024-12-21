@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Telegram from '../models/telegrams';
+import Telegram from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 

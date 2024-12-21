@@ -6,7 +6,7 @@ import {
   updateTelegram,
   deleteTelegram,
   deleteMultipleTelegrams,
-} from '../controllers/telegramsController';
+} from '../controllers/botController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();

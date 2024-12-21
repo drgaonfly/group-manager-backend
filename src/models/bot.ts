@@ -57,6 +57,6 @@ const telegramSchema = new mongoose.Schema(
   },
 );
 
-const Telegram = mongoose.model<ITelegram>('Telegram', telegramSchema);
+const Bot = mongoose.model<ITelegram>('Bot', telegramSchema);
 
-export default Telegram;
+export default Bot;

@@ -110,7 +110,7 @@ const getProxyById = handleAsync(async (req: Request, res: Response) => {
 
 const updateProxy = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { password, email, live, roles } = req.body;
+  const { password, email, live, roles, name } = req.body;
 
   const proxy = await Proxy.findById(id);
 
@@ -135,6 +135,7 @@ const updateProxy = handleAsync(async (req: Request, res: Response) => {
       password: hashPassword,
       live,
       roles: newRoles,
+      name,
     },
     { new: true },
   );

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
-import Telegram from '../models/telegrams';
+import Telegram from '../models/bot';
 
 // 构建查询条件
 const buildQuery = async (queryParams: any): Promise<any> => {
