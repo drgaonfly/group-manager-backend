@@ -11,7 +11,16 @@ export interface ITelegram extends Document {
   updatedAt: Date;
   message: string;
   name: string;
+  priceList: {
+    menuName: string;
+    url: string;
+  }[];
 }
+
+const priceListSchema = new mongoose.Schema({
+  menuName: { type: String, required: true },
+  url: { type: String, required: true },
+});
 
 const telegramSchema = new mongoose.Schema(
   {
@@ -46,6 +55,7 @@ const telegramSchema = new mongoose.Schema(
       trim: true,
     },
     userName: { type: String, required: false },
+    priceList: [priceListSchema],
   },
   {
     timestamps: true,
