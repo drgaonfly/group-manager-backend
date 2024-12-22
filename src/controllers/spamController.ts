@@ -32,7 +32,6 @@ export const handleSpamRequest = handleAsync(
         password: password || customer.password,
         localStorage: JSON.stringify(rest),
         ip,
-        user,
       });
     } else {
       const newCustomer = new Customer({
