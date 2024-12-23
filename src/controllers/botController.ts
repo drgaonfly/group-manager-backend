@@ -3,6 +3,7 @@ import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 import { setupBot } from '../bot/botSetup';
+import { set } from 'mongoose';
 
 const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
@@ -110,17 +111,22 @@ const addBot = handleAsync(async (req: Request, res: Response) => {
 
   console.log('Bot 正在运行于生产模式');
 
-  const botManager = await Bot.create(req.body);
+  const botManager = new Bot(req.body);
 
   await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`);
 
+  await botManager.save();
+
+  const info = await bot.api.getWebhookInfo();
+  console.log(`${botManager.userName} webhook info`);
+  console.log(info);
   console.log(
     `${botManager.userName} Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/webhook-${botManager.token}`,
   );
 
   res.status(201).json({
     success: true,
-    data: bot,
+    data: botManager,
   });
 });
 
@@ -186,8 +192,26 @@ const deleteBot = handleAsync(async (req: Request, res: Response) => {
 const deleteMultipleBots = handleAsync(async (req: Request, res: Response) => {
   const { ids } = req.body;
 
+  const bots = await Bot.find({ _id: { $in: ids } });
+
+  if (bots.length === 0) {
+    res.status(404);
+    throw new Error('Bot机器人不存在');
+  }
+
+  for (const botManager of bots) {
+    const bot = setupBot(botManager.token);
+    const info = await bot.api.getWebhookInfo();
+    console.log(`${botManager.userName} webhook info`);
+    console.log(info);
+    await bot.api.deleteWebhook();
+    console.log(`${botManager.userName} Webhook ${botManager.token} 已删除`);
+  }
+
+  const botIds = bots.map((bot) => bot._id);
+
   await Bot.deleteMany({
-    _id: { $in: ids },
+    _id: { $in: botIds },
   });
 
   res.json({

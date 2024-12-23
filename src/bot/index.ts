@@ -11,7 +11,7 @@ export const production = async (app?: express.Express) => {
   const activeBots = await BotManager.find({ isActive: true });
 
   for (const activeBot of activeBots) {
-    const bot = setupBot(activeBot.token);
+    const bot = await setupBot(activeBot.token);
     const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
     console.log('Bot 正在运行于生产模式');

@@ -4,7 +4,7 @@ import { default as BotManager } from '../models/bot';
 import { setupBot } from '../bot/botSetup';
 
 export const handleBotWebhook = handleAsync(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response) => {
     // Handle the webhook
     console.log('Webhook received:', req.body);
 
@@ -18,6 +18,8 @@ export const handleBotWebhook = handleAsync(
     }
 
     const bot = setupBot(botManager.token);
+
+    await bot.start();
 
     await bot.handleUpdate(req.body);
   },

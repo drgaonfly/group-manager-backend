@@ -49,14 +49,14 @@ export const setupBot = (token: string) => {
     await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
   });
 
-  bot.api
-    .setMyCommands(commandsList)
-    .then(() => {
-      console.log('命令已设置成功');
-    })
-    .catch((error) => {
-      console.error('设置命令时发生错误:', error);
-    });
+  // bot.api
+  //   .setMyCommands(commandsList)
+  //   .then(() => {
+  //     console.log('命令已设置成功');
+  //   })
+  //   .catch((error) => {
+  //     console.error('设置命令时发生错误:', error);
+  //   });
 
   return bot;
 };
