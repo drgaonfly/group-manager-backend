@@ -35,12 +35,12 @@ export const production = async (app?: express.Express) => {
 
     console.log('Bot 正在运行于生产模式');
 
-    app.use(`/webhook-${activeBot.token}`, webhookCallback(bot, 'express'));
-
-    await bot.api.setWebhook(`${WEBHOOK_URL}/webhook-${activeBot.token}`);
+    await bot.api.setWebhook(`${WEBHOOK_URL}/webhook-${activeBot._id}`);
     console.log(
       `Webhook ${activeBot.token} 已设置为 ${WEBHOOK_URL}/webhook-${activeBot.token}`,
     );
+
+    app.use(`/webhook-${activeBot._id}`, webhookCallback(bot, 'express'));
   }
 };
 
