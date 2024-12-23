@@ -3,7 +3,7 @@ import logger from './middlewares/logger';
 import adminComposer from './commands/admin';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
-import { commandsList } from './commandsList';
+// import { commandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { Context } from 'grammy'; // 确保导入 Context
 
