@@ -3,7 +3,6 @@ import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 import { setupBot } from '../bot/botSetup';
-import { set } from 'mongoose';
 
 const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
