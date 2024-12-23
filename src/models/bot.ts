@@ -1,44 +1,43 @@
 import mongoose, { Document } from 'mongoose';
 
-export interface ITelegram extends Document {
+export interface IBot extends Document {
   token: string;
   botName: string;
-  isActive: boolean;
-  remarks?: string;
+  remark?: string;
   user: mongoose.Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   message: string;
   userName: string;
-  priceList: {
+  menu: {
     menuName: string;
     url: string;
   }[];
   isOnline: boolean;
 }
 
-const priceListSchema = new mongoose.Schema({
+const menuSchema = new mongoose.Schema({
   menuName: { type: String, required: true },
   url: { type: String, required: true },
 });
 
 const botSchema = new mongoose.Schema(
   {
+    id: {
+      type: String,
+      trim: true,
+    },
     token: {
       type: String,
       required: true,
       unique: true,
       trim: true,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
     botName: {
       type: String,
       trim: true,
     },
-    remarks: {
+    remark: {
       type: String,
       trim: true,
     },
@@ -53,15 +52,15 @@ const botSchema = new mongoose.Schema(
     userName: { type: String, required: false },
     isOnline: {
       type: Boolean,
-      default: false,
+      default: true,
     },
-    priceList: [priceListSchema],
+    menu: [menuSchema],
   },
   {
     timestamps: true,
   },
 );
 
-const Bot = mongoose.model<ITelegram>('Bot', botSchema);
+const Bot = mongoose.model<IBot>('Bot', botSchema);
 
 export default Bot;

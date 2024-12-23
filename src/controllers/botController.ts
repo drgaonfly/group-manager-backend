@@ -15,22 +15,14 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     query.botName = { $regex: queryParams.botName, $options: 'i' };
   }
 
-  if (queryParams.isActive !== undefined) {
-    query.isActive = queryParams.isActive;
-  }
   if (queryParams.message) {
     query.message = { $regex: queryParams.message, $options: 'i' };
   }
-  if (queryParams.remarks) {
-    query.remarks = { $regex: queryParams.remarks, $options: 'i' };
-  }
-  if (queryParams.url) {
-    query.url = { $regex: queryParams.url, $options: 'i' };
+
+  if (queryParams.remark) {
+    query.remark = { $regex: queryParams.remark, $options: 'i' };
   }
 
-  if (queryParams.isActive !== undefined) {
-    query.isActive = queryParams.isActive;
-  }
   if (queryParams.isOnline !== undefined) {
     query.isOnline = queryParams.isOnline;
   }
@@ -52,8 +44,6 @@ const buildQuery = async (queryParams: any): Promise<any> => {
 
     if (userData && userData.length > 0) {
       query.user = { $in: userData.map((user) => user._id) };
-    } else {
-      return null;
     }
   }
 
@@ -65,18 +55,7 @@ const getBots = handleAsync(async (req: Request, res: Response) => {
 
   const query = await buildQuery(req.query);
 
-  if (query === null) {
-    res.json({
-      success: true,
-      data: [],
-      total: 0,
-      current: +current,
-      pageSize: +pageSize,
-    });
-    return;
-  }
-
-  const telegrams = await Bot.find(query)
+  const bots = await Bot.find(query)
     .populate('user')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
@@ -87,7 +66,7 @@ const getBots = handleAsync(async (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    data: telegrams,
+    data: bots,
     total,
     current: +current,
     pageSize: +pageSize,
@@ -130,35 +109,27 @@ const addBot = handleAsync(async (req: Request, res: Response) => {
 });
 
 const getBotById = handleAsync(async (req: Request, res: Response) => {
-  const telegram = await Bot.findById(req.params.id);
+  const bot = await Bot.findById(req.params.id);
 
-  if (!telegram) {
+  if (!bot) {
     res.status(404);
-    throw new Error('Bot机器人不存在');
+    throw new Error('Bot 机器人不存在');
   }
 
   res.json({
     success: true,
-    data: telegram,
+    data: bot,
   });
 });
 
 const updateBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { token } = req.body;
 
-  const telegram = await Bot.findById(id);
-  if (!telegram) {
+  const bot = await Bot.findById(id);
+
+  if (!bot) {
     res.status(404);
-    throw new Error('Bot机器人不存在');
-  }
-
-  if (token && token !== telegram.token) {
-    const tokenExists = await Bot.findOne({ token, _id: { $ne: id } });
-    if (tokenExists) {
-      res.status(400);
-      throw new Error('该Bot Token已被其他机器人使用');
-    }
+    throw new Error('机器人不存在');
   }
 
   const updatedBot = await Bot.findByIdAndUpdate(id, req.body, {
@@ -175,16 +146,16 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
 const deleteBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const telegram = await Bot.findByIdAndDelete(id);
+  const bot = await Bot.findByIdAndDelete(id);
 
-  if (!telegram) {
+  if (!bot) {
     res.status(404);
-    throw new Error('Bot机器人不存在');
+    throw new Error('机器人不存在');
   }
 
   res.json({
     success: true,
-    data: { message: 'Bot机器人删除成功' },
+    data: { message: '机器人删除成功' },
   });
 });
 
@@ -195,7 +166,7 @@ const deleteMultipleBots = handleAsync(async (req: Request, res: Response) => {
 
   if (bots.length === 0) {
     res.status(404);
-    throw new Error('Bot机器人不存在');
+    throw new Error('机器人不存在');
   }
 
   for (const botManager of bots) {
@@ -215,7 +186,7 @@ const deleteMultipleBots = handleAsync(async (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    message: `成功删除 ${ids.length} 个Bot机器人`,
+    message: `成功删除 ${ids.length} 个机器人`,
   });
 });
 

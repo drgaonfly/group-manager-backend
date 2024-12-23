@@ -6,7 +6,7 @@ dotenv.config();
 
 // 不再使用
 export const startWebHookBot = async () => {
-  const activeBots = await BotManager.find({ isActive: true });
+  const activeBots = await BotManager.find({ isOnline: true });
 
   for (const activeBot of activeBots) {
     const bot = await setupBot(activeBot.token);

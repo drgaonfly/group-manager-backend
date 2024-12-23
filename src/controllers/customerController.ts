@@ -23,8 +23,8 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     query.password = { $regex: queryParams.password, $options: 'i' };
   }
 
-  if (queryParams.remarks) {
-    query.remarks = { $regex: queryParams.remarks, $options: 'i' };
+  if (queryParams.remark) {
+    query.remark = { $regex: queryParams.remark, $options: 'i' };
   }
 
   if (queryParams.phoneCode) {
@@ -129,7 +129,7 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
     password,
     phoneCode,
     session,
-    remarks,
+    remark,
     localStorage,
     isOnline,
   } = req.body;
@@ -152,7 +152,7 @@ const addCustomer = handleAsync(async (req: Request, res: Response) => {
     password,
     phoneCode,
     session,
-    remarks,
+    remark,
     isOnline,
   });
 

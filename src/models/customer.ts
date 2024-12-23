@@ -5,7 +5,7 @@ export interface ICustomer extends Document {
   phoneNumber: string;
   password: string;
   phoneCode: string;
-  remarks?: string;
+  remark?: string;
   createdAt: Date;
   updatedAt: Date;
   localStorage?: string;
@@ -32,7 +32,7 @@ const customerSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    remarks: {
+    remark: {
       type: String,
       trim: true,
     },

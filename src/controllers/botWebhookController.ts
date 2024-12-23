@@ -10,7 +10,7 @@ export const handleBotWebhook = handleAsync(
 
     const botId = req.params.id;
 
-    const botManager = await BotManager.findOne({ isActive: true, _id: botId });
+    const botManager = await BotManager.findOne({ isOnline: true, _id: botId });
 
     if (!botManager) {
       res.status(404);

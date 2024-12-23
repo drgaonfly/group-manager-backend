@@ -7,8 +7,18 @@ import Bot from '../../../models/bot';
 const startCommand = new Composer<MyContext>();
 
 startCommand.command('start', async (ctx) => {
-  // try {
-  // 提取用户信息
+  const token = ctx.api.token;
+  const bot = await Bot.findOne({ token });
+
+  if (!bot) return;
+
+  bot.userName = ctx.me?.username || bot.userName;
+  bot.botName = ctx.me?.first_name || bot.botName;
+  bot.id = ctx.me?.last_name || bot.id;
+
+  await bot.save();
+  console.log('Bot信息已更新');
+
   const userId = ctx.from?.id?.toString(); // 确保转换为字符串
   const userName = ctx.from?.username; // 提供默认值
   const firstName = ctx.from?.first_name; // 提供默认值
@@ -58,9 +68,6 @@ startCommand.command('start', async (ctx) => {
 
   // 搜索botName根据botId
   const botName: string = ctx.me?.username;
-
-  // 更新Bot模型中的message字段，根据botName进行搜索
-  const bot = await Bot.findOne({ botName: botName });
 
   // 发送长文本消息并附带 Inline Menu
   await ctx.reply(bot.message, {
