@@ -1,6 +1,7 @@
 import { setupBot } from './botSetup';
 import { default as BotManager } from '../models/bot';
 import createDebug from 'debug';
+import setupDB from '../utils/db';
 
 const development = async () => {
   const activeBots = await BotManager.find({ isActive: true });
@@ -21,4 +22,6 @@ const development = async () => {
   }
 };
 
-export default development;
+setupDB();
+
+development();
