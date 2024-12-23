@@ -2,7 +2,7 @@ import mongoose, { Document } from 'mongoose';
 
 export interface ITelegram extends Document {
   _id: string;
-  botToken: string;
+  token: string;
   botName: string;
   isActive: boolean;
   remarks?: string;
@@ -22,13 +22,9 @@ const priceListSchema = new mongoose.Schema({
   url: { type: String, required: true },
 });
 
-const telegramSchema = new mongoose.Schema(
+const botSchema = new mongoose.Schema(
   {
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      auto: true,
-    },
-    botToken: {
+    token: {
       type: String,
       required: true,
       unique: true,
@@ -62,6 +58,6 @@ const telegramSchema = new mongoose.Schema(
   },
 );
 
-const Bot = mongoose.model<ITelegram>('Bot', telegramSchema);
+const Bot = mongoose.model<ITelegram>('Bot', botSchema);
 
 export default Bot;

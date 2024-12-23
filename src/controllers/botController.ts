@@ -7,8 +7,8 @@ import User from '../models/user';
 const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
-  if (queryParams.botToken) {
-    query.botToken = queryParams.botToken;
+  if (queryParams.token) {
+    query.token = queryParams.token;
   }
 
   if (queryParams.botName) {
@@ -94,9 +94,9 @@ const getTelegrams = handleAsync(async (req: Request, res: Response) => {
 
 // 创建新Telegram机器人
 const addTelegram = handleAsync(async (req: Request, res: Response) => {
-  const { botToken } = req.body;
+  const { token } = req.body;
 
-  const telegramExists = await Telegram.findOne({ botToken });
+  const telegramExists = await Telegram.findOne({ token });
   if (telegramExists) {
     res.status(400);
     throw new Error('该Bot Token已被使用，请使用其他Token');
@@ -128,7 +128,7 @@ const getTelegramById = handleAsync(async (req: Request, res: Response) => {
 // 更新Telegram机器人
 const updateTelegram = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { botToken } = req.body;
+  const { token } = req.body;
 
   const telegram = await Telegram.findById(id);
   if (!telegram) {
@@ -136,8 +136,8 @@ const updateTelegram = handleAsync(async (req: Request, res: Response) => {
     throw new Error('Telegram机器人不存在');
   }
 
-  if (botToken && botToken !== telegram.botToken) {
-    const tokenExists = await Telegram.findOne({ botToken, _id: { $ne: id } });
+  if (token && token !== telegram.token) {
+    const tokenExists = await Telegram.findOne({ token, _id: { $ne: id } });
     if (tokenExists) {
       res.status(400);
       throw new Error('该Bot Token已被其他机器人使用');
