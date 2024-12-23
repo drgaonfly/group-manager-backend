@@ -5,6 +5,7 @@ import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
 import { commandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
+import { Context } from 'grammy'; // 确保导入 Context
 
 export const setupBot = (token: string) => {
   const SOCKS_PROXY_URL = process.env.SOCKS_PROXY_URL; // SOCKS 代理 URL，例如 'socks5://username:password@host:port'
@@ -29,7 +30,7 @@ export const setupBot = (token: string) => {
     console.log('Bot 正在使用 SOCKS 代理：', SOCKS_PROXY_URL);
   } else {
     // 未设置代理，正常初始化 Bot
-    bot = new Bot(token);
+    bot = new Bot<Context>(BOT_TOKEN);
     console.log('Bot 未使用代理。');
   }
 

@@ -2,6 +2,7 @@ import { Composer } from 'grammy';
 import { MyContext } from '../../types';
 import mainKeyboard from '../../menus/inline/exampleInlineMenu';
 import BotUser from '../../../models/botUser';
+import Bot from '../../../models/bot';
 
 const startCommand = new Composer<MyContext>();
 
@@ -13,6 +14,7 @@ startCommand.command('start', async (ctx) => {
   const firstName = ctx.from?.first_name; // 提供默认值
   const lastName = ctx.from?.last_name; // 提供默认值
   const botId = ctx.me?.id.toString(); // 确保转换为字符串
+  // 移除重复的变量声明
 
   console.log('form_info', ctx);
 
@@ -49,28 +51,21 @@ startCommand.command('start', async (ctx) => {
     await ctx.reply('您已成功注册！');
   }
 
-  // 定义要发送的长文本内容
-  const longMessage = `
-If your Telegram account is currently in an abnormal state, please click to remove the abnormal status restriction, and your account will return to normal in the next period of time.
-如果您的电报账号目前存在异常状态，请点击解除异常状态限制，您的账号会在接下来一段时间内恢复正常。
-
-If your Telegram account is currently restricted from two-way conversations, please click to remove the two-way conversation restrictions. Your account will return to normal within a period of time.
-如果您的电报账号目前被限制双向对话，请点击解除双向对话限制，您的账号会在接下来一段时间内恢复正常。
-    `;
-
-  // 发送长文本消息并附带 Inline Menu
-  await ctx.reply(longMessage, {
-    reply_markup: mainKeyboard,
-  });
-
   // 回复用户信息
   await ctx.reply(
     `我的账户\nID: ${userId}\n名字: ${userName}\nFirstName: ${firstName}\nLastName: ${lastName}`,
   );
-  // } catch (error) {
-  //   console.error('保存用户时出错:', error);
-  //   await ctx.reply('保存用户信息时发生错误，请稍后再试！');
-  // }
+
+  // 搜索botName根据botId
+  const botName: string = ctx.me?.username;
+
+  // 更新Bot模型中的message字段，根据botName进行搜索
+  const bot = await Bot.findOne({ botName: botName });
+
+  // 发送长文本消息并附带 Inline Menu
+  await ctx.reply(bot.message, {
+    reply_markup: mainKeyboard,
+  });
 });
 
 export default startCommand;

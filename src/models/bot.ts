@@ -9,7 +9,6 @@ export interface ITelegram extends Document {
   createdAt: Date;
   updatedAt: Date;
   message: string;
-  name: string;
   userName: string;
   priceList: {
     menuName: string;
@@ -35,7 +34,7 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    name: {
+    botName: {
       type: String,
       trim: true,
     },
