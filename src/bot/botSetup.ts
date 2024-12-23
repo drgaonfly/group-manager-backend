@@ -7,7 +7,6 @@ import { commandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 
 export const setupBot = (token: string) => {
-  // 从环境变量中获取 BOT_TOKEN 和 SOCKS_PROXY_URL
   const SOCKS_PROXY_URL = process.env.SOCKS_PROXY_URL; // SOCKS 代理 URL，例如 'socks5://username:password@host:port'
 
   // 定义 bot 变量
