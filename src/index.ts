@@ -68,17 +68,16 @@ app.use('/api/spam', spamRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
+setupDB();
 // 初始化 Socket.IO
 setupSocket(server);
 console.log('Socket.IO server initialized');
 
+startBot(bot, app);
+
 app.use(notFound);
 app.use(errorHandler);
-
-setupDB();
 // telegramClient();
-
-startBot(bot, app);
 
 const PORT: string | number = process.env.PORT || 5000;
 server.listen(PORT, () =>

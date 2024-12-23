@@ -85,12 +85,12 @@ const development = async (bot: Bot) => {
   await bot.start();
 };
 
-const WEBHOOK_URL = process.env.WEBHOOK_URL;
-
 export const production = async (bot: Bot, app?: express.Express) => {
+  const WEBHOOK_URL = process.env.WEBHOOK_URL;
+
   console.log('Bot 正在运行于生产模式');
 
-  app.use(webhookCallback(bot, 'express'));
+  app.use('/webhook', webhookCallback(bot, 'express'));
 
   (async () => {
     await bot.api.setWebhook(WEBHOOK_URL);
