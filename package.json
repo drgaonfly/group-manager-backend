@@ -43,7 +43,6 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "cross-env DEBUG=bot* nodemon --exec ts-node --files src/index.ts",
-    "bot": "cross-env DEBUG=bot* nodemon --exec ts-node --files src/bot/index.ts",
     "clean": "rimraf coverage dist tmp",
     "prebuild": "npm run lint",
     "build": "rimraf dist && tsc -p tsconfig.json",
