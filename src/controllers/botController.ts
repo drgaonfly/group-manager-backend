@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import Telegram from '../models/bot';
+import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
+import { setupBot } from '../bot/botSetup';
 
-// 构建查询条件
 const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
@@ -60,8 +60,7 @@ const buildQuery = async (queryParams: any): Promise<any> => {
   return query;
 };
 
-// 获取Telegram机器人列表
-const getTelegrams = handleAsync(async (req: Request, res: Response) => {
+const getBots = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
   const query = await buildQuery(req.query);
@@ -77,14 +76,14 @@ const getTelegrams = handleAsync(async (req: Request, res: Response) => {
     return;
   }
 
-  const telegrams = await Telegram.find(query)
+  const telegrams = await Bot.find(query)
     .populate('user')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
 
-  const total = await Telegram.countDocuments(query).exec();
+  const total = await Bot.countDocuments(query).exec();
 
   res.json({
     success: true,
@@ -95,31 +94,42 @@ const getTelegrams = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 创建新Telegram机器人
-const addTelegram = handleAsync(async (req: Request, res: Response) => {
+const addBot = handleAsync(async (req: Request, res: Response) => {
   const { token } = req.body;
 
-  const telegramExists = await Telegram.findOne({ token });
-  if (telegramExists) {
+  const botExists = await Bot.findOne({ token });
+
+  if (botExists) {
     res.status(400);
-    throw new Error('该Bot Token已被使用，请使用其他Token');
+    throw new Error('该 Bot Token 已被使用，请使用其他 Token');
   }
 
-  const telegram = await Telegram.create(req.body);
+  const bot = setupBot(token);
+
+  const WEBHOOK_URL = process.env.WEBHOOK_URL;
+
+  console.log('Bot 正在运行于生产模式');
+
+  const botManager = await Bot.create(req.body);
+
+  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`);
+
+  console.log(
+    `${botManager.userName} Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/webhook-${botManager.token}`,
+  );
 
   res.status(201).json({
     success: true,
-    data: telegram,
+    data: bot,
   });
 });
 
-// 获取单个Telegram机器人
-const getTelegramById = handleAsync(async (req: Request, res: Response) => {
-  const telegram = await Telegram.findById(req.params.id);
+const getBotById = handleAsync(async (req: Request, res: Response) => {
+  const telegram = await Bot.findById(req.params.id);
 
   if (!telegram) {
     res.status(404);
-    throw new Error('Telegram机器人不存在');
+    throw new Error('Bot机器人不存在');
   }
 
   res.json({
@@ -128,74 +138,69 @@ const getTelegramById = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 更新Telegram机器人
-const updateTelegram = handleAsync(async (req: Request, res: Response) => {
+const updateBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { token } = req.body;
 
-  const telegram = await Telegram.findById(id);
+  const telegram = await Bot.findById(id);
   if (!telegram) {
     res.status(404);
-    throw new Error('Telegram机器人不存在');
+    throw new Error('Bot机器人不存在');
   }
 
   if (token && token !== telegram.token) {
-    const tokenExists = await Telegram.findOne({ token, _id: { $ne: id } });
+    const tokenExists = await Bot.findOne({ token, _id: { $ne: id } });
     if (tokenExists) {
       res.status(400);
       throw new Error('该Bot Token已被其他机器人使用');
     }
   }
 
-  const updatedTelegram = await Telegram.findByIdAndUpdate(id, req.body, {
+  const updatedBot = await Bot.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   });
 
   res.json({
     success: true,
-    data: updatedTelegram,
+    data: updatedBot,
   });
 });
 
-// 删除Telegram机器人
-const deleteTelegram = handleAsync(async (req: Request, res: Response) => {
+const deleteBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const telegram = await Telegram.findByIdAndDelete(id);
+  const telegram = await Bot.findByIdAndDelete(id);
 
   if (!telegram) {
     res.status(404);
-    throw new Error('Telegram机器人不存在');
+    throw new Error('Bot机器人不存在');
   }
 
   res.json({
     success: true,
-    data: { message: 'Telegram机器人删除成功' },
+    data: { message: 'Bot机器人删除成功' },
   });
 });
 
-// 批量删除Telegram机器人
-const deleteMultipleTelegrams = handleAsync(
-  async (req: Request, res: Response) => {
-    const { ids } = req.body;
+const deleteMultipleBots = handleAsync(async (req: Request, res: Response) => {
+  const { ids } = req.body;
 
-    await Telegram.deleteMany({
-      _id: { $in: ids },
-    });
+  await Bot.deleteMany({
+    _id: { $in: ids },
+  });
 
-    res.json({
-      success: true,
-      message: `成功删除 ${ids.length} 个Telegram机器人`,
-    });
-  },
-);
+  res.json({
+    success: true,
+    message: `成功删除 ${ids.length} 个Bot机器人`,
+  });
+});
 
 export {
-  getTelegrams,
-  addTelegram,
-  getTelegramById,
-  updateTelegram,
-  deleteTelegram,
-  deleteMultipleTelegrams,
+  getBots,
+  addBot,
+  getBotById,
+  updateBot,
+  deleteBot,
+  deleteMultipleBots,
 };

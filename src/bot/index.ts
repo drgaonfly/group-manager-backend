@@ -6,6 +6,7 @@ import { default as BotManager } from '../models/bot';
 
 dotenv.config();
 
+// 不再使用
 export const production = async (app?: express.Express) => {
   const activeBots = await BotManager.find({ isActive: true });
 
