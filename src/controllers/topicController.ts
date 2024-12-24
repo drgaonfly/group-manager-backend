@@ -4,10 +4,25 @@ import handleAsync from '../utils/handleAsync';
 import { exclude } from '../utils/handleData';
 
 export const getTopics = handleAsync(async (req: Request, res: Response) => {
-  const topics = await Topic.find().populate('answers').exec();
+  const { current = '1', pageSize = '10' } = req.query;
+
+  const queryConditions: any = {};
+
+  let topics = await Topic.find(queryConditions)
+    .populate('answers')
+    .sort('-createdAt')
+    .skip((+current - 1) * +pageSize)
+    .limit(+pageSize)
+    .exec();
+
+  const total = await Topic.countDocuments(queryConditions);
+
   res.json({
     success: true,
     data: topics,
+    total,
+    current: +current,
+    pageSize: +pageSize,
   });
 });
 
@@ -17,7 +32,7 @@ export const addTopic = handleAsync(async (req: Request, res: Response) => {
   const savedTopic = await newTopic.save();
   res.json({
     success: true,
-    data: exclude(savedTopic.toObject(), '__v'),
+    data: savedTopic,
   });
 });
 
@@ -29,7 +44,7 @@ export const getTopicById = handleAsync(async (req: Request, res: Response) => {
   }
   res.json({
     success: true,
-    data: exclude(topic.toObject(), '__v'),
+    data: topic,
   });
 });
 
@@ -44,7 +59,7 @@ export const updateTopic = handleAsync(async (req: Request, res: Response) => {
   }
   res.json({
     success: true,
-    data: exclude(updatedTopic.toObject(), '__v'),
+    data: updatedTopic,
   });
 });
 

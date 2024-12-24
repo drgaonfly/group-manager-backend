@@ -4,10 +4,32 @@ import handleAsync from '../utils/handleAsync';
 import { exclude } from '../utils/handleData';
 
 export const getRecords = handleAsync(async (req: Request, res: Response) => {
-  const records = await Record.find().populate('user topic').exec();
+  const { current = '1', pageSize = '10', user, topic } = req.query;
+
+  const queryConditions: any = {};
+  if (user) {
+    queryConditions.user = user;
+  }
+  if (topic) {
+    queryConditions.topic = topic;
+  }
+
+  // 查询记录
+  let records = await Record.find(queryConditions)
+    .populate('user topic')
+    .sort('-createdAt') // 按创建时间降序排序
+    .skip((+current - 1) * +pageSize) // 跳过前面的记录
+    .limit(+pageSize) // 限制返回的记录数
+    .exec();
+
+  const total = await Record.countDocuments(queryConditions); // 计算总记录数
+
   res.json({
     success: true,
     data: records,
+    total,
+    current: +current,
+    pageSize: +pageSize,
   });
 });
 
@@ -17,7 +39,7 @@ export const addRecord = handleAsync(async (req: Request, res: Response) => {
   const savedRecord = await newRecord.save();
   res.json({
     success: true,
-    data: exclude(savedRecord.toObject(), '__v'),
+    data: savedRecord,
   });
 });
 
@@ -30,7 +52,7 @@ export const getRecordById = handleAsync(
     }
     res.json({
       success: true,
-      data: exclude(record.toObject(), '__v'),
+      data: record,
     });
   },
 );
@@ -46,7 +68,7 @@ export const updateRecord = handleAsync(async (req: Request, res: Response) => {
   }
   res.json({
     success: true,
-    data: exclude(updatedRecord.toObject(), '__v'),
+    data: updatedRecord,
   });
 });
 
@@ -62,3 +84,21 @@ export const deleteRecord = handleAsync(async (req: Request, res: Response) => {
     data: { message: 'Record deleted successfully' },
   });
 });
+
+export const deleteMultipleRecords = handleAsync(
+  async (req: Request, res: Response) => {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400);
+      throw new Error('Invalid request: No IDs provided');
+    }
+
+    const result = await Record.deleteMany({ _id: { $in: ids } });
+    res.json({
+      success: true,
+      message: `${result.deletedCount} records deleted successfully`,
+      data: { deletedCount: result.deletedCount },
+    });
+  },
+);

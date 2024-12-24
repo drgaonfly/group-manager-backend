@@ -1,13 +1,26 @@
 import { Request, Response } from 'express';
 import Answer from '../models/answer';
 import handleAsync from '../utils/handleAsync';
-import { exclude } from '../utils/handleData';
 
 export const getAnswers = handleAsync(async (req: Request, res: Response) => {
-  const answers = await Answer.find().exec();
+  const { current = '1', pageSize = '10' } = req.query;
+
+  const queryConditions: any = {};
+
+  let answers = await Answer.find(queryConditions)
+    .sort('-createdAt')
+    .skip((+current - 1) * +pageSize)
+    .limit(+pageSize)
+    .exec();
+
+  const total = await Answer.countDocuments(queryConditions);
+
   res.json({
     success: true,
     data: answers,
+    total,
+    current: +current,
+    pageSize: +pageSize,
   });
 });
 
@@ -17,7 +30,7 @@ export const addAnswer = handleAsync(async (req: Request, res: Response) => {
   const savedAnswer = await newAnswer.save();
   res.json({
     success: true,
-    data: exclude(savedAnswer.toObject(), '__v'),
+    data: savedAnswer,
   });
 });
 
@@ -30,7 +43,7 @@ export const getAnswerById = handleAsync(
     }
     res.json({
       success: true,
-      data: exclude(answer.toObject(), '__v'),
+      data: answer,
     });
   },
 );
@@ -46,7 +59,7 @@ export const updateAnswer = handleAsync(async (req: Request, res: Response) => {
   }
   res.json({
     success: true,
-    data: exclude(updatedAnswer.toObject(), '__v'),
+    data: updatedAnswer,
   });
 });
 

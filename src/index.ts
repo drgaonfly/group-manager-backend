@@ -17,6 +17,11 @@ import setupDB from './utils/db';
 import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
 
+// 新增的路由
+import recordRoutes from './routes/recordRoutes';
+import topicRoutes from './routes/topicRoutes';
+import answerRoutes from './routes/answerRoutes';
+
 import http from 'http';
 import { setupSocket } from './services/socket'; // 引入 socket 服务
 
@@ -37,6 +42,11 @@ app.use(express.json());
 app.get('/', (req: Request, res: Response) => {
   res.send('API is running...ok');
 });
+
+// 使用新路由
+app.use('/api/records', recordRoutes);
+app.use('/api/topics', topicRoutes);
+app.use('/api/answers', answerRoutes);
 
 app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
