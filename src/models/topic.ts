@@ -4,7 +4,7 @@ import { IAnswer } from './answer';
 export interface ITopic extends Document {
   video1: string;
   video2: string;
-  enum: string;
+  issue: string;
   answers: IAnswer;
 }
 
