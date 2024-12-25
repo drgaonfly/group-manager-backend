@@ -11,8 +11,8 @@ import {
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.brandName) {
-    query.brandName = { $regex: queryParams.brandName, $options: 'i' };
+  if (queryParams.Name) {
+    query.Name = { $regex: queryParams.Name, $options: 'i' };
   }
 
   if (queryParams.packageImageUrl) {
@@ -20,18 +20,6 @@ const buildQuery = (queryParams: any): any => {
       $regex: queryParams.packageImageUrl,
       $options: 'i',
     };
-  }
-
-  if (queryParams.skuName) {
-    query.skuName = { $regex: queryParams.skuName, $options: 'i' };
-  }
-
-  if (queryParams.sn) {
-    query.sn = { $regex: queryParams.sn, $options: 'i' };
-  }
-
-  if (queryParams.spec) {
-    query.spec = { $regex: queryParams.spec, $options: 'i' };
   }
 
   return query;
