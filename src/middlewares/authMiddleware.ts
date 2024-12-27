@@ -8,7 +8,6 @@ import { ROLES } from '../constants';
 import { RequestCustom } from '/user';
 import { IDataPermission } from '../models/dataPermission';
 import { IRole } from '../models/role';
-import crypto from 'crypto';
 
 const allowedPaths: string[] = ['/api/', 'path2']; // Replace with your actual allowed paths
 
@@ -51,6 +50,7 @@ const protect = handleAsync(
         }
 
         req.user = user;
+        console.log('User is', user);
         next();
       } catch (error) {
         console.error(error);
@@ -169,56 +169,4 @@ const checkDataPermission = handleAsync(
   },
 );
 
-const appDatabase = {
-  pvMgE78ym6: 'KP7aBBj2j62Jupw1YbWgh4woXRkgkWPp',
-};
-// 验证 access_token 的中间件
-const authenticateToken = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
-  const appId = req.headers['x-app-id'] as string;
-  const timestamp = req.headers['x-timestamp'] as string;
-  const accessToken = req.headers['authorization']?.split(' ')[1];
-  if (!appId || !timestamp || !accessToken) {
-    res.status(400).json({ error: 'Missing authentication parameters' });
-    return;
-  }
-  // Assuming appDatabase is a global variable or defined elsewhere
-  // If appDatabase is not defined, it needs to be defined here or ensure it is accessible in this file's scope
-  // The following code assumes appDatabase is an object used to store application keys
-  const appSecret = appDatabase[appId as keyof typeof appDatabase];
-  if (!appSecret) {
-    res.status(401).json({ error: 'Invalid app_id' });
-    return;
-  }
-  // 生成后端的 token
-  const data = `${appId}:${timestamp}`;
-  const serverAccessToken = crypto
-    .createHmac('sha256', appSecret)
-    .update(data)
-    .digest('hex');
-  // 验证 access_token 是否匹配
-  if (accessToken !== serverAccessToken) {
-    res.status(401).json({ error: 'Invalid access_token' });
-    return;
-  }
-  // 可选：检查时间戳，确保请求未过期
-  const requestTime = parseInt(timestamp);
-  const currentTime = Math.floor(Date.now() / 1000);
-  if (currentTime - requestTime > 300) {
-    // 例如 5 分钟
-    res.status(401).json({ error: 'Token expired' });
-    return;
-  }
-  next();
-};
-
-export {
-  protect,
-  allow,
-  checkPermission,
-  checkDataPermission,
-  authenticateToken,
-};
+export { protect, allow, checkPermission, checkDataPermission };

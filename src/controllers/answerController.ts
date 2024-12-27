@@ -15,9 +15,9 @@ const buildQuery = (queryParams: any): any => {
     query.Name = { $regex: queryParams.Name, $options: 'i' };
   }
 
-  if (queryParams.packageImageUrl) {
-    query.packageImageUrl = {
-      $regex: queryParams.packageImageUrl,
+  if (queryParams.image) {
+    query.image = {
+      $regex: queryParams.image,
       $options: 'i',
     };
   }
@@ -38,9 +38,7 @@ const getAnswers = handleAsync(async (req: Request, res: Response) => {
     .exec();
 
   // 处理图片路径
-  const processedAnswers = await transformDocumentImages(answers, [
-    'packageImageUrl',
-  ]);
+  const processedAnswers = await transformDocumentImages(answers, ['image']);
 
   const total = await Answer.countDocuments(query).exec();
 
@@ -77,10 +75,7 @@ const getAnswerById = handleAsync(async (req: Request, res: Response) => {
   }
 
   // 处理图片路径
-  const processedAnswer = await transformDocumentImage(
-    answer,
-    'packageImageUrl',
-  );
+  const processedAnswer = await transformDocumentImage(answer, 'image');
 
   res.json({
     success: true,
@@ -91,7 +86,7 @@ const getAnswerById = handleAsync(async (req: Request, res: Response) => {
 // 更新答案
 const updateAnswer = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { packageImageUrl, ...otherFields } = req.body;
+  const { image, ...otherFields } = req.body;
 
   const answer = await Answer.findById(id);
   if (!answer) {
@@ -101,8 +96,7 @@ const updateAnswer = handleAsync(async (req: Request, res: Response) => {
 
   // 更新字段
   const updates = {
-    ...(packageImageUrl &&
-      !packageImageUrl.startsWith('http') && { packageImageUrl }),
+    ...(image && !image.startsWith('http') && { image }),
     ...otherFields,
   };
 
@@ -113,7 +107,7 @@ const updateAnswer = handleAsync(async (req: Request, res: Response) => {
 
   // 处理图片路径
   const processedAnswer = await transformDocumentImage(updatedAnswer, [
-    'packageImageUrl',
+    'image',
   ]);
 
   res.json({
