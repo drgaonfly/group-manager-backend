@@ -32,6 +32,7 @@ const getAnswers = handleAsync(async (req: Request, res: Response) => {
   const query = buildQuery(req.query);
 
   const answers = await Answer.find(query)
+    .populate('topic')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -67,7 +68,7 @@ const addAnswer = handleAsync(async (req: CustomRequest, res: Response) => {
 
 // 根据ID获取答案
 const getAnswerById = handleAsync(async (req: Request, res: Response) => {
-  const answer = await Answer.findById(req.params.id);
+  const answer = await Answer.findById(req.params.id).populate('topic');
 
   if (!answer) {
     res.status(404);

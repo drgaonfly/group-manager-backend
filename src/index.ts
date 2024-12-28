@@ -45,8 +45,6 @@ app.get('/', (req: Request, res: Response) => {
 
 // 使用新路由
 app.use('/api/records', recordRoutes);
-// app.use('/api/topics', topicRoutes);
-// app.use('/api/answers', answerRoutes);
 
 app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);

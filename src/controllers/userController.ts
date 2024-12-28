@@ -40,6 +40,7 @@ const getUsers = handleAsync(async (req: Request, res: Response) => {
   const users = await User.find({
     ...query,
   })
+    .populate('topic')
     .populate('roles')
     .sort('-createdAt') // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)

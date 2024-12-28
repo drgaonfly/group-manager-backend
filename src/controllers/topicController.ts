@@ -57,8 +57,16 @@ const getTopics = handleAsync(async (req: Request, res: Response) => {
 
 // 添加topic
 const addTopic = handleAsync(async (req: Request, res: Response) => {
+  const now = new Date();
+  //生成题目编号
+  const uniqueNum = `${now.getFullYear()}${(now.getMonth() + 1)
+    .toString()
+    .padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}${Math.floor(
+    Math.random() * 100000,
+  ).toString()}`; // 生成一个包含日期的唯一数字
   const newTopic = new Topic({
     ...req.body,
+    number: uniqueNum, // 在新建时设置 number 字段
   });
 
   const savedTopic = await newTopic.save();
