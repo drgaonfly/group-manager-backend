@@ -3,6 +3,7 @@ import Record from '../models/record';
 import handleAsync from '../utils/handleAsync';
 import Topic from '../models/topic';
 import { RequestCustom } from '../types/user';
+import { exclude } from '../utils/handleData';
 
 //获取记录管理列表
 export const getRecords = handleAsync(async (req: Request, res: Response) => {
@@ -61,19 +62,25 @@ export const submitNewbieTraining = handleAsync(
 // 获取题目数据
 export const getNewbieTraining = handleAsync(
   async (req: RequestCustom, res: Response) => {
+    if (!req.user.topics || req.user.topics?.length === 0) {
+      const allTopics = await Topic.find().sort({ createdAt: -1 }).limit(30);
+      req.user.topics = allTopics.map((topic) => ({
+        topic: topic._id,
+        status: 'pending',
+      }));
+
+      await req.user.save();
+    }
+
     // 查询记录以获取状态
     const records = await Record.find({ user: req.user._id }); // 假设您要根据用户 ID 查询记录
-
-    // 检查状态
-    const statuses = records.map((record) => record.status); // 获取所有记录的状态
 
     // 继续获取题目数据
     const topics = await Topic.find(); // 获取所有题目数据
     res.json({
       success: true,
       data: {
-        topics,
-        statuses,
+        ...exclude(req.user.toObject(), 'password'),
       },
     });
   },

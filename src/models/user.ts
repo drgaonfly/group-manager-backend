@@ -9,7 +9,7 @@ export interface IUser extends Document {
   name: string;
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
-  topic: mongoose.Types.ObjectId | ITopic;
+  currentTopic: mongoose.Types.ObjectId | ITopic;
   live: boolean;
   topics: Array<{
     topic: mongoose.Types.ObjectId | ITopic;
@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema(
         ref: 'Role', // Reference the Role model
       },
     ],
-    topic: {
+    currentTopic: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Topic',
     },

@@ -1,7 +1,17 @@
 import dotenv from 'dotenv';
-dotenv.config();
 import mongoose, { ConnectOptions } from 'mongoose';
+
+dotenv.config();
+
 const setupDB = async (): Promise<void | null> => {
+  console.log('尝试初始化数据库连接...');
+
+  if (mongoose.connection.readyState === 1) {
+    // 1 = connected
+    console.log('MongoDB 已经连接');
+    return;
+  }
+
   try {
     // Connect to MongoDB
     // 如果你正在使用Mongoose 6.x或更高版本，简单地移除
@@ -21,9 +31,11 @@ const setupDB = async (): Promise<void | null> => {
     }
 
     await mongoose.connect(process.env.MONGODB_URL, options);
+    // isConnected = true;
     console.log('MongoDB Connected');
   } catch (error) {
     console.log(error);
+    process.exit(1);
   }
 };
 
