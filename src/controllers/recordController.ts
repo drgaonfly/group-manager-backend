@@ -4,6 +4,8 @@ import handleAsync from '../utils/handleAsync';
 import Topic from '../models/topic';
 import { RequestCustom } from '../types/user';
 import { exclude } from '../utils/handleData';
+import Answer from '../models/answer';
+import mongoose from 'mongoose';
 
 //获取记录管理列表
 export const getRecords = handleAsync(async (req: Request, res: Response) => {
@@ -42,14 +44,26 @@ export const getRecords = handleAsync(async (req: Request, res: Response) => {
 export const submitNewbieTraining = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const topicId = req.params.id; // 从路由参数中获取 topicId
-    const { answers } = req.body; // 提交的内容包含 answers
+    const { answers, issue } = req.body; // 提交的内容包含 answers
     const userId = req.user._id; // 从 req.user 中获取用户 ID
+
+    if (!topicId) {
+      res.status(400);
+      throw new Error('Invalid request');
+    }
+    // 如果 issue 是无异常才是要 answers
+    let answersToSave = [];
+
+    if (issue === 'No Issue') {
+      answersToSave = answers;
+    }
 
     // 创建新的记录
     const newRecord = await Record.create({
       user: userId,
       topic: topicId,
-      answers,
+      answers: answersToSave,
+      issue,
     });
 
     res.json({
