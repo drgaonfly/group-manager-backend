@@ -36,6 +36,13 @@ const recordSchema = new mongoose.Schema(
     issue: {
       type: String,
       required: true,
+      enum: [
+        'No Issue',
+        'Unfriendly Operation',
+        'Recognition Error',
+        'Video Error/Frame Loss',
+      ],
+      default: 'No Issue',
     },
     status: {
       type: String,

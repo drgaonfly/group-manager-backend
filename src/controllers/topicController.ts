@@ -32,7 +32,6 @@ const getTopics = handleAsync(async (req: Request, res: Response) => {
 
   // 执行查询并使用 populate 填充 answers 数据
   const topics = await Topic.find(query)
-    .populate('answer') // 填充关联的 answers 数据
     .sort('-createdAt') // 按创建时间倒序排序
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -60,7 +59,7 @@ const addTopic = handleAsync(async (req: Request, res: Response) => {
   const uniqueNum = await generateUniqueNumber(); // 直接调用 generateUniqueNumber
   const newTopic = new Topic({
     ...req.body,
-    number: uniqueNum, // 在新建时设置 number 字段
+    topicNumber: uniqueNum, // 在新建时设置 topicNumber 字段
   });
 
   const savedTopic = await newTopic.save();
@@ -173,7 +172,7 @@ const generateUniqueNumber = async (): Promise<string> => {
     uniqueNumber = Math.floor(Math.random() * Math.pow(10, 5)) // 假设长度为5
       .toString()
       .padStart(5, '0'); // 生成指定长度的随机数字
-  } while (await Topic.findOne({ number: `${prefix}${uniqueNumber}` })); // 确保唯一性
+  } while (await Topic.findOne({ topicNumber: `${prefix}${uniqueNumber}` })); // 确保唯一性
   return `${prefix}${uniqueNumber}`; // 返回带前缀的唯一数字
 };
 

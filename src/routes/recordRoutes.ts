@@ -6,8 +6,6 @@ import {
   updateRecord,
   deleteRecord,
   deleteMultipleRecords,
-  submitNewbieTraining,
-  getNewbieTraining,
 } from '../controllers/recordController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -24,8 +22,5 @@ router
   .get(protect, checkPermission, getRecordById)
   .put(protect, checkPermission, updateRecord)
   .delete(protect, checkPermission, deleteRecord);
-
-router.get('/newbie-training', getNewbieTraining);
-router.post('/submit-newbie-training', submitNewbieTraining);
 
 export default router;

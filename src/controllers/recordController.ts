@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Record from '../models/record';
 import handleAsync from '../utils/handleAsync';
 import Topic from '../models/topic';
+import { RequestCustom } from '../types/user';
 
 //获取记录管理列表
 export const getRecords = handleAsync(async (req: Request, res: Response) => {
@@ -38,14 +39,16 @@ export const getRecords = handleAsync(async (req: Request, res: Response) => {
 
 // 提交新手训练记录
 export const submitNewbieTraining = handleAsync(
-  async (req: Request, res: Response) => {
-    const { userId, topicId, content } = req.body; // 假设提交的内容包含 userId、topicId 和内容
+  async (req: RequestCustom, res: Response) => {
+    const topicId = req.params.id; // 从路由参数中获取 topicId
+    const { answers } = req.body; // 提交的内容包含 answers
+    const userId = req.user._id; // 从 req.user 中获取用户 ID
 
     // 创建新的记录
     const newRecord = await Record.create({
       user: userId,
       topic: topicId,
-      content,
+      answers,
     });
 
     res.json({
@@ -57,12 +60,21 @@ export const submitNewbieTraining = handleAsync(
 
 // 获取题目数据
 export const getNewbieTraining = handleAsync(
-  async (req: Request, res: Response) => {
-    const topics = await Topic.find(); // 获取所有题目数据
+  async (req: RequestCustom, res: Response) => {
+    // 查询记录以获取状态
+    const records = await Record.find({ user: req.user._id }); // 假设您要根据用户 ID 查询记录
 
+    // 检查状态
+    const statuses = records.map((record) => record.status); // 获取所有记录的状态
+
+    // 继续获取题目数据
+    const topics = await Topic.find(); // 获取所有题目数据
     res.json({
       success: true,
-      data: topics,
+      data: {
+        topics,
+        statuses,
+      },
     });
   },
 );
