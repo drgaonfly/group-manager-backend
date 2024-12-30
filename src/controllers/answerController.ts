@@ -135,7 +135,7 @@ const deleteAnswer = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 批量删除答案
+// 批量删除答案1
 const deleteMultipleAnswers = handleAsync(
   async (req: Request, res: Response) => {
     const { ids } = req.body;
