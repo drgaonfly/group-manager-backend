@@ -9,6 +9,11 @@ import {
 } from '../controllers/recordController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
+import {
+  getNewbieTraining,
+  submitNewbieTraining,
+} from '../controllers/recordController';
+
 const router: Router = express.Router();
 
 router
@@ -22,5 +27,8 @@ router
   .get(protect, checkPermission, getRecordById)
   .put(protect, checkPermission, updateRecord)
   .delete(protect, checkPermission, deleteRecord);
+
+router.get('/newbie-training', protect, getNewbieTraining);
+router.post('/submit-newbie-training/:id', protect, submitNewbieTraining);
 
 export default router;

@@ -8,10 +8,6 @@ import {
   deleteMultipleTopics,
 } from '../controllers/topicController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
-import {
-  getNewbieTraining,
-  submitNewbieTraining,
-} from '../controllers/recordController';
 
 const router: Router = express.Router();
 
@@ -26,13 +22,5 @@ router
   .get(protect, checkPermission, getTopicById)
   .put(protect, checkPermission, updateTopic)
   .delete(protect, checkPermission, deleteTopic);
-
-router.get('/newbie-training', protect, checkPermission, getNewbieTraining);
-router.post(
-  '/submit-newbie-training/:id',
-  protect,
-  checkPermission,
-  submitNewbieTraining,
-);
 
 export default router;
