@@ -17,7 +17,7 @@ export interface IAnswer extends Document {
 const answerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    image: { type: String, required: true },
+    image: { type: String, required: false },
     topic: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic' },
     id: { type: String, required: false },
     skuName: { type: String, required: false },
