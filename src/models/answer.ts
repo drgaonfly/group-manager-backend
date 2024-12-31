@@ -12,7 +12,6 @@ export interface IAnswer extends Document {
   spec: string;
   id: string;
   rowNumber: number;
-  quantity: number;
 }
 
 const answerSchema = new mongoose.Schema(
@@ -25,7 +24,6 @@ const answerSchema = new mongoose.Schema(
     sn: { type: String, required: false },
     spec: { type: String, required: false },
     rowNumber: { type: Number, required: false },
-    quantity: { type: Number, required: false },
   },
   { timestamps: true },
 );
