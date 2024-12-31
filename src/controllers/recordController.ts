@@ -140,7 +140,8 @@ export const getNewbieTraining = handleAsync(
     res.json({
       success: true,
       data: {
-        ...exclude(req.user.toObject(), 'password'),
+        user: { ...exclude(req.user.toObject(), 'password') },
+        isHasTopics: req.user.topics?.length > 0,
       },
     });
   },
