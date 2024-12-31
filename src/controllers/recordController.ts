@@ -46,6 +46,15 @@ export const submitNewbieTraining = handleAsync(
     const { answers, issue } = req.body; // 提交的内容包含 answers
     const currentUser = await User.findById(req.user._id);
 
+    const topicInUser = currentUser.topics.find(
+      (topic) => topic.topic.toString() === topicId,
+    );
+
+    if (!topicInUser) {
+      res.status(400);
+      throw new Error('topicId is not in your topics');
+    }
+
     const topic = await Topic.findById(topicId)
       .populate({
         path: 'answers',
@@ -86,8 +95,6 @@ export const submitNewbieTraining = handleAsync(
 
     newRecord.status = status;
 
-    await newRecord.save();
-
     currentUser.topics = currentUser.topics.map((topic) => {
       if (topic.topic.toString() === topicId) {
         return {
@@ -98,23 +105,43 @@ export const submitNewbieTraining = handleAsync(
       return topic;
     });
 
-    const nextTopic = currentUser.topics.find(
-      (topic) =>
-        topic.topic.toString() !== topicId && topic.status === 'pending',
+    let nextTopic;
+    let currentIndex = currentUser.topics.findIndex(
+      (topic) => topic.topic.toString() === topicId,
     );
 
-    if (nextTopic) {
-      currentUser.currentTopic = nextTopic.topic;
-    } else {
-      currentUser.currentTopic = null;
+    do {
+      currentIndex = currentIndex + 1;
+      nextTopic = currentUser.topics[currentIndex];
+    } while (nextTopic.status === 'pending');
+
+    if (!nextTopic) {
+      res.status(400);
+      throw new Error('所有题目都已经完成了');
     }
 
+    console.log('下一个对象：', nextTopic);
+    currentUser.currentTopic = nextTopic.topic;
+
+    await newRecord.save();
+
     await currentUser.save();
+
+    const currentTopic = await Topic.findById(currentUser.currentTopic)
+      .populate({
+        path: 'answers',
+        model: 'Answer',
+      })
+      .populate({
+        path: 'correctAnswers.answer',
+        model: 'Answer',
+      });
 
     res.json({
       success: true,
       data: {
         record: newRecord,
+        currentTopic,
         user: exclude(currentUser.toObject(), 'password'),
       },
     });
@@ -137,10 +164,29 @@ export const getNewbieTraining = handleAsync(
       await req.user.save();
     }
 
+    const currentUser = await User.findById(req.user._id)
+      .populate({ path: 'currentTopic', model: 'Topic' })
+      .populate({
+        path: 'topics',
+        populate: { path: 'topic', model: 'Topic' },
+      });
+
+    const currentTopic = await Topic.findById(currentUser.currentTopic)
+      .populate({
+        path: 'answers',
+        model: 'Answer',
+      })
+      .populate({
+        path: 'correctAnswers.answer',
+        model: 'Answer',
+      });
+
     res.json({
       success: true,
       data: {
-        user: { ...exclude(req.user.toObject(), 'password') },
+        currentUser: { ...exclude(currentUser.toObject(), 'password') },
+        currentTopic,
+        topics: currentUser.topics,
         isHasTopics: req.user.topics?.length > 0,
       },
     });

@@ -37,17 +37,6 @@ const protect = handleAsync(
 
         const user: IUser | null = await User.findById(decoded.id)
           .populate({
-            path: 'currentTopic',
-            model: 'Topic',
-          })
-          .populate({
-            path: 'topics',
-            populate: {
-              path: 'topic',
-              model: 'Topic',
-            },
-          })
-          .populate({
             path: 'roles',
             populate: {
               path: 'permissions',
