@@ -11,15 +11,8 @@ import {
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.Name) {
+  if (queryParams.name) {
     query.Name = { $regex: queryParams.Name, $options: 'i' };
-  }
-
-  if (queryParams.image) {
-    query.image = {
-      $regex: queryParams.image,
-      $options: 'i',
-    };
   }
 
   return query;

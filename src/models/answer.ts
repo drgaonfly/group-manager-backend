@@ -11,6 +11,7 @@ export interface IAnswer extends Document {
   sn: string;
   spec: string;
   id: string;
+  rowNumber: number;
 }
 
 const answerSchema = new mongoose.Schema(
@@ -22,6 +23,7 @@ const answerSchema = new mongoose.Schema(
     skuName: { type: String, required: false },
     sn: { type: String, required: false },
     spec: { type: String, required: false },
+    rowNumber: { type: Number, required: false },
   },
   { timestamps: true },
 );
