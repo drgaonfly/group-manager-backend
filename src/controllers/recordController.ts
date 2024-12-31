@@ -6,7 +6,8 @@ import { RequestCustom } from '../types/user';
 import { exclude } from '../utils/handleData';
 import User from '../models/user';
 import axios from 'axios';
-import Answer from '../models/answer';
+import { generateUniqueNumber } from './topicController';
+import ossClient from '../utils/oss';
 
 //获取记录管理列表
 export const getRecords = handleAsync(async (req: Request, res: Response) => {
@@ -24,7 +25,6 @@ export const getRecords = handleAsync(async (req: Request, res: Response) => {
   const records = await Record.find(queryConditions)
     .populate('user')
     .populate('topic')
-    .populate('answer')
     .sort('-createdAt') // 按创建时间降序排序
     .skip((+current - 1) * +pageSize) // 跳过前面的记录
     .limit(+pageSize) // 限制返回的记录数
@@ -81,17 +81,17 @@ const getAllTopics = async (token: string) => {
       },
     },
   );
-  return response.data.data.result.nodes;
+  return response.data?.data?.result?.nodes[0]?.subjectList;
 };
 
 //
-const getTopicDetails = async (token: string) => {
+const getTopicDetails = async (token: string, id: string) => {
   const response = await axios.post(
     url,
     {
       operationName: null,
       variables: {
-        id: '20241108646988844281110528',
+        id,
         limit: 1,
         privilege: 'STAFF',
       },
@@ -125,7 +125,7 @@ const getTopicDetails = async (token: string) => {
       },
     },
   );
-  return response.data.data.result.nodes;
+  return response.data?.data?.result?.nodes[0];
 };
 
 // 获取answer
@@ -165,50 +165,68 @@ const getAnswersBySns = async (token: string) => {
   return response.data.data.result;
 };
 
-// 爬取数据的主接口
-export const scrapeData = handleAsync(async (req: Request, res: Response) => {
-  // 并行执行所有请求
-  const [firstData, secondData, fourthResponse] = await Promise.all([
-    getAllTopics(token),
-    getTopicDetails(token),
-    getAnswersBySns(token),
-  ]);
+// 上传视频到OSS
+const uploadVideoToOSS = async (url: string) => {
+  const regex = /\/([^\/]+)\.mp4/g;
+  const results = [];
+  let match;
 
-  const answers = await Answer.find({});
+  while ((match = regex.exec(url)) !== null) {
+    results.push(match[1]);
+  }
 
-  console.log(answers);
+  const filename = results[0];
+  const ossPath = `taskOssUploads/${filename}`;
 
-  // 提取 fourthData
-  const fourthData = {
-    id: fourthResponse.list[0].id,
-    brandName: fourthResponse.list[0].brandName,
-    sn: fourthResponse.list[0].sn,
-    skuName: fourthResponse.list[0].skuName,
-    spec: fourthResponse.list[0].spec,
-    packageImageUrl: fourthResponse.list[0].packageImageUrl,
-  };
-
-  // 创建新的 Answer 实例
-  const newAnswer = new Answer({
-    name: 'Default Name', // 你可以根据需要设置默认值
-    image: fourthData.packageImageUrl, // 使用 packageImageUrl 作为图像
-    topic: null, // 根据需要设置
-    skuName: fourthData.skuName,
-    sn: fourthData.sn,
-    spec: fourthData.spec,
-    id: fourthData.id,
+  // Download the file from URL
+  const response = await axios({
+    url,
+    method: 'GET',
+    responseType: 'stream',
   });
 
-  // 保存到数据库
-  await newAnswer.save();
+  // Upload the file content to OSS
+  await ossClient.put(ossPath, response.data);
+
+  return ossPath;
+};
+
+// 爬取数据的主接口
+export const scrapeData = handleAsync(async (req: Request, res: Response) => {
+  const topics = await getAllTopics(token);
+
+  if (!topics || topics.length === 0) {
+    res.status(404);
+    throw new Error('Topics not found');
+  }
+
+  // for (const topic of topics) {
+  const topicDetails = await getTopicDetails(token, topics[0].id);
+
+  console.log(topicDetails);
+
+  if (!topicDetails) {
+    res.status(404);
+    throw new Error('Topic details not found');
+  }
+
+  const uniqueNum = await generateUniqueNumber(); // 直接调用 generateUniqueNumber
+
+  const newTopic = new Topic({
+    topicNumber: uniqueNum,
+    video1: await uploadVideoToOSS(topicDetails.videoList[0]),
+    video2: topicDetails.videoList?.[1]
+      ? await uploadVideoToOSS(topicDetails.videoList[1])
+      : undefined,
+  });
+
+  await newTopic.save();
 
   // 返回所有数据
   res.json({
     success: true,
     data: {
-      firstData,
-      secondData,
-      fourthData,
+      topicDetails: topicDetails,
     },
   });
 });

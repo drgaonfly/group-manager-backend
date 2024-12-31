@@ -164,7 +164,7 @@ const deleteMultipleTopics = handleAsync(
 );
 
 // 新增生成唯一数字的编号
-const generateUniqueNumber = async (): Promise<string> => {
+export const generateUniqueNumber = async (): Promise<string> => {
   const now = new Date();
   const prefix = `${now.getFullYear()}${(now.getMonth() + 1)
     .toString()
