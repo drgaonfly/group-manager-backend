@@ -151,6 +151,13 @@ export const submitNewbieTraining = handleAsync(
 // 获取题目数据
 export const getNewbieTraining = handleAsync(
   async (req: RequestCustom, res: Response) => {
+    const { emptyRecordFlag } = req.query;
+
+    if (emptyRecordFlag === 'true') {
+      req.user.topics = [];
+      await req.user.save();
+    }
+
     if (!req.user.topics || req.user.topics?.length === 0) {
       const allTopics = await Topic.aggregate([
         { $sample: { size: await Topic.countDocuments().exec() } },
