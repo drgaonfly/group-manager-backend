@@ -24,6 +24,7 @@ import answerRoutes from './routes/answerRoutes';
 
 import http from 'http';
 import { setupSocket } from './services/socket'; // 引入 socket 服务
+import { setupRedis } from './utils/redis';
 
 // import { startWebHookBot } from './bot';
 dotenv.config();
@@ -60,6 +61,7 @@ app.use('/api/topics', topicRoutes);
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
 setupDB();
+setupRedis();
 // 初始化 Socket.IO
 setupSocket(server);
 console.log('Socket.IO server initialized');
