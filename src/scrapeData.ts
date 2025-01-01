@@ -129,16 +129,8 @@ const getAnswersBySns = async (token: string, snList: string[]) => {
   return response.data?.data?.result?.list;
 };
 
-const uploadVideoToOSS = async (url: string) => {
-  const regex = /\/([^\/]+)\.mp4/g;
-  const results = [];
-  let match;
-
-  while ((match = regex.exec(url)) !== null) {
-    results.push(match[1]);
-  }
-
-  const filename = results[0];
+const uploadFileToOSS = async (url: string) => {
+  const filename = url.split('/').pop() ?? '';
   const ossPath = `taskOssUploads/${filename}`;
 
   // Download the file from URL
@@ -155,8 +147,10 @@ const uploadVideoToOSS = async (url: string) => {
 };
 
 const scrapeData = async () => {
-  setupDB();
+  console.log('开始连接数据库');
+  await setupDB();
 
+  console.log('开始爬取数据');
   const topics = await getAllTopics(token);
 
   if (!topics || topics.length === 0) {
@@ -188,9 +182,9 @@ const scrapeData = async () => {
 
     const newTopic = new Topic({
       topicNumber: uniqueNum,
-      video1: await uploadVideoToOSS(topicDetails.videoList[0]),
+      video1: await uploadFileToOSS(topicDetails.videoList[0]),
       video2: topicDetails.videoList?.[1]
-        ? await uploadVideoToOSS(topicDetails.videoList[1])
+        ? await uploadFileToOSS(topicDetails.videoList[1])
         : undefined,
     });
 
@@ -208,7 +202,7 @@ const scrapeData = async () => {
 
     for (const answer of answers) {
       const newAnswer = new Answer({
-        image: await uploadVideoToOSS(answer.packageImageUrl),
+        image: await uploadFileToOSS(answer.packageImageUrl),
         topic: newTopic._id,
         skuName: answer.skuName,
         brandName: answer.brandName,
@@ -222,7 +216,7 @@ const scrapeData = async () => {
 
       await newAnswer.save();
 
-      console.log('创建答案 topic: ' + newAnswer.skuName + ' 完成');
+      console.log('创建答案: ' + newAnswer.skuName + ' 完成');
       console.log(newAnswer.toObject());
 
       newTopic.answers.push(newAnswer._id as mongoose.Types.ObjectId);
