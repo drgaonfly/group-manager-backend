@@ -10,6 +10,7 @@ export interface ITopic extends Document {
     answer: mongoose.Types.ObjectId | IAnswer;
     count: number;
   }>;
+  answers: Array<IAnswer>;
 }
 
 const topicSchema = new mongoose.Schema(

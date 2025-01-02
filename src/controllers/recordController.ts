@@ -5,6 +5,10 @@ import Topic from '../models/topic';
 import { RequestCustom } from '../types/user';
 import { exclude } from '../utils/handleData';
 import User from '../models/user';
+import {
+  transformDocumentImage,
+  transformDocumentImages,
+} from '../utils/transformUtils';
 
 //获取记录管理列表
 export const getRecords = handleAsync(async (req: Request, res: Response) => {
@@ -182,11 +186,22 @@ export const getNewbieTraining = handleAsync(
         model: 'Answer',
       });
 
+    const processedCurrentTopic = await transformDocumentImage(currentTopic, [
+      'video1',
+      'video2',
+    ]);
+
+    const processedAnswers = await transformDocumentImages(
+      currentTopic.answers,
+      ['image'],
+    );
+
     res.json({
       success: true,
       data: {
         currentUser: { ...exclude(currentUser.toObject(), 'password') },
-        currentTopic,
+        currentTopic: processedCurrentTopic,
+        answers: processedAnswers,
         topics: currentUser.topics,
         isHasTopics: req.user.topics?.length > 0,
       },
