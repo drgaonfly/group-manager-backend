@@ -1,16 +1,25 @@
 import mongoose, { Document } from 'mongoose';
-import { IAnswer } from './answer';
 
 export interface ITopic extends Document {
   video1: string;
   video2?: string;
   topicNumber: number;
-  id: string;
-  correctAnswers: Array<{
-    answer: mongoose.Types.ObjectId | IAnswer;
-    count: number;
-  }>;
+  correctAnswers: IMenu[];
 }
+
+export interface IMenu {
+  count: number;
+  answer: mongoose.Types.ObjectId;
+}
+
+const correctAnswerSchema = new mongoose.Schema({
+  count: { type: Number, require: true, default: 1 },
+  answer: {
+    type: mongoose.Schema.Types.ObjectId,
+    require: true,
+    ref: 'Answer',
+  },
+});
 
 const topicSchema = new mongoose.Schema(
   {
@@ -18,12 +27,7 @@ const topicSchema = new mongoose.Schema(
     video2: { type: String, trim: true, required: false },
     topicNumber: { type: Number, required: true, unique: true },
     id: { type: String, required: false },
-    correctAnswers: [
-      {
-        answer: { type: mongoose.Schema.Types.ObjectId, ref: 'Answer' },
-        count: { type: Number, default: 1 },
-      },
-    ],
+    correctAnswers: [correctAnswerSchema],
   },
   {
     timestamps: true,

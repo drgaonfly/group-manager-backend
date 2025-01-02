@@ -15,6 +15,7 @@ export interface IUser extends Document {
     topic: mongoose.Types.ObjectId | ITopic;
     status: 'pending' | 'success' | 'fail';
   }>;
+  inviteCode: string;
 }
 
 const userSchema = new mongoose.Schema(
@@ -53,6 +54,9 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    inviteCode: {
+      type: String,
+    },
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
