@@ -13,7 +13,7 @@ jobs:
           username: root
           password: ${{ secrets.PASSWORD }}
           port: 22
-          script: cd /www/wwwroot/annotation-backend.2025fc.xyz/annotation-backend && git pull --rebase origin main && /www/server/nodejs/v20.16.0/bin/pnpm install && git checkout -f . && npm run build && pm2 restart annotationbackend
+          script: cd /www/wwwroot/mev-bot-backend.2025fc.xyz/mev-bot-backend && git pull --rebase origin main && /www/server/nodejs/v20.16.0/bin/pnpm install && git checkout -f . && npm run build && pm2 restart mevbotbackend
 
       # - name: executing remote ssh commands using password
       #   uses: appleboy/ssh-action@v1.0.3
