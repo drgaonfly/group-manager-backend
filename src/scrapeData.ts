@@ -257,10 +257,15 @@ const scrapeData = async () => {
         sn: correctAnswer.sn,
       });
 
-      newTopic.correctAnswers.push({
-        answer: answer._id as mongoose.Types.ObjectId,
-        count: correctAnswer?.number,
-      });
+      if (answer) {
+        // 确保找到 answer
+        newTopic.correctAnswers.push({
+          answer: answer._id as mongoose.Types.ObjectId, // 确保这是一个有效的 ObjectId
+          count: correctAnswer?.number || 1, // 确保 count 有默认值
+        });
+      } else {
+        console.warn(`Answer not found for SN: ${correctAnswer.sn}`);
+      }
     }
 
     await newTopic.save();
