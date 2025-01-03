@@ -24,7 +24,7 @@ import answerRoutes from './routes/answerRoutes';
 import proxyRoutes from './routes/proxyRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 
-import WithdrawRoutes from './routes/withdrawRoutes';
+import withdrawRoutes from './routes/withdrawRoutes';
 import instructionRoutes from './routes/instructionRoutes';
 
 import http from 'http';
@@ -64,7 +64,7 @@ app.use('/api/topics', topicRoutes);
 app.use('/api/proxies', proxyRoutes);
 app.use('/api/employees', employeeRoutes);
 
-app.use('/api/withdraws', WithdrawRoutes);
+app.use('/api/withdraws', withdrawRoutes);
 
 app.use('/api/instructions', instructionRoutes);
 
