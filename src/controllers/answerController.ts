@@ -6,6 +6,7 @@ import {
   transformDocumentImage,
   transformDocumentImages,
 } from '../utils/transformUtils';
+import { generateUniqueNumber } from './topicController';
 
 // dataPermissionController.ts
 const buildQuery = (queryParams: any): any => {
@@ -55,8 +56,10 @@ const getAnswers = handleAsync(async (req: Request, res: Response) => {
 
 // 添加答案
 const addAnswer = handleAsync(async (req: CustomRequest, res: Response) => {
+  const uniqueNum = await generateUniqueNumber(); // 直接调用 generateUniqueNumber
   const newAnswer = new Answer({
     ...req.body,
+    id: uniqueNum, // 新建编号自动生成
   });
 
   const savedAnswer = await newAnswer.save();

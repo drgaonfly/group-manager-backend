@@ -4,9 +4,8 @@ import { IAnswer } from './answer';
 export interface ITopic extends Document {
   video1: string;
   video2?: string;
-  topicNumber: number;
+  id: number;
   correctAnswers: ICorrectAnswer[];
-  id: string;
   answers: Array<IAnswer>;
 }
 
@@ -28,8 +27,7 @@ const topicSchema = new mongoose.Schema(
   {
     video1: { type: String, trim: true, required: true },
     video2: { type: String, trim: true, required: false },
-    topicNumber: { type: Number, required: true, unique: true },
-    id: { type: String, required: false },
+    id: { type: Number, required: true, unique: true },
     correctAnswers: [correctAnswerSchema],
   },
   {

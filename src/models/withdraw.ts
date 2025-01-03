@@ -4,7 +4,7 @@ import { IUser } from './user';
 export interface IWithdraw extends Document {
   user: mongoose.Types.ObjectId | IUser; // 关联用户
   withdrawalNumber: number;
-  Time: Date;
+  time: Date;
   withdrawalMethod: string;
   reviewStatus: string;
   paymentStatus: string;
@@ -19,7 +19,7 @@ const withdrawSchema = new mongoose.Schema(
       required: true,
     },
     withdrawalNumber: { type: Number },
-    Time: { type: Date }, // 申请时间
+    time: { type: Date }, // 申请时间
     withdrawalMethod: {
       type: String,
       required: true,

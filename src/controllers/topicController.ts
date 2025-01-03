@@ -13,8 +13,8 @@ const buildQuery = (queryParams: any): any => {
     query.id = queryParams.id;
   }
 
-  if (queryParams.topicNumber) {
-    query.topicNumber = queryParams.topicNumber;
+  if (queryParams.id) {
+    query.id = queryParams.id;
   }
 
   return query;
@@ -62,7 +62,7 @@ const addTopic = handleAsync(async (req: Request, res: Response) => {
   const uniqueNum = await generateUniqueNumber(); // 直接调用 generateUniqueNumber
   const newTopic = new Topic({
     ...req.body,
-    topicNumber: uniqueNum, // 在新建时设置 topicNumber 字段
+    id: uniqueNum, // 在新建时设置 id 字段
   });
 
   const savedTopic = await newTopic.save();
@@ -169,7 +169,7 @@ export const generateUniqueNumber = async (): Promise<string> => {
     uniqueNumber = Math.floor(Math.random() * Math.pow(10, 10)) // 假设长度为5
       .toString()
       .padStart(10, '0'); // 生成指定长度的随机数字
-  } while (await Topic.findOne({ topicNumber: `${prefix}${uniqueNumber}` })); // 确保唯一性
+  } while (await Topic.findOne({ id: `${prefix}${uniqueNumber}` })); // 确保唯一性
   return `${prefix}${uniqueNumber}`; // 返回带前缀的唯一数字
 };
 

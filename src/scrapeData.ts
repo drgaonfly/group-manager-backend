@@ -210,7 +210,7 @@ const scrapeData = async () => {
     const uniqueNum = await generateUniqueNumber(); // 直接调用 generateUniqueNumber
 
     const newTopic = new Topic({
-      topicNumber: uniqueNum,
+      id: uniqueNum,
       video1: await uploadFileToOSS(topicDetails.videoList[0]),
       video2: topicDetails.videoList?.[1]
         ? await uploadFileToOSS(topicDetails.videoList[1])
