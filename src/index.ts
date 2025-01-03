@@ -23,6 +23,7 @@ import topicRoutes from './routes/topicRoutes';
 import answerRoutes from './routes/answerRoutes';
 import proxyRoutes from './routes/proxyRoutes';
 import employeeRoutes from './routes/employeeRoutes';
+import instructionRoutes from './routes/instructionRoutes';
 
 import withdrawRoutes from './routes/withdrawRoutes';
 import instructionRoutes from './routes/instructionRoutes';
@@ -63,6 +64,7 @@ app.use('/api/answers', answerRoutes);
 app.use('/api/topics', topicRoutes);
 app.use('/api/proxies', proxyRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/instructions', instructionRoutes);
 
 app.use('/api/withdraws', withdrawRoutes);
 
