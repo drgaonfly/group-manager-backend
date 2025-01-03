@@ -24,12 +24,15 @@ export const getRecords = handleAsync(async (req: Request, res: Response) => {
 
   // 查询记录
   const records = await Record.find(queryConditions)
+    .populate('answers.answer', 'sn')
     .populate('user')
     .populate('topic')
     .sort('-createdAt') // 按创建时间降序排序
     .skip((+current - 1) * +pageSize) // 跳过前面的记录
     .limit(+pageSize) // 限制返回的记录数
     .exec();
+
+  console.log(JSON.stringify(records, null, 2)); // 打印填充后的记录
 
   const total = await Record.countDocuments(queryConditions); // 计算总记录数
 

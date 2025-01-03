@@ -1,5 +1,5 @@
 // middlewares/authMiddleware.ts
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/user';
 import { IPermission } from '../models/permission';
@@ -8,13 +8,6 @@ import { ROLES } from '../constants';
 import { RequestCustom } from '/user';
 import { IDataPermission } from '../models/dataPermission';
 import { IRole } from '../models/role';
-
-const allowedPaths: string[] = ['/api/', 'path2']; // Replace with your actual allowed paths
-
-interface IRequest extends Request {
-  user: IUser;
-  getAllData?: boolean;
-}
 
 const protect = handleAsync(
   async (
@@ -36,12 +29,19 @@ const protect = handleAsync(
         ) as jwt.JwtPayload;
 
         const user: IUser | null = await User.findById(decoded.id)
+          .populate('proxy')
           .populate({
             path: 'roles',
-            populate: {
-              path: 'permissions',
-              model: 'Permission',
-            },
+            populate: [
+              {
+                path: 'permissions',
+                model: 'Permission',
+              },
+              {
+                path: 'dataPermissions',
+                model: 'DataPermission',
+              },
+            ],
           })
           .exec();
 
@@ -50,7 +50,6 @@ const protect = handleAsync(
         }
 
         req.user = user;
-        console.log('User is', user);
         next();
       } catch (error) {
         console.error(error);
@@ -65,18 +64,6 @@ const protect = handleAsync(
     }
   },
 );
-
-export const isProxy = (user: IUser): boolean => {
-  return (
-    user.roles && user.roles.length === 1 && user.roles[0]?.name === '代理'
-  );
-};
-
-export const isEmployee = (user: IUser): boolean => {
-  return (
-    user.roles && user.roles.length === 1 && user.roles[0]?.name === '员工'
-  );
-};
 
 const allow = (
   roles: string | string[],
@@ -103,23 +90,29 @@ const allow = (
 };
 
 const checkPermission = handleAsync(
-  async (req: IRequest, res: Response, next: NextFunction): Promise<void> => {
+  async (
+    req: RequestCustom,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     const { pageSize } = req.query as { pageSize?: string };
 
     if (pageSize && pageSize === '10000') {
       return next();
     }
 
-    const path = req.baseUrl + req.route.path;
+    let path = req.baseUrl + req.route.path;
+    if (path.startsWith('/api')) {
+      path = path.slice(4);
+    }
+    if (path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
     const action = req.method;
 
     console.log('Checking path for permission', path);
 
     if (req.user.isAdmin) {
-      return next();
-    }
-
-    if (allowedPaths.some((str) => path.startsWith(str))) {
       return next();
     }
 
@@ -146,11 +139,17 @@ const checkPermission = handleAsync(
 );
 
 const checkDataPermission = handleAsync(
-  async (req: IRequest, res: Response, next: NextFunction): Promise<void> => {
+  async (
+    req: RequestCustom,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     let path = req.baseUrl + req.route.path;
-
-    if (path === '/api/projects/search') {
-      path = '/api/projects/';
+    if (path.startsWith('/api')) {
+      path = path.slice(4);
+    }
+    if (path.endsWith('/')) {
+      path = path.slice(0, -1);
     }
 
     console.log('Checking path for data permission', path);
@@ -180,5 +179,17 @@ const checkDataPermission = handleAsync(
     }
   },
 );
+
+export const isProxy = (user: IUser): boolean => {
+  return (
+    user.roles && user.roles.length === 1 && user.roles[0]?.name === '代理'
+  );
+};
+
+export const isEmployee = (user: IUser): boolean => {
+  return (
+    user.roles && user.roles.length === 1 && user.roles[0]?.name === '员工'
+  );
+};
 
 export { protect, allow, checkPermission, checkDataPermission };
