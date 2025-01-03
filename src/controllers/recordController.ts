@@ -101,8 +101,8 @@ export const submitNewbieTraining = handleAsync(
 
     // 格式化提交的答案
     const normalizedSubmittedAnswers = answers.map((submittedAnswer: any) => ({
-      answer: submittedAnswer.id,
-      count: submittedAnswer.quantity,
+      answer: submittedAnswer._id,
+      count: submittedAnswer.count,
     }));
 
     console.log('格式化后的正确答案：', normalizedCorrectAnswers);
