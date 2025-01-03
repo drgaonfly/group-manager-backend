@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Instruction from '../models/Instruction';
+import Instruction from '../models/instruction';
 import handleAsync from '../utils/handleAsync';
 
 // dataPermissionController.ts
