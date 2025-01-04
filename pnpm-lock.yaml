@@ -115,7 +115,7 @@ importers:
         specifier: ^9.0.6
         version: 9.0.6
       '@types/lodash':
-        specifier: ^4.17.13
+        specifier: ^4.17.14
         version: 4.17.14
       '@types/mime-types':
         specifier: ^2.1.4
