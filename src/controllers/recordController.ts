@@ -101,6 +101,10 @@ export const getRecords = handleAsync(
 
     // 查询记录
     const records = await Record.find(query)
+      .populate({
+        path: 'answers.answer',
+        model: 'Answer',
+      })
       .populate('user')
       .populate('topic') // 确保填充 topic
       .sort('-createdAt')
