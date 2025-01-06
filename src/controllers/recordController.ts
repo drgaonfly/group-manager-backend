@@ -448,7 +448,7 @@ export const getExam = handleAsync(
 
     if (!req.user.examTopics || req.user.examTopics?.length === 0) {
       const allTopics = await Topic.aggregate([
-        { $sample: { size: await Topic.countDocuments().exec() } },
+        { $sample: { size: req.user.topicCount } },
       ]);
 
       req.user.examTopics = allTopics.map((topic) => ({
