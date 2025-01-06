@@ -414,7 +414,7 @@ export const getExam = handleAsync(
     const { emptyRecordFlag } = req.query;
 
     if (!req.user.isOnline) {
-      res.json({ isonline: false });
+      res.json({ isOnline: false });
       return;
     }
 
