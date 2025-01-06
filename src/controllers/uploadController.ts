@@ -164,3 +164,32 @@ export const getOssCredentials = handleAsync(
     });
   },
 );
+
+export const uploadFilesToS3 = handleAsync(
+  async (req: Request, res: Response) => {
+    // Set the policy expiration time
+    const policy = {
+      expiration: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(), // Expires in 1 hour
+      conditions: [
+        ['content-length-range', 0, 1048576000], // Limit upload size to no more than 1000MB
+      ],
+    };
+
+    const result = await s3.createPresignedPost({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Conditions: policy.conditions,
+      Expires: 3600, // 1 hour
+    });
+
+    const host = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+
+    res.json({
+      accessId: process.env.AWS_ACCESS_KEY_ID,
+      policy: result.fields.Policy,
+      signature: result.fields['X-Amz-Signature'],
+      host,
+      dir: 'user-dir/',
+      expire: new Date().getTime() + 60 * 60 * 1000, // Front-end use expiration time (milliseconds)
+    });
+  },
+);
