@@ -165,7 +165,7 @@ export const getOssCredentials = handleAsync(
   },
 );
 
-export const uploadFilesToS3 = handleAsync(
+export const getS3Credentials = handleAsync(
   async (req: Request, res: Response) => {
     // Set the policy expiration time
     const policy = {
