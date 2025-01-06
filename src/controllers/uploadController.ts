@@ -10,6 +10,7 @@ import {
   generateSignedUrlForS3,
 } from '../utils/generateSignedUrl';
 import axios from 'axios';
+import { S3 } from 'aws-sdk';
 
 export interface MulterFile extends Express.Multer.File {}
 
@@ -165,31 +166,31 @@ export const getOssCredentials = handleAsync(
   },
 );
 
-export const getS3Credentials = handleAsync(
-  async (req: Request, res: Response) => {
-    // Set the policy expiration time
-    const policy = {
-      expiration: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(), // Expires in 1 hour
-      conditions: [
-        ['content-length-range', 0, 1048576000], // Limit upload size to no more than 1000MB
-      ],
-    };
+export const getS3Credentials = async (req: Request, res: Response) => {
+  const s3 = new S3();
+  const bucketName = process.env.AWS_BUCKET_NAME; // Add your S3 bucket name here
 
-    const result = await s3.createPresignedPost({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Conditions: policy.conditions,
-      Expires: 3600, // 1 hour
+  // Set the expiration time for the pre-signed URL (e.g., 1 hour)
+  const expiration = 60 * 60; // 1 hour in seconds
+  const key = `user-dir/${Date.now()}-${req.body.fileName}`; // Generate a unique key for the file
+
+  try {
+    // Generate pre-signed URL for upload
+    const signedUrl = await s3.getSignedUrlPromise('putObject', {
+      Bucket: bucketName,
+      Key: key,
+      Expires: expiration,
+      ContentType: req.body.contentType, // Ensure the Content-Type is set to the file type
     });
-
-    const host = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
 
     res.json({
-      accessId: process.env.AWS_ACCESS_KEY_ID,
-      policy: result.fields.Policy,
-      signature: result.fields['X-Amz-Signature'],
-      host,
-      dir: 'user-dir/',
-      expire: new Date().getTime() + 60 * 60 * 1000, // Front-end use expiration time (milliseconds)
+      url: signedUrl,
+      key,
+      host: `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com`, // S3 bucket URL
+      expire: Date.now() + expiration * 1000, // Expiration time in milliseconds
     });
-  },
-);
+  } catch (error) {
+    console.error('Error generating S3 credentials:', error);
+    res.status(500).json({ message: 'Failed to generate S3 credentials' });
+  }
+};
