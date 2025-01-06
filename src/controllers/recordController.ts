@@ -11,6 +11,7 @@ import {
   transformDocumentImages,
 } from '../utils/transformUtils';
 import * as _ from 'lodash';
+import Answer from '../models/answer';
 
 const buildQuery = async (
   queryParams: any,
@@ -330,7 +331,13 @@ export const submitExam = handleAsync(
     const newRecord = await Record.create({
       user: currentUser.id,
       topic: topicId,
-      answers: answers,
+      answers: answers.map(async (submittedAnswer: any) => {
+        const answer = await Answer.findOne({ _id: submittedAnswer.id });
+        return {
+          answer: answer?._id,
+          count: submittedAnswer.count,
+        };
+      }),
       issue,
     });
 
