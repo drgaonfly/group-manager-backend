@@ -413,6 +413,11 @@ export const getExam = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { emptyRecordFlag } = req.query;
 
+    if (!req.user.isOnline) {
+      res.json({ isonline: false });
+      return;
+    }
+
     if (emptyRecordFlag === 'true') {
       req.user.examTopics = [];
       req.user.currentExamTopic = null;
