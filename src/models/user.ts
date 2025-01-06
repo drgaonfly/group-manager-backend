@@ -10,8 +10,13 @@ export interface IUser extends Document {
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
   currentTopic: mongoose.Types.ObjectId | ITopic;
+  currentExamTopic: mongoose.Types.ObjectId | ITopic;
   live: boolean;
   topics: Array<{
+    topic: mongoose.Types.ObjectId | ITopic;
+    status: 'pending' | 'doing' | 'success' | 'fail';
+  }>;
+  examTopics: Array<{
     topic: mongoose.Types.ObjectId | ITopic;
     status: 'pending' | 'doing' | 'success' | 'fail';
   }>;
@@ -39,11 +44,30 @@ const userSchema = new mongoose.Schema(
         ref: 'Role', // Reference the Role model
       },
     ],
+    // 新手训练相关
     currentTopic: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Topic',
     },
     topics: [
+      {
+        topic: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Topic',
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'doing', 'success', 'fail'],
+          default: 'pending',
+        },
+      },
+    ],
+    // 考场相关
+    currentExamTopic: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Topic',
+    },
+    examTopics: [
       {
         topic: {
           type: mongoose.Schema.Types.ObjectId,
