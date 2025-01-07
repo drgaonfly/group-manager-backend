@@ -16,6 +16,8 @@ import setupDB from './utils/db';
 // import telegramClient from './utils/telegramClient';
 import uploadRoutes from './routes/uploadRoutes';
 import dataPermissionRoutes from './routes/dataPermissionRoutes';
+import proxyRoutes from './routes/proxyRoutes';
+import employeeRoutes from './routes/employeeRoutes';
 
 // 新增的路由
 
@@ -50,6 +52,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/permission-groups', permissionGroupRoutes);
 app.use('/api/data-permissions', dataPermissionRoutes);
+app.use('/api/proxies', proxyRoutes);
+app.use('/api/employees', employeeRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 

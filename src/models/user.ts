@@ -6,16 +6,17 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
-  live: boolean;
   createdAt?: Date; // Time of document creation
   updatedAt?: Date; // Time the document was last updated
+  live: boolean;
+  inviteCode: string;
 }
 
 const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    name: { type: String, required: true, unique: true }, // Add unique index to name
+    name: { type: String, required: false },
     live: {
       type: Boolean,
       default: true,
@@ -30,6 +31,14 @@ const userSchema = new mongoose.Schema(
         ref: 'Role', // Reference the Role model
       },
     ],
+    inviteCode: {
+      type: String,
+    },
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
   },
   { timestamps: true },
 );
