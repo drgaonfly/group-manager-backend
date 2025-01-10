@@ -86,36 +86,18 @@ const getCarouselById = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 更新轮播图
 const updateCarousel = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { image, ...otherFields } = req.body;
 
-  const carousel = await Carousel.findById(id);
-  if (!carousel) {
-    res.status(404);
-    throw new Error('轮播图不存在');
-  }
-
-  // 更新字段
-  const updates = {
-    ...(image && !image.startsWith('http') && { image }),
-    ...otherFields,
-  };
-
-  const updatedcarousel = await Carousel.findByIdAndUpdate(id, updates, {
-    new: true,
-    runValidators: true,
-  });
-
-  // 处理图片路径
-  const processedcarousel = await transformDocumentImage(updatedcarousel, [
-    'image',
-  ]);
+  const updatedWallet = await Carousel.findByIdAndUpdate(
+    id,
+    { ...req.body },
+    { new: true, runValidators: true },
+  );
 
   res.json({
     success: true,
-    data: processedcarousel,
+    data: updatedWallet,
   });
 });
 
