@@ -1,6 +1,8 @@
 import mongoose, { Document } from 'mongoose';
+import { IWallet } from './wallet';
 
 export interface IUser extends Document {
+  wallets: IWallet[];
   isAdmin: boolean;
   roles: any;
   email: string;
@@ -14,6 +16,13 @@ export interface IUser extends Document {
 
 const userSchema = new mongoose.Schema(
   {
+    wallets: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Wallet', // Reference the Wallet model
+        required: false,
+      },
+    ],
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     name: { type: String, required: false },

@@ -8,6 +8,7 @@ import { RequestCustom } from 'user';
 import crypto from 'crypto';
 import { isProxy } from '../middlewares/authMiddleware';
 import Role from '../models/role';
+import Wallet from '../models/wallet';
 
 //user
 async function generateInviteCode(length: number = 5): Promise<string> {
@@ -74,24 +75,41 @@ export const getUsers = handleAsync(
       query.roles = [customerRole?._id];
     }
 
-    // 执行查询
-    const users = await User.find({
-      ...query,
-    })
+    if (req.baseUrl + req.route.path === '/api/members/') {
+      const memberRole = await Role.findOne({ name: '会员' });
+      query.roles = [memberRole?._id];
+    }
+
+    // 查询用户
+    const users = await User.find(query)
       .populate('roles')
-      .populate('proxy')
+      .populate('proxy') // 加载代理信息
       .sort('-createdAt') // Sort by creation time in descending order
       .limit(+pageSize)
       .skip((+current - 1) * +pageSize)
       .exec();
 
-    const total = await User.countDocuments({
-      ...query,
-    }).exec();
+    // 查询用户的 wallet 数据
+    const usersWithWallets = await Promise.all(
+      users.map(async (user) => {
+        // 查询与该用户关联的钱包
+        const wallets = await Wallet.find({ user: user._id }).select(
+          'network type address balance',
+        );
+
+        return {
+          ...exclude(user.toObject(), 'password'),
+          hasWallet: wallets.length > 0, // 是否存在钱包
+          wallets, // 具体钱包信息
+        };
+      }),
+    );
+
+    const total = await User.countDocuments(query);
 
     res.json({
       success: true,
-      data: users.map((user) => exclude(user.toObject(), 'password')),
+      data: usersWithWallets,
       total,
       current: +current,
       pageSize: +pageSize,
@@ -121,6 +139,11 @@ export const addUser = handleAsync(
 
     if (req.originalUrl === '/api/customers') {
       proxy = null;
+    }
+
+    // set /api/members
+    if (req.originalUrl === '/api/members') {
+      proxy = req.user._id;
     }
 
     const newUser = new User({
