@@ -53,6 +53,7 @@ const getCarousels = handleAsync(async (req: Request, res: Response) => {
 const addCarousel = handleAsync(async (req: CustomRequest, res: Response) => {
   const newcarousel = new Carousel({
     ...req.body,
+    image: req.body.image, // 确保路径格式正确
   });
 
   const savedcarousel = await newcarousel.save();
