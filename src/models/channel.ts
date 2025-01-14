@@ -3,23 +3,25 @@ import { IUser } from './user';
 
 export interface IChannel extends Document {
   code: string;
-  agent: mongoose.Schema.Types.ObjectId | IUser;
+  user: mongoose.Schema.Types.ObjectId | IUser;
   invitingAddress: string;
   status: boolean;
+  customerNum: string;
   createAt?: Date;
   updatedAt?: Date;
 }
 
 const channelSchema = new mongoose.Schema(
   {
-    agent: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
     code: { type: String, required: true },
-    invitingAddress: { type: String },
-    status: { type: Boolean, required: true },
+    invitingAddress: { type: String, required: false },
+    status: { type: Boolean, required: false, default: true },
+    customerNum: { type: String, required: false },
   },
   { timestamps: true },
 );

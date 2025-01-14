@@ -25,7 +25,7 @@ const getChannels = handleAsync(async (req: Request, res: Response) => {
   const query = buildChannelQuery(req.query);
 
   const channels = await Channel.find(query)
-    .populate('agent')
+    .populate('user')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
