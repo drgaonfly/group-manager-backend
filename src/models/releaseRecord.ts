@@ -9,7 +9,7 @@ export interface IReleaseRecord extends Document {
   stackedUsdtBalance: number;
   rewardingEthBalance: number;
   status: 'pending' | 'success' | 'refused';
-  applyingTime: Date;
+  applyingAt: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -46,7 +46,7 @@ const releaseRecordSchema = new mongoose.Schema(
       enum: ['pending', 'success', 'refused'],
       required: true,
     },
-    applyingTime: {
+    applyingAt: {
       type: Date,
     },
   },

@@ -42,6 +42,7 @@ import walletDealRecordRoutes from './routes/walletDealRecordRoutes';
 import langueRoutes from './routes/langueRoutes';
 import questionRoutes from './routes/questionRoutes';
 import releaseRecordRoutes from './routes/releaseRecordRoutes';
+import exchangeRoutes from './routes/exchangeRoutes';
 
 // import { startWebHookBot } from './bot';
 dotenv.config();
@@ -94,6 +95,7 @@ app.use('/api/release-records', releaseRecordRoutes);
 app.use('/api/translates', translateRoutes);
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/tags', tagRoutes);
+app.use('/api/exchanges', exchangeRoutes);
 
 setupDB();
 // setupRedis();

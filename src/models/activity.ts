@@ -8,9 +8,9 @@ export interface IActivity extends Document {
   usdtBalance: number;
   ethEarnings: number;
   lockDays: number;
-  startTime: Date;
-  endTime: Date;
-  joinTime: Date;
+  startAt: Date;
+  endAt: Date;
+  joinAt: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -35,9 +35,9 @@ const activitySchema = new mongoose.Schema(
     usdtBalance: { type: Number, required: true },
     ethEarnings: { type: Number, required: true },
     lockDays: { type: Number, required: false },
-    startTime: { type: Date, required: false },
-    endTime: { type: Date, required: false },
-    joinTIme: { type: Date, required: false },
+    startAt: { type: Date, required: false },
+    endAt: { type: Date, required: false },
+    joinAt: { type: Date, required: false },
   },
   { timestamps: true },
 );
