@@ -23,7 +23,10 @@ const getIncomes = handleAsync(async (req: Request, res: Response) => {
   const query = buildQuery(req.query);
 
   const incomes = await Income.find(query)
-    .populate('customer') // 如果需要填充客户信息
+    .populate({
+      path: 'wallet',
+      populate: 'user',
+    }) // 如果需要填充客户信息
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
