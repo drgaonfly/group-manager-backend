@@ -1,33 +1,33 @@
 import mongoose, { Document } from 'mongoose';
-import { IUser } from './user';
+import { IWallet } from './wallet';
 
 export interface Income extends Document {
-  createdAt?: Date;
-  updatedAt?: Date;
-  customer: mongoose.Schema.Types.ObjectId | IUser;
-  coinName: string;
-  walletAddress: string;
+  wallet: mongoose.Schema.Types.ObjectId | IWallet;
   usdtEarnings: number;
   ethEarnings: number;
-  earningsType: string;
+  type: 'flowing' | 'staking' | 'teamworking';
   remarks?: string;
-  sharedCustomerId?: string;
+  sharedCustomer?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const IncomeSchema = new mongoose.Schema(
   {
-    customer: {
+    wallet: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Wallet',
       required: true,
     },
-    coinName: { type: String },
-    walletAddress: { type: String },
     usdtEarnings: { type: Number },
     ethEarnings: { type: Number },
-    earningsType: { type: String },
+    type: {
+      type: String,
+      enum: ['flowing', 'staking', 'teamworking'],
+      required: true,
+    },
     remarks: { type: String, required: false },
-    sharedCustomerId: { type: String, required: false },
+    sharedCustomer: { type: String, required: false },
   },
   { timestamps: true },
 );
