@@ -24,7 +24,7 @@ import channelRoutes from './routes/channelRoutes'; // 新增
 import activityRoutes from './routes/activityRoutes'; // 新增
 import stackingConfigurationRoutes from './routes/stackingConfigurationRoutes';
 import translateRoutes from './routes/translateRoutes';
-
+import tagRoutes from './routes/tagRoutes';
 // 新增的路由
 
 import http from 'http';
@@ -89,6 +89,7 @@ app.use('/api/wallet-deal-records', walletDealRecordRoutes);
 app.use('/api/langues', langueRoutes);
 app.use('/api/translates', translateRoutes);
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/tags', tagRoutes);
 
 setupDB();
 // setupRedis();

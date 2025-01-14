@@ -14,7 +14,11 @@ const noticeSchema = new mongoose.Schema(
   {
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     noticeTitle: { type: String, required: true },
-    noticeType: { type: String, required: true },
+    noticeType: {
+      type: String,
+      enum: ['notice', 'announcement'],
+      required: true,
+    },
     creator: { type: String, required: false },
   },
   { timestamps: true },
