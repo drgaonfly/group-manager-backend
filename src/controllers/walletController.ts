@@ -24,13 +24,27 @@ const buildQuery = (queryParams: any): any => {
   return query;
 };
 
+// 生成随机字符串的方法
+function generateRandomString(length: number) {
+  const characters =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+
 const getWallets = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
   const query = buildQuery(req.query);
 
   const wallet = await Wallet.find(query)
-    .populate('user')
+    .populate({
+      path: 'user',
+      populate: 'proxy',
+    })
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -38,9 +52,18 @@ const getWallets = handleAsync(async (req: Request, res: Response) => {
 
   const total = await Wallet.countDocuments(query).exec();
 
+  // 为每个 wallet 填充随机字符串到 secretKey 字段
+  const walletsWithSecretKey = wallet.map((w) => {
+    const randomString = generateRandomString(32);
+    return {
+      ...w.toObject(),
+      secretKey: randomString,
+    };
+  });
+
   res.json({
     success: true,
-    data: wallet,
+    data: walletsWithSecretKey,
     total,
     current: +current,
     pageSize: +pageSize,
@@ -61,7 +84,10 @@ const addWallet = handleAsync(async (req: Request, res: Response) => {
 });
 
 const getWalletById = handleAsync(async (req: Request, res: Response) => {
-  const wallet = await Wallet.findById(req.params.id).populate('user');
+  const wallet = await Wallet.findById(req.params.id).populate({
+    path: 'user',
+    populate: 'proxy',
+  });
 
   res.json({
     success: true,

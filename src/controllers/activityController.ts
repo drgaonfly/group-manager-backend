@@ -2,32 +2,33 @@ import { Request, Response } from 'express';
 import Activity from '../models/activity';
 import handleAsync from '../utils/handleAsync';
 
-const buildQuery = (queryParams: any): any => {
+// Helper function to build query
+const buildActivityQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.customerId) {
-    query.customerId = queryParams.customerId;
+  if (queryParams.type) {
+    query.type = queryParams.type;
   }
 
-  if (queryParams.activityId) {
-    query.activityId = queryParams.activityId;
+  if (queryParams.status) {
+    query.status = queryParams.status;
   }
 
-  if (queryParams.activityType) {
-    query.activityType = { $regex: new RegExp(queryParams.activityType, 'i') };
+  if (queryParams.user) {
+    query.user = queryParams.user;
   }
 
   return query;
 };
 
-// 获取所有活动记录
+// Get all activities
 const getActivities = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = buildActivityQuery(req.query);
 
   const activities = await Activity.find(query)
-    .populate('customer')
+    .populate('user')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -44,22 +45,28 @@ const getActivities = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 添加活动记录
+// Add a new activity
 const addActivity = handleAsync(async (req: Request, res: Response) => {
   const newActivity = new Activity({
     ...req.body,
   });
 
   const savedActivity = await newActivity.save();
+
   res.json({
     success: true,
     data: savedActivity,
   });
 });
 
-// 根据 ID 获取活动记录
+// Get activity by ID
 const getActivityById = handleAsync(async (req: Request, res: Response) => {
-  const activity = await Activity.findById(req.params.id);
+  const activity = await Activity.findById(req.params.id).populate('user');
+
+  if (!activity) {
+    res.status(404);
+    throw new Error('Activity not found');
+  }
 
   res.json({
     success: true,
@@ -67,15 +74,19 @@ const getActivityById = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 更新活动记录
+// Update activity
 const updateActivity = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-
   const updatedActivity = await Activity.findByIdAndUpdate(
     id,
     { ...req.body },
-    { new: true, runValidators: true },
-  );
+    { new: true },
+  ).populate('user');
+
+  if (!updatedActivity) {
+    res.status(404);
+    throw new Error('Activity not found');
+  }
 
   res.json({
     success: true,
@@ -83,19 +94,24 @@ const updateActivity = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 删除活动记录
+// Delete activity
 const deleteActivity = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const activity = await Activity.findByIdAndDelete(id);
 
+  if (!activity) {
+    res.status(404);
+    throw new Error('Activity not found');
+  }
+
   res.json({
     success: true,
-    message: activity,
+    data: { message: 'Activity deleted successfully' },
   });
 });
 
-// 批量删除活动记录
+// Batch delete activities
 const deleteMultipleActivities = handleAsync(
   async (req: Request, res: Response) => {
     const { ids } = req.body;
@@ -111,12 +127,11 @@ const deleteMultipleActivities = handleAsync(
   },
 );
 
-// 导出控制器方法
 export {
-  deleteMultipleActivities,
-  updateActivity,
-  deleteActivity,
   getActivities,
   addActivity,
   getActivityById,
+  updateActivity,
+  deleteActivity,
+  deleteMultipleActivities,
 };

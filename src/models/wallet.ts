@@ -10,6 +10,7 @@ export interface IWallet extends Document {
   aggragedBalance: number;
   stackedBalance: number;
   withdrawalBalance: number;
+  secretKey: string;
 }
 
 const walletSchema = new mongoose.Schema(
@@ -51,6 +52,10 @@ const walletSchema = new mongoose.Schema(
       type: Number,
       required: false,
       default: 0,
+    },
+    secretKey: {
+      type: String,
+      required: false,
     },
   },
   {

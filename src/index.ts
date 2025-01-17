@@ -24,7 +24,7 @@ import channelRoutes from './routes/channelRoutes'; // 新增
 import activityRoutes from './routes/activityRoutes'; // 新增
 import stackingConfigurationRoutes from './routes/stackingConfigurationRoutes';
 import translateRoutes from './routes/translateRoutes';
-import tagRoutes from './routes/tagRoutes';
+
 // 新增的路由
 
 import http from 'http';
@@ -40,6 +40,10 @@ import lotteryRecordRoutes from './routes/lotteryRecordRoutes';
 import proxyCommissionRecordRoutes from './routes/proxyCommissionRecordRoutes';
 import walletDealRecordRoutes from './routes/walletDealRecordRoutes';
 import langueRoutes from './routes/langueRoutes';
+import questionRoutes from './routes/questionRoutes';
+import releaseRecordRoutes from './routes/releaseRecordRoutes';
+import exchangeRoutes from './routes/exchangeRoutes';
+import transferRoutes from './routes/transferRoutes';
 
 // import { startWebHookBot } from './bot';
 dotenv.config();
@@ -87,9 +91,12 @@ app.use('/api/lottery-records', lotteryRecordRoutes);
 app.use('/api/proxy-commission-records', proxyCommissionRecordRoutes);
 app.use('/api/wallet-deal-records', walletDealRecordRoutes);
 app.use('/api/langues', langueRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/release-records', releaseRecordRoutes);
 app.use('/api/translates', translateRoutes);
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/tags', tagRoutes);
+app.use('/api/transfers', transferRoutes);
+app.use('/api/exchanges', exchangeRoutes);
 
 setupDB();
 // setupRedis();

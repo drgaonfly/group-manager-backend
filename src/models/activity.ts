@@ -2,32 +2,42 @@ import mongoose, { Document } from 'mongoose';
 import { IUser } from './user';
 
 export interface IActivity extends Document {
-  customer: mongoose.Schema.Types.ObjectId | IUser;
-  activity: string;
-  activityType: string;
-  usdtAmount: number;
+  user: mongoose.Schema.Types.ObjectId | IUser;
+  type: 'stacking' | 'rewards';
+  status: 'pending' | 'joined' | 'finished' | 'expired';
+  usdtBalance: number;
   ethEarnings: number;
   lockDays: number;
-  startTime: Date;
-  endTime: Date;
+  startAt: Date;
+  endAt: Date;
+  joinAt: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 const activitySchema = new mongoose.Schema(
   {
-    customer: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    activity: { type: String, required: true },
-    activityType: { type: String, required: true },
-    usdtAmount: { type: Number, required: true },
+    type: {
+      type: String,
+      enum: ['stacking', 'joined', 'finished', 'expired'],
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'rewards'],
+      required: true,
+    },
+    usdtBalance: { type: Number, required: true },
     ethEarnings: { type: Number, required: true },
     lockDays: { type: Number, required: false },
-    startTime: { type: Date, required: false },
-    endTime: { type: Date, required: false },
+    startAt: { type: Date, required: false },
+    endAt: { type: Date, required: false },
+    joinAt: { type: Date, required: false },
   },
   { timestamps: true },
 );
