@@ -2,7 +2,10 @@ import { Request, Response } from 'express';
 import Carousel from '../models/carousel';
 import handleAsync from '../utils/handleAsync';
 import { CustomRequest } from './uploadController';
-import { transformDocumentImage } from '../utils/transformUtils';
+import {
+  transformDocumentImage,
+  transformDocumentImages,
+} from '../utils/transformUtils';
 
 // dataPermissionController.ts
 const buildQuery = (queryParams: any): any => {
@@ -35,7 +38,6 @@ const getCarousels = handleAsync(async (req: Request, res: Response) => {
     .limit(+pageSize)
     .exec();
 
-  // 处理图片路径
   const processedCarousels = await transformDocumentImage(carousels, ['image']);
 
   const total = await Carousel.countDocuments(query).exec();
@@ -84,18 +86,36 @@ const getCarouselById = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
+// 更新答案
 const updateCarousel = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { image, ...otherFields } = req.body;
 
-  const updatedWallet = await Carousel.findByIdAndUpdate(
-    id,
-    { ...req.body },
-    { new: true, runValidators: true },
-  );
+  const carousel = await Carousel.findById(id);
+  if (!carousel) {
+    res.status(404);
+    throw new Error('轮播图不存在');
+  }
+
+  // 更新字段
+  const updates = {
+    ...(image && !image.startsWith('http') && { image }),
+    ...otherFields,
+  };
+
+  const updatedCarousel = await Carousel.findByIdAndUpdate(id, updates, {
+    new: true,
+    runValidators: true,
+  });
+
+  // 处理图片路径
+  const processedCarousel = await transformDocumentImage(updatedCarousel, [
+    'image',
+  ]);
 
   res.json({
     success: true,
-    data: updatedWallet,
+    data: processedCarousel,
   });
 });
 
@@ -108,7 +128,7 @@ const deleteCarousel = handleAsync(async (req: Request, res: Response) => {
 
   if (!carousel) {
     res.status(404);
-    throw new Error('carousel not found');
+    throw new Error('轮播图不存在');
   }
 
   res.json({
