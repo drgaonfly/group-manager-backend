@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { isProxy } from '../middlewares/authMiddleware';
 import Role from '../models/role';
 import Wallet from '../models/wallet';
+import { IdGen } from '../utils/idGen';
 
 //user
 async function generateInviteCode(length: number = 5): Promise<string> {
@@ -197,9 +198,7 @@ export const addUser = handleAsync(
     }
 
     // Generate unique 3-digit ID
-    const lastUser = await User.findOne().sort({ id: -1 }); // Find the last user by ID in descending order
-    const lastId = lastUser ? parseInt(lastUser.id, 10) : 0; // Get the last ID and parse it as an integer
-    const newId = String(lastId + 1).padStart(3, '0'); // Increment the ID and pad with leading zeros if needed
+    const newId = await IdGen.next(User, 'id', 6); // Generate a 6-digit unique ID
 
     const newUser = new User({
       ...req.body,

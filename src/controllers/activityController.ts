@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Activity from '../models/activity';
 import handleAsync from '../utils/handleAsync';
-
+import { IdGen } from '../utils/idGen';
 // Helper function to build query
 const buildActivityQuery = (queryParams: any): any => {
   const query: any = {};
@@ -48,12 +48,7 @@ const getActivities = handleAsync(async (req: Request, res: Response) => {
 // Add a new activity
 // Add a new activity
 const addActivity = handleAsync(async (req: Request, res: Response) => {
-  // Find the last activity by sorting on the id in descending order
-  const lastActivity = await Activity.findOne().sort({ id: -1 });
-
-  // Determine the new id
-  const lastId = lastActivity ? parseInt(lastActivity.id, 10) : 0;
-  const newId = String(lastId + 1).padStart(3, '0'); // Increment and pad to 3 digits
+  const newId = await IdGen.next(Activity, 'id', 6); // Generate a 6-digit unique ID
 
   // Create the new activity with the generated id
   const newActivity = new Activity({
