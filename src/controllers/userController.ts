@@ -10,6 +10,7 @@ import { isProxy } from '../middlewares/authMiddleware';
 import Role from '../models/role';
 import Wallet from '../models/wallet';
 import { IdGen } from '../utils/idGen';
+import LoginHistory from '../models/loginHistory';
 
 //user
 async function generateInviteCode(length: number = 5): Promise<string> {
@@ -137,21 +138,30 @@ export const getUsers = handleAsync(
     const users = await User.find(query)
       .populate('roles')
       .populate('proxy') // 加载代理信息
-      .sort('-createdAt') // Sort by creation time in descending order
+      .sort('-createdAt') // 按创建时间降序排序
       .limit(+pageSize)
       .skip((+current - 1) * +pageSize)
       .exec();
 
+    // 获取每个用户的最后登录时间，并填充到用户数据中
     const usersWithWallets = await Promise.all(
       users.map(async (user) => {
         const wallets = await Wallet.find({ user: user._id }).select(
           'network type address balance',
         );
 
+        console.log('user.id');
+
+        // 获取用户的最后登录记录
+        const lastLogin = await LoginHistory.findOne({ userId: user.id }).sort({
+          loginAt: -1,
+        });
+
         return {
           ...exclude(user.toObject(), 'password'),
           hasWallet: wallets.length > 0, // 是否存在钱包
           wallets, // 具体钱包信息
+          lastLoginAt: lastLogin ? lastLogin.loginAt : null, // 填充 lastLoginAt
         };
       }),
     );

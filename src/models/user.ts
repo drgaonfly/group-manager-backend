@@ -5,7 +5,7 @@ export interface IUser extends Document {
   id: string;
   wallets: IWallet[];
   isAdmin: boolean;
-  isCustomService: boolean;
+  status: boolean;
   roles: any;
   email: string;
   password: string;
@@ -16,6 +16,10 @@ export interface IUser extends Document {
   inviteCode: string;
   memberNum: number;
   commissionRate: number;
+  stackingChannel: 'platform' | 'broker';
+  createAt: Date;
+  updateAt: Date;
+  lastLoginAt: Date;
 }
 
 const userSchema = new mongoose.Schema(
@@ -35,7 +39,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    isCustomService: {
+    status: {
       type: Boolean,
       default: false,
     },
@@ -64,6 +68,14 @@ const userSchema = new mongoose.Schema(
     commissionRate: {
       type: Number,
       default: 0,
+    },
+    stackingChannel: {
+      type: String,
+      enum: ['platform', 'broker'],
+      required: true,
+    },
+    lastLoginAt: {
+      type: Date,
     },
   },
   { timestamps: true },

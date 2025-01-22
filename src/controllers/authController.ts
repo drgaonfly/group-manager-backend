@@ -6,10 +6,12 @@ import { generateToken, generateRefreshToken } from '../utils/generateToken';
 import handleAsync from '../utils/handleAsync';
 import { exclude } from '../utils/handleData';
 import { RequestCustom } from 'user';
+import LoginHistory from '../models/loginHistory';
 
 const login = handleAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
+  // 查找用户，允许通过 email 或者 name 查找
   const user = await User.findOne({ $or: [{ email }, { name: email }] });
 
   if (!user) {
@@ -17,13 +19,24 @@ const login = handleAsync(async (req: Request, res: Response) => {
     throw new Error('User not found');
   }
 
+  // 验证密码是否匹配
   if (await bcrypt.compare(password, user.password)) {
+    // 生成 refresh token 和 access token
     const refreshToken = generateRefreshToken(user._id.toString());
+    const token = generateToken(user._id);
 
+    // 创建登录历史记录
+    const loginHistory = new LoginHistory({
+      userId: user.id,
+      loginAt: new Date(),
+    });
+    await loginHistory.save(); // 保存登录历史记录
+
+    // 返回成功响应并携带令牌
     res.json({
       success: true,
       name: user.name || user.email,
-      token: generateToken(user.id),
+      token,
       refreshToken,
     });
   } else {
@@ -31,6 +44,7 @@ const login = handleAsync(async (req: Request, res: Response) => {
     throw new Error('Invalid email or password');
   }
 });
+
 interface DecodedToken {
   id: string;
 }
