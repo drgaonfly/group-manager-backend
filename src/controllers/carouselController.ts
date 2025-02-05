@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Carousel, { ICarousel } from '../models/carousel';
+import Carousel from '../models/carousel';
 import handleAsync from '../utils/handleAsync';
 import { CustomRequest } from './uploadController';
 import {
