@@ -27,6 +27,7 @@ const getIncomes = handleAsync(async (req: Request, res: Response) => {
       path: 'wallet',
       populate: 'user',
     }) // 如果需要填充客户信息
+    .populate('sharedCustomer')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
