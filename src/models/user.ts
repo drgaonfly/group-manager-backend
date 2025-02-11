@@ -29,16 +29,19 @@ export interface IUser extends Document {
   LogedinIP: string;
   isSpied: boolean;
   isAuthorized: boolean;
+  isDemo: boolean;
 }
 
 const userSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
-    wallets: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Wallet', // Reference the Wallet model
-      required: false,
-    },
+    wallets: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Wallet', // Reference the Wallet model
+        required: false,
+      },
+    ],
     channel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Channel', // Reference the Channel model
@@ -113,6 +116,10 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     isAuthorized: {
+      type: Boolean,
+      default: false,
+    },
+    isDemo: {
       type: Boolean,
       default: false,
     },

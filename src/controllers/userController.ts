@@ -145,8 +145,8 @@ export const getUsers = handleAsync(
 
     // 获取每个用户的最后登录时间，并填充到用户数据中
     const usersWithWallets = await Promise.all(
-      users.flatMap(async (user) => {
-        const wallet = await Wallet.find({ user: user._id });
+      users.map(async (user) => {
+        const wallets = await Wallet.find({ user: user._id });
         const channel = await Channel.find({ user: user._id });
 
         // 获取用户的最后登录记录
@@ -164,26 +164,23 @@ export const getUsers = handleAsync(
 
         const logedinAt = new Date();
 
-        // 如果钱包存在，则将每个钱包拆开，并将用户的其他信息复制到每一行
-        return wallet.map((w) => ({
+        // 将钱包与用户信息合并
+        return {
           ...exclude(user.toObject(), 'password'),
-          wallet: [w][0],
+          wallets: wallets.length > 0 ? wallets : null, // 仅取第一个钱包
           channel: channel[0],
           lastLoginAt: lastLogin ? lastLogin.loginAt : null, // 填充 lastLoginAt
           LogedinIP: normalizedIP,
           logedinAt: logedinAt,
-        }));
+        };
       }),
     );
 
     const total = await User.countDocuments(query);
 
-    // 扁平化数据返回，避免嵌套数组
-    const flattenedUsers = usersWithWallets.flat();
-
     res.json({
       success: true,
-      data: flattenedUsers,
+      data: usersWithWallets,
       total,
       current: +current,
       pageSize: +pageSize,
