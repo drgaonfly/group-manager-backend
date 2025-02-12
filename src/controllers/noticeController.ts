@@ -50,7 +50,6 @@ const addNotice = handleAsync(async (req: Request, res: Response) => {
 
   const newNotice = new Notice({
     ...req.body,
-    creator: req.user.name,
     id: newId,
   });
 
