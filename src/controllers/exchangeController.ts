@@ -14,6 +14,10 @@ const buildExchangeQuery = (queryParams: any): any => {
     query.type = queryParams.type;
   }
 
+  if (queryParams.network) {
+    query.network = queryParams.network;
+  }
+
   return query;
 };
 
@@ -22,6 +26,11 @@ const getExchanges = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
   const query = buildExchangeQuery(req.query);
+
+  // Set default status to 'pending' if not provided in query
+  if (!query.status) {
+    query.status = 'pending';
+  }
 
   const exchanges = await Exchange.find(query)
     .populate({
