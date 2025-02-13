@@ -6,8 +6,6 @@ export interface IUser extends Document {
   id: string;
   wallets: mongoose.Schema.Types.ObjectId | IWallet;
   channel: mongoose.Schema.Types.ObjectId | IChannel;
-  liquidRate: number;
-  stakeRate: number;
   isAdmin: boolean;
   status: boolean;
   roles: any;
@@ -23,28 +21,16 @@ export interface IUser extends Document {
   stackingChannel: 'platform' | 'broker';
   createAt: Date;
   updateAt: Date;
-  logedinAt: Date;
-  lastLoginAt: Date;
-  createdIP: string;
-  LogedinIP: string;
-  isSpied: boolean;
-  isAuthorized: boolean;
-  isDemo: boolean;
 }
 
 const userSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
-    wallets: [
-      { type: mongoose.Schema.Types.ObjectId, ref: 'Wallet', required: false },
-    ],
     channel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Channel',
       required: false,
     },
-    liquidRate: { type: Number, default: 0 },
-    stakeRate: { type: Number, default: 0 },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     name: { type: String, required: false },
@@ -53,22 +39,10 @@ const userSchema = new mongoose.Schema(
     isAdmin: { type: Boolean, default: false },
     roles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Role' }],
     inviteCode: { type: String },
-    proxy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: false,
-    },
     memberNum: { type: Number, default: 0 },
     commissionRate: { type: Number, default: 0 },
     stackingChannel: { type: String, enum: ['platform', 'broker'] },
     lastLoginAt: { type: Date },
-    createdAt: { type: Date },
-    logedinAt: { type: Date },
-    createdIP: { type: String },
-    LogedinIP: { type: String },
-    isSpied: { type: Boolean, default: false },
-    isAuthorized: { type: Boolean, default: false },
-    isDemo: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
