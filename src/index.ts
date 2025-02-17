@@ -22,6 +22,7 @@ import noticeRoutes from './routes/noticeRoutes'; // 新增
 import incomeRoutes from './routes/incomeRoutes'; // 新增
 import channelRoutes from './routes/channelRoutes'; // 新增
 import activityRoutes from './routes/activityRoutes'; // 新增
+import miningDataRoutes from './routes/miningDataRoutes'; // 新增
 import stackingConfigurationRoutes from './routes/stackingConfigurationRoutes';
 import translateRoutes from './routes/translateRoutes';
 
@@ -97,7 +98,7 @@ app.use('/api/translates', translateRoutes);
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/transfers', transferRoutes);
 app.use('/api/exchanges', exchangeRoutes);
-
+app.use('/api/mining-data', miningDataRoutes);
 setupDB();
 // setupRedis();
 // 初始化 Socket.IO
