@@ -46,6 +46,7 @@ import questionRoutes from './routes/questionRoutes';
 import releaseRecordRoutes from './routes/releaseRecordRoutes';
 import exchangeRoutes from './routes/exchangeRoutes';
 import transferRoutes from './routes/transferRoutes';
+import partnershipRoutes from './routes/partnershipRoutes';
 
 // import { startWebHookBot } from './bot';
 dotenv.config();
@@ -100,7 +101,10 @@ app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/transfers', transferRoutes);
 app.use('/api/exchanges', exchangeRoutes);
 app.use('/api/mining-data', miningDataRoutes);
+app.use('/api/partnerships', partnershipRoutes);
+
 app.use('/api/mining-outputs', miningOutputRoutes);
+
 
 setupDB();
 // setupRedis();
