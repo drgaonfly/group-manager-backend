@@ -4,7 +4,6 @@ export interface IPartnership extends Document {
   id: string; // 合作伙伴ID
   name: string; // 合作伙伴名称
   logoUrl: string; // 合作伙伴图标 URL
-  description: string; // 合作伙伴描述
   website: string; // 合作伙伴官网
   createdAt: Date;
   updatedAt: Date;
@@ -21,10 +20,6 @@ const partnershipSchema = new mongoose.Schema(
       required: true,
     },
     logoUrl: {
-      type: String,
-      required: true,
-    },
-    description: {
       type: String,
       required: true,
     },
