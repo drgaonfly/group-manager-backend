@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 
-export interface IMember extends Document {
+export interface ICustomer extends Document {
   id: string;
   channel: mongoose.Schema.Types.ObjectId;
   network: 'TRX' | 'BSC' | 'ETH';
@@ -21,7 +21,7 @@ export interface IMember extends Document {
   proxy: mongoose.Schema.Types.ObjectId;
 }
 
-const memberSchema = new mongoose.Schema(
+const customerSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true }, //id
     channel: { type: mongoose.Schema.Types.ObjectId, ref: 'Channel' }, // 渠道id
@@ -53,6 +53,6 @@ const memberSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const Member = mongoose.model<IMember>('Member', memberSchema);
+const Customer = mongoose.model<ICustomer>('Customer', customerSchema);
 
-export default Member;
+export default Customer;

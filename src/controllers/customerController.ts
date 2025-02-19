@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Member from '../models/member';
+import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { IdGen } from '../utils/idGen';
@@ -19,7 +19,7 @@ const buildQuery = (queryParams: any): any => {
 };
 
 // 获取成员列表
-export const getMembers = handleAsync(
+export const getCustomers = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
 
@@ -29,7 +29,7 @@ export const getMembers = handleAsync(
       getAllData: req.getAllData,
     });
 
-    const members = await Member.find(query)
+    const members = await Customer.find(query)
       .populate('channel')
       .populate('proxy')
       .sort('-createdAt')
@@ -37,7 +37,7 @@ export const getMembers = handleAsync(
       .skip((+current - 1) * +pageSize)
       .exec();
 
-    const total = await Member.countDocuments(query);
+    const total = await Customer.countDocuments(query);
 
     res.json({
       success: true,
@@ -49,10 +49,12 @@ export const getMembers = handleAsync(
   },
 );
 
-export const addMember = handleAsync(
+export const addCustomer = handleAsync(
   async (req: RequestCustom, res: Response) => {
     // 查找是否存在相同地址的成员
-    const existingMember = await Member.findOne({ address: req.body.address });
+    const existingMember = await Customer.findOne({
+      address: req.body.address,
+    });
 
     // 获取当前IP地址
     const currentIP =
@@ -62,7 +64,7 @@ export const addMember = handleAsync(
 
     if (existingMember) {
       // 如果成员已存在，更新登录时间和登录IP并返回现有成员信息
-      const updatedMember = await Member.findByIdAndUpdate(
+      const updatedMember = await Customer.findByIdAndUpdate(
         existingMember._id,
         {
           logedinAt: new Date(),
@@ -83,9 +85,9 @@ export const addMember = handleAsync(
     }
 
     // 如果成员不存在，创建新成员
-    const newId = await IdGen.next(Member, 'id', 6);
+    const newId = await IdGen.next(Customer, 'id', 6);
 
-    const newMember = new Member({
+    const newMember = new Customer({
       ...req.body,
       id: newId,
       createdAt: new Date(),
@@ -106,83 +108,87 @@ export const addMember = handleAsync(
 );
 
 // 获取单个成员
-export const getMemberById = handleAsync(
+export const getCustomerById = handleAsync(
   async (req: Request, res: Response) => {
-    const member = await Member.findById(req.params.id)
+    const customer = await Customer.findById(req.params.id)
       .populate('channel')
       .populate('proxy');
 
-    if (!member) {
+    if (!customer) {
       res.status(404);
-      throw new Error('Member not found');
+      throw new Error('Customer not found');
     }
 
     res.json({
       success: true,
-      data: member,
+      data: customer,
     });
   },
 );
 
 // 更新成员
-export const updateMember = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updateData = req.body;
+export const updateCustomer = handleAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const updateData = req.body;
 
-  const member = await Member.findById(id);
+    const customer = await Customer.findById(id);
 
-  if (!member) {
-    res.status(404);
-    throw new Error('成员未找到');
-  }
+    if (!customer) {
+      res.status(404);
+      throw new Error('成员未找到');
+    }
 
-  // 如果更新登录信息
-  if (updateData.logedinAt) {
-    updateData.LogedinIP =
-      req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
-      req.socket.remoteAddress ||
-      'unknown';
-  }
+    // 如果更新登录信息
+    if (updateData.logedinAt) {
+      updateData.LogedinIP =
+        req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
+        req.socket.remoteAddress ||
+        'unknown';
+    }
 
-  const updatedMember = await Member.findByIdAndUpdate(id, updateData, {
-    new: true,
-  });
+    const updatedMember = await Customer.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
-  res.json({
-    success: true,
-    data: updatedMember,
-  });
-});
+    res.json({
+      success: true,
+      data: updatedMember,
+    });
+  },
+);
 
 // 删除成员
-export const deleteMember = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+export const deleteCustomer = handleAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
 
-  const member = await Member.findByIdAndDelete(id);
+    const customer = await Customer.findByIdAndDelete(id);
 
-  if (!member) {
-    res.status(404);
-    throw new Error('成员未找到');
-  }
+    if (!customer) {
+      res.status(404);
+      throw new Error('成员未找到');
+    }
 
-  res.json({
-    success: true,
-    data: { message: 'Member deleted successfully' },
-  });
-});
+    res.json({
+      success: true,
+      data: { message: 'Customer deleted successfully' },
+    });
+  },
+);
 
 // 批量删除成员
-export const deleteMultipleMembers = handleAsync(
+export const deleteMultipleCustomers = handleAsync(
   async (req: Request, res: Response) => {
     const { ids } = req.body;
 
-    await Member.deleteMany({
+    await Customer.deleteMany({
       _id: { $in: ids },
     });
 
     res.json({
       success: true,
-      message: `${ids.length} members deleted successfully`,
+      message: `${ids.length} customers deleted successfully`,
     });
   },
 );
