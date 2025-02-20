@@ -19,12 +19,13 @@ export interface ICustomer extends Document {
   isSpied: boolean;
   isAuthorized: boolean;
   proxy: mongoose.Schema.Types.ObjectId;
+  notification: mongoose.Schema.Types.ObjectId;
 }
 
 const customerSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true }, //id
-    channel: { type: mongoose.Schema.Types.ObjectId, ref: 'Channel' }, // 渠道id
+    channel: { type: mongoose.Schema.Types.ObjectId, ref: 'Channel' }, // 渠道
     network: { type: String, enum: ['TRX', 'BSC', 'ETH'], required: true }, // 网络
     address: { type: String, required: true }, // 钱包地址
 

@@ -6,10 +6,17 @@ import {
   updateNotification,
   deleteNotification,
   deleteMultipleNotifications,
+  getCustomerNotifications,
 } from '../controllers/notificationController'; // 确保路径正确
 import { protect, checkPermission } from '../middlewares/authMiddleware'; // 确保路径正确
 
+import { customerProtect } from '../middlewares/authMiddleware';
+
 const router: Router = express.Router();
+
+router
+  .route('/getCustomerNotifications')
+  .get(customerProtect, getCustomerNotifications);
 
 // 设置通知路由
 router

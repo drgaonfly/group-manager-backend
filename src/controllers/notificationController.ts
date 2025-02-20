@@ -4,6 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 
 interface CustomRequest extends Request {
+  customer: any;
   user?: any; // 用于携带用户信息，根据你的实际情况调整
 }
 
@@ -152,6 +153,41 @@ const deleteMultipleNotifications = handleAsync(
   },
 );
 
+// 获取当前用户的通知
+const getCustomerNotifications = handleAsync(
+  async (req: CustomRequest, res: Response) => {
+    const { current = '1', pageSize = '10' } = req.query;
+
+    // 使用 req.customer._id 获取当前登录用户的 ID
+    const customerId = req.customer._id;
+
+    // 构建查询条件
+    const query = {
+      customer: customerId, // 只查询当前用户的通知
+      ...buildQuery(req.query),
+    };
+
+    // 查询通知列表
+    const notifications = await Notification.find(query)
+      .sort('-createdAt') // 按创建时间倒序
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .exec();
+
+    // 获取总数
+    const total = await Notification.countDocuments(query).exec();
+
+    // 返回数据
+    res.json({
+      success: true,
+      data: notifications,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
+
 export {
   getNotifications,
   addNotification,
@@ -159,4 +195,5 @@ export {
   updateNotification,
   deleteNotification,
   deleteMultipleNotifications,
+  getCustomerNotifications,
 };
