@@ -8,7 +8,10 @@ import ossClient from '../utils/oss'; // 假设你的 OSS 客户端配置在这�
  * @param bucketName The name of the S3 bucket.
  * @returns A promise that resolves to the signed URL.
  */
-export async function generateSignedUrlForS3(filePath: string, expires = 3600): Promise<string> {
+export async function generateSignedUrlForS3(
+  filePath: string,
+  expires = 3600,
+): Promise<string> {
   try {
     const signedUrlParams = {
       Bucket: process.env.AWS_BUCKET_NAME,
@@ -17,10 +20,13 @@ export async function generateSignedUrlForS3(filePath: string, expires = 3600): 
     };
 
     // Generate the signed URL
-    const signedURL = await s3.getSignedUrlPromise('getObject', signedUrlParams);
+    const signedURL = await s3.getSignedUrlPromise(
+      'getObject',
+      signedUrlParams,
+    );
     return signedURL;
   } catch (error) {
-    console.error("Error generating signed URL:", error);
+    console.error('Error generating signed URL:', error);
     throw error; // Rethrowing the error is usually better for error handling.
   }
 }
@@ -32,19 +38,31 @@ export async function generateSignedUrlForS3(filePath: string, expires = 3600): 
  * @param filePath The file path in the OSS bucket.
  * @returns A promise that resolves to the signed URL.
  */
-export async function generateSignedUrlForOSS(filePath: string, expires = 3600): Promise<string> {
+export async function generateSignedUrlForOSS(
+  filePath: string,
+  expires = 3600,
+): Promise<string> {
   try {
     const signedUrl = await ossClient.signatureUrl(filePath, {
       expires, // 使用传入的 expires 值或默认值
-      method: 'GET'
+      method: 'GET',
     });
     return signedUrl;
   } catch (error) {
-    console.error("Error generating signed URL:", error);
+    console.error('Error generating signed URL:', error);
     return '';
   }
 }
 
-export async function generateSignedUrl(filePath: string, expires = 3600): Promise<string> {
-  return generateSignedUrlForOSS(filePath, expires);
+export async function generateSignedUrl(
+  filePath: string,
+  expires = 3600,
+): Promise<string> {
+  if (process.env.FILE_STORAGE === 'aliyun') {
+    // 当 FILE_STORAGE 为 aliyun 时调用 generateSignedUrlForOSS
+    return generateSignedUrlForOSS(filePath, expires);
+  } else {
+    // 否则调用 generateSignedUrlForS3
+    return generateSignedUrlForS3(filePath, expires);
+  }
 }
