@@ -128,6 +128,17 @@ const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
 
 const generateEthWallet = handleAsync(
   async (req: CustomRequest, res: Response) => {
+    // 检查用户是否已有ETH钱包
+    const existingWallet = await Wallet.findOne({
+      user: req.user._id,
+      network: 'ETH',
+    });
+
+    if (existingWallet) {
+      res.status(400);
+      throw new Error('用户已有ETH钱包');
+    }
+
     // 生成新钱包
     const ethWallet = ethers.Wallet.createRandom();
 
