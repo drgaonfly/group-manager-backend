@@ -8,7 +8,7 @@ interface CustomRequest extends Request {
   user?: any; // 用于携带用户信息，根据你的实际情况调整
 }
 
-const buildQuery = (queryParams: any): any => {
+const buildQuery = (queryParams: any, req: CustomRequest): any => {
   const query: any = {};
 
   if (queryParams.type) {
@@ -27,13 +27,18 @@ const buildQuery = (queryParams: any): any => {
     query.balance = queryParams.balance;
   }
 
+  // 如果不是超级管理员，只能查看自己的钱包
+  if (req.user && req.user.role !== 'superadmin') {
+    query.user = req.user._id;
+  }
+
   return query;
 };
 
 const getWallets = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = buildQuery(req.query, req);
 
   const wallet = await Wallet.find(query)
     .populate('user')
