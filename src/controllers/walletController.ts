@@ -129,8 +129,64 @@ const deleteMultipleWallets = handleAsync(
 );
 
 // 创建provider实例
-const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
+const ethProvider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
+const bscProvider = new ethers.JsonRpcProvider(
+  'https://bsc-dataseed1.binance.org',
+);
 
+// 创建BNB钱包
+const generateBnbWallet = handleAsync(
+  async (req: CustomRequest, res: Response) => {
+    // 检查用户是否已有BNB钱包
+    const existingWallet = await Wallet.findOne({
+      user: req.user._id,
+      network: 'BNB',
+    });
+
+    if (existingWallet) {
+      res.status(400);
+      throw new Error('用户已有BNB钱包');
+    }
+
+    // 生成新钱包
+    const bnbWallet = ethers.Wallet.createRandom();
+
+    // 获取钱包信息
+    const walletInfo = {
+      address: bnbWallet.address,
+      privateKey: bnbWallet.privateKey,
+    };
+
+    // 获取实时余额
+    const balance = await bscProvider.getBalance(walletInfo.address);
+    const balanceInBnb = ethers.formatEther(balance);
+
+    // 创建新的钱包记录
+    const newId = await IdGen.next(Wallet, 'id', 6);
+    const newWallet = new Wallet({
+      id: newId,
+      user: req.user._id,
+      network: 'BNB',
+      address: walletInfo.address,
+      secretKey: walletInfo.privateKey,
+      balance: balanceInBnb,
+      ...req.body,
+    });
+
+    const savedWallet = await newWallet.save();
+
+    res.json({
+      success: true,
+      data: {
+        ...savedWallet.toObject(),
+        privateKey: walletInfo.privateKey,
+        balance: balanceInBnb,
+      },
+    });
+  },
+);
+
+// 创建ETH钱包
 const generateEthWallet = handleAsync(
   async (req: CustomRequest, res: Response) => {
     // 检查用户是否已有ETH钱包
@@ -154,7 +210,7 @@ const generateEthWallet = handleAsync(
     };
 
     // 获取实时余额
-    const balance = await provider.getBalance(walletInfo.address);
+    const balance = await ethProvider.getBalance(walletInfo.address);
     const balanceInEth = ethers.formatEther(balance);
 
     // 创建新的钱包记录
@@ -190,4 +246,5 @@ export {
   deleteWallet,
   deleteMultipleWallets,
   generateEthWallet,
+  generateBnbWallet,
 };

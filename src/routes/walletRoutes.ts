@@ -7,6 +7,7 @@ import {
   deleteWallet,
   deleteMultipleWallets,
   generateEthWallet,
+  generateBnbWallet,
 } from '../controllers/walletController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -17,6 +18,12 @@ router.post(
   protect,
   checkPermission,
   generateEthWallet,
+);
+router.post(
+  '/generate-bnb-wallet',
+  protect,
+  checkPermission,
+  generateBnbWallet,
 );
 
 router
