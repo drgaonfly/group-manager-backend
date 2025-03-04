@@ -5,6 +5,20 @@ import { generateToken, generateRefreshToken } from '../utils/generateToken';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { IdGen } from '../utils/idGen';
+import crypto from 'crypto';
+
+// 生成邀请码函数
+async function generateInviteCode(length: number = 5): Promise<string> {
+  let inviteCode;
+  do {
+    inviteCode = crypto
+      .randomBytes(length)
+      .toString('base64')
+      .replace(/[+/=]/g, '') // 移除特殊字符
+      .slice(0, length); // 确保长度正确
+  } while (await Customer.findOne({ ownInviteCode: inviteCode }));
+  return inviteCode;
+}
 
 export const login = handleAsync(async (req: Request, res: Response) => {
   const { address, network, inviteCode } = req.body;
@@ -20,11 +34,13 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   if (!customer) {
     // 如果用户不存在，创建新用户
     const newId = await IdGen.next(Customer, 'id', 6);
+    const newOwnInviteCode = await generateInviteCode(); // 生成新的邀请码
 
     const newCustomer = new Customer({
       ...req.body,
       id: newId,
       invitedBy: inviteCode,
+      ownInviteCode: newOwnInviteCode, // 添加自己的邀请码
       createdAt: new Date(),
       logedinAt: new Date(),
       registerIP: currentIP,
