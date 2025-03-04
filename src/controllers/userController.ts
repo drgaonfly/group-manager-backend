@@ -175,15 +175,6 @@ export const addUser = handleAsync(
       proxy = req.user._id;
     }
 
-    if (req.originalUrl === '/api/customers') {
-      proxy = null;
-    }
-
-    // set /api/members
-    if (req.originalUrl === '/api/members') {
-      proxy = req.user._id;
-    }
-
     // Generate unique ID
     const newId = await IdGen.next(User, 'id', 6);
 
