@@ -22,6 +22,7 @@ export interface ICustomer extends Document {
   notification: mongoose.Schema.Types.ObjectId;
   isVerified: boolean;
   invitedBy?: string;
+  inviter?: any;
 }
 
 const customerSchema = new mongoose.Schema(

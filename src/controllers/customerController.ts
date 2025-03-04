@@ -3,6 +3,7 @@ import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { IdGen } from '../utils/idGen';
+import User from '../models/user';
 
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
@@ -39,9 +40,29 @@ export const getCustomers = handleAsync(
 
     const total = await Customer.countDocuments(query);
 
+    // 处理返回数据，添加邀请人信息
+    const formattedMembers = await Promise.all(
+      members.map(async (member) => {
+        const memberObj = member.toObject();
+        if (memberObj.invitedBy) {
+          // 如果找到邀请人，添加邀请人信息
+          const inviter = await User.findOne({
+            inviteCode: memberObj.invitedBy,
+          }).select('name email');
+          if (inviter) {
+            memberObj.inviter = {
+              name: inviter.name || inviter.email,
+              email: inviter.email,
+            };
+          }
+        }
+        return memberObj;
+      }),
+    );
+
     res.json({
       success: true,
-      data: members,
+      data: formattedMembers,
       total,
       current: +current,
       pageSize: +pageSize,
