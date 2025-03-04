@@ -21,6 +21,7 @@ export interface ICustomer extends Document {
   proxy: mongoose.Schema.Types.ObjectId;
   notification: mongoose.Schema.Types.ObjectId;
   isVerified: boolean;
+  invitedBy?: string;
 }
 
 const customerSchema = new mongoose.Schema(
@@ -57,6 +58,7 @@ const customerSchema = new mongoose.Schema(
       ref: 'User',
       required: false,
     }, //代理
+    invitedBy: { type: String, required: false },
   },
   { timestamps: true },
 );

@@ -7,7 +7,7 @@ import { RequestCustom } from 'user';
 import { IdGen } from '../utils/idGen';
 
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { address, network } = req.body;
+  const { address, network, inviteCode } = req.body;
 
   // 获取当前IP地址
   const currentIP =
@@ -24,6 +24,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     const newCustomer = new Customer({
       ...req.body,
       id: newId,
+      invitedBy: inviteCode,
       createdAt: new Date(),
       logedinAt: new Date(),
       registerIP: currentIP,
