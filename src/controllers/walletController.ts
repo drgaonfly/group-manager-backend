@@ -251,17 +251,23 @@ const getWalletByInviteCode = handleAsync(
 
     console.log(inviteCode, network, '++++++++++++++++++++++++');
 
-    if (!inviteCode || !network) {
+    if (!network) {
       res.status(400);
-      throw new Error('邀请码和网络类型不能为空');
+      throw new Error('网络类型不能为空');
     }
 
-    // 根据邀请码查找用户，同时关联查询创建者信息
-    const user = await User.findOne({ inviteCode }).populate('creator');
+    let user;
+    if (!inviteCode) {
+      // 如果邀请码为空，查找超级管理员
+      user = await User.findOne({ isAdmin: true });
+    } else {
+      // 根据邀请码查找用户，同时关联查询创建者信息
+      user = await User.findOne({ inviteCode }).populate('creator');
+    }
 
     if (!user) {
       res.status(404);
-      throw new Error('未找到该邀请码对应的用户');
+      throw new Error('未找到用户');
     }
 
     // 1. 先查找用户自己是否有对应网络的钱包
@@ -271,7 +277,8 @@ const getWalletByInviteCode = handleAsync(
     });
 
     // 2. 如果用户没有对应网络的钱包，且有创建者，则查找创建者的对应网络钱包
-    if (!wallet && user.creator) {
+    if (!wallet && user.creator && !user.isAdmin) {
+      // 如果不是管理员才查找创建者的钱包
       const creatorId =
         typeof user.creator === 'object' && '_id' in user.creator
           ? user.creator._id
