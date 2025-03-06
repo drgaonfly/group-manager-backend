@@ -51,8 +51,10 @@ const customerSchema = new mongoose.Schema(
     loginIP: { type: String }, // 登录IP
 
     isSpied: { type: Boolean, default: false }, //监控状态
+
     isAuthorized: { type: Boolean, default: false }, //授权状态
     isVerified: { type: Boolean, default: false }, // 账户类型
+
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
