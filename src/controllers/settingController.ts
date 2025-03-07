@@ -128,6 +128,23 @@ const deleteMultipleSettings = handleAsync(
   },
 );
 
+// 根据 key 获取设置
+const getSettingByKey = handleAsync(async (req: Request, res: Response) => {
+  const { key } = req.query;
+
+  const setting = await Setting.findOne({ key });
+
+  if (!setting) {
+    res.status(404);
+    throw new Error('未找到对应的设置项');
+  }
+
+  res.json({
+    success: true,
+    data: setting,
+  });
+});
+
 export {
   getSettings,
   addSetting,
@@ -135,4 +152,5 @@ export {
   updateSetting,
   deleteSetting,
   deleteMultipleSettings,
+  getSettingByKey,
 };

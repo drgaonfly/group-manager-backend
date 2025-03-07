@@ -6,10 +6,15 @@ import {
   updateSetting,
   deleteSetting,
   deleteMultipleSettings,
+  getSettingByKey,
 } from '../controllers/settingController'; // 导入 settingController
 import { protect, checkPermission } from '../middlewares/authMiddleware';
+// import { customerProtect } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
+
+// 根据 key 获取设置
+router.get('/key', getSettingByKey);
 
 // 批量路由处理
 router
