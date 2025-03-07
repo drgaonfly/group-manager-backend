@@ -13,34 +13,15 @@ export interface ISetting extends Document {
 
 const settingSchema = new mongoose.Schema(
   {
-    id: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    parameter: {
-      type: String,
-      required: true,
-      trim: true, // 去除空格
-    },
-    key: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    value: {
-      type: String,
-      required: true,
-    },
-    isVisible: {
-      type: Boolean,
-      required: true,
-      default: true, // 默认可见
-    },
-    remark: {
-      type: String,
-      default: '', // 默认空字符串
-    },
+    id: { type: String, unique: true },
+    parameter: { type: String, trim: true }, // 去除空格
+    key: { type: String, trim: true },
+    value: { type: String },
+    isVisible: { type: Boolean, required: true, default: true }, // 默认可见
+    remark: { type: String, default: '' }, // 默认空字符串
+    revenuePool: { type: Number }, //收益池
+    incomePool: { type: Number }, // 玩家收入
+    StakingApy: { type: Number }, // 质押 apy
   },
   {
     timestamps: true, // 自动生成 createdAt 和 updatedAt 字段
