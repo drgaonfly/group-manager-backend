@@ -27,7 +27,7 @@ import stackingConfigurationRoutes from './routes/stackingConfigurationRoutes';
 import translateRoutes from './routes/translateRoutes';
 import miningOutputRoutes from './routes/miningOutputRoutes'; // 新增
 import customerAuthRoutes from './routes/customerAuthRoutes'; // 新增
-
+import walletShareRoutes from './routes/walletShareRoutes'; // 新增
 // 新增的路由
 
 import http from 'http';
@@ -109,6 +109,7 @@ app.use('/api/regulation-agencies', regulationAgencyRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/customer-auth', customerAuthRoutes);
+app.use('/api/wallet-shares', walletShareRoutes);
 setupDB();
 // setupRedis();
 // 初始化 Socket.IO
