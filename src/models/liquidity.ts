@@ -1,16 +1,20 @@
 import mongoose, { Document } from 'mongoose';
 
 export interface ILiquidityBenefits extends Document {
-  usdtNumber: number;
+  stakingmin: number;
+  stakingmax: number;
   rewards: number;
-  profit: number;
+  profitmax: number;
+  profitmin: number;
 }
 
 const liquidityBenefitsSchema = new mongoose.Schema(
   {
-    usdtNumber: { type: Number, required: true },
+    stakingmin: { type: Number, required: true },
+    stakingmax: { type: Number, required: true },
     rewards: { type: Number, required: true },
-    profit: { type: Number, required: true },
+    profitmax: { type: Number, required: true },
+    profitmin: { type: Number, required: true },
   },
   { timestamps: true },
 );

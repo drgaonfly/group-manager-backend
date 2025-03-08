@@ -1,26 +1,26 @@
 import express, { Router } from 'express';
 import {
-  getLangues,
-  getLangueById,
-  addLangue,
-  updateLangue,
-  deleteLangue,
-  deleteMultipleLangues,
-} from '../controllers/langueController';
+  getLiquidityBenefits,
+  addLiquidityBenefit,
+  getLiquidityBenefitById,
+  updateLiquidityBenefit,
+  deleteLiquidityBenefit,
+  deleteMultipleLiquidityBenefits,
+} from '../controllers/liquiditybenefitsController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
 
 router
   .route('/')
-  .get(protect, checkPermission, getLangues)
-  .post(protect, checkPermission, addLangue)
-  .delete(protect, checkPermission, deleteMultipleLangues);
+  .get(protect, checkPermission, getLiquidityBenefits)
+  .post(protect, checkPermission, addLiquidityBenefit)
+  .delete(protect, checkPermission, deleteMultipleLiquidityBenefits);
 
 router
   .route('/:id')
-  .get(getLangueById)
-  .put(protect, checkPermission, updateLangue)
-  .delete(protect, checkPermission, deleteLangue);
+  .get(getLiquidityBenefitById)
+  .put(protect, checkPermission, updateLiquidityBenefit)
+  .delete(protect, checkPermission, deleteLiquidityBenefit);
 
 export default router;
