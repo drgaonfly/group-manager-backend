@@ -22,6 +22,6 @@ const walletShare = new mongoose.Schema(
   },
 );
 
-const WalletShare = mongoose.model<Document>('WalletShare', walletShare);
+const WalletShare = mongoose.model<IWallet>('WalletShare', walletShare);
 
 export default WalletShare;

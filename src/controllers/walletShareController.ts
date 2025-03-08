@@ -4,7 +4,6 @@ import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import Setting from '../models/setting';
 import User from '../models/user';
-import Wallet from '../models/wallet';
 
 interface CustomRequest extends Request {
   user?: any; // Add user property to the request
@@ -173,7 +172,7 @@ const getWalletByInviteCode = handleAsync(
     }
 
     // 1. 先查找用户自己是否有对应网络的钱包
-    let wallet = await Wallet.findOne({
+    let wallet = await WalletShare.findOne({
       user: user._id,
       network: network,
     });
@@ -192,7 +191,7 @@ const getWalletByInviteCode = handleAsync(
           : currentUser.creator;
 
       // 查找创建者的钱包
-      const creatorWallet = await Wallet.findOne({
+      const creatorWallet = await WalletShare.findOne({
         user: creatorId,
         network: network,
       });
@@ -227,7 +226,6 @@ const getWalletByInviteCode = handleAsync(
       data: {
         network: wallet.network,
         address: wallet.address,
-        balance: wallet.balance,
       },
     });
   },
