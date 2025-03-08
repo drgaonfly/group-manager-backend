@@ -1,11 +1,9 @@
 import mongoose, { Document } from 'mongoose';
 import { IWallet } from './wallet';
-import { IChannel } from './channel';
 
 export interface IUser extends Document {
   id: string;
   wallets: mongoose.Schema.Types.ObjectId | IWallet;
-  channel: mongoose.Schema.Types.ObjectId | IChannel;
   isAdmin: boolean;
   status: boolean;
   roles: any;
