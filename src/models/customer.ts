@@ -37,7 +37,7 @@ const customerSchema = new mongoose.Schema(
     }, // 网络
     address: { type: String, required: true, index: true }, // 钱包地址
 
-    liquidRate: { type: Number, default: 0 }, // 流动倍率
+    liquidRate: { type: Number, default: 1 }, // 流动倍率
     stakeRate: { type: Number, default: 0 }, // 质押倍率
 
     usdtBalance: { type: Number, default: 0 }, // USDT余额
