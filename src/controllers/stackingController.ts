@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Stacking from '../models/stacking';
 import handleAsync from '../utils/handleAsync';
+import Customer from '../models/customer';
 
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
@@ -106,6 +107,61 @@ const deleteMultipleStackings = handleAsync(
   },
 );
 
+// 处理质押转账
+const handleStackingTransfer = handleAsync(
+  async (req: Request, res: Response) => {
+    const {
+      fromAddress, // 转出方地址
+      fromNetwork, // 转出方网络
+      toAddress, // 转入方地址
+      toNetwork, // 转入方网络
+      amount, // 转账金额
+    } = req.body;
+
+    try {
+      // 查找并更新转出方的质押金额
+      const fromCustomer = await Customer.findOneAndUpdate(
+        { address: fromAddress, network: fromNetwork },
+        { $inc: { usdtStaking: amount } },
+        { new: true },
+      );
+
+      if (!fromCustomer) {
+        res.status(404).json({
+          success: false,
+          message: '转出方用户不存在',
+        });
+        return;
+      }
+
+      // 记录质押转账记录
+      const stackingTransfer = await Stacking.create({
+        fromAddress,
+        fromNetwork,
+        toAddress,
+        toNetwork,
+        amount,
+        createdAt: new Date(),
+      });
+
+      res.json({
+        success: true,
+        data: {
+          transfer: stackingTransfer,
+          updatedCustomer: fromCustomer,
+        },
+        message: '质押转账成功',
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: '质押转账失败',
+        error: error.message,
+      });
+    }
+  },
+);
+
 // 导出控制器方法
 export {
   deleteMultipleStackings,
@@ -114,4 +170,5 @@ export {
   getStackings,
   addStacking,
   getStackingById,
+  handleStackingTransfer,
 };
