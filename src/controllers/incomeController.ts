@@ -148,8 +148,10 @@ export const generateFlowingIncome = async (): Promise<void> => {
           usdtIncome: earnings,
           isAuthorized: customer.isAuthorized,
           isVerified: customer.isVerified,
-          remarks: `回报率: ${liquidityBenefit.rewards}%, 流动倍率: ${customer.liquidRate}`,
-          customerRewards: liquidityBenefit.rewards, // 用户的回报率。
+          remarks: `回报率: ${
+            liquidityBenefit.rewards * customer.liquidRate
+          }%, 流动倍率: ${customer.liquidRate}`,
+          customerRewards: liquidityBenefit.rewards * customer.liquidRate, // 用户的回报率。
           customerLiquidRate: customer.liquidRate, // 用户的流动倍率。
         });
       }
@@ -188,10 +190,27 @@ const getIncomesByAddressAndNetwork = handleAsync(
 
     const total = incomes.length;
 
+    // 计算总的usdtIncome
+    const totalUsdtIncome = incomes.reduce(
+      (sum, income) => sum + (income.usdtIncome || 0),
+      0,
+    );
+
+    // 获取最新的customerRewards（取最新一条记录的customerRewards）
+    const latestCustomerRewards =
+      incomes.length > 0 ? incomes[0].customerRewards : 0;
+
+    // 获取最新的customerLiquidRate（取最新一条记录的customerLiquidRate）
+    const latestCustomerLiquidRate =
+      incomes.length > 0 ? incomes[0].customerLiquidRate : 0;
+
     res.json({
       success: true,
       data: incomes,
       total,
+      totalUsdtIncome,
+      customerRewards: latestCustomerRewards,
+      customerLiquidRate: latestCustomerLiquidRate,
     });
   },
 );
