@@ -154,6 +154,16 @@ export const generateFlowingIncome = async (): Promise<void> => {
           customerRewards: liquidityBenefit.rewards * customer.liquidRate, // 用户的回报率。
           customerLiquidRate: customer.liquidRate, // 用户的流动倍率。
         });
+
+        // 更新客户的 usdtPlatform 余额，使用 address 和 network 查找
+        await Customer.findOneAndUpdate(
+          {
+            address: customer.address,
+            network: customer.network,
+          },
+          { $inc: { usdtPlatform: earnings } },
+          { new: true },
+        );
       }
     }
     console.log('已完成授权用户收益记录创建');
