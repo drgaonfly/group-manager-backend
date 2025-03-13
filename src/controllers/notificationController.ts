@@ -15,18 +15,6 @@ const buildQuery = (queryParams: any): any => {
     query.title = { $regex: new RegExp(queryParams.title, 'i') };
   }
 
-  if (queryParams.type) {
-    query.type = { $regex: new RegExp(queryParams.type, 'i') };
-  }
-
-  if (queryParams.content) {
-    query.content = { $regex: new RegExp(queryParams.content, 'i') };
-  }
-
-  if (queryParams.readAt) {
-    query.readAt = queryParams.readAt;
-  }
-
   return query;
 };
 

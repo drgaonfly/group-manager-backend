@@ -8,14 +8,13 @@ import { IdGen } from '../utils/idGen';
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  // 通过 key 查询
-  if (queryParams.key) {
-    query.key = queryParams.key;
+  if (queryParams.parameter) {
+    query.parameter = queryParams.parameter;
   }
 
-  // 通过可见性查询
-  if (queryParams.isVisible !== undefined) {
-    query.isVisible = queryParams.isVisible === 'true'; // 转换为布尔值
+  // 通过 key 查询
+  if (queryParams.value) {
+    query.value = queryParams.value;
   }
 
   return query;

@@ -7,11 +7,27 @@ import {
 } from '../utils/transformUtils'; // 用于处理图像路径
 import { IdGen } from '../utils/idGen';
 
+const buildQuery = (queryParams: any): any => {
+  const query: any = {};
+
+  if (queryParams.createdAt) {
+    query.createdAt = queryParams.createdAt;
+  }
+
+  return query;
+};
+
 // 获取所有监管机构列表
 const getRegulationAgencies = handleAsync(
   async (req: Request, res: Response) => {
-    const regulationAgencies = await RegulationAgency.find().lean();
+    const { current = '1', pageSize = '10' } = req.query;
 
+    const query = buildQuery(req.query);
+
+    const regulationAgencies = await RegulationAgency.find(query)
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize);
     // 处理图标 URL
     const processedRegulationAgencies = await transformDocumentImages(
       regulationAgencies,

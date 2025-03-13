@@ -8,8 +8,6 @@ export interface ISetting extends Document {
   max: number; // 添加最大值
   min: number; // 添加最小值
   remark: string; // 备注
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 const settingSchema = new mongoose.Schema(

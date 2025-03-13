@@ -10,11 +10,6 @@ const buildQuery = (queryParams: any): any => {
     query.type = queryParams.type;
   }
 
-  // createdAt
-  if (queryParams.createdAt) {
-    query.createdAt = queryParams.createdAt;
-  }
-
   return query;
 };
 

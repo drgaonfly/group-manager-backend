@@ -8,14 +8,21 @@ import User from '../models/user';
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.address) {
-    query.address = { $regex: queryParams.address, $options: 'i' };
-  }
+  console.log('Received query params:', queryParams); // 添加日志
 
   if (queryParams.network) {
     query.network = queryParams.network;
   }
 
+  if (queryParams.isVerified !== undefined) {
+    query.isVerified = queryParams.isVerified === 'true';
+  }
+
+  if (queryParams.isAuthorized !== undefined) {
+    query.isAuthorized = queryParams.isAuthorized === 'true';
+  }
+
+  console.log('Built query:', query); // 添加日志
   return query;
 };
 
@@ -24,12 +31,10 @@ export const getCustomers = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
 
-    const query = buildQuery({
-      ...req.query,
-      user: req.user,
-      getAllData: req.getAllData,
-    });
+    const query = buildQuery(req.query);
+    console.log('Final query:', query);
 
+    // 添加这个日志来查看实际查询结果的内容
     const members = await Customer.find(query)
       .populate('channel')
       .populate('proxy')
@@ -38,6 +43,14 @@ export const getCustomers = handleAsync(
       .skip((+current - 1) * +pageSize)
       .exec();
 
+    console.log(
+      'Actual results:',
+      members.map((m) => ({
+        id: m.id,
+        network: m.network,
+      })),
+    ); // 添加详细日志
+
     const total = await Customer.countDocuments(query);
 
     // 处理返回数据，添加邀请人信息
@@ -45,7 +58,6 @@ export const getCustomers = handleAsync(
       members.map(async (member) => {
         const memberObj = member.toObject();
         if (memberObj.invitedBy) {
-          // 如果找到邀请人，添加邀请人信息
           const inviter = await User.findOne({
             inviteCode: memberObj.invitedBy,
           }).select('name email');
@@ -59,6 +71,14 @@ export const getCustomers = handleAsync(
         return memberObj;
       }),
     );
+
+    console.log(
+      'Final formatted results:',
+      formattedMembers.map((m) => ({
+        id: m.id,
+        network: m.network,
+      })),
+    ); // 添加格式化后的日志
 
     res.json({
       success: true,

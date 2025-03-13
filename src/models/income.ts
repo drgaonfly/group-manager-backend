@@ -4,8 +4,6 @@ import { ICustomer } from './customer';
 export interface Income extends Document {
   usdtIncome: number;
   remarks?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
   customer: mongoose.Schema.Types.ObjectId | ICustomer;
   isAuthorized: boolean;
   isVerified: boolean;
@@ -30,6 +28,6 @@ const IncomeSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const Income = mongoose.model<Income>('Instruction', IncomeSchema);
+const Income = mongoose.model<Income>('Income', IncomeSchema);
 
 export default Income;

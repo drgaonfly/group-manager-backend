@@ -12,18 +12,8 @@ interface CustomRequest extends Request {
 const buildQuery = (queryParams: any, req: CustomRequest): any => {
   const query: any = {};
 
-  if (queryParams.customer) {
-    query.customer = queryParams.customer;
-  }
-
-  if (queryParams.walletAddress) {
-    query.walletAddress = {
-      $regex: new RegExp(queryParams.walletAddress, 'i'),
-    };
-  }
-
-  if (queryParams.shareType) {
-    query.shareType = { $regex: new RegExp(queryParams.shareType, 'i') };
+  if (queryParams.network) {
+    query.network = queryParams.network;
   }
 
   // 如果不是超级管理员，只能查看自己的钱包

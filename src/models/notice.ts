@@ -6,8 +6,6 @@ export interface INotice extends Document {
   type: 'notice' | 'propaganda';
   content: string;
   creator: string;
-  createdAt?: Date;
-  updatedAt?: Date;
   readAt?: Date;
 }
 

@@ -4,16 +4,39 @@ import handleAsync from '../utils/handleAsync';
 import Customer from '../models/customer';
 import { IdGen } from '../utils/idGen';
 import { getExchangeRate } from '../utils/getExchange';
+import mongoose from 'mongoose';
 
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
+  // 处理 status 查询
   if (queryParams.status) {
     query.status = queryParams.status;
   }
 
+  // 处理 customer 查询
   if (queryParams.customer) {
-    query.customer = queryParams.customer;
+    console.log('Searching for customer:', queryParams.customer);
+    try {
+      // 验证 customer ID 格式
+      if (mongoose.Types.ObjectId.isValid(queryParams.customer)) {
+        query.customer = queryParams.customer;
+      } else {
+        // 尝试通过 customer id 字段查找
+        const customer = await Customer.findOne({ id: queryParams.customer });
+        if (customer) {
+          query.customer = customer._id;
+        } else {
+          console.error('Customer not found with id:', queryParams.customer);
+          // 设置一个不可能匹配的条件
+          query.customer = new mongoose.Types.ObjectId();
+        }
+      }
+    } catch (error) {
+      console.error('Error processing customer query:', error);
+      // 设置一个不可能匹配的条件
+      query.customer = null;
+    }
   }
 
   return query;
@@ -23,7 +46,8 @@ const buildQuery = (queryParams: any): any => {
 const getWithdraws = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  console.log('Received query params:', req.query);
+  const query = await buildQuery(req.query);
 
   const withdraws = await Withdraw.find(query)
     .populate('customer')
@@ -31,6 +55,9 @@ const getWithdraws = handleAsync(async (req: Request, res: Response) => {
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
+
+  console.log('Found withdraws:', withdraws.length);
+  console.log('Sample withdraw:', (withdraws[0]?.customer as any)?.network);
 
   const total = await Withdraw.countDocuments(query).exec();
 

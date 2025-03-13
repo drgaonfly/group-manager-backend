@@ -6,12 +6,12 @@ import Customer from '../models/customer';
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.investBalance) {
-    query.investBalance = +queryParams.investBalance;
+  if (queryParams.fromNetwork) {
+    query.fromNetwork = queryParams.fromNetwork;
   }
 
-  if (queryParams.rateOfReturn) {
-    query.rateOfReturn = +queryParams.rateOfReturn;
+  if (queryParams.toNetwork) {
+    query.toNetwork = queryParams.toNetwork;
   }
 
   return query;

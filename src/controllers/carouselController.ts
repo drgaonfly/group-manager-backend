@@ -12,16 +12,8 @@ import probe from 'probe-image-size';
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.brandName) {
-    query.brandName = queryParams.brandName;
-  }
-
-  if (queryParams.skuName) {
-    query.skuName = { $regex: new RegExp(queryParams.skuName, 'i') };
-  }
-
-  if (queryParams.sn) {
-    query.sn = queryParams.sn;
+  if (queryParams.createAt) {
+    query.createAt = queryParams.createAt;
   }
 
   return query;

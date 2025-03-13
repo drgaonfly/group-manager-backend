@@ -10,16 +10,12 @@ interface CustomRequest extends Request {
 const buildQuery = (queryParams: any): any => {
   const query: any = {};
 
-  if (queryParams.customer) {
-    query.customer = queryParams.customer;
+  if (queryParams.title) {
+    query.title = { $regex: new RegExp(queryParams.title, 'i') };
   }
 
-  if (queryParams.noticeTitle) {
-    query.noticeTitle = { $regex: new RegExp(queryParams.noticeTitle, 'i') };
-  }
-
-  if (queryParams.noticeType) {
-    query.noticeType = { $regex: new RegExp(queryParams.noticeType, 'i') };
+  if (queryParams.type) {
+    query.type = { $regex: new RegExp(queryParams.type, 'i') };
   }
 
   return query;

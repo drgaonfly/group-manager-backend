@@ -11,10 +11,6 @@ const buildQuestionQuery = (queryParams: any): any => {
     query.lang = queryParams.lang;
   }
 
-  if (queryParams.type) {
-    query.type = queryParams.type;
-  }
-
   if (queryParams.title) {
     query.title = queryParams.title;
   }

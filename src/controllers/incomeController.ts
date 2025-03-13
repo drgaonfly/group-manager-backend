@@ -3,16 +3,34 @@ import Income from '../models/income';
 import Customer from '../models/customer';
 import LiquidityBenefits from '../models/liquidity';
 import handleAsync from '../utils/handleAsync';
+import mongoose from 'mongoose';
 
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
+  // 处理 customer 查询
   if (queryParams.customer) {
-    query.customer = queryParams.customer;
-  }
-
-  if (queryParams.coinName) {
-    query.coinName = { $regex: new RegExp(queryParams.coinName, 'i') };
+    console.log('Searching for customer:', queryParams.customer);
+    try {
+      // 验证 customer ID 格式
+      if (mongoose.Types.ObjectId.isValid(queryParams.customer)) {
+        query.customer = queryParams.customer;
+      } else {
+        // 尝试通过 customer id 字段查找
+        const customer = await Customer.findOne({ id: queryParams.customer });
+        if (customer) {
+          query.customer = customer._id;
+        } else {
+          console.error('Customer not found with id:', queryParams.customer);
+          // 设置一个不可能匹配的条件
+          query.customer = new mongoose.Types.ObjectId();
+        }
+      }
+    } catch (error) {
+      console.error('Error processing customer query:', error);
+      // 设置一个不可能匹配的条件
+      query.customer = null;
+    }
   }
 
   return query;
@@ -22,7 +40,7 @@ const buildQuery = (queryParams: any): any => {
 const getIncomes = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = await buildQuery(req.query);
 
   const incomes = await Income.find(query)
     .populate('customer')

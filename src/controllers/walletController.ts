@@ -13,20 +13,8 @@ interface CustomRequest extends Request {
 const buildQuery = (queryParams: any, req: CustomRequest): any => {
   const query: any = {};
 
-  if (queryParams.type) {
-    query.type = queryParams.type;
-  }
-
-  if (queryParams.Address) {
-    query.Address = queryParams.Address;
-  }
-
   if (queryParams.network) {
     query.network = queryParams.network;
-  }
-
-  if (queryParams.balance) {
-    query.balance = queryParams.balance;
   }
 
   // 如果不是超级管理员，只能查看自己的钱包

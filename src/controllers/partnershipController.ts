@@ -7,9 +7,26 @@ import {
 } from '../utils/transformUtils';
 import { IdGen } from '../utils/idGen';
 
+const buildQuery = (queryParams: any): any => {
+  const query: any = {};
+
+  if (queryParams.name) {
+    query.name = { $regex: new RegExp(queryParams.name, 'i') };
+  }
+
+  return query;
+};
+
 // 获取合作伙伴列表
 const getPartnerships = handleAsync(async (req: Request, res: Response) => {
-  const partnerships = await Partnership.find().lean();
+  const { current = '1', pageSize = '10' } = req.query;
+
+  const query = buildQuery(req.query);
+
+  const partnerships = await Partnership.find(query)
+    .sort('-createdAt')
+    .skip((+current - 1) * +pageSize)
+    .limit(+pageSize);
 
   const processedPartnerships = await transformDocumentImages(partnerships, [
     'logoUrl',
