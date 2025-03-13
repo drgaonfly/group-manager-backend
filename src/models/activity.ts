@@ -43,7 +43,7 @@ const activitySchema = new mongoose.Schema(
     },
     participateTime: {
       type: Date,
-      required: true, // 参与时间
+      required: false, // 参与时间
     },
     status: {
       type: String,

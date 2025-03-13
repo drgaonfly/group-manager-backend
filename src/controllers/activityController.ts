@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import Activity from '../models/activity';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
+import Customer from '../models/customer';
+
 // Helper function to build query
 const buildActivityQuery = (queryParams: any): any => {
   const query: any = {};
@@ -133,6 +135,51 @@ const deleteMultipleActivities = handleAsync(
   },
 );
 
+// 根据地址和网络获取待处理的活动
+const getPendingActivityByAddress = handleAsync(
+  async (req: Request, res: Response) => {
+    const { address, network } = req.query;
+
+    if (!address || !network) {
+      res.status(400).json({
+        success: false,
+        message: '地址和网络参数都是必需的',
+      });
+      return;
+    }
+
+    // 先找到对应的用户
+    const customer = await Customer.findOne({ address, network });
+
+    if (!customer) {
+      res.status(404).json({
+        success: false,
+        message: '未找到该用户',
+      });
+      return;
+    }
+
+    // 查找该用户的待处理活动
+    const pendingActivity = await Activity.findOne({
+      customer: customer._id,
+      status: 'pending',
+    }).populate('customer');
+
+    if (!pendingActivity) {
+      res.status(404).json({
+        success: false,
+        message: '未找到待处理的活动',
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: pendingActivity,
+    });
+  },
+);
+
 export {
   getActivities,
   addActivity,
@@ -140,4 +187,5 @@ export {
   updateActivity,
   deleteActivity,
   deleteMultipleActivities,
+  getPendingActivityByAddress,
 };
