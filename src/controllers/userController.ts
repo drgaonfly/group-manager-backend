@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { isProxy } from '../middlewares/authMiddleware';
 import Role from '../models/role';
 import { IdGen } from '../utils/idGen';
+import Customer from '../models/customer';
 
 //user
 async function generateInviteCode(length: number = 5): Promise<string> {
@@ -216,7 +217,56 @@ export const getUserById = handleAsync(async (req: Request, res: Response) => {
     res.status(404);
     throw new Error('User not found');
   } else {
-    const employees = await User.find({ proxy: user._id }).populate('roles');
+    // Find the role ID for '员工'
+    const employeeRole = await Role.findOne({ name: '员工' });
+
+    if (!employeeRole) {
+      res.status(404);
+      throw new Error('Employee role not found');
+    }
+
+    // Find the role ID for '代理'
+    const proxyRole = await Role.findOne({ name: '代理' });
+
+    if (!proxyRole) {
+      res.status(404);
+      throw new Error('Proxy role not found');
+    }
+
+    const employees = await User.find({
+      proxy: user._id,
+      roles: employeeRole._id, // Use the role ID for filtering employees
+    }).populate('roles');
+
+    const proxies = await User.find({
+      proxy: user._id,
+      roles: proxyRole._id, // Use the role ID for filtering proxies
+    }).populate('roles');
+
+    const customers = await Customer.find({});
+
+    // 处理返回数据，添加邀请人信息
+    const formattedCustomers = await Promise.all(
+      customers.map(async (customer) => {
+        const memberObj = customer.toObject();
+        if (memberObj.invitedBy) {
+          const inviter = await User.findOne({
+            inviteCode: memberObj.invitedBy,
+          }).select('name email');
+          if (inviter) {
+            memberObj.inviter = {
+              name: inviter.name || inviter.email,
+              email: inviter.email,
+            };
+          }
+        }
+        return memberObj;
+      }),
+    );
+
+    const filteredCustomers = formattedCustomers.filter(
+      (customer) => customer.inviter && customer.inviter.email === user.email,
+    );
 
     res.json({
       success: true,
@@ -225,6 +275,8 @@ export const getUserById = handleAsync(async (req: Request, res: Response) => {
         employees: employees.map((employee) =>
           exclude(employee.toObject(), 'password'),
         ),
+        proxies: proxies.map((proxy) => exclude(proxy.toObject(), 'password')),
+        customers: filteredCustomers,
       },
     });
   }

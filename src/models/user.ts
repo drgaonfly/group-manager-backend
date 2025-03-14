@@ -10,17 +10,13 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
-  createdAt?: Date; // Time of document creation
-  updatedAt?: Date; // Time the document was last updated
   live: boolean;
   inviteCode: string;
-  memberNum: number;
   commissionRate: number;
   stackingChannel: 'platform' | 'broker';
-  createAt: Date;
-  updateAt: Date;
   isOnline: boolean;
-  creator: mongoose.Schema.Types.ObjectId | IUser;
+  creator: mongoose.Schema.Types.ObjectId | IUser; // creator 和 proxy实际上是一样的
+  proxy: mongoose.Schema.Types.ObjectId | IUser;
 }
 
 const userSchema = new mongoose.Schema(
@@ -40,7 +36,6 @@ const userSchema = new mongoose.Schema(
     isOnline: { type: Boolean, default: false },
     roles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Role' }],
     inviteCode: { type: String },
-    memberNum: { type: Number, default: 0 },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
