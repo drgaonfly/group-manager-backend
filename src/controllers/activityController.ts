@@ -240,6 +240,7 @@ const updateActivityAndCreateRelease = handleAsync(
       stakedUsdt: usdtAmount,
       rewardEth: ethProfit,
       lockDays: activity.lockDuration,
+      releaseTime: activity.activityEndTime,
     });
 
     res.json({

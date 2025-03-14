@@ -8,7 +8,7 @@ export interface IActivity extends Document {
   lockDuration: number;
   activityEndTime: Date;
   participateTime: Date;
-  status: 'pending' | 'active' | 'completed';
+  status: 'pending' | 'active' | 'completed' | 'ended';
   createdAt?: Date;
   updatedAt?: Date;
   user: mongoose.Schema.Types.ObjectId;
@@ -29,7 +29,7 @@ const activitySchema = new mongoose.Schema(
     participateTime: { type: Date, required: false }, // 参与时间
     status: {
       type: String,
-      enum: ['pending', 'active', 'completed'],
+      enum: ['pending', 'active', 'completed', 'ended'],
       default: 'pending',
     }, // 活动状态
     user: {
