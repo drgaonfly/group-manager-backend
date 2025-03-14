@@ -105,13 +105,14 @@ const updateReleaseRecord = handleAsync(async (req: Request, res: Response) => {
     throw new Error('Release record not found');
   }
 
-  // 检查是否试图将成功状态改回待处理或失败
+  // 检查状态变更的合法性
   if (
-    existingRecord.status === 'success' &&
-    (req.body.status === 'pending' || req.body.status === 'refused')
+    (existingRecord.status === 'success' &&
+      (req.body.status === 'pending' || req.body.status === 'refused')) ||
+    (existingRecord.status === 'refused' && req.body.status === 'pending')
   ) {
     res.status(400);
-    throw new Error('成功状态不可更改');
+    throw new Error('状态不可更改');
   }
 
   // 如果状态从待处理改为成功
