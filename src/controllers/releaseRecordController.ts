@@ -34,6 +34,7 @@ const getReleaseRecords = handleAsync(async (req: Request, res: Response) => {
   const releaseRecords = await ReleaseRecord.find(query)
     .populate('customer')
     .populate('activity')
+    .populate('user')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)

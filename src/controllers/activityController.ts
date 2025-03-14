@@ -4,7 +4,9 @@ import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import Customer from '../models/customer';
 import ReleaseRecord from '../models/releaseRecord';
-
+interface CustomRequest extends Request {
+  user?: any; // Add user property to the request
+}
 // Helper function to build query
 const buildActivityQuery = (queryParams: any): any => {
   const query: any = {};
@@ -31,6 +33,7 @@ const getActivities = handleAsync(async (req: Request, res: Response) => {
   const query = buildActivityQuery(req.query);
 
   const activities = await Activity.find(query)
+    .populate('user')
     .populate('customer')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
@@ -49,14 +52,14 @@ const getActivities = handleAsync(async (req: Request, res: Response) => {
 });
 
 // Add a new activity
-// Add a new activity
-const addActivity = handleAsync(async (req: Request, res: Response) => {
+const addActivity = handleAsync(async (req: CustomRequest, res: Response) => {
   const newId = await IdGen.next(Activity, 'id', 6); // Generate a 6-digit unique ID
 
-  // Create the new activity with the generated id
+  // Create the new activity with the generated id and user
   const newActivity = new Activity({
     ...req.body,
     id: newId, // Set the new unique id
+    user: req.user._id, // Set the user who created the activity
   });
 
   // Save the new activity
@@ -227,6 +230,7 @@ const updateActivityAndCreateRelease = handleAsync(
 
     // 创建释放记录
     const releaseRecord = await ReleaseRecord.create({
+      user: activity.user,
       customer: customer._id,
       activity: activity._id,
       chainName: network,

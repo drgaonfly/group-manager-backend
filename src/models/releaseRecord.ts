@@ -41,6 +41,12 @@ const releaseRecordSchema = new mongoose.Schema(
     stakedUsdt: { type: Number, required: true, comment: '质押USDT数量' },
     rewardEth: { type: Number, required: true, comment: '奖励ETH数量' },
     lockDays: { type: Number, required: true, comment: '锁定天数' },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      comment: '代理用户',
+    },
   },
   {
     timestamps: true,

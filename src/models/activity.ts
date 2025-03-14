@@ -11,6 +11,7 @@ export interface IActivity extends Document {
   status: 'pending' | 'active' | 'completed';
   createdAt?: Date;
   updatedAt?: Date;
+  user: mongoose.Schema.Types.ObjectId;
 }
 
 const activitySchema = new mongoose.Schema(
@@ -31,6 +32,11 @@ const activitySchema = new mongoose.Schema(
       enum: ['pending', 'active', 'completed'],
       default: 'pending',
     }, // 活动状态
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    }, // 活动创建者
   },
   { timestamps: true },
 );
