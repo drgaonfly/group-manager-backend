@@ -243,6 +243,65 @@ const getIncomesByAddressAndNetwork = handleAsync(
   },
 );
 
+// 计算用户总收益（包括历史收益和当前余额收益）
+const calculateTotalIncome = handleAsync(
+  async (req: Request, res: Response) => {
+    const { address, network } = req.query;
+
+    if (!address || !network) {
+      res.status(400).json({
+        success: false,
+        message: '请提供地址和网络参数',
+      });
+      return;
+    }
+
+    // 1. 获取客户信息
+    const customer = await Customer.findOne({
+      address: address,
+      network: network,
+    });
+
+    // 2. 获取客户的历史收益总和
+    const historicalIncomes = await Income.find({ customer: customer._id });
+    const totalHistoricalIncome = historicalIncomes.reduce(
+      (sum, income) => sum + (income.usdtIncome || 0),
+      0,
+    );
+
+    // 3. 获取当前余额对应的收益范围
+    const liquidityBenefit = await LiquidityBenefits.findOne({
+      stakingmin: { $lte: customer.usdtBalance },
+      stakingmax: { $gte: customer.usdtBalance },
+    });
+
+    // 4. 计算当前余额的收益
+    let currentBalanceIncome = 0;
+    if (liquidityBenefit) {
+      // 当前质押收益 = 当前余额 * 收益率 * 质押倍率
+      currentBalanceIncome =
+        customer.usdtBalance *
+        (liquidityBenefit.rewards / 100) *
+        customer.stakeRate;
+    }
+
+    // 5. 计算总收益
+    const totalIncome = totalHistoricalIncome + currentBalanceIncome;
+
+    res.json({
+      success: true,
+      data: {
+        historicalIncome: totalHistoricalIncome,
+        currentBalanceIncome: currentBalanceIncome,
+        totalIncome: totalIncome,
+        customerBalance: customer.usdtBalance,
+        stakeRate: customer.stakeRate,
+        rewards: liquidityBenefit ? liquidityBenefit.rewards : 0,
+      },
+    });
+  },
+);
+
 // 导出控制器方法
 export {
   deleteMultipleIncomes,
@@ -252,4 +311,5 @@ export {
   addIncome,
   getIncomeById,
   getIncomesByAddressAndNetwork,
+  calculateTotalIncome,
 };

@@ -2,7 +2,6 @@ import mongoose, { Document } from 'mongoose';
 
 export interface ICustomer extends Document {
   id: string;
-  channel: mongoose.Schema.Types.ObjectId;
   network: 'TRX' | 'BSC' | 'ETH';
   address: string;
   liquidRate: number;
@@ -27,7 +26,6 @@ export interface ICustomer extends Document {
 const customerSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true }, //id
-    channel: { type: mongoose.Schema.Types.ObjectId, ref: 'Channel' }, // 渠道
     network: {
       type: String,
       enum: ['TRX', 'BSC', 'ETH'],

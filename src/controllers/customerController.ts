@@ -36,7 +36,6 @@ export const getCustomers = handleAsync(
 
     // 添加这个日志来查看实际查询结果的内容
     const members = await Customer.find(query)
-      .populate('channel')
       .populate('proxy')
       .sort('-createdAt')
       .limit(+pageSize)

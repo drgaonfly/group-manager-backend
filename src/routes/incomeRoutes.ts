@@ -7,6 +7,7 @@ import {
   deleteIncome,
   deleteMultipleIncomes,
   getIncomesByAddressAndNetwork,
+  calculateTotalIncome,
 } from '../controllers/incomeController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -16,6 +17,9 @@ const router: Router = express.Router();
 router
   .route('/address-income')
   .get(customerProtect, getIncomesByAddressAndNetwork);
+
+// 计算用户总收益
+router.get('/calculate-total', customerProtect, calculateTotalIncome);
 
 // 设置收入记录的路由
 router
