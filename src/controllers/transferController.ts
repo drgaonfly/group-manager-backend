@@ -141,7 +141,7 @@ const addCollectionTransfer = handleAsync(
       proxyHash, // 代理交易哈希（可选）
       type, // 转账类型：direct 或 agent
       status, // 转账状态
-    } = req.query;
+    } = req.body;
 
     // 创建转账记录
     const transfer = new Transfer({
