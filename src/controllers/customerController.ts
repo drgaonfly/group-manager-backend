@@ -6,8 +6,11 @@ import { IdGen } from '../utils/idGen';
 import User from '../models/user';
 import Wallet from '../models/wallet';
 import Setting from '../models/setting';
-
-const buildQuery = (queryParams: any): any => {
+import { isProxy } from '../middlewares/authMiddleware';
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   console.log('Received query params:', queryParams); // 添加日志
@@ -24,6 +27,18 @@ const buildQuery = (queryParams: any): any => {
     query.isAuthorized = queryParams.isAuthorized === 'true';
   }
 
+  if (req.user && isProxy(req.user)) {
+    const employees = await User.find({ proxy: req.user._id });
+    const employeeIds = employees.map((employee) => employee._id);
+    const employeeInviteCodes = employees.map(
+      (employee) => employee.inviteCode,
+    );
+    query.$or = [
+      { user: { $in: [...employeeIds, req.user._id] } },
+      { invitedBy: { $in: [...employeeInviteCodes, req.user.inviteCode] } },
+    ];
+  }
+
   console.log('Built query:', query); // 添加日志
   return query;
 };
@@ -33,7 +48,7 @@ export const getCustomers = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
 
-    const query = buildQuery(req.query);
+    const query = await buildQuery(req.query, req);
     console.log('Final query:', query);
 
     // 添加这个日志来查看实际查询结果的内容

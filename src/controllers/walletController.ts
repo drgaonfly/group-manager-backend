@@ -69,10 +69,7 @@ const addWallet = handleAsync(async (req: Request, res: Response) => {
 });
 
 const getWalletById = handleAsync(async (req: Request, res: Response) => {
-  const wallet = await Wallet.findById(req.params.id)
-    .populate('user')
-    .populate('channel')
-    .exec();
+  const wallet = await Wallet.findById(req.params.id).populate('user').exec();
 
   res.json({
     success: true,
@@ -87,9 +84,7 @@ const updateWallet = handleAsync(async (req: Request, res: Response) => {
     id,
     { ...req.body },
     { new: true, runValidators: true },
-  )
-    .populate('user')
-    .populate('channel');
+  ).populate('user');
 
   res.json({
     success: true,
