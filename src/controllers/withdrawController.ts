@@ -5,8 +5,14 @@ import Customer from '../models/customer';
 import { IdGen } from '../utils/idGen';
 import { getExchangeRate } from '../utils/getExchange';
 import mongoose from 'mongoose';
+import { RequestCustom } from 'user';
+import { isProxy } from '../middlewares/authMiddleware';
+import User from '../models/user';
 
-const buildQuery = async (queryParams: any): Promise<any> => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   // 处理 status 查询
@@ -39,15 +45,38 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     }
   }
 
+  if (isProxy(req.user)) {
+    // Find all customers associated with this proxy
+    // 代理的客户
+    // const customers = await Customer.find({ proxy: req.user._id });
+
+    // Find all employees under this proxy
+    const employees = await User.find({
+      proxy: req.user._id,
+      roles: { $size: 1, $elemMatch: { name: '员工' } },
+    });
+    // populate roles filter
+    // Find all customers associated with these employees
+    const employeeCustomers = await Customer.find({
+      proxy: { $in: employees.map((e) => e._id) },
+    });
+
+    // Combine all customer IDs from both proxy's direct customers and employees' customers
+    const customerIds = [...employeeCustomers.map((c) => c._id)];
+
+    // Set query to find withdrawals from any of these customers
+    query.customer = { $in: customerIds };
+  }
+
   return query;
 };
 
 // Get all withdraws
-const getWithdraws = handleAsync(async (req: Request, res: Response) => {
+const getWithdraws = handleAsync(async (req: RequestCustom, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
   console.log('Received query params:', req.query);
-  const query = await buildQuery(req.query);
+  const query = await buildQuery(req.query, req);
 
   const withdraws = await Withdraw.find(query)
     .populate('customer')
