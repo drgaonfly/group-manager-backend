@@ -33,10 +33,10 @@ import liquidityRoutes from './routes/liquidityRoutes'; // 新增
 import http from 'http';
 import { setupSocket } from './services/socket'; // 引入 socket 服务
 import withdrawRoutes from './routes/withdrawRoutes';
-import instructionRoutes from './routes/instructionRoutes';
+// import instructionRoutes from './routes/instructionRoutes';
 import customerRoutes from './routes/customerRoutes';
 import walletRoutes from './routes/walletRoutes';
-import transactionRoutes from './routes/transactionRoutes';
+// import transactionRoutes from './routes/transactionRoutes';
 import carouselRoutes from './routes/carouselRoutes';
 import lotteryRecordRoutes from './routes/lotteryRecordRoutes';
 import proxyCommissionRecordRoutes from './routes/proxyCommissionRecordRoutes';
@@ -85,10 +85,10 @@ app.use('/api/data-permissions', dataPermissionRoutes);
 app.use('/api/proxies', proxyRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/withdraws', withdrawRoutes);
-app.use('/api/instructions', instructionRoutes);
+// app.use('/api/instructions', instructionRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/wallets', walletRoutes);
-app.use('/api/transactions', transactionRoutes);
+// app.use('/api/transactions', transactionRoutes);
 app.use('/api/notices', noticeRoutes); // 新增
 app.use('/api/incomes', incomeRoutes); // 新增
 app.use('/api/activities', activityRoutes); // 新增
