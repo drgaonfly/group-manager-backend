@@ -23,9 +23,9 @@ export const authorized = async (): Promise<void> => {
 
       // 使用设置的小时数创建cron表达式
       // 测试用 - 每分钟执行一次
-      const cronExpression = `* * * * *`;
+      // const cronExpression = `* * * * *`;
       // 正式用 - 每x小时执行一次
-      // const cronExpression = `0 */${intervalHours} * * *`;
+      const cronExpression = `0 */${intervalHours} * * *`;
 
       // 创建定时任务
       cron.schedule(
