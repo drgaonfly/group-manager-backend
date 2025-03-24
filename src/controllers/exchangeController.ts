@@ -7,7 +7,7 @@ import { IdGen } from '../utils/idGen';
 
 // eth 兑 usdt
 const ethToUsdt = handleAsync(async (req: Request, res: Response) => {
-  const { id, ethAmount } = req.body;
+  const { id, ethAmount, employee } = req.body;
 
   const exchangeRate = await getExchangeRate('ETH', 'USDT');
 
@@ -44,6 +44,7 @@ const ethToUsdt = handleAsync(async (req: Request, res: Response) => {
 
   await Record.create({
     id: recordId,
+    employee,
     customer: customer._id,
     type: 'eth to usdt',
     amount: ethAmount,
@@ -57,7 +58,7 @@ const ethToUsdt = handleAsync(async (req: Request, res: Response) => {
 
 // usdt 兑 eth
 const usdtToEth = handleAsync(async (req: Request, res: Response) => {
-  const { id, usdtAmount } = req.body;
+  const { id, usdtAmount, employee } = req.body;
 
   console.log('usdtAmount', usdtAmount);
 
@@ -98,6 +99,7 @@ const usdtToEth = handleAsync(async (req: Request, res: Response) => {
 
   await Record.create({
     id: recordId,
+    employee,
     customer: customer._id,
     type: 'usdt to eth',
     amount: usdtAmount,
