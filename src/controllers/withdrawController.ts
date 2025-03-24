@@ -46,25 +46,21 @@ const buildQuery = async (
   }
 
   if (isProxy(req.user)) {
-    // Find all customers associated with this proxy
-    // 代理的客户
-    // const customers = await Customer.find({ proxy: req.user._id });
-
-    // Find all employees under this proxy
+    // 查找该代理下的所有员工
     const employees = await User.find({
       proxy: req.user._id,
       roles: { $size: 1, $elemMatch: { name: '员工' } },
     });
-    // populate roles filter
-    // Find all customers associated with these employees
+    // 填充角色过滤器
+    // 查找与这些员工相关的所有客户
     const employeeCustomers = await Customer.find({
       proxy: { $in: employees.map((e) => e._id) },
     });
 
-    // Combine all customer IDs from both proxy's direct customers and employees' customers
+    // 合并代理的直接客户和员工的客户的所有客户ID
     const customerIds = [...employeeCustomers.map((c) => c._id)];
 
-    // Set query to find withdrawals from any of these customers
+    // 设置查询以查找这些客户的任何提款
     query.customer = { $in: customerIds };
   }
 
