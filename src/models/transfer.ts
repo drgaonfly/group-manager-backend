@@ -1,4 +1,5 @@
 import mongoose, { Document } from 'mongoose';
+import { IUser } from './user';
 
 export interface ITransfer extends Document {
   network: string; // 网络类型
@@ -11,6 +12,7 @@ export interface ITransfer extends Document {
   proxyHash?: string; // 代理交易哈希（可选）
   type: 'direct' | 'agent'; // 转账类型：直接或代理
   status: string; // 转账状态
+  employee: mongoose.Schema.Types.ObjectId | IUser;
 }
 
 const transferSchema = new mongoose.Schema(
@@ -28,6 +30,11 @@ const transferSchema = new mongoose.Schema(
       enum: ['direct', 'agent'], // 转账类型，枚举值：direct 或 agent
       required: true, // 必填
     },
+    employee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    }, // 员工
     status: { type: String, required: false }, // 转账状态，必填
   },
   { timestamps: true }, // 自动添加创建和更新的时间戳

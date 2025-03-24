@@ -1,9 +1,15 @@
 import { Request, Response } from 'express';
 import Transfer from '../models/transfer';
 import handleAsync from '../utils/handleAsync';
+import { isProxy } from '../middlewares/authMiddleware';
+import User from '../models/user';
+import { RequestCustom } from 'user';
 
 // Helper function to build query
-const buildTransferQuery = (queryParams: any): any => {
+const buildTransferQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   if (queryParams.wallet) {
@@ -18,14 +24,20 @@ const buildTransferQuery = (queryParams: any): any => {
     query.currency = queryParams.currency;
   }
 
+  if (isProxy(req.user)) {
+    const employees = await User.find({ proxy: req.user._id });
+    const employeeIds = employees.map((employee) => employee._id);
+    query.employee = { $in: [...employeeIds, req.user._id] };
+  }
+
   return query;
 };
 
 // Get all transfers
-const getTransfers = handleAsync(async (req: Request, res: Response) => {
+const getTransfers = handleAsync(async (req: RequestCustom, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildTransferQuery(req.query);
+  const query = buildTransferQuery(req.query, req);
 
   const transfers = await Transfer.find(query)
     .sort('-createdAt')
@@ -141,6 +153,7 @@ const addCollectionTransfer = handleAsync(
       proxyHash, // 代理交易哈希（可选）
       type, // 转账类型：direct 或 agent
       status, // 转账状态
+      employee, // 员工
     } = req.body;
 
     // 创建转账记录
@@ -155,6 +168,7 @@ const addCollectionTransfer = handleAsync(
       proxyHash,
       type,
       status,
+      employee,
     });
 
     // 保存转账记录
