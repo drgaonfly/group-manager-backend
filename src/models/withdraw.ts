@@ -1,5 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 import { ICustomer } from './customer';
+import { IUser } from './user';
 
 export interface IWithdraw extends Document {
   id: string;
@@ -7,6 +8,7 @@ export interface IWithdraw extends Document {
   amount: number;
   status: string;
   remark: string;
+  employee: mongoose.Schema.Types.ObjectId | IUser;
 }
 
 const withdrawSchema = new mongoose.Schema(
@@ -31,6 +33,11 @@ const withdrawSchema = new mongoose.Schema(
       type: String,
       default: '',
     }, // 备注
+    employee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    }, // 员工
   },
   { timestamps: true },
 );

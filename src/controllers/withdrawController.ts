@@ -103,6 +103,13 @@ const addWithdraw = handleAsync(async (req: Request, res: Response) => {
     throw new Error('USDT余额不足');
   }
 
+  if (inviteCode) {
+    const employee = await User.findOne({ inviteCode });
+    if (employee) {
+      customerExist.employee = employee._id;
+    }
+  }
+
   customerExist.usdtPlatform -= amount;
 
   await customerExist.save();
@@ -113,7 +120,7 @@ const addWithdraw = handleAsync(async (req: Request, res: Response) => {
 
   const newWithdraw = new Withdraw({
     ...req.body,
-    inviteCode: inviteCode,
+    employee: customerExist.employee,
     id: newId,
     customer: customer,
     amount: exchangedAmount,
