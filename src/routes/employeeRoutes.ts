@@ -13,7 +13,6 @@ const router: Router = express.Router();
 
 router
   .route('/')
-  // .get(protect, checkPermission, checkDataPermission, getUsers)
   .get(protect, checkPermission, getUsers)
   .delete(protect, checkPermission, deleteMultipleUsers)
   .post(protect, checkPermission, addUser);
@@ -21,7 +20,7 @@ router
 router
   .route('/:id')
   .delete(protect, checkPermission, deleteUser)
-  .get(protect, getUserById)
+  .get(protect, checkPermission, getUserById)
   .put(protect, checkPermission, updateUser);
 
 export default router;

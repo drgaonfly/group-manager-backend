@@ -20,7 +20,7 @@ router
 router
   .route('/:id')
   .delete(protect, checkPermission, deleteUser)
-  .get(protect, getUserById)
+  .get(protect, checkPermission, getUserById)
   .put(protect, checkPermission, updateUser);
 
 export default router;
