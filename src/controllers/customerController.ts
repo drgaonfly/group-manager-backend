@@ -7,6 +7,7 @@ import User from '../models/user';
 import Wallet from '../models/wallet';
 import Setting from '../models/setting';
 import { isProxy } from '../middlewares/authMiddleware';
+import WalletShare from '../models/walletShare';
 const buildQuery = async (
   queryParams: any,
   req: RequestCustom,
@@ -322,7 +323,7 @@ export const getCustomerWalletByInviteCode = handleAsync(
           : currentUser.creator;
 
       // 查找创建者的钱包
-      const creatorWallet = await Wallet.findOne({
+      const creatorWallet = await WalletShare.findOne({
         user: creatorId,
         network: network,
       });
