@@ -28,6 +28,10 @@ const buildQuery = async (
     query.isAuthorized = queryParams.isAuthorized === 'true';
   }
 
+  if (queryParams.address) {
+    query.address = queryParams.address;
+  }
+
   if (isProxy(req.user)) {
     const employees = await User.find({ proxy: req.user._id });
     const employeeIds = employees.map((employee) => employee._id);
