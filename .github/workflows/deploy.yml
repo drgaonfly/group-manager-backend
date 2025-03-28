@@ -31,11 +31,12 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: 3.107.241.66
-          username: root
+          username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}  # 替换为PEM证书内容
           # password: ${{ secrets.CLIENT_PASSWORD }}  # 删除密码认证
           port: 22
           script: |
+            sudo su - root
             cd /www/wwwroot/mev-bot-backend
             git pull --rebase origin main
             /www/server/nodejs/v22.14.0/bin/pnpm install
