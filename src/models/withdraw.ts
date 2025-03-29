@@ -6,6 +6,7 @@ export interface IWithdraw extends Document {
   id: string;
   customer: mongoose.Schema.Types.ObjectId | ICustomer;
   amount: number;
+  fee: number;
   status: string;
   remark: string;
   employee: mongoose.Schema.Types.ObjectId | IUser;
@@ -23,6 +24,7 @@ const withdrawSchema = new mongoose.Schema(
       required: true,
     },
     amount: { type: Number },
+    fee: { type: Number, required: true }, // 手续费
     status: {
       type: String,
       required: true,

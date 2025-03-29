@@ -3,11 +3,12 @@ import Withdraw from '../models/withdraw';
 import handleAsync from '../utils/handleAsync';
 import Customer from '../models/customer';
 import { IdGen } from '../utils/idGen';
-import { getExchangeRate } from '../utils/getExchange';
+// import { getExchangeRate } from '../utils/getExchange';
 import mongoose from 'mongoose';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import User from '../models/user';
+import Setting from '../models/setting';
 
 const buildQuery = async (
   queryParams: any,
@@ -103,6 +104,18 @@ const addWithdraw = handleAsync(async (req: Request, res: Response) => {
     throw new Error('USDT余额不足');
   }
 
+  // 获取提现手续费比例
+  const feeSetting = await Setting.findOne({ key: 'withdraw' });
+  if (!feeSetting) {
+    res.status(500);
+    throw new Error('提现手续费设置不存在');
+  }
+
+  // 计算手续费
+  const feePercentage = Number(feeSetting.value) / 100;
+  const feeAmount = Number(amount) * feePercentage;
+  const finalAmount = Number(amount) - feeAmount;
+
   if (inviteCode) {
     const employee = await User.findOne({ inviteCode });
     if (employee) {
@@ -116,14 +129,15 @@ const addWithdraw = handleAsync(async (req: Request, res: Response) => {
 
   const newId = await IdGen.next(Withdraw, 'id', 6);
 
-  const exchangedAmount = amount * (await getExchangeRate('USDT', 'USD'));
+  // const exchangedAmount = finalAmount * (await getExchangeRate('USDT', 'USD'));
 
   const newWithdraw = new Withdraw({
     ...req.body,
     employee: customerExist.employee,
     id: newId,
     customer: customer,
-    amount: exchangedAmount,
+    amount: finalAmount,
+    fee: feeAmount,
     status: 'completed',
   });
 
