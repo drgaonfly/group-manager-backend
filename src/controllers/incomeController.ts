@@ -233,10 +233,10 @@ const getIncomesByAddressAndNetwork = handleAsync(
     const total = incomes.length;
 
     // 计算总的usdtIncome
-    const totalUsdtIncome = incomes.reduce(
-      (sum, income) => sum + (income.usdtIncome || 0),
-      0,
-    );
+    // const totalUsdtIncome = incomes.reduce(
+    //   (sum, income) => sum + (income.usdtIncome || 0),
+    //   0,
+    // );
 
     // 获取最新的customerRewards（取最新一条记录的customerRewards）
     const latestCustomerRewards =
@@ -250,7 +250,7 @@ const getIncomesByAddressAndNetwork = handleAsync(
       success: true,
       data: incomes,
       total,
-      totalUsdtIncome,
+      // totalUsdtIncome,
       customerRewards: latestCustomerRewards,
       customerLiquidRate: latestCustomerLiquidRate,
     });
