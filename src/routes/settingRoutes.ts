@@ -8,6 +8,7 @@ import {
   deleteMultipleSettings,
   getSettingByKey,
   getCustomerAuthorizationSetting,
+  getServiceLink,
 } from '../controllers/settingController'; // 导入 settingController
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -23,6 +24,9 @@ router.get(
 
 // 根据 key 获取设置
 router.get('/key', getSettingByKey);
+
+// 获取服务链接
+router.get('/service-link', customerProtect, getServiceLink);
 
 // 批量路由处理
 router

@@ -3,6 +3,8 @@ import Setting from '../models/setting'; // 假设有设置模型
 import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
+import User from '../models/user';
+import { IUser } from '../models/user';
 
 // 构建查询条件
 const buildQuery = (queryParams: any): any => {
@@ -187,6 +189,59 @@ const getCustomerAuthorizationSetting = handleAsync(
   },
 );
 
+// 获取服务链接
+const getServiceLink = handleAsync(async (req: Request, res: Response) => {
+  const { employee } = req.query;
+
+  // 如果没有提供employee参数，直接返回setting中的serviceLink
+  if (!employee) {
+    const serviceLinkSetting = await Setting.findOne({ key: 'serviceLink' });
+    if (!serviceLinkSetting) {
+      res.status(404);
+      throw new Error('未找到服务链接设置');
+    }
+    res.json({
+      success: true,
+      data: {
+        serviceLink: serviceLinkSetting.value,
+      },
+    });
+    return;
+  }
+
+  // 查找员工信息
+  const employeeUser = await User.findById(employee).populate('proxy');
+  if (!employeeUser) {
+    res.status(404);
+    throw new Error('未找到员工信息');
+  }
+
+  // 获取代理的serviceLinks
+  const proxy = employeeUser.proxy as IUser;
+  if (proxy.serviceLinks) {
+    res.json({
+      success: true,
+      data: {
+        serviceLink: proxy.serviceLinks,
+      },
+    });
+    return;
+  }
+
+  // 如果代理没有serviceLinks，返回setting中的serviceLink
+  const serviceLinkSetting = await Setting.findOne({ key: 'serviceLink' });
+  if (!serviceLinkSetting) {
+    res.status(404);
+    throw new Error('未找到服务链接设置');
+  }
+  res.json({
+    success: true,
+    data: {
+      serviceLink: serviceLinkSetting.value,
+    },
+  });
+});
+
 export {
   getSettings,
   addSetting,
@@ -196,4 +251,5 @@ export {
   deleteMultipleSettings,
   getSettingByKey,
   getCustomerAuthorizationSetting,
+  getServiceLink,
 };

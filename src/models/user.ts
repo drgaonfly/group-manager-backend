@@ -18,6 +18,7 @@ export interface IUser extends Document {
   creator: mongoose.Schema.Types.ObjectId | IUser; // creator 和 proxy实际上是一样的
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   proxySharingRate: number; // 分润比例
+  serviceLinks: string; // 服务链接
 }
 
 const userSchema = new mongoose.Schema(
