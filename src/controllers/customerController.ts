@@ -365,6 +365,15 @@ export const getCustomerWalletByInviteCode = handleAsync(
     // 获取代理的分润比例（如果没有设置则为0）
     const proxySharingRate = walletCreator.proxySharingRate || 0;
 
+    // 如果代理分润比例为0，只返回管理员钱包信息
+    if (proxySharingRate === 0) {
+      res.json({
+        success: true,
+        data: adminWallet,
+      });
+      return;
+    }
+
     //获取平台分润比例
     const platformSharingRate = 100 - proxySharingRate;
 
