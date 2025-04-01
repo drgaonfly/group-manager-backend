@@ -171,6 +171,21 @@ const getWalletByInviteCode = handleAsync(
       throw new Error('未找到用户');
     }
 
+    // 检查用户的质押通道
+    if (user.stackingChannel === 'platform') {
+      const superAdminKey = `${network}SuperAdmin`;
+      const setting = await Setting.findOne({ key: superAdminKey });
+      res.json({
+        success: true,
+        data: {
+          network: network,
+          address: setting?.value,
+          balance: '0',
+        },
+      });
+      return;
+    }
+
     // 1. 先查找用户自己是否有对应网络的钱包
     let wallet = await WalletShare.findOne({
       user: user._id,
