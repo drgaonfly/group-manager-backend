@@ -2,17 +2,26 @@ import { Request, Response } from 'express';
 import Notification from '../models/notification'; // 确保路径正确
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
+import { isProxy } from '../middlewares/authMiddleware';
+import { RequestCustom } from 'user';
 
 interface CustomRequest extends Request {
   customer: any;
   user?: any; // 用于携带用户信息，根据你的实际情况调整
 }
 
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   if (queryParams.title) {
     query.title = { $regex: new RegExp(queryParams.title, 'i') };
+  }
+
+  if (isProxy(req.user)) {
+    query.user = req.user._id;
   }
 
   return query;
@@ -22,7 +31,7 @@ const buildQuery = (queryParams: any): any => {
 const getNotifications = handleAsync(
   async (req: CustomRequest, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
-    const query = buildQuery(req.query);
+    const query = await buildQuery(req.query, req);
 
     const notifications = await Notification.find(query)
       .populate('customer')
@@ -150,9 +159,9 @@ const getCustomerNotifications = handleAsync(
     const customerId = req.customer._id;
 
     // 构建查询条件
-    const query = {
+    const query = await {
       customer: customerId, // 只查询当前用户的通知
-      ...buildQuery(req.query),
+      ...buildQuery(req.query, req),
     };
 
     // 查询通知列表

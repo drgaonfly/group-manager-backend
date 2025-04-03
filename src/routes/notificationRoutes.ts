@@ -21,7 +21,7 @@ router
 // 设置通知路由
 router
   .route('/')
-  .get(getNotifications)
+  .get(protect, checkPermission, getNotifications)
   .post(protect, checkPermission, addNotification)
   .delete(protect, checkPermission, deleteMultipleNotifications);
 

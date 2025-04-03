@@ -17,4 +17,8 @@ export const setupSocket = async (server: http.Server): Promise<Server> => {
   return io;
 };
 
+export const getSocketIO = (): Server => {
+  return io;
+};
+
 export { io };
