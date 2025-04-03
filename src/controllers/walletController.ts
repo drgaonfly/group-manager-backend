@@ -17,6 +17,10 @@ const buildQuery = (queryParams: any, req: CustomRequest): any => {
     query.network = queryParams.network;
   }
 
+  if (queryParams.address) {
+    query.address = queryParams.address;
+  }
+
   // 如果不是超级管理员，只能查看自己的钱包
   if (req.user && req.user.isAdmin !== true) {
     query.user = req.user._id;
