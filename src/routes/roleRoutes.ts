@@ -6,6 +6,7 @@ import {
   updateRole,
   deleteRole,
   deleteMultipleRoles,
+  getFilteredRoles,
 } from '../controllers/roleController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -17,6 +18,8 @@ router
   .get(protect, checkPermission, getRoles, checkPermission)
   .post(protect, checkPermission, addRole)
   .delete(protect, checkPermission, deleteMultipleRoles);
+
+router.route('/filter').get(protect, getFilteredRoles);
 
 // 根据 ID 获取、更新和删除角色
 router

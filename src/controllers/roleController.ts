@@ -114,6 +114,32 @@ const deleteMultipleRoles = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
+export const getFilteredRoles = handleAsync(
+  async (req: Request, res: Response) => {
+    const { type } = req.query;
+
+    // Build query based on type parameter
+    const query: any = {};
+    if (type === 'employee') {
+      query.name = '员工';
+    } else if (type === 'proxy') {
+      query.name = '代理';
+    } else {
+      res.json({
+        success: true,
+        data: [],
+      });
+    }
+    // Execute query with type filter
+    const roles = await Role.find(query).sort('-createdAt').lean().exec();
+
+    res.json({
+      success: true,
+      data: roles,
+    });
+  },
+);
+
 export {
   getRoles,
   getRoleById,
