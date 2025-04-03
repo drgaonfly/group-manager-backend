@@ -243,12 +243,19 @@ const getIncomesByAddressAndNetwork = handleAsync(
       ? liquidityBenefit.rewards * customer.liquidRate
       : 0;
 
+    // 计算收益 = (收益率/100) * 用户倍率 * USDT余额
+    const earnings =
+      (liquidityBenefit.rewards / 100) *
+      customer.liquidRate *
+      customer.usdtBalance;
+
     res.json({
       success: true,
       data: incomes,
       total,
+      usdtIncome: earnings,
       customerRewards: currentCustomerRewards,
-      customerLiquidRate: customer.liquidRate,
+      customerLiquidRate: customer.liquidRate, //流动倍率（内部用）
     });
   },
 );
