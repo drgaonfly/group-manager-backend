@@ -60,7 +60,7 @@ const userSchema = new mongoose.Schema(
     twoFAEnabled: {
       type: Boolean,
       default: false,
-      select: false, // 默认不返回该字段
+      // select: false, // 默认不返回该字段
     },
     twoFASecret: {
       type: String,

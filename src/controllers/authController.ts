@@ -201,11 +201,10 @@ const refreshToken = handleAsync(async (req: Request, res: Response) => {
 
 const getUserProfile = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const user = await User.findById(req.user._id).select('+twoFAEnabled');
     res.json({
       success: true,
       data: {
-        ...exclude(user.toObject(), 'password'),
+        ...exclude(req.user.toObject(), 'password'),
         avatar:
           'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png',
       },
