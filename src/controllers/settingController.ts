@@ -135,6 +135,48 @@ const deleteMultipleSettings = handleAsync(
   },
 );
 
+// Get statistics data
+export const getStatistics = handleAsync(
+  async (req: Request, res: Response) => {
+    // Define keys to fetch
+    const keys = [
+      'StakingApy',
+      'incomePool',
+      'revenuePool',
+      'totalOutput',
+      'validNodes',
+      'participants',
+      'userEarnings',
+    ];
+
+    // Fetch all settings in parallel
+    const settingsData = await Setting.find({ key: { $in: keys } }).lean();
+
+    // Create a map for easy value lookup
+    const settingsMap = settingsData
+      .map((setting) => ({
+        [setting.key]: parseFloat(setting.value),
+      }))
+      .reduce((acc, curr) => ({ ...acc, ...curr }), {});
+
+    // Prepare response data
+    const statisticsData = {
+      totalOutput: settingsMap.totalOutput || 0,
+      validNodes: settingsMap.validNodes || 0,
+      participants: settingsMap.participants || 0,
+      userEarnings: settingsMap.userEarnings || 0,
+      StakingApy: settingsMap.StakingApy || 0,
+      incomePool: settingsMap.incomePool || 0,
+      revenuePool: settingsMap.revenuePool || 0,
+    };
+
+    res.json({
+      success: true,
+      data: statisticsData,
+    });
+  },
+);
+
 // 根据 key 获取设置
 const getSettingByKey = handleAsync(async (req: Request, res: Response) => {
   const { key } = req.query;

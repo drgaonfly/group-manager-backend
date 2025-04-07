@@ -9,6 +9,7 @@ import {
   getSettingByKey,
   getCustomerAuthorizationSetting,
   getServiceLink,
+  getStatistics,
 } from '../controllers/settingController'; // 导入 settingController
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -24,6 +25,9 @@ router.get(
 
 // 根据 key 获取设置
 router.get('/key', getSettingByKey);
+
+// Get statistics
+router.get('/statistics', getStatistics);
 
 // 获取服务链接
 router.get('/service-link', customerProtect, getServiceLink);
