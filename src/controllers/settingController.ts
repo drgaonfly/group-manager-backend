@@ -93,6 +93,7 @@ const updateSetting = handleAsync(async (req: Request, res: Response) => {
   );
 
   io.emit('settingUpdated');
+  io.emit('authRemaining');
 
   res.json({
     success: true,
