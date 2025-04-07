@@ -7,7 +7,7 @@ import { getSocketIO } from '../services/socket';
 export const authorized = async (): Promise<void> => {
   if (process.env.CRON_AUTHORIZED === 'true') {
     try {
-      // 从设置中获取执行间隔时间
+      // 从设置中获取执行间隔时间（用于显示倒计时和计算用户收益）
       const authorizationSetting = await Setting.findOne({
         key: 'authorization',
       });
@@ -22,19 +22,16 @@ export const authorized = async (): Promise<void> => {
         return;
       }
 
-      // 使用设置的小时数创建cron表达式
-      // 测试用 - 每分钟执行一次
-      // const cronExpression = `* * * * *`;
-      // 正式用 - 每x小时执行一次
-      const cronExpression = `0 */${intervalHours} * * *`;
+      // 修改定时任务为每小时运行一次，这样可以更精确地检查用户参与时间
+      const cronExpression = `0 * * * *`;
 
       // 创建一个函数来更新和发送倒计时
-      let nextExecutionTime = calculateNextExecutionTime(intervalHours);
+      let nextExecutionTime = calculateNextExecutionTime(1); // 固定为1小时，因为现在每小时检查一次
 
       // 立即发送一次初始倒计时
       emitCountdown(nextExecutionTime);
 
-      // 每两秒更新倒计时
+      // 每秒更新倒计时
       setInterval(() => {
         emitCountdown(nextExecutionTime);
       }, 1000);
@@ -46,7 +43,7 @@ export const authorized = async (): Promise<void> => {
           try {
             await generateFlowingIncome();
             // 更新下次执行时间
-            nextExecutionTime = calculateNextExecutionTime(intervalHours);
+            nextExecutionTime = calculateNextExecutionTime(1);
             // 立即发送更新后的倒计时
             emitCountdown(nextExecutionTime);
           } catch (error) {
@@ -60,7 +57,8 @@ export const authorized = async (): Promise<void> => {
       );
 
       console.log('定时任务已启动：');
-      console.log(`- 授权用户收益生成：每${intervalHours}小时执行一次`);
+      console.log(`- 授权用户收益生成：每小时检查一次`);
+      console.log(`- 每个用户按照参与时间 + ${intervalHours}小时间隔生成收益`);
     } catch (error) {
       console.error('启动定时任务时发生错误:', error);
     }
@@ -69,19 +67,13 @@ export const authorized = async (): Promise<void> => {
   }
 };
 
-// 计算下次授权执行时间
-function calculateNextExecutionTime(intervalHours: number): Date {
+// 计算下次授权执行时间 (固定为每小时)
+function calculateNextExecutionTime(_intervalHours: number): Date {
   const now = new Date();
-  const hour = now.getHours();
-  const nextHour = Math.ceil(hour / intervalHours) * intervalHours;
-
   const nextTime = new Date(now);
-  nextTime.setHours(nextHour, 0, 0, 0);
 
-  // 如果计算出的时间已经过去，则加上间隔时间
-  if (nextTime <= now) {
-    nextTime.setHours(nextTime.getHours() + intervalHours);
-  }
+  // 设置为下一个整点小时
+  nextTime.setHours(now.getHours() + 1, 0, 0, 0);
 
   return nextTime;
 }
