@@ -83,20 +83,14 @@ const updateStacking = handleAsync(async (req: Request, res: Response) => {
   // 先获取当前记录
   const currentStacking = await Stacking.findById(id);
   if (!currentStacking) {
-    res.status(404).json({
-      success: false,
-      message: '记录不存在',
-    });
-    return;
+    res.status(404);
+    throw new Error('记录不存在');
   }
 
   // 如果当前记录已经是冻结状态，不允许改为未冻结
   if (currentStacking.isFrozen && updateData.isFrozen === false) {
-    res.status(400).json({
-      success: false,
-      message: '已确认的记录不能改为冻结状态',
-    });
-    return;
+    res.status(400);
+    throw new Error('已确认的记录不能改为冻结状态');
   }
 
   // 如果要将状态改为冻结，需要更新用户的质押金额
@@ -112,11 +106,8 @@ const updateStacking = handleAsync(async (req: Request, res: Response) => {
     );
 
     if (!fromCustomer) {
-      res.status(404).json({
-        success: false,
-        message: '转出方用户不存在',
-      });
-      return;
+      res.status(404);
+      throw new Error('转出方用户不存在');
     }
   }
 
@@ -197,11 +188,8 @@ const handleStackingTransfer = handleAsync(
       );
 
       if (!fromCustomer) {
-        res.status(404).json({
-          success: false,
-          message: '转出方用户不存在',
-        });
-        return;
+        res.status(404);
+        throw new Error('转出方用户不存在');
       }
     }
 
@@ -222,11 +210,8 @@ const getUnfrozenStackings = handleAsync(
     const { address, network } = req.query;
 
     if (!address || !network) {
-      res.status(400).json({
-        success: false,
-        message: '请提供地址和网络参数',
-      });
-      return;
+      res.status(400);
+      throw new Error('请提供地址和网络参数');
     }
 
     const stackings = await Stacking.find({
