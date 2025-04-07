@@ -5,11 +5,6 @@ import { IdGen } from '../utils/idGen';
 import { isProxy } from '../middlewares/authMiddleware';
 import { RequestCustom } from 'user';
 
-interface CustomRequest extends Request {
-  customer: any;
-  user?: any; // 用于携带用户信息，根据你的实际情况调整
-}
-
 const buildQuery = async (
   queryParams: any,
   req: RequestCustom,
@@ -29,7 +24,7 @@ const buildQuery = async (
 
 // 获取所有通知
 const getNotifications = handleAsync(
-  async (req: CustomRequest, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
     const query = await buildQuery(req.query, req);
 
@@ -55,7 +50,7 @@ const getNotifications = handleAsync(
 
 // 添加通知
 const addNotification = handleAsync(
-  async (req: CustomRequest, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const newId = await IdGen.next(Notification, 'id', 4);
 
     const newNotification = new Notification({
@@ -74,7 +69,7 @@ const addNotification = handleAsync(
 
 // 根据 ID 获取通知
 const getNotificationById = handleAsync(
-  async (req: CustomRequest, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const notification = await Notification.findById(req.params.id)
       .populate('sender')
       .populate('receiver');
@@ -93,7 +88,7 @@ const getNotificationById = handleAsync(
 
 // 更新通知
 const updateNotification = handleAsync(
-  async (req: CustomRequest, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
 
     const updatedNotification = await Notification.findByIdAndUpdate(
@@ -116,7 +111,7 @@ const updateNotification = handleAsync(
 
 // 删除通知
 const deleteNotification = handleAsync(
-  async (req: CustomRequest, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
 
     const notification = await Notification.findByIdAndDelete(id);
@@ -136,7 +131,7 @@ const deleteNotification = handleAsync(
 
 // 批量删除通知
 const deleteMultipleNotifications = handleAsync(
-  async (req: CustomRequest, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { ids } = req.body;
 
     const deleteResult = await Notification.deleteMany({
@@ -152,7 +147,7 @@ const deleteMultipleNotifications = handleAsync(
 
 // 获取当前用户的通知
 const getCustomerNotifications = handleAsync(
-  async (req: CustomRequest, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
 
     // 使用 req.customer._id 获取当前登录用户的 ID

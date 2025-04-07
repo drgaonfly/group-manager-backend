@@ -3,7 +3,7 @@ import { IUser } from '../models/user';
 import { ICustomer } from '../models/customer';
 
 export interface RequestCustom extends Request {
-  customer: any;
+  customer: ICustomer;
   getAllData?: boolean;
   user?: IUser;
 }
