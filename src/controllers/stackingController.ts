@@ -206,13 +206,9 @@ const handleStackingTransfer = handleAsync(
 
 // 获取指定地址的冻结金额
 const getUnfrozenStackings = handleAsync(
-  async (req: Request, res: Response) => {
-    const { address, network } = req.query;
-
-    if (!address || !network) {
-      res.status(400);
-      throw new Error('请提供地址和网络参数');
-    }
+  async (req: RequestCustom, res: Response) => {
+    const customer = req.customer;
+    const { address, network } = customer;
 
     const stackings = await Stacking.find({
       fromAddress: address,
