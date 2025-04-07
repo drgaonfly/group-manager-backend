@@ -211,11 +211,8 @@ const getIncomesByAddressAndNetwork = handleAsync(
     const { address, network } = req.query;
 
     if (!address) {
-      res.status(400).json({
-        success: false,
-        message: '地址参数是必需的',
-      });
-      return;
+      res.status(400);
+      throw new Error('地址参数缺失');
     }
 
     // 先查找对应的客户
@@ -266,11 +263,8 @@ const calculateTotalIncome = handleAsync(
     const { address, network } = req.query;
 
     if (!address || !network) {
-      res.status(400).json({
-        success: false,
-        message: '请提供地址和网络参数',
-      });
-      return;
+      res.status(400);
+      throw new Error('地址和网络参数缺失');
     }
 
     // 1. 获取客户信息
