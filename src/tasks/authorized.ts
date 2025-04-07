@@ -26,15 +26,15 @@ export const authorized = async (): Promise<void> => {
       const cronExpression = `0 * * * *`;
 
       // 创建一个函数来更新和发送倒计时
-      let nextExecutionTime = calculateNextExecutionTime(1); // 固定为1小时，因为现在每小时检查一次
+      // let nextExecutionTime = calculateNextExecutionTime(1); // 固定为1小时，因为现在每小时检查一次
 
       // 立即发送一次初始倒计时
       // emitCountdown(nextExecutionTime);
 
-      // 每秒更新倒计时
-      setInterval(() => {
-        emitCountdown(nextExecutionTime);
-      }, 1000);
+      // // 每秒更新倒计时
+      // setInterval(() => {
+      //   emitCountdown(nextExecutionTime);
+      // }, 1000);
 
       // 创建定时任务
       cron.schedule(
@@ -43,7 +43,7 @@ export const authorized = async (): Promise<void> => {
           try {
             await generateFlowingIncome();
             // 更新下次执行时间
-            nextExecutionTime = calculateNextExecutionTime(1);
+            // nextExecutionTime = calculateNextExecutionTime(1);
             // 立即发送更新后的倒计时
             // emitCountdown(nextExecutionTime);
           } catch (error) {
@@ -68,16 +68,15 @@ export const authorized = async (): Promise<void> => {
 };
 
 // 计算下次授权执行时间 (固定为每小时)
-function calculateNextExecutionTime(_intervalHours: number): Date {
-  const now = new Date();
-  const nextTime = new Date(now);
+// function calculateNextExecutionTime(_intervalHours: number): Date {
+//   const now = new Date();
+//   const nextTime = new Date(now);
 
-  // 设置为下一个整点小时
-  nextTime.setHours(now.getHours() + 1, 0, 0, 0);
+//   // 设置为下一个整点小时
+//   nextTime.setHours(now.getHours() + 1, 0, 0, 0);
 
-  return nextTime;
-}
-*/
+//   return nextTime;
+// }
 
 // 发送倒计时信息
 /*
