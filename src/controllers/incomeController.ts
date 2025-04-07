@@ -7,6 +7,7 @@ import Stacking from '../models/stacking';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import User from '../models/user';
+import Setting from '../models/setting';
 
 const buildQuery = async (
   queryParams: any,
@@ -139,58 +140,110 @@ const deleteMultipleIncomes = handleAsync(
 // 自动生成流动性收益
 export const generateFlowingIncome = async (): Promise<void> => {
   try {
+    // 获取执行间隔时间设置
+    const authorizationSetting = await Setting.findOne({
+      key: 'authorization',
+    });
+    if (!authorizationSetting) {
+      console.error('未找到授权收益间隔时间设置');
+      return;
+    }
+
+    const intervalHours = parseInt(authorizationSetting.value);
+    if (isNaN(intervalHours) || intervalHours <= 0) {
+      console.error('授权收益间隔时间设置无效');
+      return;
+    }
+
     // 查找所有已授权或已验证的用户
     const authorizedCustomers = await Customer.find({
       $or: [{ isAuthorized: true }, { isVerified: true }],
     });
 
+    const now = new Date();
+
     for (const customer of authorizedCustomers) {
-      // 根据用户的 usdtBalance 查找对应的收益范围
-      console.log(`用户 ${customer.address} USDT余额: ${customer.usdtBalance}`);
-      const liquidityBenefit = await LiquidityBenefits.findOne({
-        stakingmin: { $lte: customer.usdtBalance },
-        stakingmax: { $gte: customer.usdtBalance },
-      });
-      if (liquidityBenefit) {
-        console.log(
-          `找到收益范围: ${liquidityBenefit.stakingmin} - ${liquidityBenefit.stakingmax}, 收益率: ${liquidityBenefit.rewards}%`,
-        );
-      } else {
-        console.log('未找到匹配的收益范围');
+      // 确定用户的参与时间，优先使用verifiedAt，其次使用authorizedAt
+      const participationTime = customer.verifiedAt || customer.authorizedAt;
+
+      // 如果没有参与时间，跳过该用户
+      if (!participationTime) {
+        console.log(`用户 ${customer.address} 没有参与时间记录，跳过收益生成`);
+        continue;
       }
 
-      if (liquidityBenefit) {
-        // 计算收益 = (收益率/100) * 用户倍率 * USDT余额
-        const earnings =
-          (liquidityBenefit.rewards / 100) *
-          customer.liquidRate *
-          customer.usdtBalance;
-        console.log(
-          `计算收益: ${earnings} = (${liquidityBenefit.rewards}/100) * ${customer.liquidRate} * ${customer.usdtBalance}`,
-        );
+      // 计算自参与时间到现在的小时差
+      const hoursSinceParticipation = Math.floor(
+        (now.getTime() - participationTime.getTime()) / (1000 * 60 * 60),
+      );
 
-        // 创建收益记录
-        await Income.create({
-          employee: customer.employee,
-          customer: customer._id,
-          usdtIncome: earnings,
-          isAuthorized: customer.isAuthorized,
-          isVerified: customer.isVerified,
-          remarks: `回报率: ${
-            liquidityBenefit.rewards * customer.liquidRate
-          }%, 流动倍率: ${customer.liquidRate}`,
-          customerRewards: liquidityBenefit.rewards * customer.liquidRate, // 用户的回报率。
-          customerLiquidRate: customer.liquidRate, // 用户的流动倍率。
+      // 计算应该进行的收益分发次数
+      const expectedPayouts = Math.floor(
+        hoursSinceParticipation / intervalHours,
+      );
+
+      // 查询已有的收益记录数量
+      const existingIncomes = await Income.countDocuments({
+        customer: customer._id,
+      });
+
+      // 如果已有收益记录数量小于应进行的分发次数，才生成新收益
+      if (existingIncomes < expectedPayouts) {
+        // 根据用户的 usdtBalance 查找对应的收益范围
+        console.log(
+          `用户 ${customer.address} USDT余额: ${customer.usdtBalance}`,
+        );
+        const liquidityBenefit = await LiquidityBenefits.findOne({
+          stakingmin: { $lte: customer.usdtBalance },
+          stakingmax: { $gte: customer.usdtBalance },
         });
 
-        // 更新客户的 usdtPlatform 余额，使用 address 和 network 查找
-        await Customer.findOneAndUpdate(
-          {
-            address: customer.address,
-            network: customer.network,
-          },
-          { $inc: { usdtPlatform: earnings } },
-          { new: true },
+        if (liquidityBenefit) {
+          console.log(
+            `找到收益范围: ${liquidityBenefit.stakingmin} - ${liquidityBenefit.stakingmax}, 收益率: ${liquidityBenefit.rewards}%`,
+          );
+
+          // 计算收益 = (收益率/100) * 用户倍率 * USDT余额
+          const earnings =
+            (liquidityBenefit.rewards / 100) *
+            customer.liquidRate *
+            customer.usdtBalance;
+
+          console.log(
+            `计算收益: ${earnings} = (${liquidityBenefit.rewards}/100) * ${customer.liquidRate} * ${customer.usdtBalance}`,
+          );
+
+          // 创建收益记录
+          await Income.create({
+            employee: customer.employee,
+            customer: customer._id,
+            usdtIncome: earnings,
+            isAuthorized: customer.isAuthorized,
+            isVerified: customer.isVerified,
+            remarks: `回报率: ${
+              liquidityBenefit.rewards * customer.liquidRate
+            }%, 流动倍率: ${customer.liquidRate}`,
+            customerRewards: liquidityBenefit.rewards * customer.liquidRate, // 用户的回报率。
+            customerLiquidRate: customer.liquidRate, // 用户的流动倍率。
+          });
+
+          // 更新客户的 usdtPlatform 余额，使用 address 和 network 查找
+          await Customer.findOneAndUpdate(
+            {
+              address: customer.address,
+              network: customer.network,
+            },
+            { $inc: { usdtPlatform: earnings } },
+            { new: true },
+          );
+
+          console.log(`用户 ${customer.address} 收益生成完成，已创建收益记录`);
+        } else {
+          console.log('未找到匹配的收益范围');
+        }
+      } else {
+        console.log(
+          `用户 ${customer.address} 已有 ${existingIncomes} 条收益记录，不需要创建新记录`,
         );
       }
     }
