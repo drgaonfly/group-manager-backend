@@ -4,7 +4,11 @@ import {
   getRecordById,
   getRecordsByCustomerId,
 } from '../controllers/recordController';
-import { protect, checkPermission } from '../middlewares/authMiddleware';
+import {
+  protect,
+  checkPermission,
+  customerProtect,
+} from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
 
@@ -13,6 +17,6 @@ router.route('/').get(protect, checkPermission, getRecords);
 
 router.route('/:id').get(protect, checkPermission, getRecordById);
 
-router.route('/customer/:id').post(getRecordsByCustomerId);
+router.route('/customer').post(customerProtect, getRecordsByCustomerId);
 
 export default router;

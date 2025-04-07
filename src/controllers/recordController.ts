@@ -66,9 +66,9 @@ const getRecordById = handleAsync(async (req: Request, res: Response) => {
 
 // Get records by customer ID
 const getRecordsByCustomerId = handleAsync(
-  async (req: Request, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const records = await Record.find({
-      customer: req.params.id,
+      customer: req.customer._id,
       type: req.body.type,
     })
       .populate('customer')
