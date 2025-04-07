@@ -14,7 +14,27 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
-  console.log('Received query params:', queryParams); // 添加日志
+  if (queryParams.employee) {
+    let searchText;
+    try {
+      const userParam = JSON.parse(String(queryParams.employee));
+      searchText = userParam.name;
+    } catch (e) {
+      searchText = String(queryParams.employee).trim();
+    }
+    const userData = await User.find({
+      name: {
+        $regex: searchText,
+        $options: 'i',
+      },
+    });
+
+    if (userData && userData.length > 0) {
+      query.employee = { $in: userData.map((employee) => employee._id) };
+    } else {
+      return null;
+    }
+  }
 
   if (queryParams.network) {
     query.network = queryParams.network;
@@ -29,9 +49,8 @@ const buildQuery = async (
   }
 
   if (queryParams.address) {
-    query.address = queryParams.address;
+    query.address = { $regex: queryParams.address, $options: 'i' };
   }
-
   if (isProxy(req.user)) {
     const employees = await User.find({ proxy: req.user._id });
     const employeeIds = employees.map((employee) => employee._id);

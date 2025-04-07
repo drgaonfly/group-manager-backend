@@ -9,6 +9,7 @@ export interface Income extends Document {
   isVerified: boolean;
   customerRewards: number;
   customerLiquidRate: number;
+  stakingIcome: boolean;
   createdAt: Date;
   updatedAt?: Date;
   employee: mongoose.Schema.Types.ObjectId | IUser;
@@ -25,6 +26,7 @@ const IncomeSchema = new mongoose.Schema(
     },
     isAuthorized: { type: Boolean, default: false }, // 授权收益
     isVerified: { type: Boolean, default: false }, // 模拟收益
+    stakingIcome: { type: Boolean, default: false }, //质押收益
     customerRewards: { type: Number, default: 0 }, // 用户的回报率。
     customerLiquidRate: { type: Number, default: 0 }, // 用户的流动倍率。
     employee: {

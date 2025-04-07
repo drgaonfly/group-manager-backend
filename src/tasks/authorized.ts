@@ -69,7 +69,7 @@ export const authorized = async (): Promise<void> => {
   }
 };
 
-// 计算下次执行时间
+// 计算下次授权执行时间
 function calculateNextExecutionTime(intervalHours: number): Date {
   const now = new Date();
   const hour = now.getHours();
