@@ -235,27 +235,8 @@ const getServiceLink = handleAsync(
       throw new Error('未找到服务链接设置');
     }
 
-    // 如果没有提供employee参数，直接返回setting中的serviceLink
-    if (!employee) {
-      res.json({
-        success: true,
-        data: {
-          serviceLink: serviceLinkSetting.value,
-        },
-      });
-      return;
-    }
-
-    // 查找员工信息
-    const employeeUser = await User.findById(employee._id).populate('proxy');
-
-    if (!employeeUser) {
-      res.status(404);
-      throw new Error('未找到员工信息');
-    }
-
     // 获取代理的serviceLinks
-    const proxy = employeeUser.proxy as IUser;
+    const proxy = employee.proxy as IUser;
 
     if (proxy.serviceLinks) {
       res.json({

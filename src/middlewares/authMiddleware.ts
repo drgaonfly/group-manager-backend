@@ -84,7 +84,14 @@ const customerProtect = handleAsync(
         console.log('decoded', decoded);
 
         const customer = await Customer.findById(decoded.id)
-          .populate('employee')
+          .populate({
+            path: 'employee',
+            select: '-password',
+            populate: {
+              path: 'proxy',
+              select: '-password',
+            },
+          })
           .exec();
 
         if (!customer) {
