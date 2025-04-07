@@ -50,7 +50,6 @@ export const login = handleAsync(async (req: Request, res: Response) => {
       invitedBy: inviteCode,
       employee: employee?._id, // 关联员工ID
       ownInviteCode: newOwnInviteCode, // 添加自己的邀请码
-      createdAt: new Date(),
       logedinAt: new Date(),
       registerIP: currentIP,
       loginIP: currentIP,

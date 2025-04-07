@@ -162,11 +162,8 @@ const getPendingActivityByAddress = handleAsync(
     const { address, network } = req.query;
 
     if (!address || !network) {
-      res.status(400).json({
-        success: false,
-        message: '地址和网络参数都是必需的',
-      });
-      return;
+      res.status(400);
+      throw new Error('地址和网络参数都是必需的');
     }
 
     // 先找到对应的用户
@@ -187,11 +184,8 @@ const getPendingActivityByAddress = handleAsync(
     }).populate('customer');
 
     if (!pendingActivity) {
-      res.status(404).json({
-        success: false,
-        message: '未找到待处理的活动',
-      });
-      return;
+      res.status(404);
+      throw new Error('未找到待处理的活动');
     }
 
     res.json({
@@ -207,21 +201,15 @@ const updateActivityAndCreateRelease = handleAsync(
     const { address, network, status, ethProfit, usdtAmount } = req.body;
 
     if (!address || !network || !status || !ethProfit || !usdtAmount) {
-      res.status(400).json({
-        success: false,
-        message: '所有参数都是必需的',
-      });
-      return;
+      res.status(400);
+      throw new Error('地址、网络、状态、ETH收益和USDT金额参数都是必需的');
     }
 
     // 先找到对应的用户
     const customer = await Customer.findOne({ address, network });
     if (!customer) {
-      res.status(404).json({
-        success: false,
-        message: '未找到该用户',
-      });
-      return;
+      res.status(404);
+      throw new Error('未找到该用户');
     }
 
     // 查找并更新该用户的活动
@@ -238,11 +226,8 @@ const updateActivityAndCreateRelease = handleAsync(
     );
 
     if (!activity) {
-      res.status(404).json({
-        success: false,
-        message: '未找到待处理的活动',
-      });
-      return;
+      res.status(404);
+      throw new Error('未找到待处理的活动');
     }
 
     // 创建释放记录
