@@ -8,6 +8,8 @@ import {
   addChat,
   getChatMessages,
   addChatMessage,
+  addChatUserMessage,
+  getChatUserMessages,
 } from '../controllers/chatController';
 import {
   protect,
@@ -27,6 +29,12 @@ router
   .route('/messages')
   .get(customerProtect, getChatMessages)
   .post(customerProtect, addChatMessage);
+
+// 后台用户与客户的群聊对话信息
+router
+  .route('/user-messages')
+  .get(protect, checkPermission, getChatUserMessages)
+  .post(protect, checkPermission, addChatUserMessage);
 
 router
   .route('/:id')

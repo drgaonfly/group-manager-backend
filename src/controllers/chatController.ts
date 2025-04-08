@@ -21,19 +21,98 @@ const getChats = handleAsync(async (req: Request, res: Response) => {
 
   const query = buildQuery(req.query);
 
-  const chats = await Chat.find(query)
-    .populate('customer')
-    .populate('user')
-    .sort('-createdAt') // Sort by creation time in descending order
-    .skip((+current - 1) * +pageSize)
-    .limit(+pageSize)
-    .exec();
+  // 获取所有客户的最新一条消息，实现群聊列表
+  const latestChats = await Chat.aggregate([
+    { $match: query },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: '$customer',
+        latestMessage: { $first: '$$ROOT' },
+      },
+    },
+    { $replaceRoot: { newRoot: '$latestMessage' } },
+    { $skip: (+current - 1) * +pageSize },
+    { $limit: +pageSize },
+  ]).exec();
+
+  // 填充客户和用户信息
+  const populatedChats = await Chat.populate(latestChats, [
+    { path: 'customer' },
+    { path: 'user' },
+  ]);
 
   res.json({
     success: true,
-    data: chats,
+    data: populatedChats,
   });
 });
+
+// 获取后台用户与客户的聊天记录
+const getChatUserMessages = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '10', customerId } = req.query;
+
+    if (!customerId) {
+      res.status(400);
+      throw new Error('客户ID是必需的');
+    }
+
+    const userId = req.user._id;
+
+    const query = {
+      customer: customerId,
+      user: userId,
+    };
+
+    // 查询数据库获取聊天记录
+    const messages = await Chat.find(query)
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .populate('customer')
+      .populate('user')
+      .exec();
+
+    res.json({
+      success: true,
+      data: messages,
+    });
+  },
+);
+
+// 添加后台用户与客户的聊天消息
+const addChatUserMessage = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const userId = req.user._id;
+    const { customerId, message } = req.body;
+
+    if (!customerId || !message) {
+      res.status(400);
+      throw new Error('客户ID和消息内容是必需的');
+    }
+
+    const newChat = new Chat({
+      customer: customerId,
+      user: userId,
+      message,
+      sender: 'user',
+      isRead: false,
+    });
+
+    const savedChat = await newChat.save();
+    const populatedChat = await Chat.findById(savedChat._id)
+      .populate('customer')
+      .populate('user');
+
+    io.emit('chatMessage', populatedChat);
+
+    res.json({
+      success: true,
+      data: populatedChat,
+    });
+  },
+);
 
 // 获取客户与客服的聊天记录
 const getChatMessages = handleAsync(
@@ -82,8 +161,11 @@ const addChatMessage = handleAsync(
     });
 
     const savedChat = await newChat.save();
+    const populatedChat = await Chat.findById(savedChat._id)
+      .populate('customer')
+      .populate('user');
 
-    io.emit('chatMessage', savedChat);
+    io.emit('chatMessage', populatedChat);
 
     res.json({
       success: true,
@@ -182,4 +264,6 @@ export {
   deleteMultipleChats,
   getChatMessages,
   addChatMessage,
+  getChatUserMessages,
+  addChatUserMessage,
 };
