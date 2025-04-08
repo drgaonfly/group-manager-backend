@@ -31,7 +31,7 @@ router
   .route('/')
   .get(protect, checkPermission, getCustomers)
   .delete(protect, checkPermission, deleteMultipleCustomers)
-  .post(addCustomer);
+  .post(protect, checkPermission, addCustomer);
 
 router
   .route('/:id')
