@@ -85,6 +85,11 @@ export const getUsers = handleAsync(
       }
     }
 
+    // 如果是超级管理员，不能看超级管理员
+    if (req.user.isAdmin && req.baseUrl + req.route.path === '/api/users/') {
+      query.isAdmin = false;
+    }
+
     const users = await User.find(query)
       .populate('creator')
       .populate('proxy')
