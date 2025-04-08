@@ -169,7 +169,7 @@ const addCollectionTransfer = handleAsync(
       proxyHash,
       type,
       status,
-      employee,
+      employee: employee === '' ? undefined : employee,
     });
 
     // 保存转账记录
