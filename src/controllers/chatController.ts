@@ -3,6 +3,7 @@ import Chat from '../models/chat';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { io } from '../services/socket';
+import { IUser } from '../models/user';
 
 // Build query based on query parameters
 const buildQuery = (queryParams: any): any => {
@@ -145,12 +146,16 @@ const getChatMessages = handleAsync(
 const addChatMessage = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const customerId = req.customer._id;
-    const { userId, message } = req.body;
+    const { message } = req.body;
 
-    if (!userId || !message) {
+    if (!message) {
       res.status(400);
-      throw new Error('用户ID和消息内容是必需的');
+      throw new Error('消息内容是必需的');
     }
+
+    const employee = req.customer.employee as IUser;
+
+    const userId = (employee.proxy as IUser)?._id;
 
     const newChat = new Chat({
       customer: customerId,
@@ -161,6 +166,7 @@ const addChatMessage = handleAsync(
     });
 
     const savedChat = await newChat.save();
+
     const populatedChat = await Chat.findById(savedChat._id)
       .populate('customer')
       .populate('user');
