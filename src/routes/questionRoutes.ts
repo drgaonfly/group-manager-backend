@@ -13,7 +13,7 @@ const router: Router = express.Router();
 
 router
   .route('/')
-  .get(getQuestions)
+  .get(protect, checkPermission, getQuestions)
   .post(protect, checkPermission, addQuestion)
   .delete(protect, checkPermission, deleteMultipleQuestions);
 

@@ -14,7 +14,7 @@ const router: Router = express.Router();
 // 设置活动记录的路由。
 router
   .route('/')
-  .get(getCarousels)
+  .get(protect, checkPermission, getCarousels)
   .post(protect, checkPermission, addCarousel)
   .delete(protect, checkPermission, deleteMultipleCarousels);
 

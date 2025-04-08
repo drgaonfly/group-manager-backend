@@ -14,7 +14,7 @@ const router: Router = express.Router();
 // 获取合作伙伴列表和创建新的合作伙伴
 router
   .route('/')
-  .get(getPartnerships) // 获取所有合作伙伴
+  .get(protect, checkPermission, getPartnerships) // 获取所有合作伙伴
   .post(protect, checkPermission, addPartnership) // 创建新的合作伙伴
   .delete(protect, checkPermission, deleteMultiplePartnerships); // 批量删除合作伙伴
 

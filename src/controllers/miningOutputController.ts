@@ -208,18 +208,3 @@ export const getLatestMiningOutput = handleAsync(
     });
   },
 );
-
-// 随机获取50条挖矿数据
-export const getRandomMiningOutput = handleAsync(
-  async (req: RequestCustom, res: Response): Promise<void> => {
-    // 使用 MongoDB 的 aggregation pipeline 随机抽取50条数据
-    const randomData = await MiningOutput.aggregate([
-      { $sample: { size: 50 } },
-    ]);
-
-    res.json({
-      success: true,
-      data: randomData,
-    });
-  },
-);
