@@ -191,12 +191,11 @@ export const updateCustomer = handleAsync(
 
     // 检查 isAuthorized 和 isVerified 不能同时为 true
     if (
-      (updateData.isVerified === true && customer.isAuthorized === true) ||
       (updateData.isAuthorized === true && customer.isVerified === true) ||
-      (updateData.isVerified === true && updateData.isAuthorized === true)
+      (updateData.isAuthorized === true && updateData.isVerified === true)
     ) {
       res.status(400);
-      throw new Error('授权账户和模拟账户不能同时存在');
+      throw new Error('模拟账户不能设置为授权账户');
     }
 
     // 如果设置 isVerified 为 true，添加验证时间
