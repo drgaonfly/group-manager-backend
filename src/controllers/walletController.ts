@@ -18,7 +18,7 @@ const buildQuery = async (
   }
 
   if (queryParams.address) {
-    query.address = queryParams.address;
+    query.address = { $regex: queryParams.address, $options: 'i' };
   }
 
   if (queryParams.user) {

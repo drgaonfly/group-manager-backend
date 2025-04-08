@@ -201,11 +201,13 @@ export const updateCustomer = handleAsync(
     // 如果设置 isVerified 为 true，添加验证时间
     if (updateData.isVerified === true) {
       updateData.verifiedAt = new Date();
+      io.emit('authRemaining');
     }
 
     // 如果设置 isAuthorized 为 true，添加授权时间
     if (updateData.isAuthorized === true) {
       updateData.authorizedAt = new Date();
+      io.emit('authRemaining');
     }
 
     // 如果更新登录信息
