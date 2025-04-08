@@ -52,6 +52,7 @@ import { scheduledtasks } from './tasks';
 import { authorized } from './tasks/authorized';
 import recordRoutes from './routes/recordRoutes';
 import videoRoutes from './routes/videoRoutes';
+import pageRoutes from './routes/pageRoutes';
 
 // import { startWebHookBot } from './bot';
 dotenv.config();
@@ -110,6 +111,8 @@ app.use('/api/wallet-shares', walletShareRoutes);
 app.use('/api/liquidity', liquidityRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/pages', pageRoutes);
+
 setupDB();
 setupRedis();
 // 初始化 Socket.IO
