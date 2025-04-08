@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
 import Setting from '../models/setting'; // 假设有设置模型
-import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
-import User from '../models/user';
 import { IUser } from '../models/user';
 import { io } from '../services/socket';
 import { RequestCustom } from 'user';

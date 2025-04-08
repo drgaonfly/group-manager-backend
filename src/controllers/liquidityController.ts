@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import LiquidityBenefits from '../models/liquidity';
-import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 
