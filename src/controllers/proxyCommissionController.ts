@@ -32,7 +32,10 @@ const getProxyCommissionRecords = handleAsync(
     const proxyCommissionRecords = await ProxyCommissionRecord.find(query)
       .populate({
         path: 'wallet',
-        populate: { path: 'user' }, // 只返回 user 的 name
+        populate: {
+          path: 'user',
+          select: '-password', // Exclude password field
+        },
       })
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
