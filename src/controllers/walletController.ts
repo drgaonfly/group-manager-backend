@@ -7,7 +7,10 @@ import User from '../models/user';
 import Setting from '../models/setting';
 import { RequestCustom } from 'user';
 
-const buildQuery = (queryParams: any, req: RequestCustom): any => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   if (queryParams.network) {
@@ -16,6 +19,26 @@ const buildQuery = (queryParams: any, req: RequestCustom): any => {
 
   if (queryParams.address) {
     query.address = queryParams.address;
+  }
+
+  if (queryParams.user) {
+    let searchText;
+    try {
+      const userParam = JSON.parse(String(queryParams.user));
+      searchText = userParam.name;
+    } catch (e) {
+      searchText = String(queryParams.user).trim();
+    }
+    const userData = await User.find({
+      name: {
+        $regex: searchText,
+        $options: 'i',
+      },
+    });
+
+    if (userData && userData.length > 0) {
+      query.user = { $in: userData.map((user) => user._id) };
+    }
   }
 
   // 如果不是超级管理员，只能查看自己的钱包
@@ -29,7 +52,7 @@ const buildQuery = (queryParams: any, req: RequestCustom): any => {
 const getWallets = handleAsync(async (req: RequestCustom, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query, req);
+  const query = await buildQuery(req.query, req);
 
   const wallet = await Wallet.find(query)
     .populate({

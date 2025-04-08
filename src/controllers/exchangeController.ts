@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import handleAsync from '../utils/handleAsync';
 import { getExchangeRate } from '../utils/getExchange';
 import Record from '../models/record';
