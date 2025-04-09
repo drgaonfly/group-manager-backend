@@ -302,12 +302,14 @@ export const generateStakingIncome = async (): Promise<void> => {
       return;
     }
 
-    // 查找所有已授权或已验证的用户
+    // 查找所有有质押时间的用户
     const authorizedCustomers = await Customer.find({
       stackingAt: { $exists: true },
     });
 
     const now = new Date();
+
+    console.log('当前时间:', now);
 
     for (const customer of authorizedCustomers) {
       // 确定用户的参与时间
@@ -315,18 +317,32 @@ export const generateStakingIncome = async (): Promise<void> => {
 
       // 如果没有参与时间，跳过该用户
       if (!participationTime) {
-        console.log(`用户 ${customer.address} 没有参与时间记录，跳过收益生成`);
+        console.log(
+          `用户 ${customer.address} 没有参与时间记录，跳过质押收益生成`,
+        );
         continue;
       }
 
+      console.log('参与时间:', participationTime);
+
       // 计算自参与时间到现在的小时差
       const hoursSinceParticipation = Math.floor(
-        (now.getTime() - participationTime.getTime()) / (1000 * 60 * 60),
+        (now.getTime() - participationTime.getTime()) / (1000 * 60),
+      );
+
+      console.log(
+        `时间差(小时): ${hoursSinceParticipation}, 原始时间差(毫秒): ${
+          now.getTime() - participationTime.getTime()
+        }`,
       );
 
       // 计算应该进行的收益分发次数
       const expectedPayouts = Math.floor(
         hoursSinceParticipation / intervalHours,
+      );
+
+      console.log(
+        `预期支付次数: ${expectedPayouts}, intervalHours: ${intervalHours}`,
       );
 
       // 查询已有的收益记录数量

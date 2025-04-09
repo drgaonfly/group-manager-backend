@@ -210,6 +210,11 @@ export const updateCustomer = handleAsync(
       io.emit('authRemaining');
     }
 
+    // 如果设置 usdtStaking 为 true，添加质押时间
+    if (updateData.usdtStaking) {
+      updateData.stackingAt = new Date();
+    }
+
     // 如果更新登录信息
     if (updateData.logedinAt) {
       updateData.LogedinIP =

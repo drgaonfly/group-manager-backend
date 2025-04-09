@@ -1,19 +1,20 @@
 import cron from 'node-cron';
-import { generateFlowingIncome } from '../controllers/incomeController';
+import { generateStakingIncome } from '../controllers/incomeController';
 
 // 启动定时任务
-export const authorized = async (): Promise<void> => {
+export const stacking = async (): Promise<void> => {
   if (process.env.CRON_STACKING === 'true') {
     try {
       // 修改定时任务为每小时运行一次，这样可以更精确地检查用户参与时间
-      const cronExpression = `0 * * * *`;
+      // const cronExpression = `0 * * * *`;
+      const cronExpression = `* * * * *`;
 
       // 创建定时任务
       cron.schedule(
         cronExpression,
         async () => {
           try {
-            await generateFlowingIncome();
+            await generateStakingIncome();
           } catch (error) {
             console.error('执行定时收益生成任务时发生错误:', error);
           }
