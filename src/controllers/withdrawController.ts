@@ -15,6 +15,26 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
+  if (queryParams.customer) {
+    let searchText;
+    try {
+      const userParam = JSON.parse(String(queryParams.customer));
+      searchText = userParam.address;
+    } catch (e) {
+      searchText = String(queryParams.customer).trim();
+    }
+    const customerData = await Customer.find({
+      address: {
+        $regex: searchText,
+        $options: 'i',
+      },
+    });
+
+    if (customerData && customerData.length > 0) {
+      query.customer = { $in: customerData.map((customer) => customer._id) };
+    }
+  }
+
   // 处理 status 查询
   if (queryParams.status) {
     query.status = queryParams.status;

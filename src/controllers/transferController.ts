@@ -16,6 +16,13 @@ const buildTransferQuery = async (
     query.type = queryParams.type;
   }
 
+  if (queryParams.address) {
+    query.address = {
+      $regex: queryParams.address,
+      $options: 'i',
+    };
+  }
+
   // sender
   if (queryParams.sender) {
     query.sender = {
