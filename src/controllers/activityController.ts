@@ -180,20 +180,16 @@ const getPendingActivityByAddress = handleAsync(
 
 // 更新活动状态并创建解押记录
 const updateActivityAndCreateRelease = handleAsync(
-  async (req: Request, res: Response) => {
-    const { address, network, status, ethProfit, usdtAmount } = req.body;
+  async (req: RequestCustom, res: Response) => {
+    const { status, ethProfit, usdtAmount } = req.body;
 
-    if (!address || !network || !status || !ethProfit || !usdtAmount) {
+    if (!status || !ethProfit || !usdtAmount) {
       res.status(400);
       throw new Error('地址、网络、状态、ETH收益和USDT金额参数都是必需的');
     }
 
     // 先找到对应的用户
-    const customer = await Customer.findOne({ address, network });
-    if (!customer) {
-      res.status(404);
-      throw new Error('未找到该用户');
-    }
+    const customer = req.customer;
 
     // 查找并更新该用户的活动
     const activity = await Activity.findOneAndUpdate(
@@ -218,8 +214,8 @@ const updateActivityAndCreateRelease = handleAsync(
       user: activity.user,
       customer: customer._id,
       activity: activity._id,
-      chainName: network,
-      walletAddress: address,
+      chainName: customer.network,
+      walletAddress: customer.address,
       applyTime: new Date(),
       status: 'pending',
       stakedUsdt: usdtAmount,
