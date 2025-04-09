@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import Activity from '../models/activity';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
-import Customer from '../models/customer';
 import ReleaseRecord from '../models/releaseRecord';
 import User from '../models/user';
 import { isProxy } from '../middlewares/authMiddleware';
