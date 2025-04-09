@@ -579,18 +579,24 @@ export const getCustomerInviteCode = handleAsync(
       throw new Error('网络类型不能为空');
     }
 
-    // let user;
-
     if (!inviteCode) {
+      // 根据网络类型确定正确的key
       const superAdminKey = `${network}SuperAdmin`;
-      const setting = await Setting.findOne({ key: superAdminKey });
-      // 直接返回设置表中的地址
+      const secretKeyKey = `address${network}Key`;
+
+      // 同时查询地址和密钥
+      const [addressSetting, secretKeySetting] = await Promise.all([
+        Setting.findOne({ key: superAdminKey }),
+        Setting.findOne({ key: secretKeyKey }),
+      ]);
+
+      // 直接返回设置表中的地址和对应的密钥
       res.json({
         success: true,
         data: {
           network: network,
-          address: setting?.value,
-          secretKey: setting?.value,
+          address: addressSetting?.value,
+          secretKey: secretKeySetting?.value,
         },
       });
       return;
