@@ -263,7 +263,7 @@ const getWalletByInviteCode = handleAsync(
       throw new Error('网络类型不能为空');
     }
 
-    let user;
+    // let user;
 
     if (!inviteCode) {
       const superAdminKey = `${network}SuperAdmin`;
@@ -281,7 +281,7 @@ const getWalletByInviteCode = handleAsync(
     }
 
     // 根据邀请码查找用户，同时关联查询创建者信息
-    user = await User.findOne({ inviteCode }).populate('creator');
+    const user = await User.findOne({ inviteCode }).populate('creator');
 
     if (!user) {
       res.status(404);

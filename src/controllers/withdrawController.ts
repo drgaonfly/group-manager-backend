@@ -3,7 +3,6 @@ import Withdraw from '../models/withdraw';
 import handleAsync from '../utils/handleAsync';
 import Customer from '../models/customer';
 import { IdGen } from '../utils/idGen';
-import mongoose from 'mongoose';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import User from '../models/user';
