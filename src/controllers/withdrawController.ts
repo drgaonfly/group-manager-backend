@@ -20,29 +20,18 @@ const buildQuery = async (
     query.status = queryParams.status;
   }
 
+  // isFrozen
+  if (queryParams.isFrozen) {
+    query.isFrozen = queryParams.isFrozen === 'true';
+  }
+
   // 处理 customer 查询
   if (queryParams.customer) {
-    console.log('Searching for customer:', queryParams.customer);
-    try {
-      // 验证 customer ID 格式
-      if (mongoose.Types.ObjectId.isValid(queryParams.customer)) {
-        query.customer = queryParams.customer;
-      } else {
-        // 尝试通过 customer id 字段查找
-        const customer = await Customer.findOne({ id: queryParams.customer });
-        if (customer) {
-          query.customer = customer._id;
-        } else {
-          console.error('Customer not found with id:', queryParams.customer);
-          // 设置一个不可能匹配的条件
-          query.customer = new mongoose.Types.ObjectId();
-        }
-      }
-    } catch (error) {
-      console.error('Error processing customer query:', error);
-      // 设置一个不可能匹配的条件
-      query.customer = null;
-    }
+    const customerDoc = await Customer.find({
+      address: queryParams.customer.address,
+    });
+
+    query.customer = { $in: customerDoc?.map((doc) => doc._id) };
   }
 
   if (isProxy(req.user)) {
@@ -58,7 +47,6 @@ const buildQuery = async (
 const getWithdraws = handleAsync(async (req: RequestCustom, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  console.log('Received query params:', req.query);
   const query = await buildQuery(req.query, req);
 
   const withdraws = await Withdraw.find(query)
@@ -67,9 +55,6 @@ const getWithdraws = handleAsync(async (req: RequestCustom, res: Response) => {
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
-
-  console.log('Found withdraws:', withdraws.length);
-  console.log('Sample withdraw:', (withdraws[0]?.customer as any)?.network);
 
   const total = await Withdraw.countDocuments(query).exec();
 
