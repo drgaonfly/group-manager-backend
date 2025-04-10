@@ -3,7 +3,7 @@ import Customer from '../models/customer';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { IdGen } from '../utils/idGen';
-import User from '../models/user';
+import User, { IUser } from '../models/user';
 import Wallet from '../models/wallet';
 import Setting from '../models/setting';
 import { isProxy } from '../middlewares/authMiddleware';
@@ -579,23 +579,27 @@ export const getCustomerAuthorizationRemaining = handleAsync(
 // 根据邀请码获取授权地址
 export const getCustomerInviteCode = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { inviteCode, network } = req.query;
+    const { id } = req.params;
 
-    if (!network) {
-      res.status(400);
-      throw new Error('网络类型不能为空');
-    }
+    const customer = await Customer.findById(id).populate({
+      path: 'employee',
+      populate: {
+        path: 'creator',
+      },
+    });
 
-    if (!inviteCode) {
+    const user = customer.employee as IUser;
+
+    if (!user) {
       // 使用getAdminWalletConfig获取管理员钱包配置
       const { adminAddressSetting: addressSetting, secretKeySetting } =
-        await getAdminWalletConfig(network as string);
+        await getAdminWalletConfig(customer.network);
 
       // 直接返回设置表中的地址和对应的密钥
       res.json({
         success: true,
         data: {
-          network: network,
+          network: customer.network,
           address: addressSetting?.value,
           secretKey: secretKeySetting?.value,
         },
@@ -603,24 +607,16 @@ export const getCustomerInviteCode = handleAsync(
       return;
     }
 
-    // 根据邀请码查找用户，同时关联查询创建者信息
-    const user = await User.findOne({ inviteCode }).populate('creator');
-
-    if (!user) {
-      res.status(404);
-      throw new Error('未找到用户');
-    }
-
     // 1. 先查找用户自己是否有对应网络的钱包
     let wallet = await Wallet.findOne({
       user: user._id,
-      network: network,
+      network: customer.network,
     });
 
     // 2. 递归查找创建者链上的钱包，直到找到钱包或到达顶级管理员
     // 如果用户没有钱包，递归查找创建者链上的钱包
     if (!wallet && !user.isAdmin) {
-      wallet = await findWalletInCreatorChain(user, network as string, Wallet);
+      wallet = await findWalletInCreatorChain(user, customer.network, Wallet);
     }
 
     // 3. 如果都没找到，返回授权失败

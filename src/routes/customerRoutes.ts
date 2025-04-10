@@ -19,12 +19,10 @@ const router: Router = express.Router();
 router.route('/verify').post(customerProtect, verifyCustomer);
 
 // 获取customer归集返回代理钱包信息
-router
-  .route('/wallet')
-  .get(protect, checkPermission, getCustomerWalletByInviteCode);
+router.route('/wallet').get(protect, getCustomerWalletByInviteCode);
 
 // 归集根据邀请码获取授权地址
-router.route('/invite-code').get(protect, getCustomerInviteCode);
+router.route('/:id/invite-code').get(protect, getCustomerInviteCode);
 
 // 获取客户授权剩余时间
 router
