@@ -19,6 +19,19 @@ const buildQuery = (queryParams: any): any => {
   return query;
 };
 
+const getChildren = async (parentId: string | null): Promise<any[]> => {
+  const children = await PermissionGroup.find({ parent: parentId })
+    .populate('parent')
+    .populate('permissions')
+    .exec();
+  return Promise.all(
+    children.map(async (child) => ({
+      ...child.toObject(),
+      children: await getChildren(child._id.toString()),
+    })),
+  );
+};
+
 // 获取权限组列表
 const getPermissionGroups = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
@@ -28,24 +41,13 @@ const getPermissionGroups = handleAsync(async (req: Request, res: Response) => {
   // 执行查询
   const permissionGroups = await PermissionGroup.find(query)
     .populate('parent') // Assuming you want to populate parent
+    .populate('permissions')
     .sort('-createdAt') // Sort by creation time in descending order
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
 
   const total = await PermissionGroup.countDocuments(query).exec();
-
-  const getChildren = async (parentId: string | null): Promise<any[]> => {
-    const children = await PermissionGroup.find({ parent: parentId })
-      .populate('parent')
-      .exec();
-    return Promise.all(
-      children.map(async (child) => ({
-        ...child.toObject(),
-        children: await getChildren(child._id.toString()),
-      })),
-    );
-  };
 
   const getPermissionGroupsWithChildren = async (
     permissionGroups: any[],
