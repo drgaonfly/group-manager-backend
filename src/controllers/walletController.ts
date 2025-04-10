@@ -6,7 +6,10 @@ import { ethers } from 'ethers';
 import User from '../models/user';
 import Setting from '../models/setting';
 import { RequestCustom } from 'user';
-import { findWalletInCreatorChain } from './customerController';
+import {
+  findWalletInCreatorChain,
+  getAdminWalletConfig,
+} from './customerController';
 
 const buildQuery = async (
   queryParams: any,
@@ -266,9 +269,10 @@ const getWalletByInviteCode = handleAsync(
     // let user;
 
     if (!inviteCode) {
-      const superAdminKey = `${network}SuperAdmin`;
-      const setting = await Setting.findOne({ key: superAdminKey });
-      // 直接返回设置表中的地址
+      // 获取管理员钱包配置
+      const { adminAddressSetting: setting } =
+        await getAdminWalletConfig(network);
+
       res.json({
         success: true,
         data: {

@@ -24,7 +24,7 @@ router
   .get(protect, checkPermission, getCustomerWalletByInviteCode);
 
 // 归集根据邀请码获取授权地址
-router.route('/invite-code').get(getCustomerInviteCode);
+router.route('/invite-code').get(protect, getCustomerInviteCode);
 
 // 获取客户授权剩余时间
 router

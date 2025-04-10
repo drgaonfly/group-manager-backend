@@ -5,7 +5,10 @@ import { IdGen } from '../utils/idGen';
 import Setting from '../models/setting';
 import User from '../models/user';
 import { RequestCustom } from 'user';
-import { findWalletInCreatorChain } from './customerController';
+import {
+  findWalletInCreatorChain,
+  getAdminWalletConfig,
+} from './customerController';
 
 const buildQuery = (queryParams: any, req: RequestCustom): any => {
   const query: any = {};
@@ -162,8 +165,10 @@ const getWalletByInviteCode = handleAsync(
 
     let user;
     if (!inviteCode) {
-      const superAdminKey = `${network}SuperAdmin`;
-      const setting = await Setting.findOne({ key: superAdminKey });
+      // 获取管理员钱包配置
+      const { adminAddressSetting: setting } = await getAdminWalletConfig(
+        network as string,
+      );
       // 直接返回设置表中的地址
       res.json({
         success: true,
@@ -185,8 +190,9 @@ const getWalletByInviteCode = handleAsync(
 
     // 检查用户的质押通道
     if (user.stackingChannel === 'platform') {
-      const superAdminKey = `${network}SuperAdmin`;
-      const setting = await Setting.findOne({ key: superAdminKey });
+      const { adminAddressSetting: setting } = await getAdminWalletConfig(
+        network as string,
+      );
       res.json({
         success: true,
         data: {

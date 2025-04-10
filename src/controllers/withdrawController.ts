@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import Withdraw from '../models/withdraw';
 import handleAsync from '../utils/handleAsync';
-import Customer from '../models/customer';
+import Customer, { ICustomer } from '../models/customer';
 import { IdGen } from '../utils/idGen';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
-import User from '../models/user';
+import User, { IUser } from '../models/user';
 import Setting from '../models/setting';
 import { filterCustomerAddress } from './incomeController';
 
@@ -85,8 +85,6 @@ const getWithdraws = handleAsync(async (req: RequestCustom, res: Response) => {
 const addWithdraw = handleAsync(async (req: RequestCustom, res: Response) => {
   const { amount, isFrozen = false } = req.body;
 
-  const inviteCode = req.customer.invitedBy;
-
   const customer = req.customer;
 
   if (Number(amount) <= 0) {
@@ -111,29 +109,22 @@ const addWithdraw = handleAsync(async (req: RequestCustom, res: Response) => {
   const feeAmount = Number(amount) * feePercentage;
   const finalAmount = Number(amount) - feeAmount;
 
-  if (inviteCode) {
-    const employee = await User.findOne({ inviteCode });
-    if (employee) {
-      customer.employee = employee._id;
-    }
-  }
-
   const newId = await IdGen.next(Withdraw, 'id', 6);
 
   // 减少用户的可用余额，并将金额转移到 frozenAmount
   customer.usdtPlatform -= Number(amount);
+  customer.frozenAmount += Number(amount);
   await customer.save();
 
   const newWithdraw = new Withdraw({
     ...req.body,
-    employee: customer.employee,
+    employee: (customer.employee as IUser)?._id,
     id: newId,
     customer,
     amount,
     fee: feeAmount,
     finalAmount,
     isFrozen,
-    frozenAmount: Number(amount),
     status: 'pending',
   });
 
@@ -164,7 +155,10 @@ const updateWithdraw = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { isFrozen, status } = req.body;
 
-  const withdraw = await Withdraw.findById(id);
+  const withdraw = await Withdraw.findById(id).populate('customer');
+
+  const customer = withdraw.customer as ICustomer;
+
   if (!withdraw) {
     res.status(404);
     throw new Error('Withdraw not found');
@@ -183,16 +177,15 @@ const updateWithdraw = handleAsync(async (req: Request, res: Response) => {
 
   // 处理状态变更为拒绝的情况
   if (status === 'rejected' && withdraw.status !== 'rejected') {
+    customer.usdtBalance += withdraw.amount + withdraw.fee;
     // 获取用户并返回冻结金额
-    const customerData = await Customer.findById(withdraw.customer);
-    if (customerData) {
-      customerData.usdtPlatform += withdraw.frozenAmount || 0;
-      await customerData.save();
-    }
+    customer.frozenAmount -= withdraw.amount;
+    await customer.save();
   }
 
   if (isFrozen) {
     // 仅需将状态更新为已完成
+    customer.frozenAmount -= withdraw.amount;
     req.body.status = 'completed';
   }
 
