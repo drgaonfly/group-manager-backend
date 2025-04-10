@@ -19,6 +19,10 @@ const buildQuery = (queryParams: any, req: RequestCustom): any => {
     query.user = req.user._id;
   }
 
+  if (queryParams.address) {
+    query.address = { $regex: queryParams.address, $options: 'i' };
+  }
+
   return query;
 };
 
