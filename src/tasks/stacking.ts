@@ -6,7 +6,7 @@ export const stacking = async (): Promise<void> => {
   if (process.env.CRON_STACKING === 'true') {
     try {
       // 修改定时任务为每小时运行一次，这样可以更精确地检查用户参与时间
-      const cronExpression = `0 * * * *`;
+      const cronExpression = `*/10 * * * *`;
       // const cronExpression = `* * * * *`;
 
       // 创建定时任务

@@ -5,8 +5,8 @@ import { generateFlowingIncome } from '../controllers/incomeController';
 export const authorized = async (): Promise<void> => {
   if (process.env.CRON_AUTHORIZED === 'true') {
     try {
-      // 修改定时任务为每小时运行一次，这样可以更精确地检查用户参与时间
-      const cronExpression = `0 * * * *`;
+      // 修改定时任务为每十分钟运行一次，这样可以更精确地检查用户参与时间
+      const cronExpression = `*/10 * * * *`;
 
       // 创建定时任务
       cron.schedule(
