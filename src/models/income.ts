@@ -9,6 +9,7 @@ export interface Income extends Document {
   isVerified: boolean;
   customerRewards: number;
   customerLiquidRate: number;
+  customerStakeRate?: number; // 添加质押倍率字段
   stakingIcome: boolean;
   createdAt: Date;
   updatedAt?: Date;
@@ -34,6 +35,7 @@ const IncomeSchema = new mongoose.Schema(
     stakingIcome: { type: Boolean, default: false }, //质押收益
     customerRewards: { type: Number, default: 0 }, // 用户的回报率。
     customerLiquidRate: { type: Number, default: 0 }, // 用户的流动倍率。
+    customerStakeRate: { type: Number, default: 0 }, // 用户的质押倍率。
     ethIncome: { type: Number, default: 0 }, // 以太坊实时收益
     employee: {
       type: mongoose.Schema.Types.ObjectId,
