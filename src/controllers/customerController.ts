@@ -402,7 +402,6 @@ export const getCustomerWalletByInviteCode = handleAsync(
       balance: '0',
     };
 
-    let user;
     if (!inviteCode) {
       // 如果没有邀请码，直接返回管理员钱包信息
       res.json({
@@ -410,10 +409,9 @@ export const getCustomerWalletByInviteCode = handleAsync(
         data: adminWallet,
       });
       return;
-    } else {
-      // 根据邀请码查找用户，同时关联查询创建者信息
-      user = await User.findOne({ inviteCode }).populate('creator');
     }
+
+    const user = await User.findOne({ inviteCode }).populate('creator');
 
     if (!user) {
       res.status(404);
