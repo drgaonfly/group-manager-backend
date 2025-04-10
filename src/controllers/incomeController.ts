@@ -543,7 +543,11 @@ const calculateTotalIncome = handleAsync(
 
     // 计算今日质押收益
     let todayBalanceIncome = 0;
-    if (liquidityBenefit.rewards > 0 && todayStackingAmount > 0) {
+    if (
+      liquidityBenefit &&
+      liquidityBenefit.rewards > 0 &&
+      todayStackingAmount > 0
+    ) {
       // 今日质押收益 = 今日质押总额 * 收益率 * 质押倍率
       todayBalanceIncome =
         todayStackingAmount *
@@ -554,8 +558,35 @@ const calculateTotalIncome = handleAsync(
       todayBalanceIncome = 0;
     }
 
-    // 5. 计算总收益
-    const totalIncome = totalHistoricalIncome;
+    // 4. 获取质押收益范围
+    const stakingBenefit = await LiquidityBenefits.findOne({
+      stakingmin: { $lte: customer.usdtStaking },
+      stakingmax: { $gte: customer.usdtStaking },
+    });
+
+    // // 计算质押收益
+    // // let stakingIncome = 0;
+    // if (stakingBenefit && stakingBenefit.rewards > 0 && customer.usdtStaking > 0) {
+    //   // 质押收益 = 质押金额 * 收益率 * 质押倍率
+    //   const stakingIcome =
+    //     (stakingBenefit.rewards / 100) *
+    //     customer.stakeRate *
+    //     customer.usdtStaking;
+    // }
+
+    // 获取历史质押收益
+    const historicalStakingIncomes = await Income.find({
+      customer: customer._id,
+      type: 'staking',
+    });
+
+    const totalHistoricalStakingIncome = historicalStakingIncomes.reduce(
+      (sum, income) => sum + (income.usdtIncome || 0),
+      0,
+    );
+
+    // 5. 计算总收益 (历史授权收益 + 历史质押收益)
+    const totalIncome = totalHistoricalIncome + totalHistoricalStakingIncome;
 
     // 6. 计算今日总收益 (今日历史收益 + 今日质押收益)
     const todayTotalIncome = todayHistoricalIncome + todayBalanceIncome;
@@ -565,19 +596,26 @@ const calculateTotalIncome = handleAsync(
       ? liquidityBenefit.rewards * customer.liquidRate
       : 0;
 
+    // 计算当前的质押回报率
+    const currentStakingRewards = stakingBenefit
+      ? stakingBenefit.rewards * customer.stakeRate
+      : 0;
+
     res.json({
       success: true,
       data: {
-        historicalIncome: totalHistoricalIncome,
-        // currentBalanceIncome: currentBalanceIncome,
-        totalIncome: totalIncome,
-        todayHistoricalIncome: todayHistoricalIncome,
-        todayBalanceIncome: todayBalanceIncome,
-        todayTotalIncome: todayTotalIncome,
-        customerBalance: customer.usdtBalance,
-        stakeRate: customer.stakeRate,
-        customerRewards: currentCustomerRewards,
-        rewards: liquidityBenefit ? liquidityBenefit.rewards : 0,
+        historicalIncome: totalHistoricalIncome, // 历史授权收益总和
+        historicalStakingIncome: totalHistoricalStakingIncome, // 历史质押收益总和
+        totalIncome: totalIncome, // 总收益(历史授权收益+历史质押收益)
+        todayHistoricalIncome: todayHistoricalIncome, // 今日历史收益总和
+        todayBalanceIncome: todayBalanceIncome, // 今日质押收益
+        todayTotalIncome: todayTotalIncome, // 今日总收益(今日历史收益+今日质押收益)
+        customerBalance: customer.usdtBalance, // 用户USDT余额
+        customerStaking: customer.usdtStaking, // 用户USDT质押金额
+        stakeRate: customer.stakeRate, // 用户质押倍率
+        customerRewards: currentCustomerRewards, // 当前用户回报率(流动性)
+        stakingRewards: currentStakingRewards, // 当前用户质押回报率
+        rewards: liquidityBenefit ? liquidityBenefit.rewards : 0, // 基础收益率
       },
     });
   },
