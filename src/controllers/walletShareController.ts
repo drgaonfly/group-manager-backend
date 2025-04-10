@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import WalletShare from '../models/walletShare';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
-import Setting from '../models/setting';
 import User from '../models/user';
 import { RequestCustom } from 'user';
 import {

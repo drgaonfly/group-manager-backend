@@ -4,7 +4,6 @@ import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import { ethers } from 'ethers';
 import User from '../models/user';
-import Setting from '../models/setting';
 import { RequestCustom } from 'user';
 import {
   findWalletInCreatorChain,
