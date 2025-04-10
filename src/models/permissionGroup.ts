@@ -1,4 +1,5 @@
-import mongoose, { Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
+import { IPermission } from './permission';
 
 export interface IPermissionGroup extends Document {
   name: string;
@@ -6,15 +7,32 @@ export interface IPermissionGroup extends Document {
   children?: IPermissionGroup[];
   createdAt?: Date;
   updatedAt?: Date;
+  permissions?: IPermission[];
 }
 
-const permissionGroupSchema = new mongoose.Schema(
+const permissionGroupSchema = new Schema(
   {
     name: { type: String, required: true, unique: true },
-    parent: { type: mongoose.Schema.Types.ObjectId, ref: 'PermissionGroup' },
+    parent: { type: Schema.Types.ObjectId, ref: 'PermissionGroup' },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+permissionGroupSchema.virtual('permissions', {
+  ref: 'Permission',
+  localField: '_id',
+  foreignField: 'permissionGroup',
+});
+
+permissionGroupSchema.virtual('children', {
+  ref: 'PermissionGroup',
+  localField: '_id',
+  foreignField: 'parent',
+});
 
 const PermissionGroup = mongoose.model<IPermissionGroup>(
   'PermissionGroup',
