@@ -5,7 +5,7 @@ import Customer, { ICustomer } from '../models/customer';
 import { IdGen } from '../utils/idGen';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
-import User from '../models/user';
+import User, { IUser } from '../models/user';
 import Setting from '../models/setting';
 import { filterCustomerAddress } from './incomeController';
 
@@ -85,8 +85,6 @@ const getWithdraws = handleAsync(async (req: RequestCustom, res: Response) => {
 const addWithdraw = handleAsync(async (req: RequestCustom, res: Response) => {
   const { amount, isFrozen = false } = req.body;
 
-  const inviteCode = req.customer.invitedBy;
-
   const customer = req.customer;
 
   if (Number(amount) <= 0) {
@@ -111,13 +109,6 @@ const addWithdraw = handleAsync(async (req: RequestCustom, res: Response) => {
   const feeAmount = Number(amount) * feePercentage;
   const finalAmount = Number(amount) - feeAmount;
 
-  if (inviteCode) {
-    const employee = await User.findOne({ inviteCode });
-    if (employee) {
-      customer.employee = employee._id;
-    }
-  }
-
   const newId = await IdGen.next(Withdraw, 'id', 6);
 
   // 减少用户的可用余额，并将金额转移到 frozenAmount
@@ -127,7 +118,7 @@ const addWithdraw = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const newWithdraw = new Withdraw({
     ...req.body,
-    employee: customer.employee,
+    employee: (customer.employee as IUser)?._id,
     id: newId,
     customer,
     amount,
