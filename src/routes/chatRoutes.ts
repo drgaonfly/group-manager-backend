@@ -9,7 +9,7 @@ import {
   getChatMessages,
   addChatMessage,
   addChatUserMessage,
-  getChatUserMessages,
+  getChatUserMessagesByCustomer,
 } from '../controllers/chatController';
 import {
   protect,
@@ -33,7 +33,7 @@ router
 // 后台用户与客户的群聊对话信息
 router
   .route('/user-messages')
-  .get(protect, checkPermission, getChatUserMessages)
+  .get(protect, checkPermission, getChatUserMessagesByCustomer)
   .post(protect, checkPermission, addChatUserMessage);
 
 router

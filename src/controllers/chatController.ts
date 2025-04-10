@@ -51,7 +51,7 @@ const getChats = handleAsync(async (req: Request, res: Response) => {
 });
 
 // 获取后台用户与客户的聊天记录
-const getChatUserMessages = handleAsync(
+const getChatUserMessagesByCustomer = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10', customerId } = req.query;
 
@@ -284,6 +284,6 @@ export {
   deleteMultipleChats,
   getChatMessages,
   addChatMessage,
-  getChatUserMessages,
+  getChatUserMessagesByCustomer,
   addChatUserMessage,
 };
