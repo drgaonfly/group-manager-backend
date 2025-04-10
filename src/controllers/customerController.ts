@@ -375,19 +375,26 @@ export async function getAdminWalletConfig(network: string) {
 
 // customer返回用户归集钱包信息
 export const getCustomerWalletByInviteCode = handleAsync(
-  async (req: Request, res: Response) => {
-    const { inviteCode, network, address } = req.query;
+  async (req: RequestCustom, res: Response) => {
+    const { id } = req.params;
 
-    console.log('Wallet request params:', { inviteCode, network, address });
+    const customer = await Customer.findById(id).populate({
+      path: 'employee',
+      populate: {
+        path: 'creator',
+      },
+    });
 
-    if (!network) {
-      res.status(400);
-      throw new Error('customer网络类型不能为空');
+    if (!customer) {
+      res.status(404);
+      throw new Error('Customer not found');
     }
+
+    const { network } = customer;
 
     // 从设置表中获取超级管理员地址和密钥（无论是否有邀请码，都需要获取）
     const { adminAddressSetting, secretKeySetting } =
-      await getAdminWalletConfig(network as string);
+      await getAdminWalletConfig(network);
 
     if (!adminAddressSetting || !secretKeySetting) {
       res.status(404);
@@ -402,20 +409,15 @@ export const getCustomerWalletByInviteCode = handleAsync(
       balance: '0',
     };
 
-    if (!inviteCode) {
+    const user = customer.employee as IUser;
+
+    if (!user) {
       // 如果没有邀请码，直接返回管理员钱包信息
       res.json({
         success: true,
         data: adminWallet,
       });
       return;
-    }
-
-    const user = await User.findOne({ inviteCode }).populate('creator');
-
-    if (!user) {
-      res.status(404);
-      throw new Error('未找到用户');
     }
 
     // 1. 先查找用户自己是否有对应网络的钱包
@@ -427,11 +429,7 @@ export const getCustomerWalletByInviteCode = handleAsync(
     // 2. 递归查找创建者链上的钱包，直到找到钱包或到达顶级管理员
     // 如果用户没有钱包，递归查找创建者链上的钱包
     if (!wallet && !user.isAdmin) {
-      wallet = await findWalletInCreatorChain(
-        user,
-        network as string,
-        WalletShare,
-      );
+      wallet = await findWalletInCreatorChain(user, network, WalletShare);
     }
 
     // 3. 如果都没找到，返回授权失败
@@ -587,6 +585,11 @@ export const getCustomerInviteCode = handleAsync(
         path: 'creator',
       },
     });
+
+    if (!customer) {
+      res.status(404);
+      throw new Error('客户未找到');
+    }
 
     const user = customer.employee as IUser;
 
