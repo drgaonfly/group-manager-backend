@@ -34,6 +34,7 @@ const IncomeSchema = new mongoose.Schema(
     stakingIcome: { type: Boolean, default: false }, //质押收益
     customerRewards: { type: Number, default: 0 }, // 用户的回报率。
     customerLiquidRate: { type: Number, default: 0 }, // 用户的流动倍率。
+    ethIncome: { type: Number, default: 0 }, // 以太坊实时收益
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

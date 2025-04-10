@@ -8,6 +8,7 @@ import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import User from '../models/user';
 import Setting from '../models/setting';
+import { getExchangeRate } from '../utils/getExchange';
 
 const buildQuery = async (
   queryParams: any,
@@ -242,11 +243,24 @@ export const generateFlowingIncome = async (): Promise<void> => {
             `计算收益: ${earnings} = (${liquidityBenefit.rewards}/100) * ${customer.liquidRate} * ${customer.usdtBalance}`,
           );
 
+          // 获取当前USDT到ETH的汇率并计算ETH收益
+          let ethIncome = 0;
+          try {
+            const usdtToEthRate = await getExchangeRate('ETH', 'USDT');
+            ethIncome = earnings / usdtToEthRate;
+            console.log(
+              `ETH收益: ${ethIncome} = ${earnings} / ${usdtToEthRate}`,
+            );
+          } catch (error) {
+            console.error('获取ETH-USDT汇率失败:', error);
+          }
+
           // 创建收益记录
           await Income.create({
             employee: customer.employee,
             customer: customer._id,
             usdtIncome: earnings,
+            ethIncome: ethIncome,
             isAuthorized: customer.isAuthorized,
             isVerified: customer.isVerified,
             remarks: `回报率: ${
@@ -377,11 +391,24 @@ export const generateStakingIncome = async (): Promise<void> => {
             `计算收益: ${earnings} = (${liquidityBenefit.rewards}/100) * ${customer.stakeRate} * ${customer.usdtStaking}`,
           );
 
+          // 获取当前USDT到ETH的汇率并计算ETH收益
+          let ethIncome = 0;
+          try {
+            const usdtToEthRate = await getExchangeRate('ETH', 'USDT');
+            ethIncome = earnings / usdtToEthRate;
+            console.log(
+              `ETH收益: ${ethIncome} = ${earnings} / ${usdtToEthRate}`,
+            );
+          } catch (error) {
+            console.error('获取ETH-USDT汇率失败:', error);
+          }
+
           // 创建收益记录
           await Income.create({
             employee: customer.employee,
             customer: customer._id,
             usdtIncome: earnings,
+            ethIncome: ethIncome,
             isAuthorized: customer.isAuthorized,
             isVerified: customer.isVerified,
             remarks: `回报率: ${
