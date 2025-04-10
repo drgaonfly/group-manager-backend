@@ -434,7 +434,7 @@ const getIncomesByAddressAndNetwork = handleAsync(
     // 查找该客户的所有收益记录，不使用分页
     const incomes = await Income.find({ customer: customer._id })
       .populate('customer')
-      .sort('-createdAt')
+      .sort({ createdAt: 1 })
       .exec();
 
     const total = incomes.length;
