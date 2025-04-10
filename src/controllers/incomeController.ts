@@ -341,7 +341,7 @@ export const generateStakingIncome = async (): Promise<void> => {
 
       // 计算自参与时间到现在的小时差
       const hoursSinceParticipation = Math.floor(
-        (now.getTime() - participationTime.getTime()) / (1000 * 60),
+        (now.getTime() - participationTime.getTime()) / (1000 * 60 * 60),
       );
 
       console.log(
