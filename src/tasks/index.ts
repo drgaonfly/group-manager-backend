@@ -6,8 +6,16 @@ import { checkReleaseRecords } from './cron/checkReleaseRecords';
 // 启动定时任务
 export const scheduledtasks = (): void => {
   if (process.env.CRON_ENABLE === 'true') {
-    // 每2秒执行一次更新
-    setInterval(updatePoolValues, 30000);
+    cron.schedule(
+      '* * * * *',
+      async () => {
+        await updatePoolValues();
+      },
+      {
+        scheduled: true,
+        timezone: 'Asia/Shanghai',
+      },
+    );
 
     // 每分钟检查一次活动状态
     cron.schedule(
