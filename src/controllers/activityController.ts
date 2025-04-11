@@ -31,13 +31,7 @@ const buildActivityQuery = async (
   if (req.user && isProxy(req.user)) {
     const employees = await User.find({ proxy: req.user._id });
     const employeeIds = employees.map((employee) => employee._id);
-    const employeeInviteCodes = employees.map(
-      (employee) => employee.inviteCode,
-    );
-    query.$or = [
-      { user: { $in: [...employeeIds, req.user._id] } },
-      { invitedBy: { $in: [...employeeInviteCodes, req.user.inviteCode] } },
-    ];
+    query.user = { $in: [...employeeIds, req.user._id] };
   }
 
   return query;

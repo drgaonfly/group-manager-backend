@@ -42,12 +42,12 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: false,
-    },
+    }, // 创建者
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: false,
-    },
+    }, // 代理
     commissionRate: { type: Number, default: 0 },
     stackingChannel: {
       type: String,

@@ -21,8 +21,8 @@ export interface ICustomer extends Document {
   notification: mongoose.Schema.Types.ObjectId | INotification;
   isVerified: boolean;
   invitedBy?: string;
-  inviter?: any;
-  ownInviteCode?: any;
+  inviter: mongoose.Schema.Types.ObjectId | ICustomer;
+  ownInviteCode?: string;
   authorizedAt?: Date;
   verifiedAt?: Date;
   stackingAt?: Date;
@@ -62,6 +62,12 @@ const customerSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false }, // 授权状态
     verifiedAt: { type: Date }, // 授权账户参与时间
     stackingAt: { type: Date }, // 质押账户参与时间
+
+    inviter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: false,
+    }, // 邀请人
 
     employee: {
       type: mongoose.Schema.Types.ObjectId,
