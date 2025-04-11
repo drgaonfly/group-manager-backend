@@ -2,6 +2,8 @@ import { updatePoolValues } from './cron/updatePoolValues';
 import { checkActivityStatus } from './cron/checkActivityStatus';
 import { checkReleaseRecords } from './cron/checkReleaseRecords';
 import setupDB from '../utils/db';
+import { generateFlowingIncome } from './authorized';
+import { generateStakingIncome } from './stacking';
 
 // 启动定时任务
 // export const scheduledtasks = (): void => {
@@ -56,6 +58,8 @@ const task = async () => {
   await checkActivityStatus();
   await updatePoolValues();
   await checkReleaseRecords();
+  await generateFlowingIncome();
+  await generateStakingIncome();
   process.exit(0);
 };
 

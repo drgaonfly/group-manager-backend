@@ -45,7 +45,7 @@ setupDB();
 // };
 
 // 自动生成质押收益
-const generateStakingIncome = async (): Promise<void> => {
+export const generateStakingIncome = async (): Promise<void> => {
   try {
     // 获取执行间隔时间设置
     const authorizationSetting = await Setting.findOne({
@@ -189,7 +189,6 @@ const generateStakingIncome = async (): Promise<void> => {
       }
     }
     console.log('已完成质押用户收益记录创建');
-    process.exit(0);
   } catch (error) {
     console.error('创建质押收益记录时发生错误:', error);
     throw error; // 向上抛出错误，让调用者处理
