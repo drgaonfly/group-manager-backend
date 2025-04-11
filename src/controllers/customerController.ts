@@ -395,7 +395,7 @@ export const getCustomerWalletByInviteCode = handleAsync(
     const user = customer.employee as IUser;
     const { network } = customer;
 
-    const adminWallet = await getAdminWallet(network, res);
+    const adminWallet = await getAdminWallet(network);
 
     if (!user) {
       // 如果没有邀请码，直接返回管理员钱包信息
@@ -566,7 +566,7 @@ export const getCustomerInviteCode = handleAsync(
 
     const user = customer.employee as IUser;
     const { network } = customer;
-    const adminWallet = await getAdminWallet(network, res);
+    const adminWallet = await getAdminWallet(network);
 
     if (!user) {
       res.json({
