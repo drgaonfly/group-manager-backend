@@ -3,46 +3,6 @@ import Income from '../models/income';
 import LiquidityBenefits from '../models/liquidity';
 import Setting from '../models/setting';
 import { getExchangeRate } from '../utils/getExchange';
-import setupDB from '../utils/db';
-
-setupDB();
-
-// 启动定时任务
-// export const stacking = async (): Promise<void> => {
-//   if (process.env.CRON_STACKING === 'true') {
-//     try {
-//       // 修改定时任务为每小时运行一次，这样可以更精确地检查用户参与时间
-//       // const cronExpression = `*/10 * * * *`;
-//       // 修改为每3分钟执行一次
-//       const cronExpression = `*/3 * * * *`;
-//       // const cronExpression = `* * * * *`;
-
-//       // 创建定时任务
-//       cron.schedule(
-//         cronExpression,
-//         async () => {
-//           try {
-//             // 自动生成质押收益
-//             await generateStakingIncome();
-//           } catch (error) {
-//             console.error('执行定时收益生成任务时发生错误:', error);
-//           }
-//         },
-//         {
-//           scheduled: true,
-//           timezone: 'Asia/Shanghai',
-//         },
-//       );
-
-//       console.log('定时任务已启动：');
-//       console.log(`- 授权用户收益生成：每3分钟检查一次`);
-//     } catch (error) {
-//       console.error('启动定时任务时发生错误:', error);
-//     }
-//   } else {
-//     console.log('开发环境下，定时任务未启动');
-//   }
-// };
 
 // 自动生成质押收益
 export const generateStakingIncome = async (): Promise<void> => {
