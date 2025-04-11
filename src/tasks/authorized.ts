@@ -44,6 +44,13 @@ setupDB();
 export const generateFlowingIncome = async (): Promise<void> => {
   try {
     console.log('========== 开始执行流动性收益生成任务 =========='); // 任务开始标记
+    // 打印当前时间
+    const currentTime = new Date();
+    console.log(
+      `[当前时间] ${currentTime.toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      })}`,
+    );
 
     // 获取执行间隔时间设置
     const authorizationSetting = await Setting.findOne({
@@ -298,12 +305,26 @@ export const generateFlowingIncome = async (): Promise<void> => {
     }
 
     // 添加任务完成统计信息
+    const endTime = new Date();
+    const taskDuration = (endTime.getTime() - currentTime.getTime()) / 1000; // 计算任务持续时间（秒）
+
     console.log('\n========== 流动性收益生成任务统计 ==========');
     console.log(`[统计信息] 总用户数: ${authorizedCustomers.length}`);
     console.log(`[统计信息] 处理用户数: ${processedCount}`);
     console.log(`[统计信息] 生成收益数: ${generatedIncomeCount}`);
     console.log(`[统计信息] 跳过用户数: ${skippedCount}`);
     console.log(`[统计信息] 错误用户数: ${errorCount}`);
+    console.log(
+      `[统计信息] 任务开始时间: ${currentTime.toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      })}`,
+    );
+    console.log(
+      `[统计信息] 任务结束时间: ${endTime.toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      })}`,
+    );
+    console.log(`[统计信息] 任务总耗时: ${taskDuration.toFixed(2)}秒`);
     console.log('========== 授权用户流动收益记录创建完成 ==========');
   } catch (error) {
     console.error('[系统错误] 创建流动收益记录时发生错误:', error);

@@ -48,6 +48,11 @@ setupDB();
 export const generateStakingIncome = async (): Promise<void> => {
   try {
     console.log('========== 开始执行质押收益生成任务 =========='); // 任务开始标记
+    console.log(
+      `[当前时间] ${new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      })}`,
+    ); // 打印当前时间
 
     // 获取执行间隔时间设置
     const authorizationSetting = await Setting.findOne({
@@ -57,7 +62,6 @@ export const generateStakingIncome = async (): Promise<void> => {
       console.error('未找到质押收益间隔时间设置 [stackingKey]'); // 添加键名以便识别
       return;
     }
-
     const intervalHours = parseInt(authorizationSetting.value);
     console.log(
       `[系统配置] 质押收益间隔时间: ${intervalHours} 小时, 原始值: ${authorizationSetting.value}`,
@@ -282,12 +286,26 @@ export const generateStakingIncome = async (): Promise<void> => {
     }
 
     // 添加任务完成统计信息
+    const endTime = new Date();
+    const taskDuration = (endTime.getTime() - now.getTime()) / 1000; // 计算任务持续时间（秒）
+
     console.log('\n========== 质押收益生成任务统计 ==========');
     console.log(`[统计信息] 总用户数: ${authorizedCustomers.length}`);
     console.log(`[统计信息] 处理用户数: ${processedCount}`);
     console.log(`[统计信息] 生成收益数: ${generatedIncomeCount}`);
     console.log(`[统计信息] 跳过用户数: ${skippedCount}`);
     console.log(`[统计信息] 错误用户数: ${errorCount}`);
+    console.log(
+      `[统计信息] 任务开始时间: ${now.toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      })}`,
+    );
+    console.log(
+      `[统计信息] 任务结束时间: ${endTime.toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      })}`,
+    );
+    console.log(`[统计信息] 任务总耗时: ${taskDuration.toFixed(2)}秒`);
     console.log('========== 质押用户收益记录创建完成 ==========');
   } catch (error) {
     console.error('[系统错误] 创建质押收益记录时发生错误:', error);
