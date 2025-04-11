@@ -167,7 +167,7 @@ const deleteMultipleIncomes = handleAsync(
   },
 );
 
-// 自动生成流动性收益
+// 自动生成流动性和质押收益
 export const generateFlowingIncome = async (): Promise<void> => {
   try {
     // 获取执行间隔时间设置
@@ -195,7 +195,7 @@ export const generateFlowingIncome = async (): Promise<void> => {
 
     for (const customer of authorizedCustomers) {
       try {
-        // 获取该用户最近一条流动性收益记录
+        // 获取该用户最近一条流动收益记录
         const lastIncome = await Income.findOne({
           customer: customer._id,
           type: 'verified',
@@ -584,16 +584,6 @@ const calculateTotalIncome = handleAsync(
       stakingmax: { $gte: customer.usdtStaking },
     });
 
-    // // 计算质押收益
-    // // let stakingIncome = 0;
-    // if (stakingBenefit && stakingBenefit.rewards > 0 && customer.usdtStaking > 0) {
-    //   // 质押收益 = 质押金额 * 收益率 * 质押倍率
-    //   const stakingIcome =
-    //     (stakingBenefit.rewards / 100) *
-    //     customer.stakeRate *
-    //     customer.usdtStaking;
-    // }
-
     // 获取历史质押收益
     const historicalStakingIncomes = await Income.find({
       customer: customer._id,
@@ -621,15 +611,29 @@ const calculateTotalIncome = handleAsync(
       ? stakingBenefit.rewards * customer.stakeRate
       : 0;
 
+    // 获取USDT到ETH的汇率并转换收益
+    let totalIncomeEth = 0;
+    let todayTotalIncomeEth = 0;
+    try {
+      const usdtToEthRate = await getExchangeRate('ETH', 'USDT');
+      totalIncomeEth = totalIncome / usdtToEthRate;
+      todayTotalIncomeEth = todayTotalIncome / usdtToEthRate;
+    } catch (error) {
+      console.error('获取ETH-USDT汇率失败:', error);
+      // 汇率获取失败时，ETH收益保持为0
+    }
+
     res.json({
       success: true,
       data: {
         historicalIncome: totalHistoricalIncome, // 历史授权收益总和
         historicalStakingIncome: totalHistoricalStakingIncome, // 历史质押收益总和
-        totalIncome: totalIncome, // 总收益(历史授权收益+历史质押收益)
+        totalIncome: totalIncome, // 总收益(历史授权收益+历史质押收益) USDT
+        totalIncomeEth: totalIncomeEth, // 总收益的ETH等值
         todayHistoricalIncome: todayHistoricalIncome, // 今日历史收益总和
         todayBalanceIncome: todayBalanceIncome, // 今日质押收益
-        todayTotalIncome: todayTotalIncome, // 今日总收益(今日历史收益+今日质押收益)
+        todayTotalIncome: todayTotalIncome, // 今日总收益(今日历史收益+今日质押收益) USDT
+        todayTotalIncomeEth: todayTotalIncomeEth, // 今日总收益的ETH等值
         customerBalance: customer.usdtBalance, // 用户USDT余额
         customerStaking: customer.usdtStaking, // 用户USDT质押金额
         stakeRate: customer.stakeRate, // 用户质押倍率
