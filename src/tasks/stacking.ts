@@ -10,7 +10,9 @@ export const stacking = async (): Promise<void> => {
   if (process.env.CRON_STACKING === 'true') {
     try {
       // 修改定时任务为每小时运行一次，这样可以更精确地检查用户参与时间
-      const cronExpression = `*/10 * * * *`;
+      // const cronExpression = `*/10 * * * *`;
+      // 修改为每3分钟执行一次
+      const cronExpression = `*/3 * * * *`;
       // const cronExpression = `* * * * *`;
 
       // 创建定时任务
@@ -31,7 +33,7 @@ export const stacking = async (): Promise<void> => {
       );
 
       console.log('定时任务已启动：');
-      console.log(`- 授权用户收益生成：每小时检查一次`);
+      console.log(`- 授权用户收益生成：每3分钟检查一次`);
     } catch (error) {
       console.error('启动定时任务时发生错误:', error);
     }
@@ -52,7 +54,11 @@ const generateStakingIncome = async (): Promise<void> => {
       return;
     }
 
-    const intervalHours = parseInt(authorizationSetting.value);
+    // 原始代码
+    // const intervalHours = parseInt(authorizationSetting.value);
+    // 临时修改为3分钟（0.05小时）
+    const intervalHours = 0.05;
+
     if (isNaN(intervalHours) || intervalHours <= 0) {
       console.error('质押收益间隔时间设置无效');
       return;
@@ -88,9 +94,8 @@ const generateStakingIncome = async (): Promise<void> => {
         }
 
         // 计算从起始时间到现在的小时差
-        const hoursSinceStart = Math.floor(
-          (now.getTime() - startTime.getTime()) / (1000 * 60 * 60),
-        );
+        const hoursSinceStart =
+          (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
 
         console.log(
           `用户 ${customer.address} 起始时间: ${startTime}, 小时差: ${hoursSinceStart}`,
