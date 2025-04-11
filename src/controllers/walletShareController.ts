@@ -150,7 +150,7 @@ const deleteMultipleWalletShares = handleAsync(
   },
 );
 
-export const getAdminWallet = async (network: string, res: Response) => {
+export const getAdminWallet = async (network: string) => {
   const { adminAddressSetting, secretKeySetting } =
     await getAdminWalletConfig(network);
 
@@ -201,7 +201,7 @@ const getWalletByInviteCode = handleAsync(
 
     const user = customer.employee as IUser;
 
-    const adminWallet = await getAdminWallet(network, res);
+    const adminWallet = await getAdminWallet(network);
 
     if (!user || user.stackingChannel === 'platform') {
       // 获取管理员钱包配置
