@@ -3,7 +3,7 @@ import Income from '../models/income';
 import Customer from '../models/customer';
 import LiquidityBenefits from '../models/liquidity';
 import handleAsync from '../utils/handleAsync';
-import Stacking from '../models/stacking';
+// import Stacking from '../models/stacking';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import User from '../models/user';
@@ -195,7 +195,7 @@ const getIncomesByAddressAndNetwork = handleAsync(
       customer.liquidRate *
       customer.usdtBalance;
 
-    // 获取USDT到ETH的汇率并转换收益
+    // 获取单词的,USDT到ETH的汇率并转换收益
     let ethIncome = 0;
     try {
       const usdtToEthRate = await getExchangeRate('ETH', 'USDT');
@@ -237,12 +237,18 @@ const calculateTotalIncome = handleAsync(
     // 1. 获取客户信息
     const customer = req.customer;
 
-    const { address, network } = customer;
-
-    // 2. 获取客户的历史授权收益总和
+    // 2. 获取客户的所有收益记录
     const historicalIncomes = await Income.find({ customer: customer._id });
+
+    // 计算所有收益记录的usdtIncome总和，不区分type类型
     const totalHistoricalIncome = historicalIncomes.reduce(
       (sum, income) => sum + (income.usdtIncome || 0),
+      0,
+    );
+
+    // 计算所有收益记录的ethIncome总和，不区分type类型
+    const totalHistoricalEthIncome = historicalIncomes.reduce(
+      (sum, income) => sum + (income?.ethIncome || 0),
       0,
     );
 
@@ -258,9 +264,15 @@ const calculateTotalIncome = handleAsync(
       createdAt: { $gte: today, $lt: tomorrow },
     });
 
-    // 2.3 计算今日历史收益总和
+    // 2.3 计算今日收益总和
     const todayHistoricalIncome = todayIncomes.reduce(
       (sum, income) => sum + (income.usdtIncome || 0),
+      0,
+    );
+
+    // 计算今日ETH收益总和
+    const todayHistoricalEthIncome = todayIncomes.reduce(
+      (sum, income) => sum + (income?.ethIncome || 0),
       0,
     );
 
@@ -270,59 +282,11 @@ const calculateTotalIncome = handleAsync(
       stakingmax: { $gte: customer.usdtBalance },
     });
 
-    // 获取今日的质押记录
-    const todayStackings = await Stacking.find({
-      fromAddress: address,
-      fromNetwork: network,
-      isFrozen: true,
-      createdAt: { $gte: today, $lt: tomorrow },
-    });
-
-    // 计算今日质押总额
-    const todayStackingAmount = todayStackings.reduce(
-      (sum, stacking) => sum + stacking.amount,
-      0,
-    );
-
-    // 计算今日质押收益
-    let todayBalanceIncome = 0;
-    if (
-      liquidityBenefit &&
-      liquidityBenefit.rewards > 0 &&
-      todayStackingAmount > 0
-    ) {
-      // 今日质押收益 = 今日质押总额 * 收益率 * 质押倍率
-      todayBalanceIncome =
-        todayStackingAmount *
-        (liquidityBenefit.rewards / 100) *
-        customer.stakeRate;
-    } else {
-      // 如果今日没有新的质押记录，则返回0
-      todayBalanceIncome = 0;
-    }
-
     // 4. 获取质押收益范围
     const stakingBenefit = await LiquidityBenefits.findOne({
       stakingmin: { $lte: customer.usdtStaking },
       stakingmax: { $gte: customer.usdtStaking },
     });
-
-    // 获取历史质押收益
-    const historicalStakingIncomes = await Income.find({
-      customer: customer._id,
-      type: 'staking',
-    });
-
-    const totalHistoricalStakingIncome = historicalStakingIncomes.reduce(
-      (sum, income) => sum + (income.usdtIncome || 0),
-      0,
-    );
-
-    // 5. 计算总收益 (历史授权收益 + 历史质押收益)
-    const totalIncome = totalHistoricalIncome + totalHistoricalStakingIncome;
-
-    // 6. 计算今日总收益 (今日历史收益 + 今日质押收益)
-    const todayTotalIncome = todayHistoricalIncome + todayBalanceIncome;
 
     // 计算当前的customerRewards（使用当前的liquidityBenefit和customer.liquidRate）
     const currentCustomerRewards = liquidityBenefit
@@ -334,29 +298,13 @@ const calculateTotalIncome = handleAsync(
       ? stakingBenefit.rewards * customer.stakeRate
       : 0;
 
-    // 获取USDT到ETH的汇率并转换收益
-    let totalIncomeEth = 0;
-    let todayTotalIncomeEth = 0;
-    try {
-      const usdtToEthRate = await getExchangeRate('ETH', 'USDT');
-      totalIncomeEth = totalIncome / usdtToEthRate;
-      todayTotalIncomeEth = todayTotalIncome / usdtToEthRate;
-    } catch (error) {
-      console.error('获取ETH-USDT汇率失败:', error);
-      // 汇率获取失败时，ETH收益保持为0
-    }
-
     res.json({
       success: true,
       data: {
-        historicalIncome: totalHistoricalIncome, // 历史授权收益总和
-        historicalStakingIncome: totalHistoricalStakingIncome, // 历史质押收益总和
-        totalIncome: totalIncome, // 总收益(历史授权收益+历史质押收益) USDT
-        totalIncomeEth: totalIncomeEth, // 总收益的ETH等值
-        todayHistoricalIncome: todayHistoricalIncome, // 今日历史收益总和
-        todayBalanceIncome: todayBalanceIncome, // 今日质押收益
-        todayTotalIncome: todayTotalIncome, // 今日总收益(今日历史收益+今日质押收益) USDT
-        todayTotalIncomeEth: todayTotalIncomeEth, // 今日总收益的ETH等值
+        totalIncome: totalHistoricalIncome, // USDT历史收益总和
+        totalIncomeEth: totalHistoricalEthIncome, // ETH历史收益总和
+        todayTotalIncome: todayHistoricalIncome, // 今日历史收益USDT总和
+        todayTotalIncomeEth: todayHistoricalEthIncome, // 今日历史ETH收益总和
         customerBalance: customer.usdtBalance, // 用户USDT余额
         customerStaking: customer.usdtStaking, // 用户USDT质押金额
         stakeRate: customer.stakeRate, // 用户质押倍率
