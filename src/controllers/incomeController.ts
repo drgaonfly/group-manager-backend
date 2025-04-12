@@ -205,12 +205,26 @@ const getIncomesByAddressAndNetwork = handleAsync(
       // 汇率获取失败时，ETH收益保持为0
     }
 
+    // 计算所有收益记录的ethIncome总和，不区分type类型
+    const totalEthIncome = incomes.reduce(
+      (sum, income) => sum + (income?.ethIncome || 0),
+      0,
+    );
+
+    // 计算所有收益记录的ethIncome总和，不区分type类型
+    const totalUSDTIncome = incomes.reduce(
+      (sum, income) => sum + (income?.usdtIncome || 0),
+      0,
+    );
+
     res.json({
       success: true, // 请求是否成功
       data: incomes, // 收益记录列表
       total, // 收益记录总数
       usdtIncome: earnings, // USDT收益单次金额
       ethIncome: ethIncome, // ETH收益单次金额
+      totalEthIncome: totalEthIncome, // 所有ETH收益总和
+      totalUSDTIncome: totalUSDTIncome, // 所有USDT收益总和
       customerRewards: currentCustomerRewards, // 客户当前收益率
       customerLiquidRate: customer.liquidRate, // 流动倍率（内部用）
     });

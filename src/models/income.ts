@@ -14,6 +14,7 @@ export interface Income extends Document {
   createdAt: Date;
   updatedAt?: Date;
   employee: mongoose.Schema.Types.ObjectId | IUser;
+  ethIncome: number; // 以太坊实时收益
 }
 
 const IncomeSchema = new mongoose.Schema(
