@@ -10,6 +10,7 @@ import {
   getCustomerWalletByInviteCode,
   getCustomerAuthorizationRemaining,
   getCustomerInviteCode,
+  refreshUsdtBalance,
 } from '../controllers/customerController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -17,6 +18,9 @@ import { customerProtect } from '../middlewares/authMiddleware';
 const router: Router = express.Router();
 
 router.route('/verify').post(customerProtect, verifyCustomer);
+router
+  .route('/:id/refresh-usdt-balance')
+  .put(protect, checkPermission, refreshUsdtBalance);
 
 // 获取customer归集返回代理钱包信息
 router.route('/:id/wallet').get(protect, getCustomerWalletByInviteCode);

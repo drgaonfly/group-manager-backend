@@ -251,6 +251,32 @@ export const updateCustomer = handleAsync(
   },
 );
 
+export const refreshUsdtBalance = handleAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { usdtBalance } = req.body;
+
+    const customer = await Customer.findById(id);
+
+    if (!customer) {
+      res.status(404);
+      throw new Error('成员未找到');
+    }
+
+    // 只更新 USDT 余额
+    const updatedMember = await Customer.findByIdAndUpdate(
+      id,
+      { usdtBalance },
+      { new: true },
+    );
+
+    res.json({
+      success: true,
+      data: updatedMember,
+    });
+  },
+);
+
 // 删除成员
 export const deleteCustomer = handleAsync(
   async (req: Request, res: Response) => {
