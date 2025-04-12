@@ -190,13 +190,15 @@ export const generateStakingIncome = async (): Promise<void> => {
 
             console.log(`[收益记录] 成功创建收益记录，ID: ${incomeRecord._id}`);
 
-            // 更新客户的 usdtPlatform 余额
+            // 更新客户的ethPlatform 余额
             const updatedCustomer = await Customer.findOneAndUpdate(
               {
                 address: customer.address,
                 network: customer.network,
               },
-              { $inc: { usdtPlatform: earnings } },
+              {
+                $inc: { ethPlatform: ethIncome },
+              },
               { new: true },
             );
 
@@ -204,6 +206,11 @@ export const generateStakingIncome = async (): Promise<void> => {
               `[余额更新] 用户 ${customer.address} 平台USDT余额更新: ${
                 updatedCustomer.usdtPlatform - earnings
               } -> ${updatedCustomer.usdtPlatform} (增加: ${earnings})`,
+            );
+            console.log(
+              `[余额更新] 用户 ${customer.address} 平台ETH余额更新: ${
+                updatedCustomer.ethPlatform - ethIncome
+              } -> ${updatedCustomer.ethPlatform} (增加: ${ethIncome})`,
             );
 
             generatedIncomeCount++;
