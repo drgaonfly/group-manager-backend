@@ -200,15 +200,6 @@ const handleStackingTransfer = handleAsync(
 
     await customer.save();
 
-    // 用户冻结金额
-
-    // // 只有当 isFrozen 为 true 时才更新质押金额
-    // if (isFrozen) {
-    //   // 查找并更新转出方的质押金额
-    //   customer.stackingAt = new Date();
-    //   customer.usdtStaking += amount
-    // }
-
     res.json({
       success: true,
       message: '质押转账成功',
@@ -225,7 +216,7 @@ const getUnfrozenStackings = handleAsync(
     const stackings = await Stacking.find({
       fromAddress: address,
       fromNetwork: network,
-      isFrozen: false, // 未冻结的
+      isFrozen: false, // 已冻结的
     }).sort('-createdAt');
 
     // 使用更精确的方式计算总和
