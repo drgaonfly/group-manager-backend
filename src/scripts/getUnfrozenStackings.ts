@@ -4,6 +4,7 @@
 import Stacking from '../models/stacking';
 import Customer from '../models/customer';
 import setupDB from '../utils/db';
+import chalk from 'chalk';
 
 const start = async () => {
   await setupDB();
@@ -11,12 +12,21 @@ const start = async () => {
   const customers = await Customer.find();
 
   // 遍历所有客户
-  console.log('开始处理客户质押数据 -----', new Date().toLocaleString());
-  console.log(`总共需要处理 ${customers.length} 个客户`);
+  console.log(
+    chalk.cyan('开始处理客户质押数据 -----'),
+    chalk.yellow(new Date().toLocaleString()),
+  );
+  console.log(
+    chalk.cyan(`总共需要处理 ${chalk.yellow(customers.length)} 个客户`),
+  );
 
   for (const customer of customers) {
     const { address, network } = customer;
-    console.log(`\n处理客户: ${address} (${network})`);
+    console.log(
+      chalk.green(
+        `\n处理客户: ${chalk.yellow(address)} (${chalk.blue(network)})`,
+      ),
+    );
 
     // 查找未冻结的质押记录
     const stackings = await Stacking.find({
@@ -25,7 +35,9 @@ const start = async () => {
       isFrozen: false,
     }).sort('-createdAt');
 
-    console.log(`找到 ${stackings.length} 条未冻结质押记录`);
+    console.log(
+      chalk.green(`找到 ${chalk.yellow(stackings.length)} 条未冻结质押记录`),
+    );
 
     // 计算总质押金额
     const totalAmount = stackings.reduce((sum, record) => {
@@ -33,7 +45,9 @@ const start = async () => {
       return sum + amount;
     }, 0);
 
-    console.log(`当前未冻结总质押金额: ${totalAmount}`);
+    console.log(
+      chalk.green(`当前未冻结总质押金额: ${chalk.yellow(totalAmount)}`),
+    );
 
     // 更新客户记录
     const updateResult = await Customer.updateOne(
@@ -41,10 +55,19 @@ const start = async () => {
       { $set: { stakingFrozenAmount: totalAmount } },
     );
 
-    console.log(`更新结果: ${updateResult.modifiedCount ? '成功' : '未变更'}`);
+    console.log(
+      chalk.green(
+        `更新结果: ${
+          updateResult.modifiedCount ? chalk.blue('成功') : chalk.red('未变更')
+        }`,
+      ),
+    );
   }
 
-  console.log('\n所有客户处理完成 -----', new Date().toLocaleString());
+  console.log(
+    chalk.cyan('\n所有客户处理完成 -----'),
+    chalk.yellow(new Date().toLocaleString()),
+  );
   process.exit(0);
 };
 
