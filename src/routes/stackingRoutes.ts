@@ -7,7 +7,6 @@ import {
   deleteStacking,
   deleteMultipleStackings,
   handleStackingTransfer,
-  getUnfrozenStackings,
 } from '../controllers/stackingController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -19,9 +18,6 @@ router.post(
   customerProtect,
   handleStackingTransfer,
 );
-
-// 获取冻结的质押金额
-router.get('/frozen', customerProtect, getUnfrozenStackings);
 
 // 设置叠加配置记录的路由
 router

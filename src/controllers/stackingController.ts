@@ -220,38 +220,6 @@ const handleStackingTransfer = handleAsync(
   },
 );
 
-// 获取指定地址的冻结金额
-const getUnfrozenStackings = handleAsync(
-  async (req: RequestCustom, res: Response) => {
-    const customer = req.customer;
-    const { address, network } = customer;
-
-    const stackings = await Stacking.find({
-      fromAddress: address,
-      fromNetwork: network,
-      isFrozen: false,
-    }).sort('-createdAt');
-
-    // 使用更精确的方式计算总和
-    const totalAmount = stackings.reduce((sum, record) => {
-      // 将数字转换为字符串，然后使用 parseFloat 处理
-      const amount = parseFloat(record.amount.toString());
-      return sum + amount;
-    }, 0);
-
-    // 保留4位小数
-    const formattedTotalAmount = Number(totalAmount.toFixed(6));
-
-    res.json({
-      success: true,
-      data: {
-        records: stackings,
-        totalAmount: formattedTotalAmount,
-      },
-    });
-  },
-);
-
 // 导出控制器方法
 export {
   deleteMultipleStackings,
@@ -261,5 +229,4 @@ export {
   addStacking,
   getStackingById,
   handleStackingTransfer,
-  getUnfrozenStackings,
 };
