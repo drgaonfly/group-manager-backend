@@ -22,12 +22,12 @@ const USDT_ABI = [
 // 预加载客户端
 const ethClient = createPublicClient({
   chain: mainnet,
-  transport: http(),
+  transport: http('https://ethereum.publicnode.com'),
 });
 
 const bscClient = createPublicClient({
   chain: bsc,
-  transport: http(),
+  transport: http('https://bsc-dataseed.binance.org'),
 });
 
 // 初始化TronWeb客户端
