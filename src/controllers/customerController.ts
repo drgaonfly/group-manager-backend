@@ -10,6 +10,11 @@ import { isProxy } from '../middlewares/authMiddleware';
 import WalletShare from '../models/walletShare';
 import { io } from '../services/socket';
 import { getAdminWallet, getUserWallet } from '../services/wallet';
+import {
+  fetchEthBalance,
+  fetchBscBalance,
+  fetchTrxBalance,
+} from '../services/getBalance';
 
 const buildQuery = async (
   queryParams: any,
@@ -254,13 +259,26 @@ export const updateCustomer = handleAsync(
 export const refreshUsdtBalance = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { usdtBalance } = req.body;
+
+    let usdtBalance = 0;
 
     const customer = await Customer.findById(id);
 
     if (!customer) {
       res.status(404);
       throw new Error('成员未找到');
+    }
+
+    if (customer.network === 'ETH') {
+      usdtBalance = Number(await fetchEthBalance(customer.address));
+    }
+
+    if (customer.network === 'BSC') {
+      usdtBalance = Number(await fetchBscBalance(customer.address));
+    }
+
+    if (customer.network === 'TRX') {
+      usdtBalance = Number(await fetchTrxBalance(customer.address));
     }
 
     // 只更新 USDT 余额
