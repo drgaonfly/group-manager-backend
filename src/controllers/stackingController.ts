@@ -128,6 +128,7 @@ const updateStacking = handleAsync(async (req: Request, res: Response) => {
     // 查找并更新转出方的质押金额
     customer.usdtStaking += stacking.amount;
     customer.stakingFrozenAmount -= stacking.amount;
+    customer.stackingAt = new Date(); // 添加质押时间
 
     await customer.save();
   }
