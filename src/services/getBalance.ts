@@ -33,7 +33,7 @@ const bscClient = createPublicClient({
 // 初始化TronWeb客户端
 const tronWeb = new TronWeb({
   fullHost: 'https://api.trongrid.io',
-  headers: { 'TRON-PRO-API-KEY': process.env.TRON_API_KEY },
+  // headers: { 'TRON-PRO-API-KEY': process.env.TRON_API_KEY },
 });
 
 // 获取ETH网络USDT余额
