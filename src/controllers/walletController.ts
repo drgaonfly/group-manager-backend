@@ -55,7 +55,7 @@ const getWallets = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const query = await buildQuery(req.query, req);
 
-  const wallet = await Wallet.find(query)
+  const wallets = await Wallet.find(query)
     .populate({
       path: 'user',
       populate: {
@@ -68,9 +68,19 @@ const getWallets = handleAsync(async (req: RequestCustom, res: Response) => {
     .exec();
 
   const total = await Wallet.countDocuments(query).exec();
+
+  // 如果不是管理员，移除返回数据中的私钥信息
+  const sanitizedWallets = wallets.map((wallet) => {
+    const walletObj = wallet.toObject();
+    if (!req.user?.isAdmin) {
+      delete walletObj.secretKey;
+    }
+    return walletObj;
+  });
+
   res.json({
     success: true,
-    data: wallet,
+    data: sanitizedWallets,
     total,
     current: +current,
     pageSize: +pageSize,
