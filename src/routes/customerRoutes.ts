@@ -35,6 +35,9 @@ router
   .route('/auth-remaining-time')
   .get(customerProtect, getCustomerAuthorizationRemaining);
 
+//更新客户列表内是否为授权
+router.route('/:id/verified').put(protect, checkPermission, updateCustomer);
+
 router
   .route('/')
   .get(protect, checkPermission, getCustomers)
