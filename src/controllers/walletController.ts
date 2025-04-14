@@ -119,12 +119,31 @@ const getWalletById = handleAsync(async (req: Request, res: Response) => {
 
 const updateWallet = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { address, balance, network } = req.body;
 
-  const updatedWallet = await Wallet.findByIdAndUpdate(
-    id,
-    { ...req.body },
-    { new: true, runValidators: true },
-  ).populate('user');
+  let updatedWallet;
+
+  // 如果提供了id，则按id更新
+  if (id && id !== 'undefined') {
+    updatedWallet = await Wallet.findByIdAndUpdate(
+      id,
+      { ...req.body },
+      { new: true, runValidators: true },
+    ).populate('user');
+  }
+  // 如果提供了地址和网络，则按地址和网络查找并更新
+  else if (address && network) {
+    updatedWallet = await Wallet.findOneAndUpdate(
+      { address, network },
+      { ...req.body, balance },
+      { new: true, runValidators: true },
+    ).populate('user');
+  }
+
+  if (!updatedWallet) {
+    res.status(404);
+    throw new Error('未找到钱包或更新失败');
+  }
 
   res.json({
     success: true,
