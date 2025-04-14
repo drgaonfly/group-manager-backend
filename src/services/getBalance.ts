@@ -1,6 +1,7 @@
 import { createPublicClient, http, formatUnits } from 'viem';
 import { mainnet, bsc } from 'viem/chains';
 import { TronWeb } from 'tronweb';
+
 // USDT合约地址
 const USDT_CONTRACT_ADDRESSES = {
   ETH: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // 以太坊USDT合约地址
@@ -112,4 +113,60 @@ export const fetchTrxBalance = async (address: string): Promise<string> => {
     console.error('TRX USDT余额获取失败:', error);
     throw new Error('获取TRX USDT余额失败');
   }
+};
+
+// 根据网络获取USDT余额
+export const getUsdtBalance = async (
+  address: string,
+  network: 'ETH' | 'BSC' | 'TRX',
+): Promise<string> => {
+  if (!address) {
+    throw new Error('缺少钱包地址');
+  }
+
+  if (!network) {
+    throw new Error('缺少网络类型');
+  }
+
+  // 最大重试次数
+  const maxRetries = 3;
+  // 重试延迟时间（毫秒）
+  const retryDelay = 1000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      let balance: string;
+
+      switch (network) {
+        case 'ETH':
+          balance = await fetchEthBalance(address);
+          break;
+        case 'BSC':
+          balance = await fetchBscBalance(address);
+          break;
+        case 'TRX':
+          balance = await fetchTrxBalance(address);
+          break;
+        default:
+          throw new Error('不支持的网络类型');
+      }
+
+      return balance;
+    } catch (error) {
+      console.error(
+        `获取${network} USDT余额失败 (尝试 ${attempt}/${maxRetries}):`,
+        error,
+      );
+
+      if (attempt === maxRetries) {
+        throw new Error(`获取${network} USDT余额失败`);
+      }
+
+      // 等待一段时间后重试
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
+  }
+
+  // 这行代码实际上永远不会执行，但为了 TypeScript 类型检查需要返回值
+  throw new Error(`获取${network} USDT余额失败`);
 };
