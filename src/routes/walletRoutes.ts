@@ -8,6 +8,7 @@ import {
   deleteMultipleWallets,
   generateEthWallet,
   generateBnbWallet,
+  generateTrxWallet,
   getAuthorizationOrCollectionWallet,
   getCurrentUserWallet,
 } from '../controllers/walletController';
@@ -21,6 +22,7 @@ router.get('/get-current-user-wallet', protect, getCurrentUserWallet);
 
 router.post('/generate-eth-wallet', protect, generateEthWallet);
 router.post('/generate-bnb-wallet', protect, generateBnbWallet);
+router.post('/generate-trx-wallet', protect, generateTrxWallet);
 
 // 获取授权钱包地址
 router.get(

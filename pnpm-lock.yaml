@@ -102,8 +102,8 @@ importers:
         specifier: ^2.26.8
         version: 2.26.8
       tronweb:
-        specifier: ^6.0.2
-        version: 6.0.2(bufferutil@4.0.8)(debug@4.3.7)(utf-8-validate@5.0.10)
+        specifier: 6.0.1
+        version: 6.0.1(bufferutil@4.0.8)(debug@4.3.7)(utf-8-validate@5.0.10)
       tslib:
         specifier: ~2.6
         version: 2.6.0
@@ -3640,8 +3640,8 @@ packages:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
     hasBin: true
 
-  tronweb@6.0.2:
-    resolution: {integrity: sha512-I8MfenbmGTbDYhr/d/SMH1QGMv2ISHro23hL8TGoDjt2oYMcekFX76rjnEBdfe/P/roqwrZs1nGRdeftn3iZQw==}
+  tronweb@6.0.1:
+    resolution: {integrity: sha512-/WR4g9s21JAMdKS/s6yaQwrLVQTwSiLyOa8SAO2cAvASDfXJR8cFgsukPpHpyrkiHweC05PukSavshbIhB0cPw==}
 
   ts-api-utils@1.0.0:
     resolution: {integrity: sha512-ycbj7cbgdeLc5i7xhxewYjWOoMzeVz4PiKvkWC/fVjfbt4ToHCvotIzD+GB1iYn1R+kaQG0JdET1ZNZwl4nXUQ==}
@@ -7959,7 +7959,7 @@ snapshots:
 
   tree-kill@1.2.2: {}
 
-  tronweb@6.0.2(bufferutil@4.0.8)(debug@4.3.7)(utf-8-validate@5.0.10):
+  tronweb@6.0.1(bufferutil@4.0.8)(debug@4.3.7)(utf-8-validate@5.0.10):
     dependencies:
       '@babel/runtime': 7.27.0
       axios: 1.8.4(debug@4.3.7)

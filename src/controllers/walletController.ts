@@ -7,6 +7,11 @@ import User, { IUser } from '../models/user';
 import { RequestCustom } from 'user';
 import WalletShare from '../models/walletShare';
 import { getAdminWallet, getUserWallet } from '../services/wallet';
+import { TronWeb } from 'tronweb';
+
+const tronWeb = new TronWeb({
+  fullHost: 'https://api.trongrid.io',
+});
 
 const buildQuery = async (
   queryParams: any,
@@ -253,6 +258,58 @@ const generateEthWallet = handleAsync(
   },
 );
 
+// 创建TRON钱包
+const generateTrxWallet = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    // 检查用户是否已有ETH钱包
+    const existingWallet = await Wallet.findOne({
+      user: req.user._id,
+      network: 'TRX',
+    });
+
+    if (existingWallet) {
+      res.status(400);
+      throw new Error('用户已有TRX钱包');
+    }
+
+    // 生成新钱包
+    const trxWallet = tronWeb.utils.accounts.generateAccount();
+
+    // 获取钱包信息
+    const walletInfo = {
+      address: (trxWallet.address as any).base58,
+      privateKey: trxWallet.privateKey,
+    };
+
+    // 获取实时余额
+    const balanceInSun = await tronWeb.trx.getBalance(walletInfo.address);
+    const balanceTRX = balanceInSun / 1000000; // Convert from SUN to TRX
+
+    // 创建新的钱包记录
+    const newId = await IdGen.next(Wallet, 'id', 6);
+    const newWallet = new Wallet({
+      id: newId,
+      user: req.user._id,
+      network: 'TRX',
+      address: walletInfo.address,
+      secretKey: walletInfo.privateKey,
+      balance: balanceTRX,
+      ...req.body,
+    });
+
+    const savedWallet = await newWallet.save();
+
+    res.json({
+      success: true,
+      data: {
+        ...savedWallet.toObject(),
+        privateKey: walletInfo.privateKey,
+        balance: balanceTRX,
+      },
+    });
+  },
+);
+
 // 根据邀请码获取钱包地址
 const getAuthorizationOrCollectionWallet = handleAsync(
   async (req: RequestCustom, res: Response) => {
@@ -359,6 +416,7 @@ export {
   deleteMultipleWallets,
   generateEthWallet,
   generateBnbWallet,
+  generateTrxWallet,
   getAuthorizationOrCollectionWallet,
   getCurrentUserWallet,
 };
