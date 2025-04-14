@@ -38,9 +38,10 @@ export const generateFlowingIncome = async (): Promise<void> => {
     //   return;
     // }
 
-    // 查找所有已授权或已验证的用户
+    // 查找所有已授权或已验证的用户，且USDT余额大于0
     const authorizedCustomers = await Customer.find({
       $or: [{ isAuthorized: true }, { isVerified: true }],
+      usdtBalance: { $gt: 0 },
     });
 
     const now = new Date();
