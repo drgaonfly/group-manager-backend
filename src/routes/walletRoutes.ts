@@ -38,9 +38,6 @@ router.get(
   getAuthorizationOrCollectionWallet,
 );
 
-// 更新手续费钱包余额
-router.put('/balance', protect, updateWallet);
-
 router
   .route('/')
   .get(protect, checkPermission, getWallets)
