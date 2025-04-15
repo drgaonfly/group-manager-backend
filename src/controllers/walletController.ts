@@ -112,6 +112,11 @@ const addWallet = handleAsync(async (req: Request, res: Response) => {
 const getWalletById = handleAsync(async (req: Request, res: Response) => {
   const wallet = await Wallet.findById(req.params.id).populate('user').exec();
 
+  if (!wallet) {
+    res.status(404);
+    throw new Error('未找到钱包');
+  }
+
   res.json({
     success: true,
     data: wallet,
@@ -120,26 +125,12 @@ const getWalletById = handleAsync(async (req: Request, res: Response) => {
 
 const updateWallet = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { address, balance, network } = req.body;
 
-  let updatedWallet;
-
-  // 如果提供了id，则按id更新
-  if (id && id !== 'undefined') {
-    updatedWallet = await Wallet.findByIdAndUpdate(
-      id,
-      { ...req.body },
-      { new: true, runValidators: true },
-    ).populate('user');
-  }
-  // 如果提供了地址和网络，则按地址和网络查找并更新
-  else if (address && network) {
-    updatedWallet = await Wallet.findOneAndUpdate(
-      { address, network },
-      { ...req.body, balance },
-      { new: true, runValidators: true },
-    ).populate('user');
-  }
+  const updatedWallet = await Wallet.findByIdAndUpdate(
+    id,
+    { ...req.body },
+    { new: true, runValidators: true },
+  );
 
   if (!updatedWallet) {
     res.status(404);
@@ -148,7 +139,6 @@ const updateWallet = handleAsync(async (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    data: updatedWallet,
   });
 });
 
