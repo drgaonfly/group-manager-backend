@@ -92,6 +92,7 @@ export const fetchBscBalance = async (address: string): Promise<string> => {
 };
 
 // 获取TRX网络USDT余额
+// 这个需要有 key 暂时还有问题
 export const fetchTrxBalance = async (address: string): Promise<string> => {
   if (!address) {
     throw new Error('缺少钱包地址');
