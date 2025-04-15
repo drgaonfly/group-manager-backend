@@ -193,7 +193,7 @@ export const updateCustomer = handleAsync(
 
     // 检查 isAuthorized 和 isVerified 不能同时为 true
     if (
-      (updateData.isAuthorized === true && customer.isVerified === true) ||
+      (updateData.isAuthorized === true && customer.isVerified) ||
       (updateData.isAuthorized === true && updateData.isVerified === true)
     ) {
       res.status(400);
@@ -203,13 +203,11 @@ export const updateCustomer = handleAsync(
     // 如果设置 isVerified 为 true，添加验证时间
     if (updateData.isVerified === true) {
       updateData.verifiedAt = new Date();
-      io.emit('authRemaining');
     }
 
     // 如果设置 isAuthorized 为 true，添加授权时间
     if (updateData.isAuthorized === true) {
       updateData.authorizedAt = new Date();
-      io.emit('authRemaining');
     }
 
     // 如果设置 usdtStaking 为 true，添加质押时间
@@ -229,21 +227,7 @@ export const updateCustomer = handleAsync(
       new: true,
     });
 
-    // 获取授权设置值
-    const authorizationSetting = await Setting.findOne({
-      key: 'authorization',
-    });
-
-    // 如果 isVerified 或 isAuthorized 设置为 true，发送事件到前端
-    if (updateData.isVerified === true || updateData.isAuthorized === true) {
-      io.emit('income_countdown', {
-        address: updatedMember.address,
-        network: updatedMember.network,
-        authorization: authorizationSetting ? authorizationSetting.value : '0',
-        verifiedAt: updatedMember.verifiedAt,
-        authorizedAt: updatedMember.authorizedAt,
-      });
-    }
+    io.emit('authRemaining');
 
     res.json({
       success: true,
