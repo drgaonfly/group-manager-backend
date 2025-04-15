@@ -92,8 +92,33 @@ const getStackingById = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// 更新叠加配置记录
-const updateStacking = handleAsync(async (req: Request, res: Response) => {
+// 更新
+const updateStaking = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const updateData = { ...req.body };
+
+  // 先获取当前记录
+  const stacking = await Stacking.findById(id).populate('customer');
+
+  if (!stacking) {
+    res.status(404);
+    throw new Error('记录不存在');
+  }
+
+  const updatedStacking = await Stacking.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  res.json({
+    success: true,
+    data: updatedStacking,
+    message: updateData.isFrozen ? '更新成功并已确认金额' : '更新成功',
+  });
+});
+
+// 确认质押金额
+const agreeStaking = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const updateData = { ...req.body };
 
@@ -211,10 +236,11 @@ const handleStackingTransfer = handleAsync(
 // 导出控制器方法
 export {
   deleteMultipleStackings,
-  updateStacking,
+  updateStaking,
   deleteStacking,
   getStackings,
   addStacking,
   getStackingById,
   handleStackingTransfer,
+  agreeStaking,
 };

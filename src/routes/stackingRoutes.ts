@@ -3,10 +3,11 @@ import {
   getStackings,
   addStacking,
   getStackingById,
-  updateStacking,
+  updateStaking,
   deleteStacking,
   deleteMultipleStackings,
   handleStackingTransfer,
+  agreeStaking,
 } from '../controllers/stackingController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -19,6 +20,9 @@ router.post(
   handleStackingTransfer,
 );
 
+//后台确认质押转账
+router.put('/:id/agreestaking', protect, checkPermission, agreeStaking);
+
 // 设置叠加配置记录的路由
 router
   .route('/')
@@ -29,7 +33,7 @@ router
 router
   .route('/:id')
   .get(protect, checkPermission, getStackingById)
-  .put(protect, checkPermission, updateStacking)
+  .put(protect, checkPermission, updateStaking)
   .delete(protect, checkPermission, deleteStacking);
 
 export default router;
