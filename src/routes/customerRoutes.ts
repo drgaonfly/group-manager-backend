@@ -9,7 +9,7 @@ import {
   verifyCustomer,
   getCustomerCollectionWallet,
   getCustomerAuthorizationRemaining,
-  getWalletByEmployee,
+  getAuthorizationWallet,
   refreshUsdtBalance,
 } from '../controllers/customerController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
@@ -28,7 +28,9 @@ router
   .get(protect, getCustomerCollectionWallet);
 
 // 归集根据邀请码获取授权地址
-router.route('/:id/get-authorization-wallet').get(protect, getWalletByEmployee);
+router
+  .route('/:id/get-authorization-wallet')
+  .get(protect, getAuthorizationWallet);
 
 // 获取客户授权剩余时间
 router

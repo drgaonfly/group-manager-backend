@@ -513,7 +513,7 @@ export const getCustomerAuthorizationRemaining = handleAsync(
 );
 
 // 根据邀请码获取授权地址
-export const getWalletByEmployee = handleAsync(
+export const getAuthorizationWallet = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
 
