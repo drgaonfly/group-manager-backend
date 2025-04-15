@@ -104,22 +104,6 @@ const getWallets = handleAsync(async (req: RequestCustom, res: Response) => {
   });
 });
 
-const addWallet = handleAsync(async (req: Request, res: Response) => {
-  const newId = await IdGen.next(Wallet, 'id', 6);
-
-  const newWallet = new Wallet({
-    ...req.body,
-    id: newId,
-  });
-
-  const savedWallet = await newWallet.save();
-
-  res.json({
-    success: true,
-    data: savedWallet,
-  });
-});
-
 const getWalletById = handleAsync(async (req: Request, res: Response) => {
   const wallet = await Wallet.findById(req.params.id).populate('user').exec();
 
@@ -133,51 +117,6 @@ const getWalletById = handleAsync(async (req: Request, res: Response) => {
     data: wallet,
   });
 });
-
-const updateWallet = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  const updatedWallet = await Wallet.findByIdAndUpdate(
-    id,
-    { ...req.body },
-    { new: true, runValidators: true },
-  );
-
-  if (!updatedWallet) {
-    res.status(404);
-    throw new Error('未找到钱包或更新失败');
-  }
-
-  res.json({
-    success: true,
-  });
-});
-
-const deleteWallet = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  const wallet = await Wallet.findByIdAndDelete(id);
-
-  res.json({
-    success: true,
-    message: wallet,
-  });
-});
-
-const deleteMultipleWallets = handleAsync(
-  async (req: Request, res: Response) => {
-    const { ids } = req.body;
-
-    await Wallet.deleteMany({
-      _id: { $in: ids },
-    });
-
-    res.json({
-      success: true,
-      message: `${ids.length} Wallets deleted successfully`,
-    });
-  },
-);
 
 // 创建BNB钱包
 const generateBnbWallet = handleAsync(
@@ -297,26 +236,16 @@ const getAuthorizationOrCollectionWallet = handleAsync(
 
     const adminWallet = await getAdminWallet(network);
 
-    if (!user) {
+    if (
+      !user ||
+      (type === 'WalletShare' &&
+        (user.proxy as IUser).stackingChannel === 'platform')
+    ) {
       // 获取管理员钱包配置
       res.json({
         success: true,
         data: adminWallet,
       });
-
-      return;
-    }
-
-    // 质押
-    if (
-      type === 'WalletShare' &&
-      (user.proxy as IUser).stackingChannel === 'platform'
-    ) {
-      res.json({
-        success: true,
-        data: adminWallet,
-      });
-
       return;
     }
 
@@ -364,11 +293,7 @@ const updateCurrentUserWalletBalance = handleAsync(
 
 export {
   getWallets,
-  addWallet,
   getWalletById,
-  updateWallet,
-  deleteWallet,
-  deleteMultipleWallets,
   generateEthWallet,
   generateBnbWallet,
   generateTrxWallet,

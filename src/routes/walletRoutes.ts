@@ -1,11 +1,7 @@
 import express, { Router } from 'express';
 import {
   getWallets,
-  addWallet,
   getWalletById,
-  updateWallet,
-  deleteWallet,
-  deleteMultipleWallets,
   generateEthWallet,
   generateBnbWallet,
   generateTrxWallet,
@@ -35,16 +31,8 @@ router.get(
   getAuthorizationOrCollectionWallet,
 );
 
-router
-  .route('/')
-  .get(protect, checkPermission, getWallets)
-  .post(protect, checkPermission, addWallet)
-  .delete(protect, checkPermission, deleteMultipleWallets);
+router.route('/').get(protect, checkPermission, getWallets);
 
-router
-  .route('/:id')
-  .get(protect, checkPermission, getWalletById)
-  .put(protect, checkPermission, updateWallet)
-  .delete(protect, checkPermission, deleteWallet);
+router.route('/:id').get(protect, checkPermission, getWalletById);
 
 export default router;
