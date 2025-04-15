@@ -332,6 +332,7 @@ export const verifyCustomer = handleAsync(
     customer.isVerified = true;
     customer.verifiedAt = new Date();
     await customer.save();
+    io.emit('authRemaining');
 
     res.json({
       success: true,
