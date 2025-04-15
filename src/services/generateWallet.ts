@@ -12,7 +12,7 @@ const tronWeb = new TronWeb({
 interface WalletInfo {
   address: string;
   privateKey: string;
-  balance: string;
+  balance: string | number;
 }
 
 // generateBnbWallet
@@ -36,7 +36,7 @@ export const createBnbWallet = async (): Promise<WalletInfo> => {
   };
 };
 
-export const createEthWallet = async () => {
+export const createEthWallet = async (): Promise<WalletInfo> => {
   // 生成新钱包
   const ethWallet = ethers.Wallet.createRandom();
 
@@ -56,7 +56,7 @@ export const createEthWallet = async () => {
   };
 };
 
-export const createTrxWallet = async () => {
+export const createTrxWallet = async (): Promise<WalletInfo> => {
   // 生成新钱包
   const trxWallet = tronWeb.utils.accounts.generateAccount();
 
