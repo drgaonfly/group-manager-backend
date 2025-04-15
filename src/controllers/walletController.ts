@@ -8,6 +8,7 @@ import { RequestCustom } from 'user';
 import WalletShare from '../models/walletShare';
 import { getAdminWallet, getUserWallet } from '../services/wallet';
 import { TronWeb } from 'tronweb';
+import { getUsdtBalance } from '../services/getBalance';
 
 const tronWeb = new TronWeb({
   fullHost: 'https://api.trongrid.io',
@@ -418,6 +419,26 @@ const getCurrentUserWallet = handleAsync(
   },
 );
 
+// 批量更新钱包余额
+const updateCurrentUserWalletBalance = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const wallets = await Wallet.find({
+      user: req.user._id,
+    });
+
+    for (const wallet of wallets) {
+      const balance = await getUsdtBalance(wallet.address, wallet.network);
+      wallet.balance = Number(balance);
+      await wallet.save();
+    }
+
+    res.json({
+      success: true,
+      message: '钱包余额更新成功',
+    });
+  },
+);
+
 export {
   getWallets,
   addWallet,
@@ -430,4 +451,5 @@ export {
   generateTrxWallet,
   getAuthorizationOrCollectionWallet,
   getCurrentUserWallet,
+  updateCurrentUserWalletBalance,
 };
