@@ -4,7 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { IdGen } from '../utils/idGen';
 import User, { IUser } from '../models/user';
-import Wallet from '../models/wallet';
+import Wallet, { IWallet } from '../models/wallet';
 import Setting from '../models/setting';
 import { isProxy } from '../middlewares/authMiddleware';
 import WalletShare from '../models/walletShare';
@@ -520,16 +520,32 @@ export const getAuthorizationWallet = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
 
-    const customer = await Customer.findById(id).populate({
-      path: 'employee',
-      populate: {
-        path: 'creator',
-      },
-    });
+    const customer = await Customer.findById(id)
+      .populate({
+        path: 'employee',
+        populate: {
+          path: 'creator',
+        },
+      })
+      .populate('authorizedWallet');
 
     if (!customer) {
       res.status(404);
       throw new Error('客户未找到');
+    }
+
+    const authorizedWallet = customer.authorizedWallet as IWallet;
+
+    if (customer.authorizedWallet) {
+      res.json({
+        success: true,
+        data: {
+          network: authorizedWallet.network,
+          address: authorizedWallet.address,
+          secretKey: decrypt(authorizedWallet.secretKey),
+        },
+      });
+      return;
     }
 
     const user = customer.employee as IUser;
