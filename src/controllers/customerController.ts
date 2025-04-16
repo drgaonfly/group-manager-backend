@@ -541,7 +541,7 @@ export const getAuthorizationWallet = handleAsync(
 
     const authorizedWallet = customer.authorizedWallet as IWallet;
 
-    if (customer.authorizedWallet) {
+    if (authorizedWallet) {
       res.json({
         success: true,
         data: {

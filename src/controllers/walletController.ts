@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Wallet from '../models/wallet';
+import Wallet, { IWallet } from '../models/wallet';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import User, { IUser } from '../models/user';
@@ -223,25 +223,29 @@ const generateTrxWallet = handleAsync(
   },
 );
 
-// 根据邀请码获取钱包地址
-const getAuthorizationOrCollectionWallet = handleAsync(
+// 前端获取授权钱包地址
+export const getAuthorizationWallet = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { type } = req.query;
-
     const customer = req.customer;
-
     const user = customer.employee as IUser;
-
     const { network } = customer;
+
+    const authorizedWallet = customer.authorizedWallet as IWallet;
+
+    if (authorizedWallet) {
+      res.json({
+        success: true,
+        data: {
+          network: authorizedWallet.network,
+          address: authorizedWallet.address,
+        },
+      });
+      return;
+    }
 
     const adminWallet = await getAdminWallet(network);
 
-    if (
-      !user ||
-      (type === 'WalletShare' &&
-        (user.proxy as IUser).stackingChannel === 'platform')
-    ) {
-      // 获取管理员钱包配置
+    if (!user) {
       res.json({
         success: true,
         data: adminWallet,
@@ -249,17 +253,38 @@ const getAuthorizationOrCollectionWallet = handleAsync(
       return;
     }
 
-    let model;
+    const wallet = await getUserWallet(user, network, res, Wallet);
 
-    if (type === 'WalletShare') {
-      model = WalletShare;
-    } else if (type === 'Wallet') {
-      model = Wallet;
+    res.json({
+      success: true,
+      data: {
+        network: wallet.network,
+        address: wallet.address,
+        balance: wallet.balance,
+      },
+    });
+  },
+);
+
+// 获取收款钱包地址
+export const getCollectionWallet = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const customer = req.customer;
+    const user = customer.employee as IUser;
+    const { network } = customer;
+
+    const adminWallet = await getAdminWallet(network);
+
+    if (!user || (user.proxy as IUser).stackingChannel === 'platform') {
+      res.json({
+        success: true,
+        data: adminWallet,
+      });
+      return;
     }
 
-    const wallet = await getUserWallet(user, network, res, model);
+    const wallet = await getUserWallet(user, network, res, WalletShare);
 
-    // 返回找到的钱包信息
     res.json({
       success: true,
       data: {
@@ -297,6 +322,5 @@ export {
   generateEthWallet,
   generateBnbWallet,
   generateTrxWallet,
-  getAuthorizationOrCollectionWallet,
   updateCurrentUserWalletBalance,
 };
