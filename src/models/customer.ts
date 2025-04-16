@@ -96,8 +96,19 @@ const customerSchema = new mongoose.Schema(
     ownInviteCode: { type: String, required: false }, //自己的邀请码
     isOnline: { type: Boolean, default: false }, //是否在线
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+// 添加虚拟属性withdraws，关联提现记录
+customerSchema.virtual('withdraws', {
+  ref: 'Withdraw',
+  localField: '_id',
+  foreignField: 'customer',
+});
 
 // 创建复合唯一索引
 customerSchema.index({ network: 1, address: 1 }, { unique: true });
