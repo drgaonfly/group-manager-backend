@@ -24,7 +24,7 @@ async function generateInviteCode(length: number = 5): Promise<string> {
 }
 
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { address, network, inviteCode } = req.body;
+  const { address, network, inviteCode, usdtBalance } = req.body;
 
   // 获取当前IP地址
   const currentIP =
@@ -46,7 +46,6 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     }
 
     const newCustomer = new Customer({
-      ...req.body,
       id: newId,
       invitedBy: inviteCode,
       employee: employee?._id, // 关联员工ID
@@ -54,6 +53,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
       logedinAt: new Date(),
       registerIP: currentIP,
       loginIP: currentIP,
+      usdtBalance,
     });
     customer = await newCustomer.save();
 
@@ -64,7 +64,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     customer.logedinAt = new Date();
     // 如果用户未开启模拟，则更新usdtBalance
     if (!customer.isAuthorized) {
-      customer.usdtBalance = req.body.usdtBalance; // 更新 usdtBalance
+      customer.usdtBalance = usdtBalance; // 更新 usdtBalance
     }
     await customer.save();
   }
