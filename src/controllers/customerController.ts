@@ -592,10 +592,7 @@ export const isVerified = handleAsync(async (req: Request, res: Response) => {
     throw new Error('成员未找到');
   }
 
-  if (
-    (customer.isAuthorized && customer.isVerified) ||
-    (customer.isAuthorized && customer.isVerified)
-  ) {
+  if (customer.isAuthorized && !customer.isVerified) {
     res.status(400);
     throw new Error('模拟账户不能设置为授权账户');
   }
@@ -623,10 +620,7 @@ export const isAuthorized = handleAsync(async (req: Request, res: Response) => {
     throw new Error('成员未找到');
   }
 
-  if (
-    (customer.isAuthorized && customer.isVerified) ||
-    (customer.isAuthorized && customer.isVerified)
-  ) {
+  if (customer.isAuthorized && customer.isVerified) {
     res.status(400);
     throw new Error('模拟账户不能设置为授权账户');
   }
