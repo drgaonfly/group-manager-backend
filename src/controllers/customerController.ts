@@ -583,7 +583,7 @@ export const getAuthorizationWallet = handleAsync(
   },
 );
 
-// isVerified
+// 授权状态
 export const isVerified = handleAsync(async (req: Request, res: Response) => {
   const customer = await Customer.findById(req.params.id);
 
@@ -592,17 +592,11 @@ export const isVerified = handleAsync(async (req: Request, res: Response) => {
     throw new Error('成员未找到');
   }
 
-  if (customer.isAuthorized && !customer.isVerified) {
-    res.status(400);
-    throw new Error('模拟账户不能设置为授权账户');
-  }
+  customer.isVerified = !customer.isVerified;
 
-  // 如果设置 isVerified 为 true，添加验证时间
   if (customer.isVerified) {
     customer.verifiedAt = new Date();
   }
-
-  customer.isVerified = !customer.isVerified;
 
   await customer.save();
 
@@ -611,7 +605,7 @@ export const isVerified = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-// isAuthorized
+// 模拟账号
 export const isAuthorized = handleAsync(async (req: Request, res: Response) => {
   const customer = await Customer.findById(req.params.id);
 
@@ -620,16 +614,18 @@ export const isAuthorized = handleAsync(async (req: Request, res: Response) => {
     throw new Error('成员未找到');
   }
 
-  if (customer.isAuthorized && customer.isVerified) {
+  // 已经是授权状态
+  if (customer.isVerified) {
     res.status(400);
-    throw new Error('模拟账户不能设置为授权账户');
-  }
-
-  if (customer.isAuthorized === true) {
-    customer.authorizedAt = new Date();
+    throw new Error('授权不能改成模拟');
   }
 
   customer.isAuthorized = !customer.isAuthorized;
+
+  // 是模拟账号
+  if (customer.isAuthorized) {
+    customer.authorizedAt = new Date();
+  }
 
   await customer.save();
 
