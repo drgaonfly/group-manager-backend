@@ -1,4 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // 使用AES加密替代HMAC
 const algorithm = 'aes-256-cbc';
