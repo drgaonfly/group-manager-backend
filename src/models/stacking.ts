@@ -12,6 +12,9 @@ export interface IStacking extends Document {
   customer: mongoose.Schema.Types.ObjectId | ICustomer;
   createdAt?: Date;
   updatedAt?: Date;
+  frozen: boolean;
+  confirmedAt?: Date;
+  proxy: mongoose.Schema.Types.ObjectId | IUser;
 }
 
 const stackingSchema = new mongoose.Schema(
@@ -22,6 +25,14 @@ const stackingSchema = new mongoose.Schema(
     toNetwork: { type: String, required: true }, // 转入网络
     amount: { type: Number, required: true }, // 质押USDT数量
     isFrozen: { type: Boolean, default: false }, // 是否冻结质押金额 false 是未冻结 true 是冻结
+    frozen: {
+      type: Boolean,
+      default: true,
+    },
+    confirmedAt: {
+      type: Date,
+      default: null,
+    }, // 确认时间
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

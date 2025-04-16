@@ -120,7 +120,6 @@ const updateStaking = handleAsync(async (req: Request, res: Response) => {
 // 确认质押金额
 const checkStacking = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const updateData = { ...req.body };
 
   // 先获取当前记录
   const stacking = await Stacking.findById(id).populate('customer');
@@ -143,13 +142,17 @@ const checkStacking = handleAsync(async (req: Request, res: Response) => {
   }
 
   // 如果当前记录已经是冻结状态，不允许改为未冻结
-  if (stacking.isFrozen && updateData.isFrozen === false) {
+  if (stacking.isFrozen) {
     res.status(400);
     throw new Error('已确认的记录不能改为冻结状态');
   }
 
+  stacking.isFrozen = true; // 设置为解结状态
+  stacking.confirmedAt = new Date(); // 添加确认时间
+  await stacking.save(); // 保存更新后的记录
+
   // 如果要将状态改为冻结，需要更新用户的质押金额
-  if (!stacking.isFrozen && updateData.isFrozen === true) {
+  if (stacking.isFrozen) {
     // 查找并更新转出方的质押金额
     customer.usdtStaking += stacking.amount;
     customer.stakingFrozenAmount -= stacking.amount;
@@ -158,15 +161,8 @@ const checkStacking = handleAsync(async (req: Request, res: Response) => {
     await customer.save();
   }
 
-  const updatedStacking = await Stacking.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  });
-
   res.json({
     success: true,
-    data: updatedStacking,
-    message: updateData.isFrozen ? '更新成功并已确认金额' : '更新成功',
   });
 });
 
