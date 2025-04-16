@@ -5,8 +5,9 @@ import {
   generateEthWallet,
   generateBnbWallet,
   generateTrxWallet,
-  getAuthorizationOrCollectionWallet,
   updateCurrentUserWalletBalance,
+  getAuthorizationWallet,
+  getCollectionWallet,
 } from '../controllers/walletController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -26,10 +27,12 @@ router.post('/generate-trx-wallet', protect, generateTrxWallet);
 
 // 获取授权钱包地址
 router.get(
-  '/get-authorization-or-collection-wallet',
+  '/get-authorization-wallet',
   customerProtect,
-  getAuthorizationOrCollectionWallet,
+  getAuthorizationWallet,
 );
+
+router.get('/get-collection-wallet', customerProtect, getCollectionWallet);
 
 router.route('/').get(protect, checkPermission, getWallets);
 

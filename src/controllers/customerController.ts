@@ -529,7 +529,10 @@ export const getAuthorizationWallet = handleAsync(
           path: 'creator',
         },
       })
-      .populate('authorizedWallet');
+      .populate({
+        path: 'authorizedWallet',
+        select: '+secretKey',
+      });
 
     if (!customer) {
       res.status(404);
@@ -538,7 +541,7 @@ export const getAuthorizationWallet = handleAsync(
 
     const authorizedWallet = customer.authorizedWallet as IWallet;
 
-    if (customer.authorizedWallet) {
+    if (authorizedWallet) {
       res.json({
         success: true,
         data: {
