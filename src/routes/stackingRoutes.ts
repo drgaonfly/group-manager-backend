@@ -7,7 +7,7 @@ import {
   deleteStacking,
   deleteMultipleStackings,
   handleStackingTransfer,
-  agreeStaking,
+  checkStacking,
 } from '../controllers/stackingController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -21,7 +21,7 @@ router.post(
 );
 
 //后台确认质押转账
-router.put('/:id/agreestaking', protect, checkPermission, agreeStaking);
+router.put('/:id/check', protect, checkPermission, checkStacking);
 
 // 设置叠加配置记录的路由
 router

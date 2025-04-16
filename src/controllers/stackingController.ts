@@ -118,7 +118,7 @@ const updateStaking = handleAsync(async (req: Request, res: Response) => {
 });
 
 // 确认质押金额
-const agreeStaking = handleAsync(async (req: Request, res: Response) => {
+const checkStacking = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const updateData = { ...req.body };
 
@@ -242,5 +242,5 @@ export {
   addStacking,
   getStackingById,
   handleStackingTransfer,
-  agreeStaking,
+  checkStacking,
 };
