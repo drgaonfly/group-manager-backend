@@ -216,14 +216,9 @@ export const refreshUsdtBalance = handleAsync(
       throw new Error('成员未找到');
     }
 
-    try {
-      // 调用统一的获取余额方法
-      const balance = await getUsdtBalance(customer.address, customer.network);
-      usdtBalance = Number(balance);
-    } catch (error) {
-      console.error('获取USDT余额失败:', error);
-      throw new Error('获取USDT余额失败');
-    }
+    // 调用统一的获取余额方法
+    const balance = await getUsdtBalance(customer.address, customer.network);
+    usdtBalance = Number(balance);
 
     // 只更新 USDT 余额
     const updatedMember = await Customer.findByIdAndUpdate(
