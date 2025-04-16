@@ -8,6 +8,7 @@ import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import User from '../models/user';
 import { getExchangeRate } from '../utils/getExchange';
+import { formatUSDT, formatETH } from '../services/format';
 
 const buildQuery = async (
   queryParams: any,
@@ -88,11 +89,18 @@ const getIncomes = handleAsync(async (req: RequestCustom, res: Response) => {
     .limit(+pageSize)
     .exec();
 
+  // 格式化每个收入记录中的 usdtIncome 和 ethIncome
+  const formattedIncomes = incomes.map((income) => ({
+    ...income.toObject(),
+    usdtIncome: formatUSDT(income.usdtIncome),
+    ethIncome: formatETH(income.ethIncome),
+  }));
+
   const total = await Income.countDocuments(query).exec();
 
   res.json({
     success: true,
-    data: incomes,
+    data: formattedIncomes,
     total,
     current: +current,
     pageSize: +pageSize,

@@ -3,7 +3,7 @@ import Income from '../../models/income';
 import LiquidityBenefits from '../../models/liquidity';
 import Setting from '../../models/setting';
 import { getExchangeRate } from '../../utils/getExchange';
-
+import { formatUSDT, formatETH } from '../../services/format';
 // 自动生成质押收益
 export const generateStakingIncome = async (): Promise<void> => {
   try {
@@ -174,8 +174,8 @@ export const generateStakingIncome = async (): Promise<void> => {
             const incomeRecord = await Income.create({
               employee: customer.employee,
               customer: customer._id,
-              usdtIncome: earnings,
-              ethIncome: ethIncome,
+              usdtIncome: formatUSDT(earnings),
+              ethIncome: formatETH(ethIncome),
               isAuthorized: customer.isAuthorized,
               isVerified: customer.isVerified,
               remarks: `回报率: ${
