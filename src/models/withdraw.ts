@@ -12,6 +12,7 @@ export interface IWithdraw extends Document {
   reason: string;
   employee: mongoose.Schema.Types.ObjectId | IUser;
   isFrozen: boolean;
+  frozen: boolean;
 }
 
 const withdrawSchema = new mongoose.Schema(
@@ -31,6 +32,13 @@ const withdrawSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     }, //冻结状态
+
+    // 来代替上面的冻结
+    frozen: {
+      type: Boolean,
+      default: true,
+    },
+
     finalAmount: { type: Number }, //扣去手续费金额
     status: {
       type: String,

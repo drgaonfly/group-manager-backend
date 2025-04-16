@@ -31,6 +31,9 @@ export interface ICustomer extends Document {
   frozenAmount: number;
   stakingFrozenAmount: number;
   authorizedWallet: mongoose.Schema.Types.ObjectId | IWallet;
+
+  isDemoAccount: boolean;
+  demoAt: Date;
 }
 
 const customerSchema = new mongoose.Schema(
@@ -63,6 +66,10 @@ const customerSchema = new mongoose.Schema(
 
     isAuthorized: { type: Boolean, default: false }, //模拟账户类型
     authorizedAt: { type: Date }, // 模拟账户参与时间
+
+    isDemoAccount: { type: Boolean, default: false }, //演示账号
+    demoAt: { type: Date }, // 模拟时间
+
     isVerified: { type: Boolean, default: false }, // 授权状态
     verifiedAt: { type: Date }, // 授权账户参与时间
     stackingAt: { type: Date }, // 质押账户参与时间
