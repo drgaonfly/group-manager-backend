@@ -169,5 +169,5 @@ export const getUsdtBalance = async (
   }
 
   // 这行代码实际上永远不会执行，但为了 TypeScript 类型检查需要返回值
-  throw new Error(`获取${network} USDT余额失败`);
+  throw new Error(`获取${network} - ${address} USDT余额失败`);
 };

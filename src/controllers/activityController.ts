@@ -191,7 +191,7 @@ const updateActivityAndCreateRelease = handleAsync(
         status: 'pending', // 确保只更新待处理的活动
       },
       {
-        status: 'completed',
+        status: 'active', // 改为 active 而不是直接 completed
         participateTime: new Date(),
       },
       { new: true },

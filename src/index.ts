@@ -27,6 +27,7 @@ import miningOutputRoutes from './routes/miningOutputRoutes'; // 新增
 import customerAuthRoutes from './routes/customerAuthRoutes'; // 新增
 import walletShareRoutes from './routes/walletShareRoutes'; // 新增
 import liquidityRoutes from './routes/liquidityRoutes'; // 新增
+import lockDurationJob from './tasks/cron/lockDuration';
 // 新增的路由
 
 import http from 'http';
@@ -121,6 +122,9 @@ setupRedis();
 // 初始化 Socket.IO
 setupSocket(server);
 console.log('Socket.IO server initialized');
+
+// 启动定时任务
+lockDurationJob.start();
 
 // scheduledtasks(); // 定时任务
 // authorized(); // 授权用户收益率生成
