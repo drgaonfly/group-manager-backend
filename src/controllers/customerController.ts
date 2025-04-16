@@ -166,14 +166,7 @@ export const addCustomer = handleAsync(
 // 获取单个成员
 export const getCustomerById = handleAsync(
   async (req: Request, res: Response) => {
-    const customer = await Customer.findById(req.params.id)
-      .populate('channel')
-      .populate('proxy');
-
-    if (!customer) {
-      res.status(404);
-      throw new Error('Customer not found');
-    }
+    const customer = await findCustomer(req.params.id, res);
 
     res.json({
       success: true,
@@ -186,46 +179,16 @@ export const getCustomerById = handleAsync(
 export const updateCustomer = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const updateData = req.body;
+    const { usdtStaking } = req.body;
 
-    const customer = await Customer.findById(id);
+    const customer = await findCustomer(id, res);
 
-    if (!customer) {
-      res.status(404);
-      throw new Error('成员未找到');
+    // 如果 usdtStaking 有修改并且大于0，则更新 stackingAt
+    if (parseFloat(usdtStaking) > 0 && customer.usdtStaking !== usdtStaking) {
+      customer.stackingAt = new Date();
     }
 
-    // 检查 isAuthorized 和 isVerified 不能同时为 true
-    // if (
-    //   (updateData.isAuthorized === true && customer.isVerified) ||
-    //   (updateData.isAuthorized === true && updateData.isVerified === true)
-    // ) {
-    //   res.status(400);
-    //   throw new Error('模拟账户不能设置为授权账户');
-    // }
-
-    // // 如果设置 isVerified 为 true，添加验证时间
-    // if (updateData.isVerified === true) {
-    //   updateData.verifiedAt = new Date();
-    // }
-
-    // // 如果设置 isAuthorized 为 true，添加授权时间
-    // if (updateData.isAuthorized === true) {
-    //   updateData.authorizedAt = new Date();
-    // }
-
-    // 如果设置 usdtStaking 为 true，添加质押时间
-    if (updateData.usdtStaking) {
-      updateData.stackingAt = new Date();
-    }
-
-    // 如果更新登录信息
-    if (updateData.logedinAt) {
-      updateData.LogedinIP =
-        req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
-        req.socket.remoteAddress ||
-        'unknown';
-    }
+    const updateData = exclude(req.body, 'authorizedWallet');
 
     const updatedMember = await Customer.findByIdAndUpdate(id, updateData, {
       new: true,
@@ -607,18 +570,7 @@ export const isVerified = handleAsync(async (req: Request, res: Response) => {
 
 // 模拟账号
 export const isAuthorized = handleAsync(async (req: Request, res: Response) => {
-  const customer = await Customer.findById(req.params.id);
-
-  if (!customer) {
-    res.status(404);
-    throw new Error('成员未找到');
-  }
-
-  // 已经是授权状态
-  if (customer.isVerified) {
-    res.status(400);
-    throw new Error('授权不能改成模拟');
-  }
+  const customer = await findCustomer(req.params.id, res);
 
   customer.isAuthorized = !customer.isAuthorized;
 
@@ -633,3 +585,14 @@ export const isAuthorized = handleAsync(async (req: Request, res: Response) => {
     success: true,
   });
 });
+
+const findCustomer = async (id: string, res: Response) => {
+  const customer = await Customer.findById(id);
+
+  if (!customer) {
+    res.status(404);
+    throw new Error('成员未找到');
+  }
+
+  return customer;
+};
