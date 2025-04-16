@@ -176,7 +176,6 @@ const updateWithdraw = handleAsync(async (req: Request, res: Response) => {
 // 后台审核是否提现接口函数
 const checkWithdraw = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { isFrozen, status } = req.body;
 
   const withdraw = await Withdraw.findById(id).populate('customer');
 
@@ -187,31 +186,34 @@ const checkWithdraw = handleAsync(async (req: Request, res: Response) => {
     throw new Error('Withdraw not found');
   }
 
-  if (withdraw.status === 'rejected' && isFrozen !== withdraw.isFrozen) {
+  if (withdraw.status === 'rejected') {
     res.status(400);
     throw new Error('已拒接提现记录，不可更改');
   }
 
   // 如果原记录已经是冻结状态，不允许改为非冻结
-  if (withdraw.isFrozen && !isFrozen) {
+  if (withdraw.isFrozen) {
     res.status(400);
     throw new Error('已提现记录，不可更改');
   }
 
   // 处理状态变更为拒绝的情况
-  if (status === 'rejected' && withdraw.status !== 'rejected') {
-    customer.usdtPlatform += withdraw.amount;
-    // 获取用户并返回冻结金额
-    customer.frozenAmount -= withdraw.amount;
-    await customer.save();
-  }
+  // if (withdraw.status !== 'rejected') {
+  //   customer.usdtPlatform += withdraw.amount;
+  //   // 获取用户并返回冻结金额
+  //   customer.frozenAmount -= withdraw.amount;
+  //   await customer.save();
+  // }
 
-  if (isFrozen) {
-    // 仅需将状态更新为已完成
-    customer.frozenAmount -= withdraw.amount;
-    await customer.save();
-    req.body.status = 'completed';
-  }
+  withdraw.isFrozen = !withdraw.isFrozen;
+  await withdraw.save(); // 添加这行来保存 withdraw 的更改
+
+  console.log(withdraw.isFrozen);
+
+  // 仅需将状态更新为已完成
+  customer.frozenAmount -= withdraw.amount;
+  await customer.save();
+  req.body.status = 'completed';
 
   const updatedWithdraw = await Withdraw.findByIdAndUpdate(
     id,

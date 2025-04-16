@@ -31,7 +31,7 @@ const withdrawSchema = new mongoose.Schema(
     isFrozen: {
       type: Boolean,
       default: false,
-    }, //冻结状态
+    }, //默认冻结状态
 
     // 来代替上面的冻结
     frozen: {
