@@ -567,6 +567,11 @@ export const isVerified = handleAsync(async (req: Request, res: Response) => {
 export const isAuthorized = handleAsync(async (req: Request, res: Response) => {
   const customer = await findCustomer(req.params.id, res);
 
+  //检测是是否开启授权阻止开启模拟账户
+  if (customer.isVerified && !customer.isAuthorized) {
+    throw new Error('授权状态不可启动模拟账户');
+  }
+
   customer.isAuthorized = !customer.isAuthorized;
 
   // 是模拟账号

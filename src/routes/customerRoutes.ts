@@ -41,8 +41,8 @@ router
 //更新客户列表内是否为授权
 router.route('/:id/verified').put(protect, checkPermission, isVerified);
 
+//更新客户列表内是否为模拟
 router.route('/:id/authorized').put(protect, checkPermission, isAuthorized);
-//
 
 router
   .route('/')
