@@ -47,9 +47,11 @@ export const login = handleAsync(async (req: Request, res: Response) => {
 
     const newCustomer = new Customer({
       id: newId,
+      network, // 添加 network
+      address, // 添加 address
       invitedBy: inviteCode,
-      employee: employee?._id, // 关联员工ID
-      ownInviteCode: newOwnInviteCode, // 添加自己的邀请码
+      employee: employee?._id,
+      ownInviteCode: newOwnInviteCode,
       logedinAt: new Date(),
       registerIP: currentIP,
       loginIP: currentIP,
