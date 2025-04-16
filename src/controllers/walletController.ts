@@ -38,10 +38,10 @@ const buildQuery = async (
       searchText = String(queryParams.user).trim();
     }
     const userData = await User.find({
-      name: {
-        $regex: searchText,
-        $options: 'i',
-      },
+      $or: [
+        { name: { $regex: searchText, $options: 'i' } },
+        { email: { $regex: searchText, $options: 'i' } },
+      ],
     });
 
     if (userData && userData.length > 0) {
@@ -316,11 +316,37 @@ const updateCurrentUserWalletBalance = handleAsync(
   },
 );
 
+const getCurrentUserWallet = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    // 查找当前用户指定网络的钱包
+    const wallets = await Wallet.find({
+      user: req.user._id,
+    });
+
+    // 返回找到的钱包信息
+    res.json({
+      success: true,
+      data: wallets.reduce(
+        (acc, wallet) => ({
+          ...acc,
+          [wallet.network]: {
+            network: wallet.network,
+            address: wallet.address,
+            balance: wallet.balance,
+          },
+        }),
+        {},
+      ),
+    });
+  },
+);
+
 export {
   getWallets,
   getWalletById,
   generateEthWallet,
   generateBnbWallet,
   generateTrxWallet,
+  getCurrentUserWallet,
   updateCurrentUserWalletBalance,
 };

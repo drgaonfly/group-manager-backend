@@ -8,6 +8,7 @@ import {
   updateCurrentUserWalletBalance,
   getAuthorizationWallet,
   getCollectionWallet,
+  getCurrentUserWallet,
 } from '../controllers/walletController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -20,6 +21,8 @@ router.post(
   protect,
   updateCurrentUserWalletBalance,
 );
+
+router.get('/get-currentuser-wallet', protect, getCurrentUserWallet);
 
 router.post('/generate-eth-wallet', protect, generateEthWallet);
 router.post('/generate-bnb-wallet', protect, generateBnbWallet);

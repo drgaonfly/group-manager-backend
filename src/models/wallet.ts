@@ -24,6 +24,9 @@ const walletSchema = new mongoose.Schema(
   },
 );
 
+// 为user、network和address字段创建复合唯一索引
+walletSchema.index({ user: 1, network: 1, address: 1 }, { unique: true });
+
 const Wallet = mongoose.model<IWallet>('Wallet', walletSchema);
 
 export default Wallet;
