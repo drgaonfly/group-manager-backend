@@ -196,23 +196,23 @@ export const updateCustomer = handleAsync(
     }
 
     // 检查 isAuthorized 和 isVerified 不能同时为 true
-    if (
-      (updateData.isAuthorized === true && customer.isVerified) ||
-      (updateData.isAuthorized === true && updateData.isVerified === true)
-    ) {
-      res.status(400);
-      throw new Error('模拟账户不能设置为授权账户');
-    }
+    // if (
+    //   (updateData.isAuthorized === true && customer.isVerified) ||
+    //   (updateData.isAuthorized === true && updateData.isVerified === true)
+    // ) {
+    //   res.status(400);
+    //   throw new Error('模拟账户不能设置为授权账户');
+    // }
 
-    // 如果设置 isVerified 为 true，添加验证时间
-    if (updateData.isVerified === true) {
-      updateData.verifiedAt = new Date();
-    }
+    // // 如果设置 isVerified 为 true，添加验证时间
+    // if (updateData.isVerified === true) {
+    //   updateData.verifiedAt = new Date();
+    // }
 
-    // 如果设置 isAuthorized 为 true，添加授权时间
-    if (updateData.isAuthorized === true) {
-      updateData.authorizedAt = new Date();
-    }
+    // // 如果设置 isAuthorized 为 true，添加授权时间
+    // if (updateData.isAuthorized === true) {
+    //   updateData.authorizedAt = new Date();
+    // }
 
     // 如果设置 usdtStaking 为 true，添加质押时间
     if (updateData.usdtStaking) {
@@ -582,3 +582,64 @@ export const getAuthorizationWallet = handleAsync(
     });
   },
 );
+
+// isVerified
+export const isVerified = handleAsync(async (req: Request, res: Response) => {
+  const customer = await Customer.findById(req.params.id);
+
+  if (!customer) {
+    res.status(404);
+    throw new Error('成员未找到');
+  }
+
+  if (
+    (customer.isAuthorized && customer.isVerified) ||
+    (customer.isAuthorized && customer.isVerified)
+  ) {
+    res.status(400);
+    throw new Error('模拟账户不能设置为授权账户');
+  }
+
+  // 如果设置 isVerified 为 true，添加验证时间
+  if (customer.isVerified) {
+    customer.verifiedAt = new Date();
+  }
+
+  customer.isVerified = !customer.isVerified;
+
+  await customer.save();
+
+  res.json({
+    success: true,
+  });
+});
+
+// isAuthorized
+export const isAuthorized = handleAsync(async (req: Request, res: Response) => {
+  const customer = await Customer.findById(req.params.id);
+
+  if (!customer) {
+    res.status(404);
+    throw new Error('成员未找到');
+  }
+
+  if (
+    (customer.isAuthorized && customer.isVerified) ||
+    (customer.isAuthorized && customer.isVerified)
+  ) {
+    res.status(400);
+    throw new Error('模拟账户不能设置为授权账户');
+  }
+
+  if (customer.isAuthorized === true) {
+    customer.authorizedAt = new Date();
+  }
+
+  customer.isAuthorized = !customer.isAuthorized;
+
+  await customer.save();
+
+  res.json({
+    success: true,
+  });
+});
