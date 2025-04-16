@@ -38,10 +38,10 @@ const buildQuery = async (
       searchText = String(queryParams.user).trim();
     }
     const userData = await User.find({
-      name: {
-        $regex: searchText,
-        $options: 'i',
-      },
+      $or: [
+        { name: { $regex: searchText, $options: 'i' } },
+        { email: { $regex: searchText, $options: 'i' } },
+      ],
     });
 
     if (userData && userData.length > 0) {
