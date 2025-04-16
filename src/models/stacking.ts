@@ -32,6 +32,12 @@ const stackingSchema = new mongoose.Schema(
       ref: 'Customer',
       required: true,
     },
+    //直接关联代理
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    }, // 代理
   },
   {
     timestamps: true,

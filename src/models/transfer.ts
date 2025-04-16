@@ -36,6 +36,17 @@ const transferSchema = new mongoose.Schema(
       required: false,
     }, // 员工
     status: { type: String, required: false }, // 转账状态，必填
+    //直接存代理id, 存员工id,
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    }, // 代理
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: false,
+    }, // 代理
   },
   { timestamps: true }, // 自动添加创建和更新的时间戳
 );

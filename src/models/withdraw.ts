@@ -51,6 +51,12 @@ const withdrawSchema = new mongoose.Schema(
       ref: 'User',
       required: false,
     }, // 员工
+    //直接存代理id, 存员工id,
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    }, // 代理
   },
   { timestamps: true },
 );
