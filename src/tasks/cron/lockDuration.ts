@@ -57,12 +57,15 @@ async function checkLockDurationAndCreateRelease(): Promise<void> {
   }
 }
 
+// 根据环境变量决定是否启动定时任务
+const enableCron = process.env.LOCK_DURATION_CRON === 'true';
+
 // 创建定时任务，每小时执行一次
 const lockDurationJob = new CronJob(
   '0 * * * *', // 每小时执行一次
   checkLockDurationAndCreateRelease,
   null,
-  false,
+  enableCron, // 使用环境变量控制是否自动启动
   'Asia/Shanghai',
 );
 
