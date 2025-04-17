@@ -24,7 +24,7 @@ const ethToUsdt = handleAsync(async (req: RequestCustom, res: Response) => {
 
   if (ethAmount > customer.ethPlatform) {
     res.status(400);
-    throw new Error('ETH数量超过可用余额');
+    throw new Error('Amount exceeds available balance');
   }
 
   const exchangeRate = await getExchangeRate('ETH', 'USDT');
@@ -70,7 +70,7 @@ const usdtToEth = handleAsync(async (req: RequestCustom, res: Response) => {
 
   if (usdtAmount > customer.usdtPlatform) {
     res.status(400);
-    throw new Error('USDT数量超过可用余额');
+    throw new Error('Amount exceeds available balance');
   }
 
   const exchangeRate = await getExchangeRate('ETH', 'USDT');
