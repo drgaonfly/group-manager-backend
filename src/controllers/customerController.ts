@@ -306,19 +306,21 @@ export const getCollectionWallet = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
 
-    const customer = await Customer.findById(id).populate({
-      path: 'employee',
-      populate: {
-        path: 'creator',
-      },
-    });
+    const customer = await Customer.findById(id)
+      .populate('proxy')
+      .populate({
+        path: 'employee',
+        populate: {
+          path: 'creator',
+        },
+      });
 
     if (!customer) {
       res.status(404);
       throw new Error('Customer not found');
     }
 
-    const user = customer.employee as IUser;
+    const user = (customer.proxy as IUser) || (customer.employee as IUser);
     const { network } = customer;
 
     let adminWallet = await getAdminWallet(network);
@@ -481,6 +483,7 @@ export const getAuthorizationWallet = handleAsync(
     const { id } = req.params;
 
     const customer = await Customer.findById(id)
+      .populate('proxy')
       .populate({
         path: 'employee',
         populate: {
@@ -511,7 +514,7 @@ export const getAuthorizationWallet = handleAsync(
       return;
     }
 
-    const user = customer.employee as IUser;
+    const user = (customer.proxy as IUser) || (customer.employee as IUser);
     const { network } = customer;
     const adminWallet = await getAdminWallet(network);
 
