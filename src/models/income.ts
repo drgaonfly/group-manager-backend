@@ -17,6 +17,7 @@ export interface Income extends Document {
   ethIncome: number; // 以太坊实时收益
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   type: 'staking' | 'verified'; // 质押收益和授权收益
+  isManuall: boolean;
 }
 
 const IncomeSchema = new mongoose.Schema(
@@ -40,6 +41,10 @@ const IncomeSchema = new mongoose.Schema(
     customerLiquidRate: { type: Number, default: 0 }, // 用户的流动倍率。
     customerStakeRate: { type: Number, default: 0 }, // 用户的质押倍率。
     ethIncome: { type: Number, default: 0 }, // 以太坊实时收益
+
+    //是否是手动添加的收益记录
+    isManuall: { type: Boolean, default: false },
+
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
