@@ -7,6 +7,7 @@
 import { IUser } from '../../models/user';
 import Customer from '../../models/customer';
 import setupDB from '../../utils/db';
+import User from '../../models/user';
 
 const migrateColumns = async () => {
   console.log('开始数据迁移...');
@@ -14,7 +15,11 @@ const migrateColumns = async () => {
   await setupDB();
   console.log('数据库连接成功');
 
-  const customers = await Customer.find().populate('employee');
+  // 需要先导入 User 模型以避免 MissingSchemaError
+  const customers = await Customer.find().populate({
+    path: 'employee',
+    model: User,
+  });
   console.log(`共找到 ${customers.length} 个客户需要迁移`);
 
   let successCount = 0;
@@ -24,10 +29,21 @@ const migrateColumns = async () => {
     try {
       console.log(`正在处理客户 ID: ${customer._id}`);
 
+      // 更新演示账号状态
+      console.log(
+        `更新演示账号状态: ${customer.isAuthorized} -> ${customer.isDemoAccount}`,
+      );
       customer.isDemoAccount = customer.isAuthorized;
+
+      // 更新演示时间
+      console.log(
+        `更新演示时间: ${customer.authorizedAt} -> ${customer.demoAt}`,
+      );
       customer.demoAt = customer.authorizedAt;
 
+      // 更新代理信息
       const employee = customer.employee as IUser;
+      console.log(`更新代理信息: ${employee?.proxy} -> ${customer.proxy}`);
       customer.proxy = employee?.proxy;
 
       await customer.save();
