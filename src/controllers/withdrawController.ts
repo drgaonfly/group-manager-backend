@@ -57,11 +57,6 @@ const buildQuery = async (
     query.status = queryParams.status;
   }
 
-  // isFrozen
-  // if (queryParams.isFrozen) {
-  //   query.isFrozen = queryParams.isFrozen === 'true';
-  // }
-
   await queryByProxy(query, req);
 
   return query;

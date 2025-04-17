@@ -27,8 +27,8 @@ const withdrawSchema = new mongoose.Schema(
       ref: 'Customer',
       required: true,
     },
-    amount: { type: Number, require: true }, //提现金额
-    fee: { type: Number, required: true }, // 手续费
+    amount: { type: Number, require: true, default: 0 }, //提现金额
+    fee: { type: Number, required: true, default: 0 }, // 手续费
     isFrozen: {
       type: Boolean,
       default: false,
@@ -40,7 +40,7 @@ const withdrawSchema = new mongoose.Schema(
     //   default: true,
     // },
 
-    finalAmount: { type: Number }, //扣去手续费金额
+    finalAmount: { type: Number, require: true, default: 0 }, //扣去手续费金额
     status: {
       type: String,
       required: true,
