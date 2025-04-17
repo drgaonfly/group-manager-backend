@@ -109,8 +109,13 @@ const getIncomes = handleAsync(async (req: RequestCustom, res: Response) => {
 
 // 添加收入记录
 const addIncome = handleAsync(async (req: Request, res: Response) => {
+  // 确保从请求体中获取 isManual 字段
+  const { isManual, ...otherData } = req.body;
+
+  // 创建新的收入记录，显式设置 isManual 字段
   const newIncome = new Income({
-    ...req.body,
+    ...otherData,
+    isManual: isManual === true, // 确保 isManual 是布尔值
   });
 
   const savedIncome = await newIncome.save();
