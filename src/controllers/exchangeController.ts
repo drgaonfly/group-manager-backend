@@ -86,7 +86,7 @@ const usdtToEth = handleAsync(async (req: RequestCustom, res: Response) => {
 
   await Record.create({
     id: recordId,
-    employee: customer.employee ? (customer.employee as IUser)._id : undefined,
+    employee: (customer.employee as IUser)?._id,
     customer: customer._id,
     type: 'usdt to eth',
     amount: usdtAmount,

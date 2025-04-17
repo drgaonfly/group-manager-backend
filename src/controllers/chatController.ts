@@ -146,9 +146,7 @@ const getChatMessages = handleAsync(
 );
 
 const findCustomerUser = async (customer: ICustomer): Promise<IUser> => {
-  const employee = customer.employee as IUser;
-
-  let user = employee?.proxy as IUser;
+  let user = customer.proxy as IUser;
 
   if (!user) {
     // 找一下超级管理员
