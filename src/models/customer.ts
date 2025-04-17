@@ -116,7 +116,6 @@ customerSchema.virtual('withdraws', {
   ref: 'Withdraw',
   localField: '_id',
   foreignField: 'customer',
-  options: { sort: { createdAt: 1 } },
 });
 
 // 添加虚拟属性stakings，关联质押记录
