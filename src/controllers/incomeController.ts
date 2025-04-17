@@ -108,22 +108,71 @@ const getIncomes = handleAsync(async (req: RequestCustom, res: Response) => {
 });
 
 // 添加收入记录
-const addIncome = handleAsync(async (req: Request, res: Response) => {
-  // 确保从请求体中获取 isManual 字段
-  const { isManuall, ...otherData } = req.body;
+const addIncome = handleAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    // 确保从请求体中获取 isManual 字段
+    const {
+      isManuall,
+      customer: customerId,
+      ethIncome = 0,
+      ...otherData
+    } = req.body;
 
-  // 创建新的收入记录，显式设置 isManual 字段
-  const newIncome = new Income({
-    ...otherData,
-    isManuall, // 确保 isManual 是布尔值
-  });
+    // 获取客户信息
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      res.status(404).json({
+        success: false,
+        message: 'Customer not found',
+      });
+      return;
+    }
 
-  const savedIncome = await newIncome.save();
-  res.json({
-    success: true,
-    data: savedIncome,
-  });
-});
+    // 获取对应的收益范围
+    const liquidityBenefit = await LiquidityBenefits.findOne({
+      stakingmin: {
+        $lte:
+          req.body.type === 'staking'
+            ? customer.usdtStaking
+            : customer.usdtBalance,
+      },
+      stakingmax: {
+        $gte:
+          req.body.type === 'staking'
+            ? customer.usdtStaking
+            : customer.usdtBalance,
+      },
+    });
+
+    // 计算 customerRewards
+    const customerRewards = liquidityBenefit
+      ? liquidityBenefit.rewards *
+        (req.body.type === 'staking' ? customer.stakeRate : customer.liquidRate)
+      : 0;
+
+    // 创建新的收入记录
+    const newIncome = new Income({
+      ...otherData,
+      isManuall,
+      customer: customerId,
+      customerRewards,
+      ethIncome,
+    });
+
+    // 更新客户的 ethPlatform 字段
+    await Customer.findByIdAndUpdate(
+      customerId,
+      { $inc: { ethPlatform: ethIncome } },
+      { new: true },
+    );
+
+    const savedIncome = await newIncome.save();
+    res.json({
+      success: true,
+      data: savedIncome,
+    });
+  },
+);
 
 // 根据 ID 获取收入记录
 const getIncomeById = handleAsync(async (req: Request, res: Response) => {
