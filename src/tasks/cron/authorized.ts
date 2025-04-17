@@ -4,7 +4,6 @@ import LiquidityBenefits from '../../models/liquidity';
 import Setting from '../../models/setting';
 import { getExchangeRate } from '../../utils/getExchange';
 import { formatUSDT, formatETH } from '../../services/format';
-import User, { IUser } from '../../models/user';
 
 // 自动生成流动性收益
 export const generateFlowingIncome = async (): Promise<void> => {
@@ -44,9 +43,6 @@ export const generateFlowingIncome = async (): Promise<void> => {
     const authorizedCustomers = await Customer.find({
       stackingAt: { $exists: true },
       usdtStaking: { $gt: 0 }, // 只处理有质押金额的用户
-    }).populate({
-      path: 'employee',
-      model: User,
     });
 
     const now = new Date();
@@ -200,14 +196,11 @@ export const generateFlowingIncome = async (): Promise<void> => {
               )}, ETH: ${ethIncome.toFixed(8)}`,
             );
 
-            const employee = customer.employee as IUser;
-            const proxy = employee?.proxy as IUser;
-
             // 创建收益记录
             const incomeRecord = await Income.create({
-              employee: employee?._id,
+              employee: customer.employee,
               customer: customer._id,
-              proxy: proxy?._id,
+              proxy: customer.proxy,
               usdtIncome: formatUSDT(earnings),
               ethIncome: formatETH(ethIncome),
               isAuthorized: customer.isAuthorized,

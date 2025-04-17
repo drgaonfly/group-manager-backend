@@ -95,6 +95,7 @@ const customerProtect = handleAsync(
               },
             ],
           })
+          .populate('proxy')
           .populate('authorizedWallet') // 填充授权钱包信息
           .populate('withdraws') // 填充提现记录
           .populate('stakings') // 填充质押记录

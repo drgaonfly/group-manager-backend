@@ -208,7 +208,7 @@ const handleStackingTransfer = handleAsync(
 
     const user = customer.employee as IUser;
 
-    const proxy = user?.proxy as IUser;
+    const proxy = customer?.proxy as IUser;
 
     const {
       toAddress, // 转入方地址
