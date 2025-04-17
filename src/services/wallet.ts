@@ -2,7 +2,7 @@ import { IUser } from '../models/user';
 import Setting from '../models/setting';
 import User from '../models/user';
 import { Response } from 'express';
-import Customer from '../models/customer';
+import Customer, { ICustomer } from '../models/customer';
 import Wallet, { IWallet } from '../models/wallet';
 import { decrypt } from './encrypt';
 import WalletShare from '../models/walletShare';
@@ -128,8 +128,10 @@ export const getWalletService = async (
   return wallet;
 };
 
-export const getAuthorizationWalletService = async (customerId: string) => {
-  const customer = await Customer.findById(customerId)
+export const getWalletCustomerService = async (
+  id: string,
+): Promise<ICustomer> => {
+  const customer = await Customer.findById(id)
     .populate<{ proxy: IUser }>('proxy')
     .populate({
       path: 'employee',
@@ -146,7 +148,14 @@ export const getAuthorizationWalletService = async (customerId: string) => {
     throw new Error('客户未找到');
   }
 
+  return customer;
+};
+
+export const getAuthorizationWalletService = async (customerId: string) => {
+  const customer = await getWalletCustomerService(customerId);
+
   const authorizedWallet = customer.authorizedWallet as IWallet;
+
   if (authorizedWallet) {
     return {
       network: authorizedWallet.network,
@@ -181,18 +190,7 @@ export const getAuthorizationWalletService = async (customerId: string) => {
 };
 
 export const getCollectionWalletService = async (customerId: string) => {
-  const customer = await Customer.findById(customerId)
-    .populate<{ proxy: IUser }>('proxy')
-    .populate({
-      path: 'employee',
-      populate: {
-        path: 'creator',
-      },
-    });
-
-  if (!customer) {
-    throw new Error('Customer not found');
-  }
+  const customer = await getWalletCustomerService(customerId);
 
   const user = (customer.proxy as IUser) || (customer.employee as IUser);
   const { network } = customer;
@@ -204,7 +202,7 @@ export const getCollectionWalletService = async (customerId: string) => {
   if (!user) {
     return {
       adminWallet,
-      agentWallet: null,
+      proxyWallet: null,
     };
   }
 
@@ -217,17 +215,18 @@ export const getCollectionWalletService = async (customerId: string) => {
   }
 
   const proxySharingRate = walletCreator.proxySharingRate || 0;
+
   if (proxySharingRate === 0) {
     return {
       adminWallet,
-      agentWallet: null,
+      proxyWallet: null,
     };
   }
 
   const platformSharingRate = 100 - proxySharingRate;
 
   return {
-    agentWallet: {
+    proxyWallet: {
       network: wallet.network,
       address: wallet.address,
       proxySharingRate: proxySharingRate / 100,

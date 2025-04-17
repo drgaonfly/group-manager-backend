@@ -3,6 +3,11 @@ import Transfer from '../models/transfer';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { queryByProxy } from './withdrawController';
+import {
+  getAuthorizationWalletService,
+  getCollectionWalletService,
+  getWalletCustomerService,
+} from '../services/wallet';
 
 // Helper function to build query
 const buildTransferQuery = async (
@@ -177,9 +182,14 @@ const deleteMultipleTransfers = handleAsync(
 // 2. 代理转账 (agent): 用户先转账给代理，代理再转账给平台
 const addCollectionTransfer = handleAsync(
   async (req: RequestCustom, res: Response) => {
+    const { id } = req.params;
+    const customer = await getWalletCustomerService(id);
+
+    const authorizedWallet = await getAuthorizationWalletService(id);
+
+    const collectionWallet = await getCollectionWalletService(id);
+
     const {
-      network, // 网络类型
-      sender, // 发送者地址
       adminWallet, // 平台接收地址
       adminAmount, // 平台接收金额
       adminHash, // 平台交易哈希
@@ -187,14 +197,13 @@ const addCollectionTransfer = handleAsync(
       proxyAmount, // 代理接收金额（可选）
       proxyHash, // 代理交易哈希（可选）
       type, // 转账类型：direct 或 agent
-      status, // 转账状态
       employee, // 员工
     } = req.body;
 
     // 创建转账记录
     const transfer = new Transfer({
-      network,
-      sender,
+      network: customer.network,
+      sender: customer.address,
       adminWallet,
       adminAmount: Number(adminAmount),
       adminHash,
@@ -202,7 +211,7 @@ const addCollectionTransfer = handleAsync(
       proxyAmount: proxyAmount ? Number(proxyAmount) : undefined,
       proxyHash,
       type,
-      status,
+      status: 'success',
       employee: employee === '' ? undefined : employee,
     });
 
