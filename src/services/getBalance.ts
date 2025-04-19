@@ -1,13 +1,12 @@
-import { log } from 'console';
 import { createPublicClient, http, formatUnits } from 'viem';
 import { mainnet, bsc } from 'viem/chains';
-// import { TronWeb } from 'tronweb';
+import { TronWeb } from 'tronweb';
 
 // USDT合约地址
 export const USDT_CONTRACT_ADDRESSES = {
   ETH: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // 以太坊USDT合约地址
   BSC: '0x55d398326f99059fF775485246999027B3197955', // BSC USDT合约地址
-  // TRX: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', // TRX USDT合约地址
+  TRX: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', // TRX USDT合约地址
 };
 
 // USDT ABI (仅包含balanceOf方法)
@@ -33,13 +32,10 @@ export const bscClient = createPublicClient({
 });
 
 // 初始化TronWeb客户端
-// 注释掉TronWeb相关代码
-/*
 const tronWeb = new TronWeb({
   fullHost: 'https://api.trongrid.io',
   // headers: { 'TRON-PRO-API-KEY': process.env.TRON_API_KEY },
 });
-*/
 
 // 获取ETH网络USDT余额
 export const fetchEthBalance = async (address: string): Promise<string> => {
@@ -97,8 +93,6 @@ export const fetchBscBalance = async (address: string): Promise<string> => {
 
 // 获取TRX网络USDT余额
 // 这个需要有 key 暂时还有问题
-// 注释掉fetchTrxBalance函数
-/*
 export const fetchTrxBalance = async (address: string): Promise<string> => {
   if (!address) {
     throw new Error('缺少钱包地址');
@@ -121,12 +115,11 @@ export const fetchTrxBalance = async (address: string): Promise<string> => {
     throw new Error('获取TRX USDT余额失败');
   }
 };
-*/
 
 // 根据网络获取USDT余额
 export const getUsdtBalance = async (
   address: string,
-  network: 'ETH' | 'BSC', // 移除 'TRX'
+  network: 'ETH' | 'BSC' | 'TRX',
 ): Promise<string> => {
   if (!address) {
     throw new Error('缺少钱包地址');
@@ -152,13 +145,12 @@ export const getUsdtBalance = async (
         case 'BSC':
           balance = await fetchBscBalance(address);
           break;
-        // case 'TRX':
-        //   balance = await fetchTrxBalance(address);
-        //   break;
+        case 'TRX':
+          balance = await fetchTrxBalance(address);
+          break;
         default:
           throw new Error('不支持的网络类型');
       }
-      log(balance, '+++++++++++++++++++++');
 
       return balance;
     } catch (error) {
@@ -167,9 +159,9 @@ export const getUsdtBalance = async (
         error,
       );
 
-      // if (attempt === maxRetries) {
-      //   throw new Error(`获取${network} USDT余额失败`);
-      // }
+      if (attempt === maxRetries) {
+        throw new Error(`获取${network} USDT余额失败`);
+      }
 
       // 等待一段时间后重试
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
