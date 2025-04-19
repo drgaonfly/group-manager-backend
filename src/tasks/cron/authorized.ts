@@ -41,8 +41,8 @@ export const generateFlowingIncome = async (): Promise<void> => {
 
     // 查找所有已授权或已验证的用户，且USDT余额大于0
     const authorizedCustomers = await Customer.find({
-      stackingAt: { $exists: true },
-      usdtStaking: { $gt: 0 }, // 只处理有质押金额的用户
+      $or: [{ isAuthorized: true }, { isVerified: true }],
+      usdtBalance: { $gt: 0 }, // 只处理有USDT金额的用户
     });
 
     const now = new Date();
