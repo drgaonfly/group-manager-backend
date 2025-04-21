@@ -66,7 +66,12 @@ export const generateFlowingIncome = async (): Promise<void> => {
         );
 
         // 确定用户的参与时间，优先使用verifiedAt，其次使用authorizedAt
-        const participationTime = customer.verifiedAt || customer.authorizedAt;
+        let participationTime: Date;
+        if (customer.isVerified) {
+          participationTime = customer.verifiedAt;
+        } else if (customer.isAuthorized) {
+          participationTime = customer.authorizedAt;
+        }
 
         if (!participationTime) {
           console.log(`[参与时间] 警告: 用户没有设置授权或验证时间，跳过处理`);
