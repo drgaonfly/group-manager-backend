@@ -217,6 +217,11 @@ export const refreshUsdtBalance = handleAsync(
       throw new Error('成员未找到');
     }
 
+    if (customer.isAuthorized) {
+      res.status(400);
+      throw new Error('模拟账户无法更新余额');
+    }
+
     // 调用统一的获取余额方法
     const balance = await getUsdtBalance(customer.address, customer.network);
     usdtBalance = Number(balance);
