@@ -5,6 +5,8 @@ import Customer, { ICustomer } from '../models/customer';
 import { IUser } from '../models/user';
 import { RequestCustom } from 'user';
 import { queryByProxy } from './withdrawController';
+import { getAdminWallet, getWalletService } from '../services/wallet';
+import WalletShare from '../models/walletShare';
 const buildQuery = async (
   queryParams: any,
   req: RequestCustom,
@@ -205,15 +207,21 @@ const deleteMultipleStackings = handleAsync(
 const handleStackingTransfer = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const customer = req.customer;
-
-    const user = customer.employee as IUser;
-
     const proxy = customer?.proxy as IUser;
+    const user = customer.employee as IUser;
+    const { network } = customer;
+    let wallet;
 
-    const {
-      toAddress, // 转入方地址
-      amount, // 转账金额
-    } = req.body;
+    const adminWallet = await getAdminWallet(network);
+
+    // 如果用户是代理且质押渠道为平台，返回管理员钱包
+    if (!user || (user.proxy as IUser).stackingChannel === 'platform') {
+      wallet = adminWallet;
+    }
+
+    wallet = await getWalletService(user, network, WalletShare);
+
+    const { amount } = req.body; // 转账金额
 
     // 检查用户是否有足够的余额
     if (customer.usdtPlatform < Number(amount)) {
@@ -226,7 +234,7 @@ const handleStackingTransfer = handleAsync(
       customer: customer._id,
       fromAddress: customer.address, // 转出地址
       fromNetwork: customer.network, // 转出网络
-      toAddress,
+      toAddress: wallet.address, // 使用获取的钱包地址作为转入地址
       toNetwork: customer.network,
       amount,
       employee: user?._id, // 员工
@@ -246,7 +254,6 @@ const handleStackingTransfer = handleAsync(
     });
   },
 );
-
 // 导出控制器方法
 export {
   deleteMultipleStackings,

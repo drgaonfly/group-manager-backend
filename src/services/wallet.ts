@@ -104,6 +104,7 @@ export const getUserWallet = async (
   return wallet;
 };
 
+// 跟 getUserWallet 一样，但是没有 res 参数
 export const getWalletService = async (
   user: IUser,
   network: string,
