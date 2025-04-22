@@ -31,11 +31,10 @@ export interface ICustomer extends Document {
   frozenAmount: number;
   stakingFrozenAmount: number;
   authorizedWallet: mongoose.Schema.Types.ObjectId | IWallet;
-
   isDemoAccount: boolean;
   demoAt: Date;
-
   proxy: mongoose.Schema.Types.ObjectId | IUser;
+  isPausedIncome: boolean; // 是否暂停收益
 }
 
 const customerSchema = new mongoose.Schema(
@@ -75,6 +74,8 @@ const customerSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false }, // 授权状态
     verifiedAt: { type: Date }, // 授权账户参与时间
     stackingAt: { type: Date }, // 质押账户参与时间
+
+    isPausedIncome: { type: Boolean, default: false }, //是否暂停收益
 
     // 授权钱包
     authorizedWallet: {
