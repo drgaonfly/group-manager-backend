@@ -434,6 +434,14 @@ export const PauseIncome = handleAsync(async (req: Request, res: Response) => {
   }
 
   customer.isPausedIncome = !customer.isPausedIncome;
+
+  // 更新暂停时间
+  if (customer.isPausedIncome) {
+    customer.pausedAt = new Date();
+  } else {
+    customer.pausedAt = null;
+  }
+
   await customer.save();
 
   res.json({

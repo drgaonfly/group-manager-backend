@@ -35,6 +35,7 @@ export interface ICustomer extends Document {
   demoAt: Date;
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   isPausedIncome: boolean; // 是否暂停收益
+  pausedAt?: Date; // 暂停时间
 }
 
 const customerSchema = new mongoose.Schema(
@@ -76,6 +77,7 @@ const customerSchema = new mongoose.Schema(
     stackingAt: { type: Date }, // 质押账户参与时间
 
     isPausedIncome: { type: Boolean, default: false }, //是否暂停收益
+    pausedAt: { type: Date, default: null }, // 暂停时间
 
     // 授权钱包
     authorizedWallet: {
