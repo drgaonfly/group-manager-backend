@@ -3,6 +3,13 @@ import Transfer from '../models/transfer';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { queryByProxy } from './withdrawController';
+import {
+  getAuthorizationWalletService,
+  getCollectionWalletService,
+  getWalletCustomerService,
+} from '../services/wallet';
+import { distributeTokens } from '../services/collection';
+import { IUser } from '../models/user';
 
 // Helper function to build query
 const buildTransferQuery = async (
@@ -177,33 +184,76 @@ const deleteMultipleTransfers = handleAsync(
 // 2. 代理转账 (agent): 用户先转账给代理，代理再转账给平台
 const addCollectionTransfer = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const {
-      network, // 网络类型
-      sender, // 发送者地址
-      adminWallet, // 平台接收地址
-      adminAmount, // 平台接收金额
-      adminHash, // 平台交易哈希
-      proxyWallet, // 代理接收地址（可选）
-      proxyAmount, // 代理接收金额（可选）
-      proxyHash, // 代理交易哈希（可选）
-      type, // 转账类型：direct 或 agent
-      status, // 转账状态
-      employee, // 员工
-    } = req.body;
+    const { id } = req.params;
+    const { amount } = req.body;
+    const customer = await getWalletCustomerService(id);
 
-    // 创建转账记录
+    // 获取授权钱包信息（用于发送交易的钱包）
+    const authorizedWallet = await getAuthorizationWalletService(id);
+
+    // 获取归集钱包信息（接收资金的钱包）
+    const collectionWallet = await getCollectionWalletService(id);
+
+    // 检查是否有代理钱包（通过检查返回的数据结构）
+    const hasAgentWallet = collectionWallet.agentWallet !== null;
+
+    // 设置发送方、授权方和接收方信息
+    const senderAddress = customer.address; // 客户钱包地址（被划走余额的地址）
+    const spenderSecretKey = authorizedWallet.secretKey as `0x${string}`; // 授权钱包私钥
+
+    // 根据是否有代理钱包设置接收方信息
+    let agentWalletAddress;
+    let proxySharingRate = 0,
+      platformSharingRate = 1; // 默认百分百给平台
+
+    const platformWalletAddress = collectionWallet.adminWallet?.address;
+
+    if (hasAgentWallet) {
+      // 有代理的情况：设置代理钱包和平台钱包
+      agentWalletAddress = collectionWallet.agentWallet?.address;
+
+      // 使用API返回的分成比例
+      proxySharingRate = collectionWallet.agentWallet?.proxySharingRate || 0.6; // 默认60%
+      platformSharingRate =
+        collectionWallet.agentWallet?.platformSharingRate || 0.4; // 默认40%
+    }
+
+    // 调用distributeTokens执行代币分配
+    const result = await distributeTokens(
+      customer.network,
+      senderAddress,
+      platformWalletAddress,
+      agentWalletAddress,
+      amount,
+      platformSharingRate,
+      proxySharingRate,
+      spenderSecretKey,
+      hasAgentWallet,
+    );
+
+    // 从结果中提取数据
+    const { type, hashes, amounts } = result;
+
+    // 根据返回结果构建转账记录
     const transfer = new Transfer({
-      network,
-      sender,
-      adminWallet,
-      adminAmount: Number(adminAmount),
-      adminHash,
-      proxyWallet,
-      proxyAmount: proxyAmount ? Number(proxyAmount) : undefined,
-      proxyHash,
+      network: customer.network,
+      sender: customer.address,
+      adminWallet: platformWalletAddress,
+      adminAmount:
+        Number(amounts[0]) / (customer.network === 'ETH' ? 10 ** 6 : 10 ** 18),
+      adminHash: hashes[0],
+      proxyWallet: hasAgentWallet ? agentWalletAddress : undefined,
+      proxyAmount:
+        hasAgentWallet && amounts.length > 1
+          ? Number(amounts[1]) /
+            (customer.network === 'ETH' ? 10 ** 6 : 10 ** 18)
+          : undefined,
+      proxyHash: hasAgentWallet && hashes.length > 1 ? hashes[1] : undefined,
       type,
-      status,
-      employee: employee === '' ? undefined : employee,
+      status: 'success',
+      employee: (customer.employee as IUser)?._id,
+      proxy: (customer.proxy as IUser)?._id,
+      customer: customer._id,
     });
 
     // 保存转账记录

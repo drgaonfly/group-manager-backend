@@ -13,7 +13,7 @@ import { protect, checkPermission } from '../middlewares/authMiddleware';
 const router: Router = express.Router();
 
 // 添加收款转账记录的路由
-router.post('/collection', protect, checkPermission, addCollectionTransfer);
+router.post('/:id/collection', protect, checkPermission, addCollectionTransfer);
 
 router
   .route('/')
