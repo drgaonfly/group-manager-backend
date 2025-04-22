@@ -12,7 +12,6 @@ import { getUserWallet } from '../services/wallet';
 import { getUsdtBalance } from '../services/getBalance';
 import { exclude } from '../utils/handleData';
 import { formatUSDT, formatETH } from '../services/format';
-import checkMenu from '../utils/checkMenu';
 
 const buildQuery = async (
   queryParams: any,
