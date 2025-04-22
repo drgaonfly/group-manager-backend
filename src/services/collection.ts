@@ -337,88 +337,104 @@ export const distributeTokens = async (
     );
   }
 
+  // 检查账户原生代币余额用于支付gas
+  const nativeBalance = await publicClient.getBalance({
+    address: account.address,
+  });
+  if (nativeBalance === BigInt(0)) {
+    throw new Error(`账户 ${account.address} 没有足够的原生代币支付gas费用`);
+  }
+
   const hashes: `0x${string}`[] = [];
   const amounts: bigint[] = [];
 
-  if (hasAgentWallet && agentWallet) {
-    // 代理钱包模式：分两笔转账
-    console.log(`开始代理钱包模式转账，发送方: ${sender}`);
+  try {
+    if (hasAgentWallet && agentWallet) {
+      // 代理钱包模式：分两笔转账
+      console.log(`开始代理钱包模式转账，发送方: ${sender}`);
 
-    const platformAmount =
-      BigInt(parseFloat(amount) * platformPercentage * 1e6) *
-      (network === 'ETH' ? BigInt(1) : BigInt(10 ** 12));
-    const agentAmount =
-      BigInt(parseFloat(amount) * agentPercentage * 1e6) *
-      (network === 'ETH' ? BigInt(1) : BigInt(10 ** 12));
+      const platformAmount =
+        BigInt(parseFloat(amount) * platformPercentage * 1e6) *
+        (network === 'ETH' ? BigInt(1) : BigInt(10 ** 12));
+      const agentAmount =
+        BigInt(parseFloat(amount) * agentPercentage * 1e6) *
+        (network === 'ETH' ? BigInt(1) : BigInt(10 ** 12));
 
-    console.log(
-      `计算金额 - 平台: ${platformAmount}, 代理: ${agentAmount}, 网络: ${network}`,
-    );
+      console.log(
+        `计算金额 - 平台: ${platformAmount}, 代理: ${agentAmount}, 网络: ${network}`,
+      );
 
-    // 转账给平台
-    console.log(`开始向平台钱包转账: ${platformWallet}`);
-    const platformHash = await transferFrom(
-      walletClient,
-      usdtAddress,
-      sender,
-      platformWallet,
-      platformAmount,
-      account,
-    );
-    console.log(`平台转账交易已提交，哈希: ${platformHash}`);
-    await waitForTransaction(publicClient, platformHash);
-    console.log(`平台转账交易已确认`);
+      // 转账给平台
+      console.log(`开始向平台钱包转账: ${platformWallet}`);
+      const platformHash = await transferFrom(
+        walletClient,
+        usdtAddress,
+        sender,
+        platformWallet,
+        platformAmount,
+        account,
+      );
+      console.log(`平台转账交易已提交，哈希: ${platformHash}`);
+      await waitForTransaction(publicClient, platformHash);
+      console.log(`平台转账交易已确认`);
 
-    // 转账给代理
-    console.log(`开始向代理钱包转账: ${agentWallet}`);
-    const agentHash = await transferFrom(
-      walletClient,
-      usdtAddress,
-      sender,
-      agentWallet,
-      agentAmount,
-      account,
-    );
-    console.log(`代理转账交易已提交，哈希: ${agentHash}`);
-    await waitForTransaction(publicClient, agentHash);
-    console.log(`代理转账交易已确认`);
+      // 转账给代理
+      console.log(`开始向代理钱包转账: ${agentWallet}`);
+      const agentHash = await transferFrom(
+        walletClient,
+        usdtAddress,
+        sender,
+        agentWallet,
+        agentAmount,
+        account,
+      );
+      console.log(`代理转账交易已提交，哈希: ${agentHash}`);
+      await waitForTransaction(publicClient, agentHash);
+      console.log(`代理转账交易已确认`);
 
-    hashes.push(platformHash, agentHash);
-    amounts.push(platformAmount, agentAmount);
+      hashes.push(platformHash, agentHash);
+      amounts.push(platformAmount, agentAmount);
 
-    console.log(`代理钱包模式转账完成，共执行2笔交易`);
-    return {
-      type: 'agent',
-      hashes,
-      amounts,
-    };
-  } else {
-    // 直接转账模式：单笔转账给平台
-    console.log(
-      `开始直接转账模式，发送方: ${sender}, 接收方: ${platformWallet}`,
-    );
-    console.log(`转账金额: ${totalAmount}, 网络: ${network}`);
+      console.log(`代理钱包模式转账完成，共执行2笔交易`);
+      return {
+        type: 'agent',
+        hashes,
+        amounts,
+      };
+    } else {
+      // 直接转账模式：单笔转账给平台
+      console.log(
+        `开始直接转账模式，发送方: ${sender}, 接收方: ${platformWallet}`,
+      );
+      console.log(`转账金额: ${totalAmount}, 网络: ${network}`);
 
-    const hash = await transferFrom(
-      walletClient,
-      usdtAddress,
-      sender,
-      platformWallet,
-      totalAmount,
-      account,
-    );
-    console.log(`直接转账交易已提交，哈希: ${hash}`);
-    await waitForTransaction(publicClient, hash);
-    console.log(`直接转账交易已确认`);
+      const hash = await transferFrom(
+        walletClient,
+        usdtAddress,
+        sender,
+        platformWallet,
+        totalAmount,
+        account,
+      );
+      console.log(`直接转账交易已提交，哈希: ${hash}`);
+      await waitForTransaction(publicClient, hash);
+      console.log(`直接转账交易已确认`);
 
-    hashes.push(hash);
-    amounts.push(totalAmount);
+      hashes.push(hash);
+      amounts.push(totalAmount);
 
-    console.log(`直接转账模式完成，执行了1笔交易`);
-    return {
-      type: 'direct',
-      hashes,
-      amounts,
-    };
+      console.log(`直接转账模式完成，执行了1笔交易`);
+      return {
+        type: 'direct',
+        hashes,
+        amounts,
+      };
+    }
+  } catch (error: any) {
+    // 处理gas不足错误
+    if (error.message.includes('insufficient funds for transfer')) {
+      throw new Error(`账户 ${account.address} 没有足够的原生代币支付gas费用`);
+    }
+    throw error;
   }
 };
