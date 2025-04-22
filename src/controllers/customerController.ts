@@ -68,7 +68,24 @@ const buildQuery = async (
   }
 
   if (queryParams.parent) {
-    query.parent = queryParams.parent;
+    try {
+      // 尝试解析 parent 参数，因为它是 URL 编码的 JSON 字符串
+      const parentObj =
+        typeof queryParams.parent === 'string'
+          ? JSON.parse(queryParams.parent)
+          : queryParams.parent;
+
+      // 使用解析后对象中的 id
+      if (parentObj && parentObj.id) {
+        query.parent = parentObj.id;
+      } else {
+        query.parent = queryParams.parent;
+      }
+    } catch (e) {
+      // 如果解析失败，直接使用原始值
+      console.log('解析 parent 参数失败:', e);
+      query.parent = queryParams.parent;
+    }
   } else {
     query.parent = null;
   }
@@ -76,7 +93,7 @@ const buildQuery = async (
   // Add recursive children query
   if (queryParams.children) {
     query.children = [
-      { 'children.name': { $regex: queryParams.children, $options: 'i' } },
+      { 'children.id': { $regex: queryParams.children, $options: 'i' } },
       // Add conditions for other child properties if needed
     ];
   }
