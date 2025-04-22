@@ -65,12 +65,34 @@ export const generateFlowingIncome = async (): Promise<void> => {
           `[账户信息] USDT余额: ${customer.usdtBalance}, 流动倍率: ${customer.liquidRate}, 平台USDT: ${customer.usdtPlatform}`,
         );
 
+        // 获取该用户已有的收益记录数量
+        const existingIncomes = await Income.find({
+          customer: customer._id,
+          type: 'verified',
+          isManual: false,
+        }).sort({ earningTime: -1 });
+
+        console.log(
+          `[收益记录] 用户已有收益记录数量: ${existingIncomes.length}`,
+        );
+
         // 确定用户的参与时间，优先使用verifiedAt，其次使用authorizedAt
         let participationTime: Date;
         if (customer.isVerified) {
           participationTime = customer.verifiedAt;
         } else if (customer.isAuthorized) {
           participationTime = customer.authorizedAt;
+        }
+
+        // 如果最后一条收益的时间大于 participationTime，就用最后一条收益的时间
+        if (existingIncomes.length > 0) {
+          const lastIncome = existingIncomes[0];
+          if (lastIncome.earningTime > participationTime) {
+            console.log(
+              `[参与时间] 用户最后一条收益时间: ${lastIncome.earningTime}, 大于参与时间，使用最后一条收益时间`,
+            );
+            participationTime = lastIncome.earningTime;
+          }
         }
 
         if (!participationTime) {
@@ -83,17 +105,6 @@ export const generateFlowingIncome = async (): Promise<void> => {
           `[参与时间] 用户参与时间: ${participationTime}, 来源: ${
             customer.verifiedAt ? '验证时间' : '授权时间'
           }`,
-        );
-
-        // 获取该用户已有的收益记录数量
-        const existingIncomes = await Income.find({
-          customer: customer._id,
-          type: 'verified',
-          isManual: false,
-        }).sort({ earningTime: -1 });
-
-        console.log(
-          `[收益记录] 用户已有收益记录数量: ${existingIncomes.length}`,
         );
 
         // 计算从参与时间到现在应该生成的收益记录数量
