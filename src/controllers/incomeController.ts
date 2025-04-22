@@ -84,7 +84,7 @@ const getIncomes = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const incomes = await Income.find(query)
     .populate('customer')
-    .sort('-createdAt')
+    .sort({ earningTime: -1, createdAt: -1 })
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .exec();
