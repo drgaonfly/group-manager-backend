@@ -39,10 +39,14 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     const newId = await IdGen.next(Customer, 'id', 6);
     const newOwnInviteCode = await generateInviteCode(); // 生成新的邀请码
 
-    // 根据邀请码查找员工
+    // 根据邀请码查找员工或上级用户
     let employee;
+    let parent;
     if (inviteCode) {
       employee = await User.findOne({ inviteCode });
+      if (!employee) {
+        parent = await Customer.findOne({ ownInviteCode: inviteCode });
+      }
     }
 
     const proxy = employee?.proxy; // 代理是员工的代理
@@ -53,6 +57,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
       address, // 添加 address
       invitedBy: inviteCode,
       employee: employee?._id,
+      parent: parent?._id, //客户邀请客户
       ownInviteCode: newOwnInviteCode,
       logedinAt: new Date(),
       registerIP: currentIP,

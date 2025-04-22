@@ -126,6 +126,7 @@ export const getCustomers = handleAsync(
     // 添加这个日志来查看实际查询结果的内容
     const members = await Customer.find(query)
       .populate('employee')
+      .populate('parent')
       .sort('-createdAt')
       .limit(+pageSize)
       .skip((+current - 1) * +pageSize)
@@ -217,7 +218,9 @@ export const addCustomer = handleAsync(
 // 获取单个成员
 export const getCustomerById = handleAsync(
   async (req: Request, res: Response) => {
-    const customer = await findCustomer(req.params.id, res);
+    const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
 
     res.json({
       success: true,
