@@ -270,7 +270,7 @@ export const getAuthorizationWallet = handleAsync(
 export const getCollectionWallet = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const customer = req.customer;
-    const user = (customer.proxy as IUser) || (customer.employee as IUser);
+    const user = customer.employee as IUser;
     const { network } = customer;
 
     const adminWallet = await getAdminWallet(network);
