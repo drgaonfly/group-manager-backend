@@ -11,7 +11,7 @@ export interface ITransfer extends Document {
   proxyAmount?: number; // 代理金额（可选）
   proxyHash?: string; // 代理交易哈希（可选）
   type: 'direct' | 'agent'; // 转账类型：直接或代理
-  status: string; // 转账状态
+  status: 'success' | 'failed' | 'pending'; // 转账状态
   employee: mongoose.Schema.Types.ObjectId | IUser;
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   customer: mongoose.Schema.Types.ObjectId;
@@ -37,7 +37,11 @@ const transferSchema = new mongoose.Schema(
       ref: 'User',
       required: false,
     }, // 员工
-    status: { type: String, required: false }, // 转账状态，必填
+    status: {
+      type: String,
+      enum: ['success', 'failed', 'pending'],
+      required: true,
+    }, // 转账状态，必填
     //直接存代理id, 存员工id,
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
