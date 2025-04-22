@@ -3,8 +3,13 @@ import WalletShare from '../models/walletShare';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import { RequestCustom } from 'user';
+import User from '../models/user';
 
-const buildQuery = (queryParams: any, req: RequestCustom): any => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+  res: Response,
+) => {
   const query: any = {};
 
   if (queryParams.network) {
@@ -20,6 +25,32 @@ const buildQuery = (queryParams: any, req: RequestCustom): any => {
     query.address = { $regex: queryParams.address, $options: 'i' };
   }
 
+  if (queryParams.user) {
+    let searchText;
+    try {
+      const userParam = JSON.parse(String(queryParams.user));
+      searchText = userParam.name;
+    } catch (e) {
+      searchText = String(queryParams.user).trim();
+    }
+    const userData = await User.find({
+      $or: [
+        { name: { $regex: searchText, $options: 'i' } },
+        { email: { $regex: searchText, $options: 'i' } },
+      ],
+    });
+
+    if (userData && userData.length > 0) {
+      query.user = { $in: userData.map((user) => user._id) };
+    } else {
+      res.json({
+        success: true,
+        data: [],
+      });
+      return;
+    }
+  }
+
   return query;
 };
 
@@ -28,7 +59,7 @@ const getWalletShares = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
 
-    const query = buildQuery(req.query, req);
+    const query = await buildQuery(req.query, req, res);
 
     const walletShares = await WalletShare.find(query)
       .populate({

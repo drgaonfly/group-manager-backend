@@ -20,7 +20,7 @@ const walletShare = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: false,
-    }, // 代理
+    }, // 代理 没有在用
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Customer',
