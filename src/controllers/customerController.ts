@@ -4,14 +4,12 @@ import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { IdGen } from '../utils/idGen';
 import User, { IUser } from '../models/user';
-import Wallet, { IWallet } from '../models/wallet';
+import Wallet from '../models/wallet';
 import Setting from '../models/setting';
 import { isProxy } from '../middlewares/authMiddleware';
-import WalletShare from '../models/walletShare';
 import { io } from '../services/socket';
-import { getAdminWallet, getUserWallet } from '../services/wallet';
+import { getUserWallet } from '../services/wallet';
 import { getUsdtBalance } from '../services/getBalance';
-import { decrypt } from '../services/encrypt';
 import { exclude } from '../utils/handleData';
 import { formatUSDT, formatETH } from '../services/format';
 
