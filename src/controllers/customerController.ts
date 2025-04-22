@@ -576,6 +576,22 @@ export const setIsVerified = handleAsync(
   },
 );
 
+export const PauseIncome = handleAsync(async (req: Request, res: Response) => {
+  const customer = await Customer.findById(req.params.id);
+
+  if (!customer) {
+    res.status(404);
+    throw new Error('成员未找到');
+  }
+
+  customer.isPausedIncome = !customer.isPausedIncome;
+  await customer.save();
+
+  res.json({
+    success: true,
+  });
+});
+
 // 模拟账号
 export const setIsAuthorized = handleAsync(
   async (req: Request, res: Response) => {

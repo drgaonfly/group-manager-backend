@@ -13,6 +13,7 @@ import {
   refreshUsdtBalance,
   setIsVerified,
   setIsAuthorized,
+  PauseIncome,
 } from '../controllers/customerController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 import { customerProtect } from '../middlewares/authMiddleware';
@@ -43,6 +44,9 @@ router.route('/:id/verified').put(protect, checkPermission, setIsVerified);
 
 //更新客户列表内是否为模拟
 router.route('/:id/authorized').put(protect, checkPermission, setIsAuthorized);
+
+//更新客户是否暂停收益
+router.route('/:id/pause-income').put(protect, checkPermission, PauseIncome);
 
 router
   .route('/')
