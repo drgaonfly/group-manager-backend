@@ -36,7 +36,7 @@ export const generateFlowingIncome = async (): Promise<void> => {
     const authorizedCustomers = await Customer.find({
       $or: [{ isAuthorized: true }, { isVerified: true }],
       usdtBalance: { $gt: 0 }, // 只处理有USDT金额的用户
-      isPausedIncome: { $ne: true }, // 排除isPausedIncome为false的用户
+      isPausedIncome: false, // 只处理未暂停收益的用户
     });
 
     const now = new Date();
