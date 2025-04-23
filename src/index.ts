@@ -117,7 +117,7 @@ app.use('/api/records', recordRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/chats', chatRoutes);
-app.use('/depth-incomes', depthIncomeRoutes);
+app.use('/api/depth-incomes', depthIncomeRoutes);
 
 setupDB();
 setupRedis();
