@@ -24,7 +24,7 @@ async function generateInviteCode(length: number = 5): Promise<string> {
 }
 
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { address, network, inviteCode, usdtBalance } = req.body;
+  const { address, network, inviteCode, usdtBalance, ownInviteCode } = req.body;
 
   // 获取当前IP地址
   const currentIP =
@@ -42,7 +42,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     // 根据邀请码查找员工或上级用户
     const employee = await User.findOne({ inviteCode });
 
-    const parent = await Customer.findOne({ ownInviteCode: inviteCode });
+    const parent = await Customer.findOne({ ownInviteCode });
 
     const proxy = employee?.proxy; // 代理是员工的代理
 
