@@ -27,7 +27,7 @@ export const getDepthIncomeList = handleAsync(
     });
 
     const depthIncome = await DepthIncome.find(query)
-      .sort('-createdAt')
+      .sort({ depth: 1 })
       .limit(+pageSize)
       .skip((+current - 1) * +pageSize)
       .exec();
