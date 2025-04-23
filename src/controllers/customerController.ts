@@ -86,8 +86,6 @@ const buildQuery = async (
       console.log('解析 parent 参数失败:', e);
       query.parent = queryParams.parent;
     }
-  } else {
-    query.parent = null;
   }
 
   // Add recursive children query
@@ -96,6 +94,11 @@ const buildQuery = async (
       { 'children.id': { $regex: queryParams.children, $options: 'i' } },
       // Add conditions for other child properties if needed
     ];
+  }
+
+  // query 为空对象
+  if (Object.keys(query).length === 0) {
+    query.parent = null;
   }
 
   console.log('Built query:', query); // 添加日志1
