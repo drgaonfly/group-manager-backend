@@ -38,12 +38,21 @@ const login = handleAsync(async (req: Request, res: Response) => {
     const refreshToken = generateRefreshToken(user._id.toString());
     const token: string = generateToken(user._id);
 
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
     // 创建登录历史记录
     const loginHistory = new LoginHistory({
-      userId: user.id,
+      user: user._id,
       loginAt: new Date(),
+      loginIp: ip,
     });
     await loginHistory.save(); // 保存登录历史记录
+
+    // 更新下 lastLoginAt
+    await User.findByIdAndUpdate(user._id, {
+      lastLoginAt: new Date(),
+      lastLoginIp: ip,
+    });
 
     // 返回成功响应并携带令牌
     res.json({

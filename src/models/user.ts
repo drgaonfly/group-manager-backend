@@ -26,6 +26,8 @@ export interface IUser extends Document {
   twoFABackupCodes?: string[]; // 备用代码（可选增强）
 
   passwordChangedAt: Date;
+  lastLoginAt: Date; // 最新登录时间
+  lastLoginIp: string; // 最新登录IP
 }
 
 const userSchema = new mongoose.Schema(
@@ -83,6 +85,8 @@ const userSchema = new mongoose.Schema(
     ],
 
     passwordChangedAt: Date,
+    lastLoginAt: { type: Date }, // 最新登录时间
+    lastLoginIp: { type: String }, // 最新登录IP
   },
   { timestamps: true },
 );

@@ -1,14 +1,21 @@
 import mongoose, { Document } from 'mongoose';
+import { IUser } from './user';
 
 export interface IloginHistory extends Document {
-  userId: string;
+  user: mongoose.Schema.Types.ObjectId | IUser;
   loginAt: Date;
+  loginIp: string;
 }
 
 const loginHistorySchema = new mongoose.Schema(
   {
-    userId: { type: String },
-    loginAt: { type: Date, default: Date.now },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    }, // 用户ID
+    loginAt: { type: Date },
+    loginIp: { type: String },
   },
   { timestamps: true },
 );
