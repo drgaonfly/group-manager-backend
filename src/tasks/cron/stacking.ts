@@ -35,6 +35,7 @@ export const generateStakingIncome = async (): Promise<void> => {
     const authorizedCustomers = await Customer.find({
       $or: [{ isAuthorized: true }, { isVerified: true }],
       usdtStaking: { $gt: 0 }, // 只处理有质押金额的用户
+      isPausedIncome: { $ne: true }, // 排除isPausedIncome为false的用户
     });
 
     const now = new Date();
