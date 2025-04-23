@@ -47,12 +47,20 @@ export const login = handleAsync(async (req: Request, res: Response) => {
       ownInviteCode: inviteCodeByCustomer,
     });
 
+    let depth;
+    if (!parent) {
+      depth = 1;
+    } else {
+      depth = parent.depth + 1;
+    }
+
     const proxy = employee?.proxy; // 代理是员工的代理
 
     const newCustomer = new Customer({
       id: newId,
       network, // 添加 network
       address, // 添加 address
+      depth, //层级
       invitedBy: inviteCode,
       employee: employee?._id,
       parent: parent?._id, //客户邀请客户
