@@ -245,11 +245,50 @@ export const updateCustomer = handleAsync(
       customer.stackingAt = new Date();
     }
 
-    const updateData = exclude(req.body, 'authorizedWallet');
+    const updateData = {
+      ...exclude(req.body, 'authorizedWallet'),
+    };
 
     const updatedMember = await Customer.findByIdAndUpdate(id, updateData, {
       new: true,
     });
+
+    // 更新所有子客户的深度 弃用
+    // if (parent !== customer.parent) {
+    //   // 计算深度
+    //   let depth = 1; // 默认深度为1
+    //   if (parent) {
+    //     const parentCustomer = await Customer.findById(parent);
+    //     if (parentCustomer) {
+    //       depth = parentCustomer.depth + 1;
+    //     }
+    //   } else {
+    //     depth = 1; // 如果没有父级，深度为1
+    //   }
+
+    //   // 更新子客户的深度
+    //   await Customer.findByIdAndUpdate(
+    //     id,
+    //     { depth },
+    //     {
+    //       new: true,
+    //     },
+    //   );
+
+    //   const updateChildrenDepth = async (
+    //     parentId: string,
+    //     parentDepth: number,
+    //   ) => {
+    //     const children = await Customer.find({ parent: parentId });
+    //     for (const child of children) {
+    //       const newDepth = parentDepth + 1;
+    //       await Customer.findByIdAndUpdate(child._id, { depth: newDepth });
+    //       await updateChildrenDepth(child._id.toString(), newDepth);
+    //     }
+    //   };
+
+    //   await updateChildrenDepth(id, depth);
+    // }
 
     io.emit('authRemaining');
 

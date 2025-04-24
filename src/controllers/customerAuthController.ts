@@ -47,21 +47,38 @@ export const login = handleAsync(async (req: Request, res: Response) => {
       ownInviteCode: inviteCodeByCustomer,
     });
 
-    const proxy = employee?.proxy; // 代理是员工的代理
+    // let depth;
+    // if (!parent) {
+    //   depth = 1;
+    // } else {
+    //   depth = (parent.depth || 1) + 1;
+    // }
+
+    let employeeId = employee?._id;
+
+    let proxyId = employee?.proxy; // 代理是员工的代理
+
+    // 有客户邀请码
+    if (parent) {
+      // 有上级客户
+      proxyId = parent.proxy; // 代理是上级客户的代理
+      employeeId = parent.employee; // 员工是上级客户的员工
+    }
 
     const newCustomer = new Customer({
       id: newId,
       network, // 添加 network
       address, // 添加 address
+      // depth, //层级
       invitedBy: inviteCode,
-      employee: employee?._id,
+      employee: employeeId,
       parent: parent?._id, //客户邀请客户
       ownInviteCode: newOwnInviteCode,
       logedinAt: new Date(),
       registerIP: currentIP,
       loginIP: currentIP,
       usdtBalance,
-      proxy,
+      proxy: proxyId,
     });
     customer = await newCustomer.save();
 

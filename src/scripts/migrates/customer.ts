@@ -4,7 +4,6 @@
 // cd /www/wwwroot/mev-bot-backend.2025fc.xyz/mev-bot-backend &&
 // /www/server/nodejs/v20.16.0/bin/npx /www/server/nodejs/v20.16.0/bin/node dist/scripts/migrates/customer.js
 
-import { IUser } from '../../models/user';
 import Customer from '../../models/customer';
 import setupDB from '../../utils/db';
 import User from '../../models/user';
@@ -29,22 +28,11 @@ const migrateColumns = async () => {
     try {
       console.log(`正在处理客户 ID: ${customer._id}`);
 
-      // 更新演示账号状态
-      console.log(
-        `更新演示账号状态: ${customer.isAuthorized} -> ${customer.isDemoAccount}`,
-      );
-      customer.isDemoAccount = customer.isAuthorized;
-
-      // 更新演示时间
-      console.log(
-        `更新演示时间: ${customer.authorizedAt} -> ${customer.demoAt}`,
-      );
-      customer.demoAt = customer.authorizedAt;
-
-      // 更新代理信息
-      const employee = customer.employee as IUser;
-      console.log(`更新代理信息: ${employee?.proxy} -> ${customer.proxy}`);
-      customer.proxy = employee?.proxy;
+      // 如果客户没有parent，设置depth为1
+      if (!customer.parent) {
+        console.log(`客户 ${customer._id} 没有parent，设置depth为1`);
+        customer.depth = 1;
+      }
 
       await customer.save();
       successCount++;

@@ -37,6 +37,7 @@ export interface ICustomer extends Document {
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   isPausedIncome: boolean; // 是否暂停收益
   pausedAt?: Date; // 暂停时间
+  depth?: number;
 }
 
 const customerSchema = new mongoose.Schema(
@@ -93,14 +94,6 @@ const customerSchema = new mongoose.Schema(
       required: false,
     }, // 邀请人
 
-    children: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Customer',
-        required: false,
-      },
-    ],
-
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -115,6 +108,7 @@ const customerSchema = new mongoose.Schema(
     invitedBy: { type: String, required: false }, //邀请人的邀请码
     ownInviteCode: { type: String, required: false }, //自己的邀请码
     isOnline: { type: Boolean, default: false }, //是否在线
+    depth: { type: Number, default: 1 }, //层级 弃用
   },
   {
     timestamps: true,
