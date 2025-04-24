@@ -141,7 +141,7 @@ const addChatUserMessage = handleAsync(
 // 获取客户与客服的聊天记录
 const getChatMessages = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { current = '1', pageSize = '10' } = req.query;
+    const { current = '1', pageSize = '100' } = req.query;
 
     const customerId = req.customer._id;
     const userId = await findCustomerUser(req.customer);
