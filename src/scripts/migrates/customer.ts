@@ -19,6 +19,7 @@ const migrateColumns = async () => {
     $or: [
       { isVerified: true, verifiedAt: { $in: [null, undefined] } },
       { isAuthorized: true, authorizedAt: { $in: [null, undefined] } },
+      { frozenAmount: { $lt: 0 } },
     ],
   }).populate({
     path: 'employee',
@@ -48,6 +49,10 @@ const migrateColumns = async () => {
       );
       console.log(
         `客户 ${customer.address} 的授权时间: ${customer.authorizedAt}`,
+      );
+      // frozenAmount
+      console.log(
+        `客户 ${customer.address} 的冻结金额: ${customer.frozenAmount}`,
       );
 
       successCount++;
