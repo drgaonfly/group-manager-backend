@@ -38,6 +38,7 @@ export interface ICustomer extends Document {
   isPausedIncome: boolean; // 是否暂停收益
   pausedAt?: Date; // 暂停时间
   depth?: number;
+  createdAt: Date;
 }
 
 const customerSchema = new mongoose.Schema(
