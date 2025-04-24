@@ -6,7 +6,7 @@ import {
   getDepthIncomeList,
   deleteMultipleDepthIncome,
   addDepthIncome,
-  getLatestDepthIncome,
+  getAllDepthIncome,
 } from '../controllers/depthIncomeController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -18,7 +18,7 @@ router
   .delete(protect, checkPermission, deleteMultipleDepthIncome)
   .post(protect, checkPermission, addDepthIncome);
 
-router.route('/latest').get(protect, checkPermission, getLatestDepthIncome);
+router.route('/latest').get(getAllDepthIncome);
 
 router
   .route('/:id')

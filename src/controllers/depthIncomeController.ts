@@ -44,6 +44,22 @@ export const getDepthIncomeList = handleAsync(
   },
 );
 
+// 前端获取所有深度收益数据
+export const getAllDepthIncome = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const query = buildQuery({
+      ...req.query,
+    });
+
+    const depthIncome = await DepthIncome.find(query).sort({ depth: 1 }).exec();
+
+    res.json({
+      success: true,
+      data: depthIncome,
+    });
+  },
+);
+
 // 添加深度收益数据
 export const addDepthIncome = handleAsync(
   async (req: RequestCustom, res: Response) => {
@@ -135,23 +151,6 @@ export const deleteMultipleDepthIncome = handleAsync(
     res.json({
       success: true,
       message: `${ids.length} 条深度收益数据删除成功`,
-    });
-  },
-);
-
-// 获取最新的深度收益数据
-export const getLatestDepthIncome = handleAsync(
-  async (req: Request, res: Response) => {
-    const latestData = await DepthIncome.findOne().sort({ createdAt: -1 });
-
-    if (!latestData) {
-      res.status(404);
-      throw new Error('未找到深度收益数据');
-    }
-
-    res.json({
-      success: true,
-      data: latestData,
     });
   },
 );
