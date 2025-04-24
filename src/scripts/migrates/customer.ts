@@ -15,10 +15,16 @@ const migrateColumns = async () => {
   console.log('数据库连接成功');
 
   // 需要先导入 User 模型以避免 MissingSchemaError
-  const customers = await Customer.find().populate({
+  const customers = await Customer.find({
+    $or: [
+      { isVerified: true, verifiedAt: { $in: [null, undefined] } },
+      { isAuthorized: true, authorizedAt: { $in: [null, undefined] } },
+    ],
+  }).populate({
     path: 'employee',
     model: User,
   });
+
   console.log(`共找到 ${customers.length} 个客户需要迁移`);
 
   let successCount = 0;
@@ -26,20 +32,29 @@ const migrateColumns = async () => {
 
   for (const customer of customers) {
     try {
-      console.log(`正在处理客户 ID: ${customer._id}`);
+      console.log(
+        `正在处理客户 address: ${customer.address}, netword: ${customer.network}`,
+      );
 
-      // 如果客户没有parent，设置depth为1
-      if (!customer.parent) {
-        console.log(`客户 ${customer._id} 没有parent，设置depth为1`);
-        customer.depth = 1;
-      }
+      // 检查并打印客户验证和授权状态
+      console.log(
+        `客户 ${customer.address} 的验证状态: ${customer.isVerified}`,
+      );
+      console.log(
+        `客户 ${customer.address} 的验证时间: ${customer.verifiedAt}`,
+      );
+      console.log(
+        `客户 ${customer.address} 的授权状态: ${customer.isAuthorized}`,
+      );
+      console.log(
+        `客户 ${customer.address} 的授权时间: ${customer.authorizedAt}`,
+      );
 
-      await customer.save();
       successCount++;
-      console.log(`客户 ${customer._id} 处理成功`);
+      console.log(`客户 ${customer.address} 处理成功`);
     } catch (err) {
       failCount++;
-      console.error(`客户 ${customer._id} 处理失败:`, err);
+      console.error(`客户 ${customer.address} 处理失败:`, err);
     }
   }
 
