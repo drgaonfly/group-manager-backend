@@ -47,9 +47,7 @@ export const getDepthIncomeList = handleAsync(
 // 前端获取所有深度收益数据
 export const getAllDepthIncome = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const query = buildQuery({
-      ...req.query,
-    });
+    const query = {};
 
     const depthIncome = await DepthIncome.find(query).sort({ depth: 1 }).exec();
 
