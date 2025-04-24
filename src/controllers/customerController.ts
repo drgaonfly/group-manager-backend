@@ -236,7 +236,7 @@ export const getCustomerById = handleAsync(
 export const updateCustomer = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { usdtStaking, parent } = req.body;
+    const { usdtStaking } = req.body;
 
     const customer = await findCustomer(id, res);
 
