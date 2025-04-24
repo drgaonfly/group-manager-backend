@@ -55,6 +55,23 @@ const migrateColumns = async () => {
         `客户 ${customer.address} 的冻结金额: ${customer.frozenAmount}`,
       );
 
+      // 更新验证时间和授权时间
+      const now = new Date();
+      const updateData: any = {};
+
+      if (customer.isVerified && !customer.verifiedAt) {
+        updateData.verifiedAt = now;
+      }
+
+      if (customer.isAuthorized && !customer.authorizedAt) {
+        updateData.authorizedAt = now;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await Customer.updateOne({ _id: customer._id }, { $set: updateData });
+        console.log(`已更新客户 ${customer.address} 的时间字段:`, updateData);
+      }
+
       successCount++;
       console.log(`客户 ${customer.address} 处理成功`);
     } catch (err) {
