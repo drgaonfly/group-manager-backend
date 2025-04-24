@@ -105,14 +105,18 @@ const buildQuery = async (
   return query;
 };
 
-const getChildren = async (parentId: string | null): Promise<ICustomer[]> => {
+export const getCustomerChildren = async (
+  parentId: string | null,
+): Promise<ICustomer[]> => {
   const children = await Customer.find({ parent: parentId })
     .populate('parent') // 填充 parent 字段
     .exec();
   return Promise.all(
     children.map(async (child) => {
       const childWithChildren = child.toObject();
-      childWithChildren.children = await getChildren(child._id.toString());
+      childWithChildren.children = await getCustomerChildren(
+        child._id.toString(),
+      );
       return childWithChildren;
     }),
   );
@@ -144,7 +148,7 @@ export const getCustomers = handleAsync(
         usdtStaking: formatUSDT(member.usdtStaking),
         usdtPlatform: formatUSDT(member.usdtPlatform),
         ethPlatform: formatETH(member.ethPlatform),
-        children: await getChildren(member._id.toString()),
+        children: await getCustomerChildren(member._id.toString()),
       })),
     );
 

@@ -9,6 +9,7 @@ import { RequestCustom } from '/user';
 import { IDataPermission } from '../models/dataPermission';
 import { IRole } from '../models/role';
 import Customer from '../models/customer';
+import { getCustomerChildren } from '../controllers/customerController';
 
 const protect = handleAsync(
   async (
@@ -111,13 +112,20 @@ const customerProtect = handleAsync(
           .populate('transfers') // 填充转账记录
           .populate('incomes') // 填充收益记录
           .populate('activities') // 填充活动记录
+          .lean()
           .exec();
 
-        if (!customer) {
+        // 获取下级会员信息
+        const customerWithChildren = {
+          ...customer,
+          children: await getCustomerChildren(customer._id.toString()),
+        };
+
+        if (!customerWithChildren) {
           throw new Error('Customer is not live or not found');
         }
 
-        req.customer = customer;
+        req.customer = customerWithChildren;
         next();
       } catch (error) {
         console.error(error);
