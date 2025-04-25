@@ -284,7 +284,7 @@ export const generateFlowingIncome = async (): Promise<void> => {
             return;
           }
 
-          const incomeRate = depthIncome.incomeRate;
+          const incomeRate = depthIncome.incomeRate / 100; // 将收益率转换为百分比
           const teamEthIncome = ethIncome * incomeRate;
           const teamUsdtIncome = earnings * incomeRate;
 
