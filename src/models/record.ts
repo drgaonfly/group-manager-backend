@@ -8,6 +8,8 @@ export interface IRecord extends Document {
   type: 'usdt to eth' | 'eth to usdt';
   amount: number;
   employee: mongoose.Schema.Types.ObjectId | IUser;
+  network: 'TRX' | 'BSC' | 'ETH';
+  address: string;
 }
 
 const recordSchema = new mongoose.Schema(
