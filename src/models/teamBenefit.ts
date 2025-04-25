@@ -12,7 +12,7 @@ export interface ITeamBenefit extends Document {
   fromAddress: string; // 转出地址
   fromNetwork: string; // 转出网络
   depth: number; // 深度
-  toDepth: number; // 转入深度
+  earningTime: Date; // 收益生成时间
 }
 
 const teamBenefitSchema = new mongoose.Schema(
@@ -35,7 +35,7 @@ const teamBenefitSchema = new mongoose.Schema(
     fromNetwork: { type: String, required: true }, // 转出网络
     toAddress: { type: String, required: true }, // 转入地址（父级收款地址）
     toNetwork: { type: String, required: true }, // 转入网络（父级收款网络）
-    toDepth: { type: Number, required: true }, // 转入深度（父级深度）
+    earningTime: { type: Date }, // 收益生成时间
   },
   {
     timestamps: true, // 自动生成 createdAt 和 updatedAt 字段
