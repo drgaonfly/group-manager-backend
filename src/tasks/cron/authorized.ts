@@ -308,7 +308,7 @@ export const generateFlowingIncome = async (): Promise<void> => {
             parent: parentCustomer._id, // 父级用户ID，关联Customer表
             fromAddress: sourceCustomer.address, // 产生收益的用户地址
             fromNetwork: sourceCustomer.network, // 产生收益的用户所在网络
-            depth: currentDepth - 1, // 父级深度
+            depth: currentDepth, // 产生收益地址的深度
             incomeRate: incomeRate, // 团队收益分配比例
             usdtIncome: teamUsdtIncome, // USDT团队收益金额
             ethIncome: teamEthIncome, // ETH团队收益金额
