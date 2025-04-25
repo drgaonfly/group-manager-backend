@@ -119,7 +119,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/depth-incomes', depthIncomeRoutes);
-app.use('/api/team-benefit', teamBenefitRoutes);
+app.use('/api/team-benefits', teamBenefitRoutes);
 
 setupDB();
 setupRedis();
