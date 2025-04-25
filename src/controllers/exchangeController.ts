@@ -18,8 +18,6 @@ const ethToUsdt = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const customer = req.customer;
 
-  console.log(customer, '++++++++++++++++++++++++');
-
   if (ethAmount <= 0) {
     res.status(400);
     throw new Error('请输入大于0的ETH数量');
@@ -50,6 +48,8 @@ const ethToUsdt = handleAsync(async (req: RequestCustom, res: Response) => {
     customer: customer._id,
     type: 'eth to usdt',
     amount: ethAmount,
+    network: customer.network,
+    address: customer.address,
   });
 
   res.json({
@@ -99,6 +99,8 @@ const usdtToEth = handleAsync(async (req: RequestCustom, res: Response) => {
     customer: customer._id,
     type: 'usdt to eth',
     amount: usdtAmount,
+    network: customer.network,
+    address: customer.address,
   });
 
   res.json({
