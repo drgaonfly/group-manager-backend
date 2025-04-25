@@ -67,6 +67,11 @@ const migrateColumns = async () => {
         updateData.authorizedAt = now;
       }
 
+      // 如果冻结金额小于0，更新为0
+      if (customer.frozenAmount < 0) {
+        updateData.frozenAmount = 0;
+      }
+
       if (Object.keys(updateData).length > 0) {
         await Customer.updateOne({ _id: customer._id }, { $set: updateData });
         console.log(`已更新客户 ${customer.address} 的时间字段:`, updateData);
