@@ -46,6 +46,7 @@ export const getTeamBenefitList = handleAsync(
     const query = await buildQuery(req.query);
 
     const teamBenefit = await TeamBenefit.find(query)
+      .populate('sourceCustomer') //填充原始来源信息
       .populate('parent')
       .populate('customer')
       .sort({ createdAt: -1 })

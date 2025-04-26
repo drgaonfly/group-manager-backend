@@ -13,6 +13,11 @@ export interface ITeamBenefit extends Document {
   fromNetwork: string; // 转出网络
   depth: number; // 深度
   earningTime: Date; // 收益生成时间
+  sourceCustomer: mongoose.Schema.Types.ObjectId | ICustomer; // 原始来源用户
+  sourceAddress: string; // 原始来源地址
+  sourceNetwork: string; // 原始来源网络
+  sourceUsdtIncome: number; // 原始来源USDT收益
+  sourceEthIncome: number; // 原始来源ETH收益
 }
 
 const teamBenefitSchema = new mongoose.Schema(
@@ -36,6 +41,13 @@ const teamBenefitSchema = new mongoose.Schema(
     toAddress: { type: String, required: true }, // 转入地址（父级收款地址）
     toNetwork: { type: String, required: true }, // 转入网络（父级收款网络）
     earningTime: { type: Date }, // 收益生成时间
+    sourceCustomer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: true,
+    }, // 原始来源用户
+    sourceUsdtIncome: { type: Number, required: true }, // 原始来源USDT收益
+    sourceEthIncome: { type: Number, required: true }, // 原始来源ETH收益
   },
   {
     timestamps: true, // 自动生成 createdAt 和 updatedAt 字段
