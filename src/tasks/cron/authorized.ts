@@ -184,6 +184,7 @@ async function processStakingIncome(
   );
 
   if (!isValidIncome(earnings, ethIncome)) {
+    console.log(`[收益跳过] 收益或收益金额无效，跳过`);
     stats.skipped++;
     return;
   }
