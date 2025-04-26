@@ -216,8 +216,12 @@ function shouldGenerateIncome(
   participationTime: Date,
   intervalHours: number,
 ): boolean {
-  const hoursSinceParticipation =
-    (new Date().getTime() - participationTime.getTime()) / (1000 * 60 * 60);
+  const hoursSinceParticipation = Number(
+    (
+      (new Date().getTime() - participationTime.getTime()) /
+      (1000 * 60 * 60)
+    ).toFixed(2),
+  );
   return hoursSinceParticipation >= intervalHours;
 }
 
