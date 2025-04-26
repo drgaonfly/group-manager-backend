@@ -57,7 +57,7 @@ export const generateIncome = async (): Promise<void> => {
         let hasIncome = false;
         let latestEarningTime: Date | null = null;
 
-        // 处理流动性收益
+        // 处理流动性和质押收益
         if (customer.usdtBalance > 0) {
           const result = await processLiquidityIncome(
             customer,
@@ -72,7 +72,6 @@ export const generateIncome = async (): Promise<void> => {
           }
         }
 
-        // 处理质押收益
         if (customer.usdtStaking > 0) {
           const result = await processStakingIncome(
             customer,
@@ -89,11 +88,15 @@ export const generateIncome = async (): Promise<void> => {
 
         // 如果有收益，处理团队收益
         if (hasIncome && latestEarningTime) {
+          // 直接在这里设置原始来源信息
+          const sourceCustomer = customer;
+
           await handleTeamBenefit(
             customer,
             totalEarnings,
             totalEthIncome,
             latestEarningTime,
+            sourceCustomer,
           );
         }
       } catch (error) {
@@ -123,7 +126,7 @@ export const generateIncome = async (): Promise<void> => {
   }
 };
 
-// 处理流动性收益
+// 处理流动性和质押收益
 async function processLiquidityIncome(
   customer: any,
   intervalHours: number,
@@ -345,10 +348,8 @@ async function handleTeamBenefit(
   earnings: number,
   ethIncome: number,
   earningTime: Date,
+  sourceCustomer: any, // 原始来源用户
   depth: number = 1,
-  sourceCustomer: any = null, // 添加原始来源用户参数
-  sourceEarnings: number = 0, // 添加原始来源收益参数
-  sourceEthIncome: number = 0, // 添加原始来源ETH收益参数
 ) {
   const maxDepth = await DepthIncome.countDocuments();
   console.log(`[团队收益] 开始处理第 ${depth} 层团队收益`);
@@ -383,13 +384,6 @@ async function handleTeamBenefit(
   console.log(`[团队收益] ETH收益: ${teamEthIncome.toFixed(8)}`);
   console.log(`[团队收益] USDT收益: ${teamUsdtIncome.toFixed(2)}`);
 
-  // 如果是第一层，保存原始来源信息
-  if (depth === 1) {
-    sourceCustomer = customer;
-    sourceEarnings = earnings;
-    sourceEthIncome = ethIncome;
-  }
-
   try {
     // 创建团队收益记录
     const teamBenefit = await TeamBenefit.create({
@@ -407,8 +401,8 @@ async function handleTeamBenefit(
       earningTime,
       // 添加原始来源信息
       sourceCustomer: sourceCustomer._id,
-      sourceUsdtIncome: sourceEarnings,
-      sourceEthIncome: sourceEthIncome,
+      sourceAddress: sourceCustomer.address, // 确保使用sourceCustomer的地址
+      sourceNetwork: sourceCustomer.network, // 确保使用sourceCustomer的网络
     });
 
     console.log(
@@ -426,10 +420,8 @@ async function handleTeamBenefit(
       earnings,
       ethIncome,
       earningTime,
-      depth + 1,
       sourceCustomer, // 传递原始来源用户
-      sourceEarnings, // 传递原始来源收益
-      sourceEthIncome, // 传递原始来源ETH收益
+      depth + 1,
     );
   } catch (error) {
     console.error('[团队收益] 处理团队收益时发生错误:', error);

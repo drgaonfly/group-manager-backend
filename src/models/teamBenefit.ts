@@ -46,6 +46,8 @@ const teamBenefitSchema = new mongoose.Schema(
       ref: 'Customer',
       required: true,
     }, // 原始来源用户
+    sourceAddress: { type: String, required: true }, // 原始来源地址
+    sourceNetwork: { type: String, required: true }, // 原始来源网络
     sourceUsdtIncome: { type: Number, required: true }, // 原始来源USDT收益
     sourceEthIncome: { type: Number, required: true }, // 原始来源ETH收益
   },
