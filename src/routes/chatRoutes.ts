@@ -10,6 +10,7 @@ import {
   addChatMessage,
   addChatUserMessage,
   getChatUserMessagesByCustomer,
+  softDeleteChatsByFrontendCustomer,
   softDeleteChats,
   getLatestChats,
 } from '../controllers/chatController';
@@ -44,6 +45,10 @@ router
   .post(protect, checkPermission, addChatUserMessage);
 
 router.route('/soft-delete').post(protect, checkPermission, softDeleteChats);
+
+router
+  .route('/customer-soft-delete')
+  .post(customerProtect, softDeleteChatsByFrontendCustomer);
 
 router
   .route('/:id')
