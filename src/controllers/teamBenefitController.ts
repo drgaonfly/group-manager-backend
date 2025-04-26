@@ -12,7 +12,7 @@ const buildQuery = async (queryParams: any): Promise<any> => {
   }
 
   if (queryParams.toAddress) {
-    query.toAddress = queryParams.toAddress;
+    query.toAddress = { $regex: queryParams.toAddress, $options: 'i' };
   }
 
   if (queryParams.parent) {
@@ -31,7 +31,7 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     });
 
     if (customerData && customerData.length > 0) {
-      query.customer = { $in: customerData.map((parent) => parent._id) };
+      query.parent = { $in: customerData.map((parent) => parent._id) };
     }
   }
 
