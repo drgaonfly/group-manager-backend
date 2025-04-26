@@ -19,10 +19,15 @@ export const setupSocket = async (server: http.Server): Promise<Server> => {
     // 后台用户加入房间
     if (userId !== undefined) {
       socket.join(`user-${userId}`);
-      await User.findByIdAndUpdate(userId, {
+      const user = await User.findByIdAndUpdate(userId, {
         isOn: true,
         lastOnline: new Date(),
       });
+      console.log(
+        `客户 ${userId} 加入房间, 最后在线时间: ${new Date().toLocaleString()}, 当前在线人数: ${
+          io.engine.clientsCount
+        }`,
+      );
     }
 
     const customerId = socket.handshake.query.customerId as string;
@@ -35,7 +40,9 @@ export const setupSocket = async (server: http.Server): Promise<Server> => {
         lastOnline: new Date(),
       });
       console.log(
-        `客户 ${customerId} 加入房间, 当前在线人数: ${io.engine.clientsCount}`,
+        `客户 ${customerId} 加入房间, 最后在线时间: ${new Date().toLocaleString()}, 当前在线人数: ${
+          io.engine.clientsCount
+        }`,
       );
     }
 
