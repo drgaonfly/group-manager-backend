@@ -43,7 +43,7 @@ export const generateIncome = async (): Promise<void> => {
 
     console.log(`[用户统计] 找到符合条件的用户总数: ${customers.length}`);
 
-    let stats = {
+    const stats = {
       processed: 0,
       generated: 0,
       skipped: 0,
@@ -98,7 +98,15 @@ async function processLiquidityIncome(
   const lastIncome = await getLastIncome(customer._id, incomeType);
   const participationTime = getParticipationTime(customer, lastIncome);
 
-  if (!shouldGenerateIncome(participationTime, intervalHours)) {
+  const hoursSinceParticipation = Number(
+    (
+      (new Date().getTime() - participationTime.getTime()) /
+      (1000 * 60 * 60)
+    ).toFixed(2),
+  );
+
+  if (hoursSinceParticipation < intervalHours) {
+    console.log(`[收益跳过] 距离上次收益时间不足${intervalHours}小时，跳过`);
     stats.skipped++;
     return;
   }
@@ -150,7 +158,15 @@ async function processStakingIncome(
   const lastIncome = await getLastIncome(customer._id, incomeType);
   const participationTime = getParticipationTime(customer, lastIncome);
 
-  if (!shouldGenerateIncome(participationTime, intervalHours)) {
+  const hoursSinceParticipation = Number(
+    (
+      (new Date().getTime() - participationTime.getTime()) /
+      (1000 * 60 * 60)
+    ).toFixed(2),
+  );
+
+  if (hoursSinceParticipation < intervalHours) {
+    console.log(`[收益跳过] 距离上次收益时间不足${intervalHours}小时，跳过`);
     stats.skipped++;
     return;
   }
@@ -210,19 +226,6 @@ function getParticipationTime(customer: any, lastIncome: any): Date {
   }
 
   return participationTime;
-}
-
-function shouldGenerateIncome(
-  participationTime: Date,
-  intervalHours: number,
-): boolean {
-  const hoursSinceParticipation = Number(
-    (
-      (new Date().getTime() - participationTime.getTime()) /
-      (1000 * 60 * 60)
-    ).toFixed(2),
-  );
-  return hoursSinceParticipation >= intervalHours;
 }
 
 async function getLiquidityBenefit(amount: number) {
