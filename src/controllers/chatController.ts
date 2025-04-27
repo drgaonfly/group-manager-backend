@@ -202,8 +202,6 @@ const getChatUserMessagesByCustomer = handleAsync(
     // 填充customer信息
     const customer = await Customer.findById(customerId).exec();
 
-    console.log(customer, '+++++++++++++++++++++++++++----------------');
-
     if (!customer) {
       res.status(404);
       throw new Error('客户不存在');

@@ -98,7 +98,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
 
   res.json({
     user: customer.toObject(),
-    jwt: generateToken(customer._id),
+    jwt: generateToken(customer._id, 'customer'),
     refreshToken,
   });
 });
@@ -123,7 +123,7 @@ export const refreshToken = handleAsync(async (req: Request, res: Response) => {
     const newRefreshToken = generateRefreshToken(decoded.sub);
 
     res.json({
-      jwt: generateToken(decoded.sub),
+      jwt: generateToken(decoded.sub, 'customer'),
       refreshToken: newRefreshToken,
     });
   } catch (err) {

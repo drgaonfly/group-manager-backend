@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import http from 'http';
-import User from '../models/user';
+import jwt from 'jsonwebtoken';
+import User, { IUser } from '../models/user';
 import Customer from '../models/customer';
 
 let io: Server;
@@ -22,11 +23,13 @@ const updateCustomerStatus = async (customerId: string, isOnline: boolean) => {
 };
 
 // 处理用户加入房间
-const handleUserJoin = async (socket: any, userId: string) => {
-  socket.join(`user-${userId}`);
-  const user = await updateUserStatus(userId, true);
+const handleUserJoin = async (socket: any, user: IUser) => {
+  socket.join(`user-${user._id}`);
+  const updatedUser = await updateUserStatus(user._id.toString(), true);
   console.log(
-    `用户 ${userId} 加入房间, 最后在线时间: ${user.lastOnline?.toLocaleString()}, 当前在线人数: ${
+    `用户 ${
+      user._id
+    } 加入房间, 最后在线时间: ${updatedUser.lastOnline?.toLocaleString()}, 当前在线人数: ${
       io.engine.clientsCount
     }`,
   );
@@ -68,32 +71,63 @@ const handleCustomerLeave = async (socket: any, customerId: string) => {
 export const setupSocket = async (server: http.Server): Promise<Server> => {
   io = new Server(server);
 
-  io.on('connection', async (socket: any) => {
-    const token = socket.handshake.auth.token;
-    const userId = socket.handshake.query.userId as string;
-    const customerId = socket.handshake.query.customerId as string;
+  // 添加认证中间件
+  io.use(async (socket: any, next) => {
+    let token = socket.handshake.auth.token;
 
-    console.log(`连接: ${socket.id}, token: ${token}`);
-    console.log(`用户连接: ${socket.id}, userId: ${userId}`);
-    console.log(`客户连接: ${socket.id}, customerId: ${customerId}`);
-
-    // 处理用户和客户加入房间
-    if (userId && userId !== 'undefined') {
-      await handleUserJoin(socket, userId);
+    if (!token || token === 'undefined') {
+      return;
     }
-    if (customerId && customerId !== 'undefined') {
-      await handleCustomerJoin(socket, customerId);
+
+    if (token && token.startsWith('Bearer ')) {
+      token = token.split(' ')[1];
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string,
+    ) as jwt.JwtPayload & { type: 'user' | 'customer' };
+
+    if (decoded.type === 'user') {
+      const user = await User.findById(decoded.sub).exec();
+
+      if (!user || !user.live) {
+        return;
+      }
+
+      socket.user = user;
+    } else if (decoded.type === 'customer') {
+      const customer = await Customer.findById(decoded.sub);
+      if (!customer) {
+        return;
+      }
+      socket.customer = customer;
+    }
+
+    next();
+  });
+
+  io.on('connection', async (socket: any) => {
+    console.log(`连接: ${socket.id}`);
+
+    if (socket.user) {
+      console.log(`用户连接: ${socket.id}, userId: ${socket.user._id}`);
+      await handleUserJoin(socket, socket.user);
+    }
+
+    if (socket.customer) {
+      console.log(`客户连接: ${socket.id}, customerId: ${socket.customer._id}`);
+      await handleCustomerJoin(socket, socket.customer._id);
     }
 
     socket.on('disconnect', async () => {
       console.log(`客户端断开连接: ${socket.id}`);
 
-      // 处理用户和客户离开房间
-      if (userId && userId !== 'undefined') {
-        await handleUserLeave(socket, userId);
+      if (socket.user) {
+        await handleUserLeave(socket, socket.user._id.toString());
       }
-      if (customerId && customerId !== 'undefined') {
-        await handleCustomerLeave(socket, customerId);
+      if (socket.customer) {
+        await handleCustomerLeave(socket, socket.customer._id);
       }
     });
   });
