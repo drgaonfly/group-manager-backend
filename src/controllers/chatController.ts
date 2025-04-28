@@ -160,6 +160,7 @@ const deleteMultipleChats = handleAsync(async (req: Request, res: Response) => {
 // 后台代理获取与客户的最新聊天记录
 const getLatestChats = handleAsync(
   async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '50' } = req.query;
     const query = buildQuery(req.query);
 
     // 如果是代理用户，只能看到自己的聊天记录
@@ -182,6 +183,9 @@ const getLatestChats = handleAsync(
               },
             },
             { $replaceRoot: { newRoot: '$latestMessage' } },
+            // 添加分页
+            { $skip: (+current - 1) * +pageSize },
+            { $limit: +pageSize },
           ],
           // 统计每个客户的未读消息数
           unreadCounts: [
@@ -197,6 +201,17 @@ const getLatestChats = handleAsync(
                 _id: '$customer',
                 unreadCount: { $sum: 1 },
               },
+            },
+          ],
+          // 获取总数
+          total: [
+            {
+              $group: {
+                _id: '$customer',
+              },
+            },
+            {
+              $count: 'count',
             },
           ],
         },
@@ -226,10 +241,10 @@ const getLatestChats = handleAsync(
     res.json({
       success: true,
       data: populatedChats,
+      total: latestChatsWithUnread[0].total[0]?.count || 0,
     });
   },
 );
-
 // 后台代理获取与客户的所有聊天记录
 const getChatUserMessagesByCustomer = handleAsync(
   async (req: RequestCustom, res: Response) => {
