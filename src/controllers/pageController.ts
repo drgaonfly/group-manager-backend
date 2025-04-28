@@ -68,14 +68,17 @@ export const getHome = handleAsync(async (req: Request, res: Response) => {
 
 // 获取服务页面
 export const getServe = handleAsync(async (req: Request, res: Response) => {
-  const { lang } = req.query;
+  const { lang, type } = req.query;
 
   const [faqData, featureData, videoData, partnershipData] = await Promise.all([
     // Get FAQ data
     Question.find(lang ? { lang } : {}).sort('-createdAt'),
 
     // Get features data
-    Feature.find(lang ? { lang } : {}).sort('-createdAt'),
+    Feature.find({
+      ...(lang ? { lang } : {}),
+      ...(type ? { type } : {}),
+    }).sort('-createdAt'),
 
     // Get latest video
     Video.findOne().sort({ createdAt: -1 }).select('url'),
