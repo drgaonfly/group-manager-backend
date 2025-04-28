@@ -29,7 +29,7 @@ const featureSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     text: { type: String, required: true },
-    icon: { type: String, required: false },
+    icon: { type: String, required: true },
     lang: {
       type: String,
       enum: [
@@ -49,7 +49,7 @@ const featureSchema = new mongoose.Schema(
         'de',
         'tr',
       ],
-      required: false,
+      required: true,
     },
   },
   { timestamps: true },
