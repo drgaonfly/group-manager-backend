@@ -162,20 +162,50 @@ const getLatestChats = handleAsync(async (req: Request, res: Response) => {
 
   const query = buildQuery(req.query);
 
-  // 获取所有客户的最新一条消息，实现群聊列表
-  const latestChats = await Chat.aggregate([
+  // 获取所有客户的最新一条消息和未读消息数量，实现群聊列表
+  const latestChatsWithUnread = await Chat.aggregate([
     { $match: query },
-    { $sort: { createdAt: -1 } },
     {
-      $group: {
-        _id: '$customer',
-        latestMessage: { $first: '$$ROOT' },
+      $facet: {
+        // 获取最新消息
+        latestMessages: [
+          { $sort: { createdAt: -1 } },
+          {
+            $group: {
+              _id: '$customer',
+              latestMessage: { $first: '$$ROOT' },
+            },
+          },
+          { $replaceRoot: { newRoot: '$latestMessage' } },
+          { $skip: (+current - 1) * +pageSize },
+          { $limit: +pageSize },
+        ],
+        // 统计每个客户的未读消息数
+        unreadCounts: [
+          { $match: { isRead: false } },
+          {
+            $group: {
+              _id: '$customer',
+              unreadCount: { $sum: 1 },
+            },
+          },
+        ],
       },
     },
-    { $replaceRoot: { newRoot: '$latestMessage' } },
-    { $skip: (+current - 1) * +pageSize },
-    { $limit: +pageSize },
   ]).exec();
+
+  // 合并最新消息和未读数量
+  const latestChats = latestChatsWithUnread[0].latestMessages.map(
+    (chat: any) => {
+      const unreadInfo = latestChatsWithUnread[0].unreadCounts.find(
+        (unread: any) => unread._id.toString() === chat.customer.toString(),
+      );
+      return {
+        ...chat,
+        unreadCount: unreadInfo ? unreadInfo.unreadCount : 0,
+      };
+    },
+  );
 
   // 填充客户和用户信息
   const populatedChats = await Chat.populate(latestChats, [
