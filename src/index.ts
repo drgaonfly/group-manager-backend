@@ -58,6 +58,7 @@ import recordRoutes from './routes/recordRoutes';
 import videoRoutes from './routes/videoRoutes';
 import pageRoutes from './routes/pageRoutes';
 import chatRoutes from './routes/chatRoutes';
+import featureRoutes from './routes/featureRoutes';
 
 // import { startWebHookBot } from './bot';
 dotenv.config();
@@ -120,6 +121,7 @@ app.use('/api/pages', pageRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/depth-incomes', depthIncomeRoutes);
 app.use('/api/team-benefits', teamBenefitRoutes);
+app.use('/api/features', featureRoutes);
 
 setupDB();
 setupRedis();

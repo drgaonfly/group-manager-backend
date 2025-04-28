@@ -13,8 +13,6 @@ const carouselSchema = new mongoose.Schema(
   {
     image: { type: String, required: false },
     alt: { type: String, required: false },
-    size: { type: String, required: false },
-    type: { type: String, required: false, enum: ['jpg', 'png', 'jpeg'] },
   },
   { timestamps: true },
 );
