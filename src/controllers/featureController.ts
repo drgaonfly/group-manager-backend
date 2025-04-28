@@ -15,6 +15,10 @@ const buildQuery = (queryParams: any): any => {
     query.lang = queryParams.lang;
   }
 
+  if (queryParams.type) {
+    query.type = queryParams.type;
+  }
+
   return query;
 };
 
