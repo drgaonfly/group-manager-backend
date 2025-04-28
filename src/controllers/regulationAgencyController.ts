@@ -95,20 +95,28 @@ const addRegulationAgency = handleAsync(async (req: Request, res: Response) => {
 const updateRegulationAgency = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
+    const { logoUrl, ...otherFields } = req.body;
+
+    const regulationAgency = await RegulationAgency.findById(id);
+    if (!regulationAgency) {
+      res.status(404);
+      throw new Error('监管机构不存在');
+    }
+
+    // 更新字段
+    const updates = {
+      ...(logoUrl && !logoUrl.startsWith('http') && { logoUrl }),
+      ...otherFields,
+    };
 
     const updatedRegulationAgency = await RegulationAgency.findByIdAndUpdate(
       id,
-      req.body,
+      updates,
       {
         new: true,
         runValidators: true,
       },
     );
-
-    if (!updatedRegulationAgency) {
-      res.status(404);
-      throw new Error('监管机构不存在');
-    }
 
     // 处理图标 URL
     const processedRegulationAgency = await transformDocumentImage(

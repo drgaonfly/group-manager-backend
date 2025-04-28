@@ -86,18 +86,26 @@ const addPartnership = handleAsync(async (req: Request, res: Response) => {
 // 更新合作伙伴信息
 const updatePartnership = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { logoUrl, ...otherFields } = req.body;
 
-  const updatedPartnership = await Partnership.findByIdAndUpdate(id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-
-  if (!updatedPartnership) {
+  const partnership = await Partnership.findById(id);
+  if (!partnership) {
     res.status(404);
     throw new Error('合作伙伴不存在');
   }
 
-  // 处理视频路径
+  // 更新字段
+  const updates = {
+    ...(logoUrl && !logoUrl.startsWith('http') && { logoUrl }),
+    ...otherFields,
+  };
+
+  const updatedPartnership = await Partnership.findByIdAndUpdate(id, updates, {
+    new: true,
+    runValidators: true,
+  });
+
+  // 处理图标路径
   const processedPartnership = await transformDocumentImage(
     updatedPartnership,
     ['logoUrl'],

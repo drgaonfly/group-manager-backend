@@ -83,6 +83,7 @@ const getVideoById = handleAsync(async (req: Request, res: Response) => {
 // 更新视频
 const updateVideo = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { url, ...otherFields } = req.body;
 
   const video = await Video.findById(id);
   if (!video) {
@@ -90,13 +91,16 @@ const updateVideo = handleAsync(async (req: Request, res: Response) => {
     throw new Error('视频不存在');
   }
 
-  const updatedVideo = await Video.findByIdAndUpdate(
-    id,
-    {
-      ...req.body,
-    },
-    { new: true, runValidators: true },
-  );
+  // 构建更新字段
+  const updates = {
+    ...(url && !url.startsWith('http') && { url }),
+    ...otherFields,
+  };
+
+  const updatedVideo = await Video.findByIdAndUpdate(id, updates, {
+    new: true,
+    runValidators: true,
+  });
 
   // 处理图片路径
   const processedVideo = await transformDocumentImage(updatedVideo, ['url']);
