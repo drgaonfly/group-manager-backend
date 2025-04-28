@@ -266,6 +266,19 @@ const getChatUserMessagesByCustomer = handleAsync(
       .populate('user')
       .exec();
 
+    // 更新消息为已读状态
+    await Chat.updateMany(
+      {
+        customer: customerId,
+        user: userId,
+        sender: 'customer',
+        isRead: false,
+      },
+      {
+        $set: { isRead: true },
+      },
+    ).exec();
+
     res.json({
       success: true,
       data: messages,
