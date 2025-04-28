@@ -113,3 +113,25 @@ export const getServe = handleAsync(async (req: Request, res: Response) => {
     },
   });
 });
+
+// 获取服务页面
+export const getInvite = handleAsync(async (req: Request, res: Response) => {
+  const { lang, type } = req.query;
+
+  const [featureData] = await Promise.all([
+    // Get features data
+    Feature.find({
+      ...(lang ? { lang } : {}),
+      ...(type ? { type } : {}),
+    }).sort('-createdAt'),
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      features: {
+        data: featureData,
+      },
+    },
+  });
+});

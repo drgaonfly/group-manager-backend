@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { getHome, getServe } from '../controllers/pageController';
+import { getHome, getServe, getInvite } from '../controllers/pageController';
 
 const router: Router = express.Router();
 
@@ -8,5 +8,8 @@ router.route('/home').get(getHome);
 
 // 服务页面
 router.route('/serve').get(getServe);
+
+// 邀请页面
+router.route('/invite').get(getInvite);
 
 export default router;
