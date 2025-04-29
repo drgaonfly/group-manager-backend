@@ -301,6 +301,7 @@ const getChatUserMessagesByCustomer = handleAsync(
     io.emit('chatMessageRead', {
       customerId,
       userId,
+      sender: 'customer',
     });
 
     res.json({
@@ -400,6 +401,7 @@ const getChatMessages = handleAsync(
     io.emit('chatMessageRead', {
       customerId,
       userId,
+      sender: 'user',
     });
 
     res.json({
