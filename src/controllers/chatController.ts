@@ -18,11 +18,13 @@ const buildQuery = async (queryParams: any): Promise<any> => {
 
   if (queryParams.address) {
     console.log('address+++++++++++++++++', queryParams.address);
-    // 修改查询方式，先找到对应的 customer
-    const customerQuery = { address: queryParams.address };
-    const customer = await Customer.findOne(customerQuery);
-    if (customer) {
-      query.customer = customer._id;
+    // 修改查询方式，找到所有匹配的 customer
+    const customerQuery = {
+      address: { $regex: queryParams.address, $options: 'i' },
+    };
+    const customers = await Customer.find(customerQuery);
+    if (customers.length > 0) {
+      query.customer = { $in: customers.map((c) => c._id) };
     }
   }
 
