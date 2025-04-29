@@ -12,31 +12,20 @@ import {
 } from '../utils/transformUtils'; // 用于处理图像路径
 
 // Build query based on query parameters
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
-  // 根据用户ID查询聊天记录
-  if (queryParams.user) {
-    // 处理用户ID为对象字符串的情况
-    if (typeof queryParams.user === 'string') {
-      try {
-        const userObj = JSON.parse(queryParams.user);
-        query.user = userObj._id;
-      } catch (e) {
-        query.user = queryParams.user;
-      }
-    } else {
-      query.user = queryParams.user;
+  if (queryParams.address) {
+    console.log('address+++++++++++++++++', queryParams.address);
+    // 修改查询方式，先找到对应的 customer
+    const customerQuery = { address: queryParams.address };
+    const customer = await Customer.findOne(customerQuery);
+    if (customer) {
+      query.customer = customer._id;
     }
   }
 
-  if (queryParams.sender) {
-    query.sender = queryParams.sender;
-  }
-
-  if (queryParams.isSoftDeleted) {
-    query.isSoftDeleted = queryParams.isSoftDeleted;
-  }
+  console.log('Generated Query:', query);
 
   // if (queryParams.customer) {
 
@@ -165,7 +154,7 @@ const deleteMultipleChats = handleAsync(async (req: Request, res: Response) => {
 const getLatestChats = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '50' } = req.query;
-    const query = buildQuery(req.query);
+    const query = await buildQuery(req.query); // 添加 await
 
     // 如果是代理用户，只能看到自己的聊天记录
     if (isProxy(req.user)) {
@@ -351,7 +340,7 @@ const addChatUserMessage = handleAsync(
   },
 );
 
-// 前端客户获取与客服的聊天记录
+// 前端客户获取与客户的聊天记录
 const getChatMessages = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '100' } = req.query;
