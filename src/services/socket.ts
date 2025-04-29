@@ -164,6 +164,27 @@ export const setupSocket = async (server: http.Server): Promise<Server> => {
       }
     });
 
+    socket.on('user-message-read', async (data: any) => {
+      const { customerId, userId } = data;
+      io.emit('chatMessageRead', {
+        customerId,
+        userId,
+        sender: 'user',
+      });
+      console.log(`客户 ${userId} 已读消息来自用户 ${customerId}`);
+    });
+
+    // 后台读取了客户消息
+    socket.on('customer-message-read', async (data: any) => {
+      const { customerId, userId } = data;
+      console.log(`用户 ${userId} 已读消息来自客户 ${customerId}`);
+      io.emit('chatMessageRead', {
+        customerId,
+        userId,
+        sender: 'customer',
+      });
+    });
+
     socket.on('disconnect', async () => {
       console.log(`客户端断开连接: ${socket.id}`);
 
