@@ -299,6 +299,12 @@ const getChatUserMessagesByCustomer = handleAsync(
       },
     ).exec();
 
+    // emit 一个消息已读
+    io.emit('chatMessageRead', {
+      customerId,
+      userId,
+    });
+
     res.json({
       success: true,
       data: processedMessages,
@@ -352,7 +358,7 @@ const addChatUserMessage = handleAsync(
     });
 
     const chat = {
-      ...processedMessage.toObject(),
+      ...processedMessage,
       unreadCount,
     };
 
@@ -391,6 +397,12 @@ const getChatMessages = handleAsync(
     const processedMessages = await transformDocumentImages(messages, [
       'image',
     ]);
+
+    // emit 一个消息已读
+    io.emit('chatMessageRead', {
+      customerId,
+      userId,
+    });
 
     res.json({
       success: true,
@@ -435,7 +447,7 @@ const addChatMessage = handleAsync(
     });
 
     const chat = {
-      ...processedMessage.toObject(),
+      ...processedMessage,
       unreadCount,
     };
 
