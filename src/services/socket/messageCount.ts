@@ -7,7 +7,7 @@ export const messageCountUpdatedHandler = (
   io: Server,
 ) => {
   // 后台读取了客户消息或客户读取了消息
-  socket.on('getUnreadMessageCount', async (data: any) => {
+  socket.on('getUnreadMessageCount', async () => {
     try {
       const user = socket.user;
 
