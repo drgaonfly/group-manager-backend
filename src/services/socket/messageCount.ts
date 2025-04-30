@@ -23,7 +23,7 @@ export const messageCountUpdatedHandler = (
       console.log(`用户 ${user._id} 的未读消息数量:`, unreadCount);
 
       // 发送未读消息数量给客户端
-      socket.emit('unreadMessageCountUpdated', { count: unreadCount });
+      io.emit('unreadMessageCountUpdated', { count: unreadCount });
     } catch (error) {
       console.error('获取未读消息数量时发生错误:', error);
     }

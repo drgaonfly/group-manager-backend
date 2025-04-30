@@ -9,6 +9,7 @@ import { handleCustomerLeave, setupCustomerHandlers } from './customer';
 import { setupHeartbeatHandlers } from './heartbeat';
 import { setupMessageHandlers } from './message';
 import { SocketCustom } from 'socket';
+import { messageCountUpdatedHandler } from './messageCount';
 
 let io: Server;
 
@@ -66,6 +67,7 @@ export const setupSocket = async (server: http.Server): Promise<Server> => {
     setupCustomerHandlers(socket, io);
     setupHeartbeatHandlers(socket);
     setupMessageHandlers(socket, io);
+    messageCountUpdatedHandler(socket, io);
 
     socket.on('disconnect', async () => {
       console.log(`客户端断开连接: ${socket.id}`);
