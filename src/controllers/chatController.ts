@@ -11,6 +11,7 @@ import {
   // transformDocumentImage,
   transformDocumentImages,
 } from '../utils/transformUtils'; // 用于处理图像路径
+import { formatUSDT } from '../services/format';
 
 // Build query based on query parameters
 const buildQuery = async (queryParams: any): Promise<any> => {
@@ -230,7 +231,17 @@ const getLatestChats = handleAsync(
 
     // 填充客户和用户信息
     const populatedChats = await Chat.populate(latestChats, [
-      { path: 'customer' },
+      {
+        path: 'customer',
+        transform: (customer) => {
+          if (customer) {
+            customer.usdtBalance = formatUSDT(customer.usdtBalance);
+            customer.usdtStaking = formatUSDT(customer.usdtStaking);
+            customer.usdtPlatform = formatUSDT(customer.usdtPlatform);
+          }
+          return customer;
+        },
+      },
       { path: 'user', select: '-password' },
     ]);
 
