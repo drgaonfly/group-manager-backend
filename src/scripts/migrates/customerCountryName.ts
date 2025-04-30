@@ -8,6 +8,7 @@ import Customer from '../../models/customer';
 import setupDB from '../../utils/db';
 import { getIpGeoAddress } from '../../services/ipGeoaddress';
 
+// 暂时不用，怕调用太频繁被封
 const migrateColumns = async () => {
   console.log('开始数据迁移...');
 
