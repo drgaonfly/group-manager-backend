@@ -317,15 +317,15 @@ const getChatUserMessagesByCustomer = handleAsync(
       'image',
     ]);
 
-    // 更新消息为已读状态
-    await updateMessagesToRead(customer._id, userId, 'customer');
+    // // 更新消息为已读状态
+    // await updateMessagesToRead(customer._id, userId, 'customer');
 
-    // emit 一个消息已读
-    io.emit('chatMessageRead', {
-      customerId,
-      userId,
-      sender: 'customer',
-    });
+    // // emit 一个消息已读
+    // io.emit('chatMessageRead', {
+    //   customerId,
+    //   userId,
+    //   sender: 'customer',
+    // });
 
     res.json({
       success: true,
@@ -422,14 +422,14 @@ const getChatMessages = handleAsync(
       'image',
     ]);
 
-    await updateMessagesToRead(customerId, user._id, 'user');
+    // await updateMessagesToRead(customerId, user._id, 'user');
 
-    // emit 一个消息已读
-    io.emit('chatMessageRead', {
-      customerId,
-      userId: user._id,
-      sender: 'user',
-    });
+    // // emit 一个消息已读
+    // io.emit('chatMessageRead', {
+    //   customerId,
+    //   userId: user._id,
+    //   sender: 'user',
+    // });
 
     res.json({
       success: true,
