@@ -5,7 +5,7 @@ import { RequestCustom } from 'user';
 import { isEmployee, isProxy } from '../middlewares/authMiddleware';
 import { IBot } from '../models/bot';
 import { setupBot } from '../bot/botSetup';
-import BotUserMessage from '../models/botMessage';
+import BotUserMessage from '../models/botUserMessage';
 import User from '../models/user';
 
 // Build query based on query parameters
