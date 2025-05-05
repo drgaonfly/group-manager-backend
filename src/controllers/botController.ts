@@ -1,0 +1,262 @@
+import { Request, Response } from 'express';
+import Bot, { IBot } from '../models/bot';
+import handleAsync from '../utils/handleAsync';
+import User from '../models/user';
+import { printWebhookInfo, setupBot } from '../bot/botSetup';
+import { RequestCustom } from 'user';
+import { isProxy, isEmployee } from '../middlewares/authMiddleware';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
+
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
+  const query: any = {};
+
+  if (queryParams.token) {
+    query.token = queryParams.token;
+  }
+
+  if (queryParams.botName) {
+    query.botName = { $regex: queryParams.botName, $options: 'i' };
+  }
+
+  if (queryParams.message) {
+    query.message = { $regex: queryParams.message, $options: 'i' };
+  }
+
+  if (queryParams.remark) {
+    query.remark = { $regex: queryParams.remark, $options: 'i' };
+  }
+
+  if (queryParams.isOnline !== '') {
+    query.isOnline = queryParams.isOnline === 'true';
+  }
+
+  if (queryParams.user) {
+    let searchText;
+    try {
+      const userParam = JSON.parse(String(queryParams.user));
+      searchText = userParam.name;
+    } catch (e) {
+      searchText = String(queryParams.user).trim();
+    }
+    const userData = await User.find({
+      name: {
+        $regex: searchText,
+        $options: 'i',
+      },
+    });
+
+    if (userData && userData.length > 0) {
+      query.user = { $in: userData.map((user) => user._id) };
+    } else {
+      return null;
+    }
+  }
+
+  if (isProxy(req.user)) {
+    const employees = await User.find({ proxy: req.user._id });
+    const employeeIds = employees.map((employee) => employee._id);
+    query.user = { $in: [...employeeIds, req.user._id] };
+  }
+
+  if (isEmployee(req.user)) {
+    query.user = req.user._id;
+  }
+
+  return query;
+};
+
+const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
+  const { current = '1', pageSize = '10' } = req.query;
+
+  const query = await buildQuery(req.query, req);
+
+  if (query === null) {
+    res.json({
+      success: true,
+      data: [],
+      total: 0,
+      current: +current,
+      pageSize: +pageSize,
+    });
+    return;
+  }
+
+  const bots = await Bot.find(query)
+    .populate('user')
+    .sort('-createdAt')
+    .skip((+current - 1) * +pageSize)
+    .limit(+pageSize)
+    .exec();
+
+  const total = await Bot.countDocuments(query).exec();
+
+  res.json({
+    success: true,
+    data: bots,
+    total,
+    current: +current,
+    pageSize: +pageSize,
+  });
+});
+
+const setWebhook = async (botManager: IBot) => {
+  const bot = setupBot(botManager.token);
+  await printWebhookInfo(bot);
+
+  console.log('删除 webhook');
+  await bot.api.deleteWebhook();
+
+  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`);
+
+  console.log(
+    `Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/bot-webhooks/${botManager._id}`,
+  );
+
+  console.log(`https://api.telegram.org/bot${botManager.token}/getWebhookInfo`);
+
+  console.log('修改 webhook 之后');
+  await printWebhookInfo(bot);
+};
+
+const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
+  console.log('WEBHOOK_URL', WEBHOOK_URL);
+  const { token, isOnline } = req.body;
+
+  const botExists = await Bot.findOne({ token });
+
+  if (botExists) {
+    res.status(400);
+    throw new Error('该 Bot Token 已被使用，请使用其他 Token');
+  }
+
+  const botManager = new Bot({
+    ...req.body,
+    user: req.user._id,
+  });
+
+  if (isOnline) {
+    try {
+      setWebhook(botManager);
+    } catch (e) {
+      console.log(e);
+      throw new Error('token 无效');
+    }
+  }
+
+  await botManager.save();
+
+  res.status(201).json({
+    success: true,
+    data: botManager,
+  });
+});
+
+const getBotById = handleAsync(async (req: Request, res: Response) => {
+  const bot = await Bot.findById(req.params.id);
+
+  if (!bot) {
+    res.status(404);
+    throw new Error('Bot 机器人不存在');
+  }
+
+  res.json({
+    success: true,
+    data: bot,
+  });
+});
+
+const updateBot = handleAsync(async (req: Request, res: Response) => {
+  console.log('WEBHOOK_URL', WEBHOOK_URL);
+  const { id } = req.params;
+
+  const botManager = await Bot.findById(id);
+
+  if (!botManager) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  const updatedBot = await Bot.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (updatedBot.isOnline !== botManager.isOnline) {
+    if (updatedBot.isOnline) {
+      setWebhook(updatedBot);
+    } else {
+      // const webhookInfo = await printWebhookInfo(bot);
+      // if (webhookInfo.url) {
+      //   await bot.api.deleteWebhook();
+      // }
+    }
+  }
+
+  res.json({
+    success: true,
+    data: updatedBot,
+  });
+});
+
+const deleteBot = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const bot = await Bot.findByIdAndDelete(id);
+
+  if (!bot) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  res.json({
+    success: true,
+    data: { message: '机器人删除成功' },
+  });
+});
+
+const deleteMultipleBots = handleAsync(async (req: Request, res: Response) => {
+  const { ids } = req.body;
+
+  const bots = await Bot.find({ _id: { $in: ids } });
+
+  if (bots.length === 0) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  // for (const botManager of bots) {
+  //   const bot = setupBot(botManager.token);
+  //   const webhookInfo = await printWebhookInfo(bot);
+  //   if (webhookInfo.url) {
+  //     await bot.api.deleteWebhook();
+  //     console.log(`${botManager.userName} Webhook ${botManager.token} 已删除`);
+  //   }
+  // }
+
+  const botIds = bots.map((bot) => bot._id);
+
+  await Bot.deleteMany({
+    _id: { $in: botIds },
+  });
+
+  res.json({
+    success: true,
+    message: `成功删除 ${ids.length} 个机器人`,
+  });
+});
+
+export {
+  getBots,
+  addBot,
+  getBotById,
+  updateBot,
+  deleteBot,
+  deleteMultipleBots,
+};

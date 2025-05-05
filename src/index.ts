@@ -20,6 +20,8 @@ import dataPermissionRoutes from './routes/dataPermissionRoutes';
 import proxyRoutes from './routes/proxyRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import customerRoutes from './routes/customerRoutes';
+import botRoutes from './routes/botRoutes';
+import botUserRoutes from './routes/botUserRoutes';
 
 dotenv.config();
 
@@ -50,6 +52,8 @@ app.use('/api/data-permissions', dataPermissionRoutes);
 app.use('/api/proxies', proxyRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/bots', botRoutes);
+app.use('/api/bot-users', botUserRoutes);
 
 app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
 
