@@ -1,10 +1,8 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../types';
-import BotUser from '../../../../../../Telebot-Spam/spam-bot-backend/src/models/botUser';
-import Bot, {
-  IMenu,
-} from '../../../../../../Telebot-Spam/spam-bot-backend/src/models/bot';
-import User from '../../../../../../Telebot-Spam/spam-bot-backend/src/models/user';
+import BotUser from '../../../models/botUser';
+import Bot, { IMenu } from '../../../models/bot';
+import User from '../../../models/user';
 import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();

@@ -1,6 +1,6 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../types';
-import Bot from '../../../../../../Telebot-Spam/spam-bot-backend/src/models/bot';
+import Bot from '../../../models/bot';
 
 const changeMessageCommand = new Composer<MyContext>();
 

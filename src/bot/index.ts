@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { setupBot } from './botSetup';
-import { default as BotManager } from '../../../../Telebot-Spam/spam-bot-backend/src/models/bot';
+import { default as BotManager } from '../models/bot';
 
 dotenv.config();
 
