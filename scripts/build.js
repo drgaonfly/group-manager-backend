@@ -11,6 +11,9 @@ require('dotenv').config();
 // 远程部署目录
 const REMOTE_DEPLOY_PATH = '/www/wwwroot/account-bot-backend';
 
+// NVM Node路径
+const NVM_NODE_PATH = '/root/.nvm/versions/node/v22.15.0/bin';
+
 // 远程服务器配置
 const sshConfig = {
   host: process.env.SSH_HOST,
@@ -111,7 +114,7 @@ async function uploadAndExtract() {
         // 解压文件并安装依赖
         await new Promise((res, rej) => {
           conn.exec(
-            `cd ${REMOTE_DEPLOY_PATH} && mkdir -p dist && unzip -o dist.zip -d dist && rm dist.zip && source ~/.bashrc && /root/.nvm/versions/node/v22.15.0/bin/pnpm install --production`,
+            `cd ${REMOTE_DEPLOY_PATH} && mkdir -p dist && unzip -o dist.zip -d dist && rm dist.zip && PATH="${NVM_NODE_PATH}:$PATH" pnpm install`,
             (err, stream) => {
               if (err) rej(err);
               stream.on('close', res);
