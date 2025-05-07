@@ -2,13 +2,13 @@
 
 入款（<%= depositTimes %>笔）:
 <% deposits.forEach((item, index) => { %>
-  ├─ 第<%= index + 1 %>笔 | 时间：<%= new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) %> | 金额：<%= item.amount.toFixed(2) %>
+  ├─ 第<%= index + 1 %>笔 | <%= new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) %> | 金额：<%= item.amount.toFixed(2) %>
 <% }) %>
   └─ 合计：<%= deposits.reduce((sum, item) => sum + item.amount, 0).toFixed(2) %>
 
 下发（<%= widthdrawTimes %>笔）:
 <% widthdraws.forEach((item, index) => { %>
-  ├─ 第<%= index + 1 %>笔 | 时间：<%= new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) %> | 金额：<%= item.amount.toFixed(2) %>
+  ├─ 第<%= index + 1 %>笔 | <%= new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) %> | 金额：<%= item.amount.toFixed(2) %>
 <% }) %>
   └─ 合计：<%= widthdraws.reduce((sum, item) => sum + item.amount, 0).toFixed(2) %>
 
