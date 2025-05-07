@@ -14,6 +14,9 @@ const REMOTE_DEPLOY_PATH = '/www/wwwroot/account-bot-backend';
 // NVM Node路径
 const NVM_NODE_PATH = '/root/.nvm/versions/node/v22.15.0/bin';
 
+// PM2 服务名称
+const PM2_SERVICE_NAME = 'account-backend';
+
 // 远程服务器配置
 const sshConfig = {
   host: process.env.SSH_HOST,
@@ -114,7 +117,7 @@ async function uploadAndExtract() {
         // 解压文件并安装依赖
         await new Promise((res, rej) => {
           conn.exec(
-            `cd ${REMOTE_DEPLOY_PATH} && mkdir -p dist && unzip -o dist.zip -d dist && rm dist.zip && PATH="${NVM_NODE_PATH}:$PATH" pnpm install`,
+            `cd ${REMOTE_DEPLOY_PATH} && mkdir -p dist && unzip -o dist.zip -d dist && rm dist.zip && PATH="${NVM_NODE_PATH}:$PATH" pnpm install && pm2 restart ${PM2_SERVICE_NAME}`,
             (err, stream) => {
               if (err) rej(err);
               stream.on('close', res);
