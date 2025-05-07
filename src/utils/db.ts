@@ -30,6 +30,9 @@ const setupDB = async (): Promise<void | null> => {
       options.proxyPort = Number(process.env.MONGODB_PROXYPORT);
     }
 
+    // 打印数据库连接字符串
+    console.log('MongoDB URL:', process.env.MONGODB_URL);
+
     await mongoose.connect(process.env.MONGODB_URL, options);
     // isConnected = true;
     console.log('MongoDB Connected');

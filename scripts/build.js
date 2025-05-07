@@ -2,13 +2,50 @@
 const { execSync } = require('child_process');
 const glob = require('glob');
 const fs = require('fs').promises;
-const path = require('path');
 const JavaScriptObfuscator = require('javascript-obfuscator');
 const { minify } = require('terser');
 const archiver = require('archiver');
+const Client = require('ssh2').Client;
+require('dotenv').config();
+
+// 远程部署目录
+const REMOTE_DEPLOY_PATH = '/www/wwwroot/account-bot-backend';
+
+// NVM Node路径
+const NVM_NODE_PATH = '/root/.nvm/versions/node/v22.15.0/bin';
+
+// PM2 服务名称
+const PM2_SERVICE_NAME = 'account-backend';
+
+// 远程服务器配置
+const sshConfig = {
+  host: process.env.SSH_HOST,
+  port: 22,
+  username: 'root',
+  // 检查SSH私钥路径是否存在
+  privateKey: process.env.SSH_PRIVATE_KEY ? require('fs').readFileSync(process.env.SSH_PRIVATE_KEY) : undefined
+};
 
 // 清理并编译
 execSync('rimraf dist && tsc -p tsconfig.json');
+
+// 创建压缩包
+async function createZipArchive() {
+  await fs.mkdir('build', { recursive: true });
+
+  const output = require('fs').createWriteStream('build/dist.zip');
+  const archive = archiver('zip', {
+    zlib: { level: 9 }
+  });
+
+  return new Promise((resolve, reject) => {
+    output.on('close', resolve);
+    archive.on('error', reject);
+    archive.pipe(output);
+    archive.directory('dist/', false);
+    archive.finalize();
+  });
+}
 
 // 混淆和压缩
 async function processFiles() {
@@ -32,22 +69,114 @@ async function processFiles() {
     await fs.writeFile(file, result.code);
   }
 
-  // 创建 build 目录
-  await fs.mkdir('build', { recursive: true });
+  await createZipArchive();
 
-  // 创建 zip 文件流
-  const output = require('fs').createWriteStream('build/dist.zip');
-  const archive = archiver('zip', {
-    zlib: { level: 9 } // 最大压缩级别
-  });
+  // 仅当存在SSH_HOST和SSH_PRIVATE_KEY环境变量时才执行远程部署
+  if (process.env.SSH_HOST && process.env.SSH_PRIVATE_KEY) {
+    await uploadAndExtract();
+    // 上传并执行清理脚本
+    // await uploadAndExecuteCleanScript();
+  } else {
+    console.log('跳过远程部署: 缺少SSH_HOST或SSH_PRIVATE_KEY环境变量');
+  }
+}
 
-  // 监听压缩完成事件
+// 上传并解压文件到远程服务器
+async function uploadAndExtract() {
+  const conn = new Client();
+  
   await new Promise((resolve, reject) => {
-    output.on('close', resolve);
-    archive.on('error', reject);
-    archive.pipe(output);
-    archive.directory('dist/', false);
-    archive.finalize();
+    conn.on('ready', async () => {
+      try {
+        // 上传文件
+        await new Promise((res, rej) => {
+          conn.sftp((err, sftp) => {
+            if (err) rej(err);
+            const uploads = [
+              { src: 'build/dist.zip', dest: `${REMOTE_DEPLOY_PATH}/dist.zip` },
+              { src: 'package.json', dest: `${REMOTE_DEPLOY_PATH}/package.json` },
+              { src: 'pnpm-lock.yaml', dest: `${REMOTE_DEPLOY_PATH}/pnpm-lock.yaml` }
+            ];
+            
+            // 串行上传所有文件
+            const uploadSequentially = async () => {
+              for (const file of uploads) {
+                await new Promise((resolve, reject) => {
+                  sftp.fastPut(file.src, file.dest, (err) => {
+                    if (err) reject(err);
+                    resolve();
+                  });
+                });
+              }
+            };
+            
+            uploadSequentially()
+              .then(res)
+              .catch(rej);
+          });
+        });
+
+        // 解压文件并安装依赖
+        await new Promise((res, rej) => {
+          conn.exec(
+            `cd ${REMOTE_DEPLOY_PATH} && mkdir -p dist && unzip -o dist.zip -d dist && rm dist.zip && PATH="${NVM_NODE_PATH}:$PATH" pnpm install && PATH="${NVM_NODE_PATH}:$PATH" pm2 restart ${PM2_SERVICE_NAME}`,
+            (err, stream) => {
+              if (err) rej(err);
+              stream.on('close', res);
+              stream.on('data', (data) => console.log('STDOUT: ' + data));
+              stream.stderr.on('data', (data) => console.error('STDERR: ' + data));
+            }
+          );
+        });
+
+        resolve();
+      } catch (error) {
+        reject(error);
+      } finally {
+        conn.end();
+      }
+    }).connect(sshConfig);
+  });
+}
+
+// 上传并执行清理脚本
+async function uploadAndExecuteCleanScript() {
+  const conn = new Client();
+  
+  await new Promise((resolve, reject) => {
+    conn.on('ready', async () => {
+      try {
+        // 上传清理脚本
+        await new Promise((res, rej) => {
+          conn.sftp((err, sftp) => {
+            if (err) rej(err);
+            sftp.fastPut('scripts/clean.sh', `${REMOTE_DEPLOY_PATH}/clean.sh`, (err) => {
+              if (err) rej(err);
+              res();
+            });
+          });
+        });
+
+        // 添加执行权限并运行清理脚本
+        await new Promise((res, rej) => {
+          conn.exec(
+            `cd ${REMOTE_DEPLOY_PATH} && chmod u+x clean.sh && ./clean.sh`,
+            (err, stream) => {
+              if (err) rej(err);
+              stream.on('close', res);
+              stream.on('data', (data) => console.log('清理脚本输出: ' + data));
+              stream.stderr.on('data', (data) => console.error('清理脚本错误: ' + data));
+            }
+          );
+        });
+
+        resolve();
+      } catch (error) {
+        reject(error);
+      } finally {
+        conn.end();
+      }
+    }).connect(sshConfig);
   });
 }
 
