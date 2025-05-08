@@ -7,7 +7,7 @@ const debug = createDebug('bot:error');
 
 const botResolver: Middleware<MyContext> = async (ctx, next) => {
   // 从Webhook路径或消息中获取机器人token
-  const token = ctx.match?.[0] || ctx.message?.text?.split(' ')[1];
+  const token = ctx.api.token;
 
   if (!token) {
     await ctx.reply('无效的机器人访问令牌');
