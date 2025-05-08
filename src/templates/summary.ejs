@@ -1,0 +1,16 @@
+<%= title %>:
+
+入款(<%= depositTimes %>笔):
+<% deposits.forEach((item, index) => { %>
+  <%= new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) %>：第<%= index + 1 %>笔：<%= item.amount %>
+<% }) %>
+共 <%= deposits.reduce((sum, item) => sum + item.amount, 0) %>
+
+下发（<%= widthdrawTimes %>笔）:
+<% widthdraws.forEach((item, index) => { %>
+  <%= new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) %>：第<%= index + 1 %>笔：<%= item.amount %>
+<% }) %>
+共 <%= widthdraws.reduce((sum, item) => sum + item.amount, 0) %>
+
+费率：<%= (feeRate * 100).toFixed(2) %>%
+汇率：<%= exchangeRate %>

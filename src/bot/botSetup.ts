@@ -3,7 +3,7 @@ import logger from './middlewares/logger';
 import adminComposer from './commands/admin';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
-// import { commandsList } from './commandsList';
+import { commandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { Context } from 'grammy'; // 确保导入 Context
 import createDebug from 'debug';
@@ -71,14 +71,14 @@ export const setupBot = (token: string) => {
     }
   });
 
-  // bot.api
-  //   .setMyCommands(commandsList)
-  //   .then(() => {
-  //     console.log('命令已设置成功');
-  //   })
-  //   .catch((error) => {
-  //     console.error('设置命令时发生错误:', error);
-  //   });
+  bot.api
+    .setMyCommands(commandsList)
+    .then(() => {
+      console.log('命令已设置成功');
+    })
+    .catch((error) => {
+      console.error('设置命令时发生错误:', error);
+    });
 
   return bot;
 };

@@ -12,6 +12,8 @@ export interface IBot extends Document {
   userName: string;
   menus: IMenu[];
   isOnline: boolean;
+  fee_rate: number;
+  exchange_rate: number;
 }
 
 export interface IMenu extends Document {
@@ -67,6 +69,14 @@ const botSchema = new mongoose.Schema(
       default: true,
     },
     menus: [menuSchema],
+    exchange_rate: {
+      type: Number,
+      default: 1,
+    },
+    fee_rate: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
