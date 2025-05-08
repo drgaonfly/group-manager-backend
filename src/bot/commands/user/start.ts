@@ -14,10 +14,10 @@ const debug = createDebug('bot:error');
 
 const handleTransactionCommand = async (
   ctx: MyContext,
-  type: '+' | '-' | '入款' | '下发',
+  type: '+' | '-' | '入款' | '下发' | '下发-',
 ) => {
   const [, , amount, rate, userRaw, feeRate] = ctx.match!;
-  const isDeposit = type === '+' || type === '入款';
+  const isDeposit = type === '+' || type === '入款' || type === '下发-';
 
   const user = await User.findOne({
     firstName: ctx.update.message.from.first_name,
@@ -256,6 +256,14 @@ startCommand.hears(
   /^(下发)(\d+(?:\.\d+)?)(?:\/(\d+(?:\.\d+)?))?(?:\s+(@?\S+))?(?:\s+(\d+(?:\.\d+)?))?$/,
   async (ctx) => {
     await handleTransactionCommand(ctx, '下发');
+  },
+);
+
+// 下发-100 /1.1 @user 0.03
+startCommand.hears(
+  /^(下发-)(\d+(?:\.\d+)?)(?:\/(\d+(?:\.\d+)?))?(?:\s+(@?\S+))?(?:\s+(\d+(?:\.\d+)?))?$/,
+  async (ctx) => {
+    await handleTransactionCommand(ctx, '下发-');
   },
 );
 
