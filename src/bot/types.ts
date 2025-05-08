@@ -1,4 +1,4 @@
-import { Context, Context as GrammyContext } from 'grammy';
+import { Context as GrammyContext } from 'grammy';
 import { SessionData } from './sessions';
 import { SessionFlavor } from 'grammy';
 import { IBot } from '../models/bot';
