@@ -3,6 +3,9 @@ import logger from './middlewares/logger';
 import adminComposer from './commands/admin';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
+import botResolver from './middlewares/botResolver';
+import userResolver from './middlewares/userResolver';
+
 import { commandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { Context } from 'grammy'; // 确保导入 Context
@@ -45,6 +48,8 @@ export const setupBot = (token: string) => {
 
   bot.use(errorHandler);
   bot.use(logger);
+  bot.use(botResolver);
+  bot.use(userResolver);
   bot.use(userComposer.middleware());
   bot.use(adminComposer.middleware());
 
