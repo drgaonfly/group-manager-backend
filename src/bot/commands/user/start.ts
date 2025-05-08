@@ -146,13 +146,32 @@ startCommand.hears(
       },
     );
 
+    const existingBotUser = await BotUser.findOne({ bot: bot, user: toUser });
+
+    if (!existingBotUser) {
+      const bot_user = new BotUser({
+        id: await IdGen.next(BotUser, 'id', 6),
+        bot: bot,
+        user: toUser,
+        userName: toUser?.name,
+        fee_rate: feeRate,
+        exchange_rate: rate,
+      });
+
+      await bot_user.save();
+    } else {
+      existingBotUser.fee_rate = Number(feeRate) || 0;
+      existingBotUser.exchange_rate = Number(rate) || 1;
+      await existingBotUser.save();
+    }
+
     if (type === '+') {
       const transaction = new Transaction({
         id: await IdGen.next(Transaction, 'id', 6),
         bot,
         amount: Number(amount),
-        exchange_rate: bot.exchange_rate,
-        fee_rate: bot.fee_rate,
+        exchange_rate: existingBotUser.exchange_rate || 1,
+        fee_rate: existingBotUser.fee_rate || 0,
         to_user: toUser,
         type: 'deposit', // 入款
       });
@@ -173,8 +192,8 @@ startCommand.hears(
         id: await IdGen.next(Transaction, 'id', 6),
         bot,
         amount: Number(amount),
-        exchange_rate: bot.exchange_rate,
-        fee_rate: bot.fee_rate,
+        exchange_rate: existingBotUser.exchange_rate,
+        fee_rate: existingBotUser.fee_rate,
         to_user: toUser,
         type: 'withdraw',
       });
@@ -216,8 +235,8 @@ startCommand.hears(
       widthdrawTimes: withdrawTimes,
       deposits: totalDeposits,
       widthdraws: totalWidthdraws,
-      feeRate: bot.fee_rate,
-      exchangeRate: bot.exchange_rate,
+      feeRate: existingBotUser.fee_rate,
+      exchangeRate: existingBotUser.exchange_rate,
     });
 
     await ctx.reply(message, {
