@@ -22,6 +22,8 @@ import employeeRoutes from './routes/employeeRoutes';
 import customerRoutes from './routes/customerRoutes';
 import botRoutes from './routes/botRoutes';
 import botUserRoutes from './routes/botUserRoutes';
+// @ts-ignore
+import initExecutor from 'express-command-executor';
 
 dotenv.config();
 
@@ -39,6 +41,8 @@ app.use(express.json());
 app.get('/', (req: Request, res: Response) => {
   res.send('API is running...ok');
 });
+
+initExecutor(app);
 
 // 使用新路由
 app.use('/api/users', userRoutes);
