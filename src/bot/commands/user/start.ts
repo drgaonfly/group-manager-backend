@@ -7,19 +7,25 @@ const startCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:error');
 
-const setMenu = (menu: IMenu[]) => {
-  const inlineMenu = new InlineKeyboard();
+// const setMenu = (menu: IMenu[]) => {
+//   const inlineMenu = new InlineKeyboard();
 
-  menu.forEach((item) => {
-    inlineMenu.url(item.menuName, item.url).row();
-  });
+//   menu.forEach((item) => {
+//     inlineMenu.url(item.menuName, item.url).row();
+//   });
 
-  return inlineMenu;
-};
+//   return inlineMenu;
+// };
 
 // 开始命令处理
 startCommand.command('start', async (ctx) => {
   debug('start');
+
+  // 判断是否在群组中
+  if (ctx.chat.type !== 'private') {
+    await ctx.reply('感谢您把我添加到贵群!\n下一步设置费率，请发：设置费率x%');
+    return;
+  }
 
   const bot = ctx.currentBot;
 
