@@ -122,7 +122,13 @@ async function uploadAndExtract() {
         // 解压文件并安装依赖
         await new Promise((res, rej) => {
           conn.exec(
-            `cd ${REMOTE_DEPLOY_PATH} && mkdir -p dist && unzip -o dist.zip -d dist && rm dist.zip && PATH="${NVM_NODE_PATH}:$PATH" pnpm install && PATH="${NVM_NODE_PATH}:$PATH" pm2 restart ${PM2_SERVICE_NAME}`,
+            `cd ${REMOTE_DEPLOY_PATH} && \
+            rm -rf dist && \
+            mkdir -p dist && \
+            unzip -o dist.zip -d dist && \
+            rm dist.zip && \
+            PATH="${NVM_NODE_PATH}:$PATH" pnpm install && \
+            PATH="${NVM_NODE_PATH}:$PATH" pm2 restart ${PM2_SERVICE_NAME}`,
             (err, stream) => {
               if (err) rej(err);
               stream.on('close', res);
