@@ -27,7 +27,7 @@ const sshConfig = {
 };
 
 // 清理并编译
-execSync('rimraf dist && tsc -p tsconfig.json');
+execSync('rimraf dist && tsc -p tsconfig.json && cp -r src/templates dist/templates');
 
 // 创建压缩包
 async function createZipArchive() {
