@@ -51,12 +51,12 @@ export const setupBot = (token: string) => {
   bot.use(errorHandler);
   bot.use(logger);
   bot.use(userComposer.middleware());
-  bot.use(adminComposer.middleware());
+  // bot.use(adminComposer.middleware());
 
   // bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
 
   // 回复任何消息 "Hi there!"。
-  bot.on('message', (ctx) => ctx.reply('Hi there!'));
+  // bot.on('message', (ctx) => ctx.reply('Hi there!'));
 
   bot.on('callback_query:data', async (ctx) => {
     const data = ctx.callbackQuery?.data;
