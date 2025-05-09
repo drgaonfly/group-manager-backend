@@ -11,12 +11,12 @@ import withdrawComposer from './withdraw';
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
 
+userComposer.use(startComposer.middleware());
 userComposer.use(helpComposer.middleware());
 userComposer.use(setExchangeRateComposer.middleware());
-userComposer.use(startComposer.middleware());
-userComposer.use(callbackComposer.middleware());
 userComposer.use(setFeeRateComposer.middleware());
 userComposer.use(depositComposer.middleware());
 userComposer.use(withdrawComposer.middleware());
+userComposer.use(callbackComposer.middleware());
 
 export default userComposer;
