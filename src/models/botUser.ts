@@ -14,17 +14,10 @@ export interface IBotUser extends Document {
 const botUserSchema = new mongoose.Schema(
   {
     id: { type: String, required: true },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: false,
-    },
     userName: { type: String, required: false },
     firstName: { type: String, required: false },
     lastName: { type: String, required: false },
-    bots: [
-      { type: mongoose.Schema.Types.ObjectId, ref: 'Bot', required: true },
-    ],
+    bots: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bot' }],
     messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BotUserMessage' }],
   },
   { timestamps: true },

@@ -18,8 +18,6 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
         userName: username,
         firstName: first_name,
         lastName: last_name,
-        bot: ctx.currentBot._id,
-        user: ctx.currentBot.user,
       },
     },
     { new: true, upsert: true },
