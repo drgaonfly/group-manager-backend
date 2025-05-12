@@ -22,6 +22,7 @@ const transactionSchema = new mongoose.Schema(
       ref: 'Group',
       required: true,
     },
+    // 创建账单的机器人用户
     botUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
