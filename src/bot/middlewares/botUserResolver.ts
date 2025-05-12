@@ -23,7 +23,16 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
     { new: true, upsert: true },
   );
 
+  // 将当前用户添加到机器人的用户列表中
+  await ctx.currentBot.updateOne({
+    $addToSet: {
+      // 使用 $addToSet 来避免重复添加
+      botUsers: botUser._id,
+    },
+  });
+
   ctx.currentBotUser = botUser;
+
   await next();
 };
 
