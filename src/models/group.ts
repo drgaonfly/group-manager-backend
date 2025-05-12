@@ -11,6 +11,7 @@ export interface IGroup extends Document {
   operators: (mongoose.Schema.Types.ObjectId | IBotUser)[]; // 操作人数组
   exchange_rate?: number;
   fee_rate?: number;
+  isOnline: boolean; // 是否在线，不用显示在后台
 }
 
 // 群组 Schema
@@ -66,6 +67,12 @@ const groupSchema = new mongoose.Schema(
       type: Number,
       required: false,
       default: 0, // 默认费率为0%
+    },
+    // 是否在线
+    isOnline: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   {
