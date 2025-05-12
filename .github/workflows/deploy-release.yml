@@ -7,7 +7,7 @@ on:
 jobs:
 
   build:
-    name: Build
+    name: deploy-release
     runs-on: ubuntu-latest
     steps:
       - name: deploy to release server
