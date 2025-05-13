@@ -23,6 +23,7 @@ export const isGroupCreator = async (
     );
     return;
   } else {
+    debug('⚠️ 仅群组创建者可使用此命令');
     await next();
   }
 };
