@@ -1,13 +1,14 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
+import { isGroupCreator } from '../../../middlewares/isGroupCreator';
 
 const showOperatorCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:showOperator');
 
 // 匹配 "设置操作人@机器人名 @用户" 格式的命令
-showOperatorCommand.hears(/^显示操作人/, async (ctx) => {
+showOperatorCommand.hears(/^显示操作人/, isGroupCreator, async (ctx) => {
   debug('showOperator');
   const currentGroup = ctx.currentGroup;
 

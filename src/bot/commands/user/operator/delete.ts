@@ -2,13 +2,14 @@ import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import BotUser from '../../../../models/botUser';
+import { isGroupCreator } from '../../../middlewares/isGroupCreator';
 
 const deleteOperatorCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:deleteOperator');
 
 // 匹配 "删除操作人@机器人名 @用户" 格式的命令
-deleteOperatorCommand.hears(/^删除操作人/, async (ctx) => {
+deleteOperatorCommand.hears(/^删除操作人/, isGroupCreator, async (ctx) => {
   debug('deleteOperator');
   const currentGroup = ctx.currentGroup;
 
