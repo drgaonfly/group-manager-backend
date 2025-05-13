@@ -22,5 +22,7 @@ export const isGroupCreator = async (
       } 首次设置.`,
     );
     return;
+  } else {
+    await next();
   }
 };
