@@ -13,6 +13,7 @@ export interface IGroup extends Document {
   fee_rate?: number;
   isOnline: boolean; // 是否在线，不用显示在后台
   botUsers: (mongoose.Schema.Types.ObjectId | IBotUser)[];
+  startAt?: Date;
 }
 
 // 群组 Schema
@@ -80,6 +81,9 @@ const groupSchema = new mongoose.Schema(
         ref: 'BotUser',
       },
     ],
+    startAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
