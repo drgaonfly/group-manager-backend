@@ -3,15 +3,11 @@ import { Composer } from 'grammy';
 import startComposer from './start';
 import helpComposer from './help';
 import callbackComposer from './callback';
-import setExchangeRateComposer from './set/exchangeRate';
-import setFeeRateComposer from './set/feeRate';
 import setInitiateComposer from './initiate';
 import depositCommand from './deposit';
 import withdrawComposer from './withdraw';
 import operatorComposer from './operator/index';
 import setComposer from './set';
-// import depositComposer from './deposit';
-// import withdrawComposer from './withdraw';
 
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
