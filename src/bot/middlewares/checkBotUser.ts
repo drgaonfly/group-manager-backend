@@ -2,7 +2,7 @@ import { IBotUser } from '../../models/botUser';
 import { MyContext } from '../types';
 import createDebug from 'debug';
 
-const debug = createDebug('bot:isGroupCreator');
+const debug = createDebug('bot:checkBotUser');
 
 export const isGroupCreator = async (
   ctx: MyContext,

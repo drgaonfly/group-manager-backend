@@ -9,6 +9,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   // 检查是否在群组中
   if (!ctx.chat || ctx.chat.type === 'private') {
     debug('请在群组中使用此命令');
+    ctx.currentGroup = null;
     return await next();
   }
 

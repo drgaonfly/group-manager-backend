@@ -2,6 +2,7 @@ import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
+import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 
 const setFeeRateCommand = new Composer<MyContext>();
 
@@ -17,6 +18,7 @@ const debug = createDebug('bot:fee');
 
 setFeeRateCommand.hears(
   /^(\/)?设置费率\s*(\d+\.?\d*)\s*(%)?$/,
+  checkGroup,
   isOperatorOrCreator,
   async (ctx) => {
     debug('fee');

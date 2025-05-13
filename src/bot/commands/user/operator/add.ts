@@ -4,12 +4,14 @@ import createDebug from 'debug';
 import BotUser from '../../../../models/botUser';
 import { isGroupCreator } from '../../../middlewares/checkBotUser';
 const addOperatorCommand = new Composer<MyContext>();
+import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 
 const debug = createDebug('bot:addOperator');
 
 // 匹配 "设置操作人@机器人名 @用户" 格式的命令
 addOperatorCommand.hears(
   /.*设置为操作人.*|^设置操作人.*/,
+  checkGroup,
   isGroupCreator,
   async (ctx) => {
     const currentGroup = ctx.currentGroup;
