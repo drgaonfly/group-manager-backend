@@ -90,6 +90,7 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const bots = await Bot.find(query)
     .populate('user')
+    .populate('botUsers')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)

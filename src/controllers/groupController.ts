@@ -25,6 +25,7 @@ const getGroups = handleAsync(async (req: Request, res: Response) => {
     .populate('bot')
     .populate('creator')
     .populate('operators')
+    .populate('botUsers')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
