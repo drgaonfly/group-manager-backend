@@ -6,7 +6,7 @@ import callbackComposer from './callback';
 import setExchangeRateComposer from './setExchangeRate';
 import setFeeRateComposer from './setFeeRate';
 import setInitiateComposer from './initiate';
-import setAddOperatorComposer from './addOperator';
+import operatorComposer from './operator/index';
 // import depositComposer from './deposit';
 // import withdrawComposer from './withdraw';
 
@@ -21,6 +21,6 @@ userComposer.use(setFeeRateComposer.middleware());
 // userComposer.use(withdrawComposer.middleware());
 userComposer.use(callbackComposer.middleware());
 userComposer.use(setInitiateComposer.middleware());
-userComposer.use(setAddOperatorComposer.middleware());
+userComposer.use(operatorComposer.middleware());
 
 export default userComposer;
