@@ -1,29 +1,15 @@
 import { Composer } from 'grammy';
-import { MyContext } from '../../types';
+import { MyContext } from '../../../types';
 import createDebug from 'debug';
-import BotUser, { IBotUser } from '../../../models/botUser';
-
+import BotUser from '../../../../models/botUser';
+import { isGroupCreator } from '../../../middlewares/isGroupCreator';
 const addOperatorCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:addOperator');
 
 // 匹配 "设置操作人@机器人名 @用户" 格式的命令
-addOperatorCommand.hears(/^设置操作人/, async (ctx) => {
+addOperatorCommand.hears(/^设置操作人/, isGroupCreator, async (ctx) => {
   const currentGroup = ctx.currentGroup;
-  const creator = ctx.currentGroup.creator as IBotUser;
-
-  debug('当前用户ID:', ctx.currentBotUser._id);
-  debug('创建者ID:', creator._id);
-
-  if (ctx.currentBotUser._id.toString() !== creator._id.toString()) {
-    await ctx.reply(
-      `您不是当前权限人哦！此群机器人由 ${
-        creator.userName ||
-        `${creator.firstName || ''} ${creator.lastName || ''}`.trim()
-      } 首次设置.`,
-    );
-    return;
-  }
 
   debug(ctx.message.entities);
   const operators = ctx.message.entities.filter(

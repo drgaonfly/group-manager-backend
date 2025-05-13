@@ -6,9 +6,12 @@ import callbackComposer from './callback';
 import setExchangeRateComposer from './setExchangeRate';
 import setFeeRateComposer from './setFeeRate';
 import setInitiateComposer from './initiate';
-import setAddOperatorComposer from './addOperator';
+import setAddOperatorComposer from './operator/add';
 import depositCommand from './deposit';
 import withdrawComposer from './withdraw';
+import operatorComposer from './operator/index';
+// import depositComposer from './deposit';
+// import withdrawComposer from './withdraw';
 
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
@@ -22,5 +25,6 @@ userComposer.use(setInitiateComposer.middleware());
 userComposer.use(setAddOperatorComposer.middleware());
 userComposer.use(depositCommand.middleware());
 userComposer.use(withdrawComposer.middleware());
+userComposer.use(operatorComposer.middleware());
 
 export default userComposer;
