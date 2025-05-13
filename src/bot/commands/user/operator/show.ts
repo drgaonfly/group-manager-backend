@@ -2,12 +2,12 @@ import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
 
-const addOperatorCommand = new Composer<MyContext>();
+const showOperatorCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:showOperator');
 
 // 匹配 "设置操作人@机器人名 @用户" 格式的命令
-addOperatorCommand.hears(/^显示操作人/, async (ctx) => {
+showOperatorCommand.hears(/^显示操作人/, async (ctx) => {
   debug('showOperator');
   const currentGroup = ctx.currentGroup;
 
@@ -32,4 +32,4 @@ addOperatorCommand.hears(/^显示操作人/, async (ctx) => {
   await ctx.reply(`当前群组的操作人: ${operatorNames}`);
 });
 
-export default addOperatorCommand;
+export default showOperatorCommand;

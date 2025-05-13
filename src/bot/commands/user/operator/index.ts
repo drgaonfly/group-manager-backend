@@ -1,10 +1,14 @@
 // src/composers/index.ts
 import { Composer } from 'grammy';
 import addOperatorCommand from './add';
+import showOperatorCommand from './show';
+import removeOperatorCommand from './delete';
 
 // 创建一个新的 Composer 实例
-const userComposer = new Composer();
+const operatorComposer = new Composer();
 
-userComposer.use(addOperatorCommand.middleware());
+operatorComposer.use(addOperatorCommand.middleware());
+operatorComposer.use(showOperatorCommand.middleware());
+operatorComposer.use(removeOperatorCommand.middleware());
 
-export default userComposer;
+export default operatorComposer;
