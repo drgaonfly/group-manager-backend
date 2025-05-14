@@ -1,12 +1,12 @@
-入款(<%= deposits.length %>笔) :<%= deposits.map(item => `
-  ${new Date(item.createdAt).toLocaleTimeString('zh-CN', { hour12: false })}  ${item.amount}`).join('') %>
-
-下发（<%= withdraws.length %>笔）:<%= withdraws.map(item => `
-  ${new Date(item.createdAt).toLocaleTimeString('zh-CN', { hour12: false })}  ${item.amount}`).join('') %>
-
+入款(<%= deposits.length %>笔) :
+<% deposits.forEach((item, index) => { %><code><%= new Date(item.createdAt).toLocaleTimeString('zh-CN', { hour12: false }) %></code>  <strong><%= item.amount %></strong>
+<% }) %>
+下发（<%= withdraws.length %>笔）:
+<% withdraws.forEach((item, index) => { %><code><%= new Date(item.createdAt).toLocaleTimeString('zh-CN', { hour12: false }) %></code>  <strong><%= item.amount %></strong>
+<% }) %>
 总入款: <%= deposits.reduce((sum, item) => sum + item.amount, 0) %> <%= unit %>
 费率：<%= (feeRate).toFixed(2) %>%
-汇率: <%= exchangeRate %>
+USD汇率: <%= exchangeRate %>
 应下发: <%= (deposits.reduce((sum, item) => sum + item.amount, 0) * exchangeRate * (1 - feeRate)).toFixed(2) %> <%= unit %>
 总下发: <%= withdraws.reduce((sum, item) => sum + item.amount, 0) %> <%= unit %>
 余: <%= (deposits.reduce((sum, item) => sum + item.amount, 0) - withdraws.reduce((sum, item) => sum + item.amount, 0)).toFixed(2) %> <%= unit %>
