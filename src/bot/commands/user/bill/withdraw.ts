@@ -50,13 +50,10 @@ withdrawCommand.hears(
     const renderSummary = useSummary();
 
     // 使用新的hook获取交易数据
-    const { withdrawTimes, withdraws, depositTimes, deposits } =
-      await useTransactionData(group);
+    const { withdraws, deposits } = await useTransactionData(group);
 
     const message = await renderSummary({
-      depositTimes,
       deposits,
-      withdrawTimes,
       withdraws,
       feeRate: ctx.currentGroup.fee_rate,
       exchangeRate: ctx.currentGroup.exchange_rate,

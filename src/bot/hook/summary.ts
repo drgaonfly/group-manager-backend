@@ -14,15 +14,7 @@ export const useTransactionData = async (group: IGroup) => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const [depositTimes, deposits, withdrawTimes, withdraws] = await Promise.all([
-    Transaction.countDocuments({
-      group: group._id,
-      type: 'deposit',
-      createdAt: {
-        $gte: today,
-        $lt: tomorrow,
-      },
-    }),
+  const [deposits, withdraws] = await Promise.all([
     Transaction.find({
       group: group._id,
       type: 'deposit',
@@ -31,14 +23,6 @@ export const useTransactionData = async (group: IGroup) => {
         $lt: tomorrow,
       },
     }).sort({ createdAt: 1 }),
-    Transaction.countDocuments({
-      group: group._id,
-      type: 'withdraw',
-      createdAt: {
-        $gte: today,
-        $lt: tomorrow,
-      },
-    }),
     Transaction.find({
       group: group._id,
       type: 'withdraw',
@@ -49,9 +33,7 @@ export const useTransactionData = async (group: IGroup) => {
     }).sort({ createdAt: 1 }),
   ]);
   return {
-    depositTimes,
     deposits,
-    withdrawTimes,
     withdraws,
   };
 };

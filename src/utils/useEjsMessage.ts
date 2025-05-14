@@ -3,8 +3,6 @@ import path from 'path';
 
 export const useSummary = () => {
   return async (data: {
-    depositTimes: number;
-    withdrawTimes: number;
     deposits: any[];
     withdraws: any[];
     feeRate: number;

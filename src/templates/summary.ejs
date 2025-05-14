@@ -1,10 +1,10 @@
-入款(<%= depositTimes %>笔) :
+入款(<%= deposits.length %>笔) :
 <% deposits.forEach((item, index) => { %>
   <code><%= new Date(item.createdAt).toLocaleTimeString('zh-CN', { hour12: false }) %></code>  <strong><%= item.amount %></strong>
 <% }) %>
 
 
-下发（<%= withdrawTimes %>笔）:
+下发（<%= withdraws.length %>笔）:
 <% withdraws.forEach((item, index) => { %>
   <code><%= new Date(item.createdAt).toLocaleTimeString('zh-CN', { hour12: false }) %></code>  <strong><%= item.amount %></strong>
 <% }) %>
