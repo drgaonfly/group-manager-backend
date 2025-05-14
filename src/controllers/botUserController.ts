@@ -140,74 +140,74 @@ const deleteMultiplebotUsers = handleAsync(
 );
 
 //机器人发送消息
-const sendMessage = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { message } = req.body;
+// const sendMessage = handleAsync(async (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   const { message } = req.body;
 
-  if (!id) {
-    res.status(400);
-    throw new Error('用户ID不能为空');
-  }
+//   if (!id) {
+//     res.status(400);
+//     throw new Error('用户ID不能为空');
+//   }
 
-  if (!message) {
-    res.status(400);
-    throw new Error('消息内容不能为空');
-  }
+//   if (!message) {
+//     res.status(400);
+//     throw new Error('消息内容不能为空');
+//   }
 
-  // 查找 botUser 记录并关联 bot 信息
-  const botUser = await BotUser.findById(id)
-    .populate('bot')
-    .populate('messages');
+//   // 查找 botUser 记录并关联 bot 信息
+//   const botUser = await BotUser.findById(id)
+//     .populate('bot')
+//     .populate('messages');
 
-  if (!botUser) {
-    res.status(404);
-    throw new Error('未找到该用户与机器人的关联记录');
-  }
+//   if (!botUser) {
+//     res.status(404);
+//     throw new Error('未找到该用户与机器人的关联记录');
+//   }
 
-  // 获取关联的 bot 实例
-  const bot = botUser.bot as IBot;
+//   // 获取关联的 bot 实例
+//   const bot = botUser.bot as IBot;
 
-  if (!bot.isOnline) {
-    res.status(400);
-    throw new Error('该机器人当前处于离线状态');
-  }
+//   if (!bot.isOnline) {
+//     res.status(400);
+//     throw new Error('该机器人当前处于离线状态');
+//   }
 
-  // 设置机器人实例
-  const telegramBot = setupBot(bot.token);
+//   // 设置机器人实例
+//   const telegramBot = setupBot(bot.token);
 
-  let messageType = 'received';
+//   let messageType = 'received';
 
-  try {
-    // 发送消息
-    await telegramBot.api.sendMessage(botUser.id, message);
-  } catch (error) {
-    messageType = 'error';
-    console.error('发送消息失败:', error);
-    throw new Error('发送消息失败');
-  }
+//   try {
+//     // 发送消息
+//     await telegramBot.api.sendMessage(botUser.id, message);
+//   } catch (error) {
+//     messageType = 'error';
+//     console.error('发送消息失败:', error);
+//     throw new Error('发送消息失败');
+//   }
 
-  // 创建新消息
-  const newMessage = new BotUserMessage({
-    content: message,
-    type: messageType,
-    bot: bot._id,
-    botUser: botUser._id,
-  });
-  await newMessage.save();
+//   // 创建新消息
+//   const newMessage = new BotUserMessage({
+//     content: message,
+//     type: messageType,
+//     bot: bot._id,
+//     botUser: botUser._id,
+//   });
+//   await newMessage.save();
 
-  botUser.messages.push(newMessage._id);
-  await botUser.save();
+//   botUser.messages.push(newMessage._id);
+//   await botUser.save();
 
-  res.json({
-    success: true,
-    data: {
-      message: '消息发送成功',
-      botUser: botUser.userName,
-      content: message,
-      type: 'received',
-    },
-  });
-});
+//   res.json({
+//     success: true,
+//     data: {
+//       message: '消息发送成功',
+//       botUser: botUser.userName,
+//       content: message,
+//       type: 'received',
+//     },
+//   });
+// });
 
 export {
   getbotUsers,
@@ -216,5 +216,4 @@ export {
   updatebotUser,
   deletebotUser,
   deleteMultiplebotUsers,
-  sendMessage,
 };

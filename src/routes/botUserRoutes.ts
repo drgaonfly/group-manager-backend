@@ -6,7 +6,6 @@ import {
   updatebotUser,
   deletebotUser,
   deleteMultiplebotUsers,
-  sendMessage,
 } from '../controllers/botUserController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -27,6 +26,6 @@ router
   .put(protect, checkPermission, updatebotUser) // 更新机器人
   .delete(protect, checkPermission, deletebotUser); // 删除机器人
 
-router.route('/:id/send-message').post(protect, checkPermission, sendMessage);
+// router.route('/:id/send-message').post(protect, checkPermission, sendMessage);
 
 export default router;
