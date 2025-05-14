@@ -84,6 +84,10 @@ const groupSchema = new mongoose.Schema(
     startAt: {
       type: Date,
     },
+    unit: {
+      type: String,
+      default: 'USD',
+    },
   },
   {
     timestamps: true,
