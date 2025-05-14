@@ -12,6 +12,7 @@ export interface IBot extends Document {
   menus: IMenu[];
   isOnline: boolean;
   botUsers: mongoose.Schema.Types.ObjectId[] | IBotUser[];
+  session?: string;
 }
 
 export interface IMenu extends Document {
@@ -74,6 +75,10 @@ const botSchema = new mongoose.Schema(
       },
     ],
     menus: [menuSchema],
+    session: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

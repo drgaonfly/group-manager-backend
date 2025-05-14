@@ -1,6 +1,7 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../types';
 import createDebug from 'debug';
+import { startClientAndGetSession } from '../../services/gramClient';
 
 const startCommand = new Composer<MyContext>();
 
@@ -20,6 +21,17 @@ const debug = createDebug('bot:start');
 startCommand.command('start', async (ctx) => {
   debug('start');
   const chatId = ctx.chat.id; // 获取群组 ID
+  const bot = ctx.currentBot;
+
+  const botSession = bot.session;
+
+  debug('------------------session------------------');
+  if (!botSession) {
+    const session = await startClientAndGetSession(bot.token);
+    debug('session', session);
+    bot.session = session as any;
+    await bot.save();
+  }
 
   debug(ctx.chat);
 
@@ -38,8 +50,6 @@ startCommand.command('start', async (ctx) => {
 
     return;
   }
-
-  const bot = ctx.currentBot;
 
   // 合并原有菜单和添加到群组按钮
   const combinedKeyboard = new InlineKeyboard();

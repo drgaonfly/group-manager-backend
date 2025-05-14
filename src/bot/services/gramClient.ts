@@ -11,19 +11,21 @@ const stringSession = ''; // leave this empty for now
 const apiId = 1025907;
 const apiHash = '452b0359b988148995f22ff0f4229750';
 
-export const gramClient = new TelegramClient(
-  new StringSession(stringSession),
-  apiId,
-  apiHash,
-  { connectionRetries: 5 },
-);
+// 创建并返回一个新的 Telegram 客户端实例
+export function createTelegramClient(stringSession) {
+  return new TelegramClient(new StringSession(stringSession), apiId, apiHash, {
+    connectionRetries: 5,
+  });
+}
+
+export const client = createTelegramClient(stringSession);
 
 export async function startClientAndGetSession(token: string) {
-  await gramClient.start({
+  await client.start({
     botAuthToken: token,
   });
 
-  debug(gramClient.session.save());
+  debug(client.session.save());
 
-  return gramClient.session.save();
+  return client.session.save();
 }
