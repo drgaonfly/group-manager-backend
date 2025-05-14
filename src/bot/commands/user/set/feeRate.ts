@@ -17,16 +17,16 @@ const debug = createDebug('bot:fee');
 // });
 
 setFeeRateCommand.hears(
-  /^(\/)?设置费率\s*(\d+\.?\d*)\s*(%)?$/,
+  /设置费率\s*(\d+\.?\d*)\s*(%)?$/,
   checkGroup,
   isOperatorOrCreator,
   async (ctx) => {
     debug('fee');
 
-    const feeRate = ctx.match[2];
+    const feeRate = ctx.match[1];
     if (!feeRate) {
       await ctx.reply(
-        '请使用正确的格式：/设置费率 <费率>\n例如: /设置费率 3 或 设置费率2.5',
+        '请使用正确的格式：设置费率 <费率>\n例如: 设置费率 3 或 设置费率2.5',
       );
       return;
     }

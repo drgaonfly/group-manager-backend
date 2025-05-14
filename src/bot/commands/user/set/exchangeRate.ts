@@ -16,7 +16,7 @@ const debug = createDebug('bot:ex');
 // });
 
 setExchangeRateCommand.hears(
-  /^设置(美元)?汇率\s*(\d+\.?\d*)$/,
+  /设置(美元|USD)?汇率\s*(\d+\.?\d*)$/,
   checkGroup,
   isOperatorOrCreator,
   async (ctx) => {
