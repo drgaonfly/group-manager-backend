@@ -14,7 +14,7 @@ export const useTransactionData = async (group: IGroup) => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const [deposits, withdraws] = await Promise.all([
+  let [deposits, withdraws] = await Promise.all([
     Transaction.find({
       group: group._id,
       type: 'deposit',
@@ -22,7 +22,9 @@ export const useTransactionData = async (group: IGroup) => {
         $gte: today,
         $lt: tomorrow,
       },
-    }).sort({ createdAt: 1 }),
+    })
+      .sort({ createdAt: -1 })
+      .limit(10),
     Transaction.find({
       group: group._id,
       type: 'withdraw',
@@ -30,8 +32,19 @@ export const useTransactionData = async (group: IGroup) => {
         $gte: today,
         $lt: tomorrow,
       },
-    }).sort({ createdAt: 1 }),
+    })
+      .sort({ createdAt: -1 })
+      .limit(10),
   ]);
+
+  // 按照创建时间正序排序
+  deposits = deposits.sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  );
+  withdraws = withdraws.sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  );
+
   return {
     deposits,
     withdraws,

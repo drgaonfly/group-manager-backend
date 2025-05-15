@@ -59,7 +59,7 @@ async function handleDeposit(ctx: MyContext) {
 }
 
 depositCommand.hears(
-  /^(\+|入款)\s*(-?\d+\.?\d*)(u|U)?$/,
+  /^(\+|入款)\s*(-?\d+\.?\d*)\s*(u|U)?$/,
   checkGroup,
   isOperatorOrCreator,
   checkIsOnline,

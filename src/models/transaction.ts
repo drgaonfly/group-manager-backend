@@ -12,6 +12,8 @@ export interface ITransaction extends Document {
   fee_rate: number;
   type: string;
   usdt_amount: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const transactionSchema = new mongoose.Schema(
