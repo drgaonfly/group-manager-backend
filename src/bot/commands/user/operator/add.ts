@@ -10,6 +10,31 @@ import { Api } from 'telegram';
 const addOperatorCommand = new Composer<MyContext>();
 const debug = createDebug('bot:addOperator');
 
+// 通过 username 获取用户信息
+async function getUserByUsername(session: any, username: string) {
+  debug('username', username);
+  const gramClient = createTelegramClient(session);
+  try {
+    await gramClient.connect();
+    const user = await gramClient.invoke(
+      new Api.contacts.ResolveUsername({ username }),
+    );
+    const { id, username: uname, firstName, lastName } = user.users[0] as any;
+    debug('用户信息:', { id, username: uname, firstName, lastName });
+    debug('id', id.value);
+    debug('处理 @username 提及:', uname);
+
+    return {
+      id,
+      username: uname,
+      first_name: firstName,
+      last_name: lastName,
+    };
+  } catch (error) {
+    debug('获取用户信息失败:', error);
+  }
+}
+
 // 处理两种提及类型
 addOperatorCommand.hears(
   /(设置操作人|设置为操作人)/,
@@ -18,24 +43,33 @@ addOperatorCommand.hears(
   async (ctx) => {
     const currentGroup = ctx.currentGroup;
 
-    // 分离两种提及类型
+    // 获取消息文本中的用户提及
+    const messageText = ctx.message.text;
     const textMentions =
       ctx.message.entities?.filter((e) => e.type === 'text_mention') || [];
     const mentions =
       ctx.message.entities?.filter((e) => e.type === 'mention') || [];
+
     debug('textMentions:', textMentions);
     debug('mentions:', mentions);
+
+    // 从消息文本中提取 @ 后的用户名
+    const textUsernames = messageText.match(/@(\w+)/g) || [];
+    const usernamesFromText = textUsernames.map((u) => u.substring(1));
+
+    debug('从文本提取的用户名:', usernamesFromText);
 
     // 合并处理结果
     const operators = [
       ...textMentions.map((e: any) => e.user), // 直接获取 text_mention 用户
       ...(await processUsernameMentions(ctx, mentions)), // 处理 @username 提及
+      ...(await processTextUsernames(ctx, usernamesFromText)), // 处理文本中的 @用户名
     ].filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i); // 去重
 
     debug('最终操作人列表:', operators);
 
     if (operators.length === 0) {
-      await ctx.reply('未找到有效的操作人，请检查输入格式');
+      await ctx.reply('未找到有效的操作人，请使用"设置操作人 @用户名"的格式');
       return;
     }
 
@@ -90,23 +124,44 @@ async function processUsernameMentions(ctx: MyContext, mentions: any[]) {
     );
     const mentionUsername = mentionText.replace('@', '').trim();
 
-    const gramClient = createTelegramClient(ctx.currentBotSession);
-    await gramClient.connect();
-    const user = await gramClient.invoke(
-      new Api.contacts.ResolveUsername({ username: mentionUsername }),
-    );
-    const { id, username, firstName, lastName } = user.users[0] as any;
-    debug('用户信息:', { id, username, firstName, lastName });
-    debug('id', id.value);
+    try {
+      const user = await getUserByUsername(
+        ctx.currentBotSession,
+        mentionUsername,
+      );
+      if (user) {
+        resolvedUsers.push(user);
+      }
+    } catch (error) {
+      // 获取用户信息失败时跳过该用户
+      debug('获取用户信息失败，跳过:', mentionUsername, error);
+      continue;
+    }
+  }
 
-    debug('处理 @username 提及:', username);
+  return resolvedUsers;
+}
 
-    resolvedUsers.push({
-      id,
-      username,
-      first_name: firstName,
-      last_name: lastName,
-    }); // 直接添加到数组中，无需创建 BotUser
+// 处理文本中的用户名
+async function processTextUsernames(ctx: MyContext, usernames: string[]) {
+  const resolvedUsers = [];
+
+  if (!ctx.currentBotSession) {
+    await ctx.reply('session 不存在，请先使用 /start 命令初始化 session');
+    return [];
+  }
+
+  for (const username of usernames) {
+    try {
+      const user = await getUserByUsername(ctx.currentBotSession, username);
+      if (user) {
+        resolvedUsers.push(user);
+      }
+    } catch (error) {
+      // 获取用户信息失败时跳过该用户
+      debug('获取用户信息失败，跳过:', username, error);
+      continue;
+    }
   }
 
   return resolvedUsers;
