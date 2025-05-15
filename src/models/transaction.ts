@@ -11,6 +11,7 @@ export interface ITransaction extends Document {
   exchange_rate: number;
   fee_rate: number;
   type: string;
+  usdt_amount: number;
 }
 
 const transactionSchema = new mongoose.Schema(
@@ -32,6 +33,7 @@ const transactionSchema = new mongoose.Schema(
     exchange_rate: { type: Number, required: true },
     fee_rate: { type: Number, required: true },
     type: { type: String, required: true, enum: ['deposit', 'withdraw'] },
+    usdt_amount: { type: Number },
   },
   { timestamps: true },
 );
