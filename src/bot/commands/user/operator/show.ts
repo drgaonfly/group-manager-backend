@@ -10,7 +10,7 @@ const debug = createDebug('bot:showOperator');
 
 // 匹配 "设置操作人@机器人名 @用户" 格式的命令
 showOperatorCommand.hears(
-  /^显示操作人/,
+  /^显示操作(人|员)/,
   checkGroup,
   isGroupCreator,
   async (ctx) => {
