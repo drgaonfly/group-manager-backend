@@ -2,6 +2,7 @@ import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IGroup } from './group';
 import { IBotUser } from './botUser';
+
 export interface ITransaction extends Document {
   id: string;
   bot: mongoose.Schema.Types.ObjectId | IBot;

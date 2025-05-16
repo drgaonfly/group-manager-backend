@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import Transaction from '../models/transaction';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
+import { IBotUser } from '../models/botUser';
+import { IBot } from '../models/bot';
+import { IGroup } from '../models/group';
 import * as ExcelJS from 'exceljs';
 
 // Build query based on query parameters
@@ -14,6 +17,11 @@ const buildQuery = (queryParams: any): any => {
 
   if (queryParams.to_user) {
     query.to_user = queryParams.to_user;
+  }
+
+  // 添加群组过滤条件
+  if (queryParams.c) {
+    query.group = queryParams.c;
   }
 
   return query;
@@ -187,7 +195,9 @@ export const getFilteredTransactions = handleAsync(
 // 根据日期获取交易记录
 const getTransactionByDate = handleAsync(
   async (req: Request, res: Response) => {
-    const { dateFilter, current = '1', pageSize = '10' } = req.query;
+    const { dateFilter, current = '1', pageSize = '10', c } = req.query;
+
+    const group_id = Number(c);
 
     // 构建日期过滤条件
     const dateCondition = buildDateCondition(dateFilter as string);
@@ -205,9 +215,14 @@ const getTransactionByDate = handleAsync(
       .limit(+pageSize)
       .exec();
 
+    // 过滤出transactions中group.id 符合 c的记录
+    const filteredTransactions = transactions.filter(
+      (transaction) => (transaction.group as IGroup).id === group_id,
+    );
+
     res.json({
       success: true,
-      data: transactions,
+      data: filteredTransactions,
       total,
       current: +current,
       pageSize: +pageSize,
@@ -216,7 +231,9 @@ const getTransactionByDate = handleAsync(
 );
 
 const getSummary = handleAsync(async (req: Request, res: Response) => {
-  const { dateFilter } = req.query;
+  const { dateFilter, c } = req.query;
+
+  const group_id = Number(c);
 
   // 构建日期过滤条件
   const dateCondition = buildDateCondition(dateFilter as string);
@@ -228,9 +245,17 @@ const getSummary = handleAsync(async (req: Request, res: Response) => {
     .populate('group')
     .exec();
 
+  // 过滤出transactions中group.id 符合 c的记录
+  const filteredTransactions = transactions.filter(
+    (transaction) => (transaction.group as IGroup).id === group_id,
+  );
+
   // 计算汇总数据
-  const depositTransactions = transactions.filter((t) => t.type === 'deposit');
-  const withdrawTransactions = transactions.filter(
+  const depositTransactions = filteredTransactions.filter(
+    (t) => t.type === 'deposit',
+  );
+
+  const withdrawTransactions = filteredTransactions.filter(
     (t) => t.type === 'withdraw',
   );
 
@@ -238,6 +263,7 @@ const getSummary = handleAsync(async (req: Request, res: Response) => {
     (sum, t) => sum + t.amount,
     0,
   );
+
   const totalWithdraw = withdrawTransactions.reduce(
     (sum, t) => sum + t.amount,
     0,
@@ -263,7 +289,9 @@ const getSummary = handleAsync(async (req: Request, res: Response) => {
 
 // 导出Excel数据
 const exportToExcel = handleAsync(async (req: Request, res: Response) => {
-  const { dateFilter } = req.query;
+  const { dateFilter, c } = req.query;
+
+  const group_id = Number(c);
 
   // 构建日期过滤条件
   const dateCondition = buildDateCondition(dateFilter as string);
@@ -276,29 +304,32 @@ const exportToExcel = handleAsync(async (req: Request, res: Response) => {
     .sort('-createdAt')
     .exec();
 
+  // 过滤出transactions中group.id 符合 c的记录
+  const filteredTransactions = transactions.filter(
+    (transaction) => (transaction.group as IGroup).id === group_id,
+  );
+
   // 创建工作簿和工作表
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('交易记录');
 
   // 设置列头
   worksheet.columns = [
-    { header: '时间', key: 'time', width: 20 },
-    { header: '类型', key: 'type', width: 10 },
-    { header: '金额', key: 'amount', width: 15 },
-    { header: '操作人', key: 'operator', width: 20 },
-    { header: '回复人', key: 'responder', width: 20 },
-    { header: '机器人', key: 'bot', width: 15 },
+    { header: '时间', key: 'time' },
+    { header: '类型', key: 'type' },
+    { header: '金额', key: 'amount' },
+    { header: '操作人', key: 'operator' },
+    { header: '机器人', key: 'bot' },
   ];
 
   // 添加数据行
-  transactions.forEach((transaction) => {
+  filteredTransactions.forEach((transaction) => {
     worksheet.addRow({
       time: new Date(transaction.createdAt).toLocaleString(),
       type: transaction.type === 'deposit' ? '入款' : '下发',
       amount: transaction.amount,
-      operator: `${transaction.botUser.firstName} ${transaction.botUser.lastName}`,
-      responder: transaction.group.name,
-      bot: transaction.bot.botName,
+      operator: `${(transaction.botUser as IBotUser).userName}`,
+      bot: (transaction.bot as IBot).botName,
     });
   });
 
