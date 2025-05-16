@@ -270,10 +270,9 @@ const getSummary = handleAsync(async (req: Request, res: Response) => {
   );
 
   // 假设费率和汇率为固定值，实际应用中可能需要从配置或数据库中获取
-  const feeRate = await Group.findOne({ id: group_id })
-    .select('fee_rate')
-    .exec();
-  const usdRate = 4.5;
+  const feeRate = await Group.findOne({ id: group_id }).select('fee_rate');
+
+  const usdRate = await Group.findOne({ id: group_id }).select('exchange_rate');
 
   const expectedWithdraw = totalDeposit * (1 - Number(feeRate));
 
@@ -282,8 +281,8 @@ const getSummary = handleAsync(async (req: Request, res: Response) => {
     data: {
       totalDeposit,
       totalWithdraw,
-      feeRate,
-      usdRate,
+      feeRate: feeRate.fee_rate,
+      usdRate: usdRate.exchange_rate,
       expectedWithdraw,
     },
   });
