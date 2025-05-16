@@ -338,7 +338,7 @@ const exportToExcel = handleAsync(async (req: Request, res: Response) => {
 
   // 设置样式
   worksheet.getRow(1).font = { bold: true };
-  worksheet.eachRow((row, rowNumber) => {
+  worksheet.eachRow((row) => {
     row.eachCell((cell) => {
       cell.border = {
         top: { style: 'thin' },
