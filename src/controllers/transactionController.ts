@@ -290,7 +290,7 @@ const getSummary = handleAsync(async (req: Request, res: Response) => {
     0,
   );
 
-  const expectedWithdraw = totalDeposit - (1 - group.fee_rate / 100);
+  const expectedWithdraw = totalDeposit * (1 - group.fee_rate / 100);
 
   // 余额
   const balance = expectedWithdraw - totalWithdraw;
