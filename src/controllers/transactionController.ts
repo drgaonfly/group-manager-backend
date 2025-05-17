@@ -210,10 +210,15 @@ const getTransactionByDate = handleAsync(
     // 构建日期过滤条件
     const dateCondition = buildDateCondition(dateFilter as string);
 
-    // 获取过滤后的交易记录，带分页
-    const transactions = await Transaction.find({
+    // 基础查询条件
+    const baseQuery = {
       ...dateCondition,
       group: group,
+    };
+
+    // 获取过滤后的交易记录，带分页
+    const transactions = await Transaction.find({
+      ...baseQuery,
       type: type,
     })
       .populate('botUser')
@@ -226,18 +231,11 @@ const getTransactionByDate = handleAsync(
     // 获取真实的总记录数
     const total = transactions.length;
 
-    // 获取对应type的总记录数
-    const deposit_total = await Transaction.countDocuments({
-      ...dateCondition,
-      group: group,
-      type: 'deposit',
-    });
-
-    const withdraw_total = await Transaction.countDocuments({
-      ...dateCondition,
-      group: group,
-      type: 'withdraw',
-    });
+    // 并行获取计数
+    const [deposit_total, withdraw_total] = await Promise.all([
+      Transaction.countDocuments({ ...baseQuery, type: 'deposit' }),
+      Transaction.countDocuments({ ...baseQuery, type: 'withdraw' }),
+    ]);
 
     res.json({
       success: true,
