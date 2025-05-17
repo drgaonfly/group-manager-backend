@@ -9,7 +9,6 @@ import http from 'http';
 import { setupRedis } from './utils/redis';
 import setupDB from './utils/db';
 import initExecutor from 'express-command-executor';
-import { startWebHookBot } from './bot';
 
 import userRoutes from './routes/userRoutes';
 import roleRoutes from './routes/roleRoutes';
