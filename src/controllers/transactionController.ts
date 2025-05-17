@@ -199,13 +199,7 @@ const deleteMultipleTransactions = handleAsync(
 
 const getTransactionByDate = handleAsync(
   async (req: Request, res: Response) => {
-    const {
-      dateFilter,
-      current = '1',
-      pageSize = '10',
-      groupId,
-      type,
-    } = req.query;
+    const { dateFilter, current, pageSize, groupId, type } = req.query;
 
     const group_id = Number(groupId);
 
