@@ -77,7 +77,7 @@ console.log('Socket.IO server initialized');
 // authorized(); // 授权用户收益率生成
 // stacking(); // 质押用户收益率生成
 
-process.env.NODE_ENV === 'production' && startWebHookBot();
+// process.env.NODE_ENV === 'production' && startWebHookBot();
 
 app.use(notFound);
 app.use(errorHandler);

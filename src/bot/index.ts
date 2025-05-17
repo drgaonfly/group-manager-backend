@@ -1,11 +1,12 @@
 import dotenv from 'dotenv';
 import { setupBot } from './botSetup';
 import { default as BotManager } from '../models/bot';
+import setupDB from '../utils/db';
 
 dotenv.config();
 
-// 不再使用
 export const startWebHookBot = async () => {
+  await setupDB();
   const activeBots = await BotManager.find({ isOnline: true });
 
   for (const activeBot of activeBots) {
@@ -29,3 +30,5 @@ export const startWebHookBot = async () => {
     );
   }
 };
+
+startWebHookBot();

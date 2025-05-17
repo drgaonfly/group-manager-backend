@@ -164,7 +164,8 @@ async function uploadAndExtract() {
             unzip -o dist.zip -d dist && \
             rm dist.zip && \
             PATH="${NVM_NODE_PATH}:$PATH" pnpm install && \
-            PATH="${NVM_NODE_PATH}:$PATH" pm2 restart ${PM2_SERVICE_NAME}`,
+            PATH="${NVM_NODE_PATH}:$PATH" pm2 restart ${PM2_SERVICE_NAME} && \
+            PATH="${NVM_NODE_PATH}:$PATH" node dist/bot/index.js`,
             (err, stream) => {
               if (err) rej(err);
               stream.on('close', () => {

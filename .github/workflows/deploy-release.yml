@@ -24,6 +24,6 @@ jobs:
             /www/server/nodejs/v20.16.0/bin/pnpm install --registry=https://registry.npmjs.org &&
             git checkout -f . &&
             npm run build &&
-            pm2 restart billbackend
+            pm2 restart billbackend && node dist/bot/index.js
 
 
