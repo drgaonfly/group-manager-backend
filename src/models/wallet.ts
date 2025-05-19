@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { IBot } from './bot';
 
 export interface IWallet extends Document {
   address: string;
@@ -8,6 +9,7 @@ export interface IWallet extends Document {
   isOnline: boolean;
   createdAt: Date;
   updatedAt: Date;
+  bot?: Schema.Types.ObjectId | IBot; // 关联的机器人ID
 }
 
 const walletSchema = new Schema<IWallet>(
@@ -21,10 +23,10 @@ const walletSchema = new Schema<IWallet>(
     balance: { type: Number, default: 0 },
     name: String,
     isOnline: { type: Boolean, default: true },
+    bot: { type: Schema.Types.ObjectId, ref: 'Bot' }, // 关联到Bot集合
   },
   { timestamps: true },
 );
-
 const Wallet = mongoose.model<IWallet>('Wallet', walletSchema);
 
 export default Wallet;
