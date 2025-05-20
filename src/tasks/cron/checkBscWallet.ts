@@ -16,9 +16,9 @@ interface BscScanResponse {
   result: BscTokenTransfer[];
 }
 
-const BSC_API_KEY = '你的BscScan API密钥';
+const BSC_API_KEY = '7ND64XHWHK7NR5SHU8I4CEZPYID2BJPIM3';
 const USDT_CONTRACT = '0x55d398326f99059fF775485246999027B3197955'; // BSC USDT合约
-const TARGET_ADDRESS = '替换为你的BSC地址';
+const TARGET_ADDRESS = '0x00000047bb99ea4d791bb749d970de71ee0b1a34';
 const CHECK_INTERVAL = 30000; // 30秒检查一次
 
 let lastCheckedTimestamp: number = Math.floor(Date.now() / 1000) - 60; // 初始化为1分钟前（秒级时间戳）
