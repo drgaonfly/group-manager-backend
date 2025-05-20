@@ -1,7 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { IBotUser } from './botUser';
+import { IWallet } from './wallet';
+import { IBot } from './bot';
 
 export interface IPayment extends Document {
-  wallet: Schema.Types.ObjectId;
+  wallet: Schema.Types.ObjectId | IWallet;
   amount: number;
   status: 'pending' | 'paid' | 'expired';
   txHash?: string;
@@ -10,6 +13,8 @@ export interface IPayment extends Document {
   sendAddress: string;
   receiveAddress?: string;
   currency: 'USDT_ERC20' | 'USDT_TRC20';
+  botUser: Schema.Types.ObjectId | IBotUser;
+  bot: Schema.Types.ObjectId | IBot;
 }
 
 const paymentSchema = new Schema<IPayment>(
@@ -29,6 +34,16 @@ const paymentSchema = new Schema<IPayment>(
       enum: ['USDT_ERC20', 'USDT_TRC20'],
       default: 'USDT_TRC20',
     },
+    botUser: {
+      type: Schema.Types.ObjectId,
+      ref: 'BotUser',
+      required: true,
+    }, // 订单发起者
+    bot: {
+      type: Schema.Types.ObjectId,
+      ref: 'Bot',
+      required: true,
+    }, // 订单所属的bot
     receiveAddress: { type: String, required: false },
   },
   { timestamps: true },
