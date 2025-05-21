@@ -1,11 +1,11 @@
 import setupDB from '../utils/db';
-import { checkExpiredOrders } from './cron/expiredOrders';
+import { checkExpiredSubscriptions } from './cron/isSubscriptionExpired';
 // import { checkIsOnline } from './cron/checkIsOnline';
 
 const task = async () => {
   await setupDB();
 
-  await checkExpiredOrders();
+  await checkExpiredSubscriptions();
 };
 
 // 执行任务并在完成后退出进程
