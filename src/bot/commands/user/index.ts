@@ -9,6 +9,7 @@ import billComposer from './bill';
 import contactComposer from './contact';
 import subscriptionComposer from './subscription';
 import profileComposer from './profile';
+import startingComposer from './starting';
 
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
@@ -19,6 +20,7 @@ userComposer.use(operatorComposer.middleware());
 userComposer.use(setComposer.middleware());
 userComposer.use(billComposer.middleware());
 userComposer.use(profileComposer.middleware());
+userComposer.use(startingComposer.middleware());
 userComposer.use(contactComposer.middleware());
 userComposer.use(subscriptionComposer.middleware());
 userComposer.use(callbackComposer.middleware());
