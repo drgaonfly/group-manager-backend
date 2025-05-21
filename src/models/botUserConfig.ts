@@ -76,7 +76,7 @@ const botUserConfigSchema = new mongoose.Schema(
   },
 );
 
-botUserConfigSchema.index({ bot: 1, user: 1 }, { unique: true });
+botUserConfigSchema.index({ bot: 1, botUser: 1 }, { unique: true });
 
 const BotUserConfig = mongoose.model<IBotUserConfig>(
   'BotUserConfig',

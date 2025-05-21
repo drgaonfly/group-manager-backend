@@ -4,6 +4,7 @@ import { SessionFlavor } from 'grammy';
 import { IBot } from '../models/bot';
 import { IBotUser } from '../models/botUser';
 import { IGroup } from '../models/group';
+import { IBotUserConfig } from '../models/botUserConfig';
 
 export interface CustomContext
   extends GrammyContext,
@@ -14,4 +15,5 @@ export type MyContext = CustomContext & {
   currentBotUser?: IBotUser; // 当前机器人用户
   currentGroup?: IGroup;
   currentBotSession?: string;
+  currentBotUserConfig?: IBotUserConfig;
 };
