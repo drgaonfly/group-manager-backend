@@ -2,7 +2,6 @@
 import { Composer } from 'grammy';
 import startComposer from './start';
 import helpComposer from './help';
-import callbackComposer from './start/callback';
 import operatorComposer from './operator';
 import setComposer from './set';
 import billComposer from './bill';
@@ -27,6 +26,5 @@ userComposer.use(profileComposer.middleware());
 userComposer.use(startingComposer.middleware());
 userComposer.use(contactComposer.middleware());
 userComposer.use(subscriptionComposer.middleware());
-userComposer.use(callbackComposer.middleware());
 
 export default userComposer;

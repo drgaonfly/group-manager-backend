@@ -1,13 +1,10 @@
 import { Composer } from 'grammy';
-import { Context } from 'grammy';
 import { MyContext } from '../../../types';
 import path from 'path';
 import ejs from 'ejs';
 
-const helpCommand = new Composer<Context & MyContext>();
-
-helpCommand.command('help', async (ctx) => {
-  // 渲染帮助信息模板
+// 发送帮助信息的函数
+export async function sendHelpMessage(ctx: MyContext) {
   const templatePath = path.join(__dirname, '../../../../templates/help.ejs');
   const helpText = await ejs.renderFile(templatePath);
 
@@ -26,6 +23,12 @@ helpCommand.command('help', async (ctx) => {
     parse_mode: 'HTML',
     reply_markup: inlineKeyboard,
   });
+}
+
+const helpCommand = new Composer<MyContext>();
+
+helpCommand.command('help', async (ctx) => {
+  await sendHelpMessage(ctx);
 });
 
 export default helpCommand;

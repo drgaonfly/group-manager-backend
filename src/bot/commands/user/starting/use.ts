@@ -19,7 +19,7 @@ useCommand.hears(/开始使用/, async (ctx) => {
         [
           {
             text: '📖 详细说明',
-            callback_data: 'show_details',
+            callback_data: 'help',
           },
           {
             text: '📝 开始记账',
