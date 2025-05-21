@@ -11,9 +11,11 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { Context } from 'grammy'; // 确保导入 Context
 import createDebug from 'debug';
 
+const log = createDebug('bot:setup');
+
 export const printWebhookInfo = async (bot: Bot) => {
   const info = await bot.api.getWebhookInfo();
-  const debug = createDebug('bot:error');
+  const debug = createDebug('bot:webhook');
   debug(`webhook info`);
   debug(info);
   return info;
@@ -39,11 +41,11 @@ export const setupBot = (token: string) => {
       },
     });
 
-    console.log('Bot 正在使用 SOCKS 代理：', SOCKS_PROXY_URL);
+    log('Bot 正在使用 SOCKS 代理：', SOCKS_PROXY_URL);
   } else {
     // 未设置代理，正常初始化 Bot
     bot = new Bot<Context>(token);
-    console.log('Bot 未使用代理。');
+    log('Bot 未使用代理。');
   }
 
   bot.use(botResolver);
@@ -60,6 +62,7 @@ export const setupBot = (token: string) => {
   // bot.on('message', (ctx) => ctx.reply('Hi there!'));
 
   bot.on('callback_query:data', async (ctx) => {
+    log('callback_query:data');
     const data = ctx.callbackQuery?.data;
     await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
   });
