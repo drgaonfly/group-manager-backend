@@ -7,7 +7,7 @@ const userProfileCommand = new Composer<MyContext>();
 const debug = createDebug('bot:user-profile');
 
 // 监听"用户中心"文本消息
-userProfileCommand.hears('👓 用户中心', async (ctx) => {
+userProfileCommand.hears(/个人信息/, async (ctx) => {
   debug('用户中心命令被触发');
 
   // 查找用户信息
@@ -30,11 +30,18 @@ userProfileCommand.hears('👓 用户中心', async (ctx) => {
   // 添加联系客服按钮，使用url参数直接跳转到客服链接
   await ctx.reply(message, {
     parse_mode: 'HTML',
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '📞 联系客服', url: ctx.currentBot.customer_service_link }],
-      ],
-    },
+    reply_markup: ctx.currentBot.customer_service_link
+      ? {
+          inline_keyboard: [
+            [
+              {
+                text: '📞 联系客服',
+                url: ctx.currentBot.customer_service_link,
+              },
+            ],
+          ],
+        }
+      : undefined,
   });
 });
 
