@@ -3,6 +3,7 @@ import { MyContext } from '../../../types';
 import renewal from '../../../menus/inline/renewal';
 import { useRenewal } from '../../../../utils/useEjsMessage';
 import createDebug from 'debug';
+import { checkInBot } from '../../../../bot/middlewares/checkInBot';
 // import Subscription, {
 //   SubscriptionPlan,
 //   SubscriptionStatus,
@@ -12,7 +13,7 @@ const renewalCommand = new Composer<MyContext>();
 const debug = createDebug('bot:renewal');
 
 // 监听"自助续费"文本消息
-renewalCommand.hears('自助续费', async (ctx) => {
+renewalCommand.hears('自助续费', checkInBot, async (ctx) => {
   debug('续费命令被触发');
   try {
     const renderRenewal = useRenewal();

@@ -83,10 +83,10 @@ export const setupBot = (token: string) => {
   bot.api
     .setMyCommands(commandsList)
     .then(() => {
-      console.log('命令已设置成功');
+      log('命令已设置成功');
     })
     .catch((error) => {
-      console.error('设置命令时发生错误:', error);
+      log('设置命令时发生错误:', error);
     });
 
   return bot;

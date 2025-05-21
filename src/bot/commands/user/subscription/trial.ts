@@ -6,12 +6,13 @@ import Subscription, {
   SubscriptionStatus,
 } from '../../../../models/subscription';
 import createDebug from 'debug';
+import { checkInBot } from '../../../../bot/middlewares/checkInBot';
 
 const trialCommand = new Composer<MyContext>();
 const debug = createDebug('bot:trial');
 
 // 监听"试用"文本消息
-trialCommand.hears('申请试用', async (ctx) => {
+trialCommand.hears('申请试用', checkInBot, async (ctx) => {
   debug('试用命令被触发');
 
   try {

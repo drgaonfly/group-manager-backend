@@ -1,12 +1,13 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
+import { checkInBot } from '../../../../bot/middlewares/checkInBot';
 
 const customerServiceCommand = new Composer<MyContext>();
 const debug = createDebug('bot:contact');
 
 // 监听"联系客服"文本消息
-customerServiceCommand.hears(/联系客服/, async (ctx) => {
+customerServiceCommand.hears(/联系客服/, checkInBot, async (ctx) => {
   debug('联系客服命令被触发');
 
   const bot = ctx.currentBot;

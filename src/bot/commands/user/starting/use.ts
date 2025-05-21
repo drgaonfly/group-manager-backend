@@ -1,12 +1,13 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
+import { checkInBot } from '../../../../bot/middlewares/checkInBot';
 
 const useCommand = new Composer<MyContext>();
 const debug = createDebug('bot:starting');
 
 // 监听"开始使用"文本消息
-useCommand.hears(/开始使用/, async (ctx) => {
+useCommand.hears(/开始使用/, checkInBot, async (ctx) => {
   debug('开始使用命令被触发');
 
   const message = `欢迎使用记账统计\n\n机器人可免费试用12小时，从机器人进群首次激活后开始计时`;
