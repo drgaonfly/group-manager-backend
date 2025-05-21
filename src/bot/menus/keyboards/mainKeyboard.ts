@@ -1,10 +1,11 @@
-// src/menus/keyboards/mainKeyboard.ts
 import { Keyboard } from 'grammy';
 
 const mainKeyboard = new Keyboard()
-  .text('帮助')
-  .text('设置')
+  .text('申请试用')
+  .text('自助续费')
   .row()
-  .text('关于我们');
+  .text('联系客服')
+  .text('记账统计')
+  .resized();
 
 export default mainKeyboard;

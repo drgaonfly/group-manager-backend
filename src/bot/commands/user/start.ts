@@ -2,6 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../types';
 import createDebug from 'debug';
 import { startClientAndGetSession } from '../../services/gramClient';
+import mainKeyboard from '../../menus/keyboards/mainKeyboard';
 
 const startCommand = new Composer<MyContext>();
 
@@ -67,6 +68,10 @@ startCommand.command('start', async (ctx) => {
   // 发送消息和组合后的按钮
   await ctx.reply(bot.message || '欢迎使用机器人', {
     reply_markup: combinedKeyboard,
+  });
+
+  await ctx.reply('start', {
+    reply_markup: mainKeyboard,
   });
 });
 
