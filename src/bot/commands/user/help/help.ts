@@ -11,7 +11,21 @@ helpCommand.command('help', async (ctx) => {
   const templatePath = path.join(__dirname, '../../../../templates/help.ejs');
   const helpText = await ejs.renderFile(templatePath);
 
-  await ctx.reply(helpText, { parse_mode: 'HTML' });
+  const inlineKeyboard = {
+    inline_keyboard: [
+      [
+        {
+          text: '💰 开始记账',
+          url: `https://t.me/${ctx.me.username}?startgroup=true`,
+        },
+      ],
+    ],
+  };
+
+  await ctx.reply(helpText, {
+    parse_mode: 'HTML',
+    reply_markup: inlineKeyboard,
+  });
 });
 
 export default helpCommand;
