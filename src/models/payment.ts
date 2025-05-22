@@ -8,7 +8,7 @@ export interface IPayment extends Document {
   // wallet: Schema.Types.ObjectId | IWallet;
   id: string;
   orderNumber: string;
-  wallet: Schema.Types.ObjectId | IWallet;
+  // wallet: Schema.Types.ObjectId | IWallet;
   amount: number;
   status: 'pending' | 'paid' | 'expired';
   type: 'recharge' | 'subscription';
@@ -42,12 +42,12 @@ const subscriptionInfoSchema = new Schema(
 const paymentSchema = new Schema<IPayment>(
   {
     id: { type: String, required: true, unique: true },
-    orderNumber: { type: String, required: true },
-    wallet: { type: Schema.Types.ObjectId, ref: 'Wallet', required: true },
+    orderNumber: { type: String, required: true, unique: true },
+    // wallet: { type: Schema.Types.ObjectId, ref: 'Wallet', required: true },
     amount: { type: Number, required: true },
     status: {
       type: String,
-      enum: ['pending', 'paid', 'expired'],
+      enum: ['pending', 'paid', 'expired', 'cancelled'],
       default: 'pending',
     },
     txHash: String,
