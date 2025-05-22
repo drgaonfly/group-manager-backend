@@ -1,11 +1,12 @@
 import setupDB from '../utils/db';
+import { checkExpiredOrders } from './cron/expiredOrders';
 // import { checkExpiredSubscriptions } from './cron/isSubscriptionExpired';
 import { trialExpired } from './cron/trialExpired';
-// import { checkIsOnline } from './cron/checkIsOnline';
 
 const task = async () => {
   await setupDB();
   await trialExpired();
+  await checkExpiredOrders();
   // await checkExpiredSubscriptions();
 };
 
