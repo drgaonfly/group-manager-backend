@@ -1,6 +1,7 @@
 // models/subscription.ts
 import mongoose, { Document } from 'mongoose';
 import { IBotUser } from './botUser';
+import { IPayment } from './payment';
 
 export interface RenewalOption {
   days: number;
@@ -45,10 +46,17 @@ export interface ISubscription extends Document {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
   isAutoRenew: boolean;
+  id: string;
+  payment: mongoose.Types.ObjectId | IPayment;
 }
 
 const subscriptionSchema = new mongoose.Schema(
   {
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     botUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
@@ -72,6 +80,11 @@ const subscriptionSchema = new mongoose.Schema(
     },
     isAutoRenew: { type: Boolean, default: true },
     expiredAt: { type: Date, required: true },
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment',
+      required: true,
+    },
   },
   { timestamps: true },
 );

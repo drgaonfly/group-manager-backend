@@ -6,6 +6,7 @@ import Subscription, {
 import { IBotUser } from '../../models/botUser';
 import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
+import { IdGen } from '../../utils/idGen';
 
 /**
  * 检查所有 pending 的 payment，自动为其生成订阅记录
@@ -53,11 +54,13 @@ export async function checkPendingOrders() {
 
       // 创建订阅记录
       const subscription = new Subscription({
+        id: await IdGen.next(Subscription, 'id', 6),
         botUser: botUser._id,
         bot: bot._id,
         plan: payment.subscriptionInfo.type,
         status: SubscriptionStatus.Active,
         expiredAt,
+        payment: payment._id,
       });
 
       await subscription.save();
@@ -92,7 +95,7 @@ export async function checkPendingOrders() {
       }
 
       console.log(
-        `[checkPendingOrders] 已为订单 ${payment.orderNumber} 生成订阅记录，订阅ID: ${subscription._id}`,
+        `[checkPendingOrders] 已为订单 ${payment.orderNumber} 生成订阅记录，订阅ID: ${subscription.id}`,
       );
     }
 
