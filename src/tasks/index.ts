@@ -6,6 +6,8 @@ import { checkPendingOrders } from './cron/checkPendingOrders';
 
 const task = async () => {
   await setupDB();
+  console.log('当前时间:', new Date().toLocaleString());
+  console.log('开始执行任务...');
   await trialExpired();
   await checkExpiredOrders();
   await checkPendingOrders();
