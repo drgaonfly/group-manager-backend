@@ -21,6 +21,8 @@ const buildQuery = async (queryParams: any) => {
 
     if (botData && botData.length > 0) {
       query.bot = { $in: botData.map((bot) => bot._id) };
+    } else {
+      query.bot = null;
     }
   }
 
@@ -30,7 +32,7 @@ const buildQuery = async (queryParams: any) => {
 
   if (queryParams.group) {
     const groupData = await Group.find({
-      groupName: {
+      title: {
         $regex: queryParams.group,
         $options: 'i',
       },
@@ -38,6 +40,8 @@ const buildQuery = async (queryParams: any) => {
 
     if (groupData && groupData.length > 0) {
       query.group = { $in: groupData.map((group) => group._id) };
+    } else {
+      query.group = null;
     }
   }
 
