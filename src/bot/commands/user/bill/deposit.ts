@@ -8,6 +8,7 @@ import { useTransactionData } from '../../../hook/summary';
 import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import { checkIsOnline } from '../../../../bot/middlewares/checkIsOnline';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const depositCommand = new Composer<MyContext>();
 
@@ -93,6 +94,7 @@ async function handleDeposit(ctx: MyContext) {
 depositCommand.hears(
   /^(\+|入款)\s*(-?\d+\.?\d*)\s*(u|U)?$/,
   checkGroup,
+  checkPermission,
   isOperatorOrCreator,
   checkIsOnline,
   async (ctx) => {

@@ -5,6 +5,8 @@ import BotUser from '../../../../models/botUser';
 import { isGroupCreator } from '../../../middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import { processTextUsernames } from './add';
+import { checkPermission } from '../../../middlewares/checkPermission';
+
 const deleteOperatorCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:deleteOperator');
@@ -13,6 +15,7 @@ const debug = createDebug('bot:deleteOperator');
 deleteOperatorCommand.hears(
   /删除操作人/,
   checkGroup,
+  checkPermission,
   isGroupCreator,
   async (ctx) => {
     debug('deleteOperator');

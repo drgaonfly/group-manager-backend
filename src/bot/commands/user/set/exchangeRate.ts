@@ -3,6 +3,7 @@ import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const setExchangeRateCommand = new Composer<MyContext>();
 
@@ -18,6 +19,7 @@ const debug = createDebug('bot:exchangeRate');
 setExchangeRateCommand.hears(
   /设置(.+)?汇率\s*(\d+\.?\d*)$/,
   checkGroup,
+  checkPermission,
   isOperatorOrCreator,
   async (ctx) => {
     debug('exchangeRate');

@@ -3,6 +3,7 @@ import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { isGroupCreator } from '../../../middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const showOperatorCommand = new Composer<MyContext>();
 
@@ -12,6 +13,7 @@ const debug = createDebug('bot:showOperator');
 showOperatorCommand.hears(
   /^显示操作(人|员)/,
   checkGroup,
+  checkPermission,
   isGroupCreator,
   async (ctx) => {
     debug('showOperator');

@@ -4,6 +4,7 @@ import createDebug from 'debug';
 import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import Transaction from '../../../../models/transaction';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const initiateCommand = new Composer<MyContext>();
 
@@ -12,6 +13,7 @@ const debug = createDebug('bot:initiate');
 initiateCommand.hears(
   /^开始$/,
   checkGroup,
+  checkPermission,
   isOperatorOrCreator,
   async (ctx) => {
     debug('bot:initiate');

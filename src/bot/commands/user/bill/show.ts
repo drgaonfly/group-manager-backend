@@ -7,6 +7,7 @@ import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import { checkIsOnline } from '../../../../bot/middlewares/checkIsOnline';
 import { sendBillMessage } from './deposit';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const showBillCommand = new Composer<MyContext>();
 
@@ -16,6 +17,7 @@ const debug = createDebug('bot:show-bill');
 showBillCommand.hears(
   /显示账单/,
   checkGroup,
+  checkPermission,
   isOperatorOrCreator,
   checkIsOnline,
   async (ctx) => {

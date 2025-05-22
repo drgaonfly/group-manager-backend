@@ -6,6 +6,7 @@ import { isGroupCreator } from '../../../middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import { createTelegramClient } from '../../../services/gramClient';
 import { Api } from 'telegram';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const addOperatorCommand = new Composer<MyContext>();
 const debug = createDebug('bot:addOperator');
@@ -39,6 +40,7 @@ export async function getUserByUsername(session: any, username: string) {
 addOperatorCommand.hears(
   /(设置操作人|设置为操作人|添加操作人|设置操作员|添加操作员|设置为操作员)/,
   checkGroup,
+  checkPermission,
   isGroupCreator,
   async (ctx) => {
     const currentGroup = ctx.currentGroup;

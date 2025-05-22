@@ -3,22 +3,16 @@ import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const setFeeRateCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:fee');
 
-// 处理设置费率命令
-// setFeeRateCommand.command('fee', async (ctx) => {
-//   debug('fee');
-//   // 发送长文本消息并附带 Inline Menu
-
-//   await ctx.reply('输入: 设置费率3 或 设置费率 3 的格式即可设置费率');
-// });
-
 setFeeRateCommand.hears(
   /设置费率\s*(\d+\.?\d*)\s*(%)?$/,
   checkGroup,
+  checkPermission,
   isOperatorOrCreator,
   async (ctx) => {
     debug('fee');

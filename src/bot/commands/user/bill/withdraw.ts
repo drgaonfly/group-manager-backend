@@ -9,6 +9,7 @@ import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import { checkIsOnline } from '../../../../bot/middlewares/checkIsOnline';
 import { sendBillMessage } from './deposit';
+import { checkPermission } from '../../../middlewares/checkPermission';
 
 const withdrawCommand = new Composer<MyContext>();
 
@@ -17,6 +18,7 @@ const debug = createDebug('bot:withdraw');
 withdrawCommand.hears(
   /^(下发|-)\s*(\d+\.?\d*)\s*(u|U)?$/,
   checkGroup,
+  checkPermission,
   isOperatorOrCreator,
   checkIsOnline,
   async (ctx) => {
