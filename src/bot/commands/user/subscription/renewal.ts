@@ -12,21 +12,20 @@ import { checkInBot } from '../../../../bot/middlewares/checkInBot';
 const renewalCommand = new Composer<MyContext>();
 const debug = createDebug('bot:renewal');
 
+// 处理续费消息的函数
+export const handleRenewalMessage = async (ctx: MyContext) => {
+  const renderRenewal = useRenewal();
+  const message = await renderRenewal();
+  await ctx.reply(message, {
+    parse_mode: 'HTML',
+    reply_markup: renewal,
+  });
+};
+
 // 监听"自助续费"文本消息
-renewalCommand.hears('自助续费', checkInBot, async (ctx) => {
+renewalCommand.hears(/自助续费/, checkInBot, async (ctx) => {
   debug('续费命令被触发');
-  try {
-    const renderRenewal = useRenewal();
-    const message = await renderRenewal();
-    // 直接回复续费链接
-    await ctx.reply(message, {
-      parse_mode: 'HTML',
-      reply_markup: renewal,
-    });
-  } catch (error) {
-    debug('续费出错:', error);
-    await ctx.reply('续费时出错，请稍后再试。');
-  }
+  await handleRenewalMessage(ctx);
 });
 
 // 处理回调查询

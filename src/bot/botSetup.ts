@@ -74,6 +74,7 @@ export const setupBot = (token: string) => {
   bot.on('callback_query:data', async (ctx) => {
     log('callback_query:data');
     const data = ctx.callbackQuery?.data;
+    log(`用户点击了按钮: ${data}`);
     await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
   });
 
