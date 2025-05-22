@@ -44,8 +44,7 @@ export interface ISubscription extends Document {
   expiredAt: Date;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  isAuto: boolean;
-  isTrial: boolean;
+  isAutoRenew: boolean;
 }
 
 const subscriptionSchema = new mongoose.Schema(
@@ -53,6 +52,11 @@ const subscriptionSchema = new mongoose.Schema(
     botUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
+      required: true,
+    },
+    bot: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Bot',
       required: true,
     },
     plan: {
@@ -66,15 +70,13 @@ const subscriptionSchema = new mongoose.Schema(
       default: SubscriptionStatus.Active,
       required: true,
     },
-    isAuto: { type: Boolean, default: false },
-    isTrial: { type: Boolean, default: false },
-    createdAt: { type: Date, required: true },
+    isAutoRenew: { type: Boolean, default: true },
     expiredAt: { type: Date, required: true },
   },
   { timestamps: true },
 );
 
-subscriptionSchema.index({ botUser: 1, status: 1 });
+subscriptionSchema.index({ botUser: 1, bot: 1 });
 
 export default mongoose.model<ISubscription>(
   'Subscription',
