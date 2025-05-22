@@ -9,16 +9,6 @@ const startCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:start');
 
-// const setMenu = (menu: IMenu[]) => {
-//   const inlineMenu = new InlineKeyboard();
-
-//   menu.forEach((item) => {
-//     inlineMenu.url(item.menuName, item.url).row();
-//   });
-
-//   return inlineMenu;
-// };
-
 // 开始命令处理
 startCommand.command('start', checkBillPermission, async (ctx) => {
   debug('start');
