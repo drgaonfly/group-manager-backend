@@ -43,7 +43,7 @@ const paymentSchema = new Schema<IPayment>(
   {
     id: { type: String, required: true, unique: true },
     orderNumber: { type: String, required: true },
-    // wallet: { type: Schema.Types.ObjectId, ref: 'Wallet', required: true },
+    wallet: { type: Schema.Types.ObjectId, ref: 'Wallet', required: true },
     amount: { type: Number, required: true },
     status: {
       type: String,
