@@ -37,6 +37,12 @@ botUserSchema.virtual('transactions', {
   foreignField: 'botUser',
 });
 
+botUserSchema.virtual('payments', {
+  ref: 'Payment',
+  localField: '_id',
+  foreignField: 'botUser',
+});
+
 const BotUser = mongoose.model<IBotUser>('BotUser', botUserSchema);
 
 export default BotUser;
