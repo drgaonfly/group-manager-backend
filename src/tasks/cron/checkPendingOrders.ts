@@ -43,7 +43,7 @@ export async function checkPendingOrders() {
       }
 
       // 生成订阅起止时间
-      const now = new Date();
+      // const now = new Date();
       const days = payment.subscriptionInfo.days;
       // 先查找当前 BotUserConfig，获取原有的 subscriptionEndDate
       const botUser = payment.botUser as IBotUser;
