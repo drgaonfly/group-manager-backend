@@ -81,34 +81,85 @@ callbackComposer.callbackQuery(
       return;
     }
 
-    const orderNumber = await generateOrderNumber();
-
-    // 创建一个新的支付记录
-    const baseAmount = renewalOption?.price || 0;
-    const randomDecimal = Math.floor(Math.random() * 1000); // 生成0-999的随机数
-    const amount = baseAmount - 1 + randomDecimal / 1000; // 例如: 60 -> 59.234
-
-    const payment = new Payment({
-      id: await IdGen.next(Payment, 'id', 6),
-      orderNumber,
-      receiveAddress: address,
-      amount, // 使用计算后的随机金额
+    // 检查是否存在相同订阅类型的未过期待支付订单
+    debug('开始检查是否存在未过期的相同订阅类型订单');
+    const existingPayment = await Payment.findOne({
       status: 'pending',
-      type: 'subscription',
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15分钟后过期
+      expiresAt: { $gt: new Date() },
+      'subscriptionInfo.type': subscribeType,
       botUser: ctx.currentBotUser._id,
       bot: bot._id,
-      // 添加订阅相关信息
-      subscriptionInfo: {
-        price: renewalOption?.price, // 保持原始价格不变
-        type: subscribeType,
-        days: renewalOption?.days,
-        label: renewalOption?.label,
-      },
     });
 
-    // 保存支付记录
-    await payment.save();
+    let payment;
+
+    if (existingPayment) {
+      debug('找到未过期的相同订阅类型订单:', existingPayment.orderNumber);
+      payment = existingPayment;
+    } else {
+      debug('未找到未过期的相同订阅类型订单，开始创建新订单');
+      // 不存在则创建新订单
+      const orderNumber = await generateOrderNumber();
+      debug('生成订单号:', orderNumber);
+      const baseAmount = renewalOption?.price || 0;
+
+      // 生成不重复的随机金额
+      let amount;
+      let isUnique = false;
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      debug('开始生成不重复的随机金额');
+      while (!isUnique && attempts < maxAttempts) {
+        const randomDecimal = Math.floor(Math.random() * 1000);
+        amount = baseAmount - 1 + randomDecimal / 1000;
+        debug(`尝试生成金额: ${amount}, 第 ${attempts + 1} 次尝试`);
+
+        // 检查是否存在相同金额的待支付订单
+        const existingAmountPayment = await Payment.findOne({
+          amount,
+          status: 'pending',
+          expiresAt: { $gt: new Date() },
+        });
+
+        if (!existingAmountPayment) {
+          debug('生成唯一金额成功:', amount);
+          isUnique = true;
+        } else {
+          debug('金额重复，继续尝试');
+        }
+
+        attempts++;
+      }
+
+      if (!isUnique) {
+        debug('无法生成唯一的支付金额，已达到最大尝试次数');
+        throw new Error('无法生成唯一的支付金额，请重试');
+      }
+
+      debug('开始创建新的支付记录');
+      payment = new Payment({
+        id: await IdGen.next(Payment, 'id', 6),
+        orderNumber,
+        receiveAddress: address,
+        amount,
+        status: 'pending',
+        type: 'subscription',
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15分钟后过期
+        botUser: ctx.currentBotUser._id,
+        bot: bot._id,
+        subscriptionInfo: {
+          price: renewalOption?.price,
+          type: subscribeType,
+          days: renewalOption?.days,
+          label: renewalOption?.label,
+        },
+      });
+
+      // 保存新创建的支付记录
+      await payment.save();
+      debug('新支付记录创建成功:', payment.orderNumber);
+    }
 
     // 发送支付信息给用户
     const expireTime = payment.expiresAt
@@ -122,7 +173,7 @@ callbackComposer.callbackQuery(
 
     const paymentMessage =
       `<b>订单支付信息</b>\n\n` +
-      `订单号: <code>${orderNumber}</code>\n` +
+      `订单号: <code>${payment.orderNumber}</code>\n` +
       `订阅类型: ${renewalOption?.label}\n` +
       `订单金额: ${payment.amount} USDT\n\n` +
       `trx-20 转账地址：\n<code>${address}</code> (点击地址可自动复制)\n\n` +
