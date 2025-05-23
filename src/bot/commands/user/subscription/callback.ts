@@ -116,23 +116,39 @@ callbackComposer.callbackQuery(
       .row()
       .text('🔄 重新选择套餐', 'renewal:select');
 
-    await ctx.reply(
+    const paymentMessage =
       `<b>订单支付信息</b>\n\n` +
-        `订单号: <code>${orderNumber}</code>\n` +
-        `订阅类型: ${renewalOption?.label}\n` +
-        `订单金额: ${payment.amount} USDT\n\n` +
-        `trx-20 转账地址：\n<code>${address}</code> (点击地址可自动复制)\n\n` +
-        `注意事项：\n` +
-        `1. 请务必按指定金额转账，否则无法自动化延期。\n` +
-        `2. 转账成功10秒钟左右即可自动续费成功。\n` +
-        `3. 如遇到问题，请联系 记账机器人售后客服\n\n` +
-        `⚠️ 订单将在15分钟后失效，请尽快完成支付\n` +
-        `订单过期时间：<b>${expireTime}</b>`,
-      {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
-      },
-    );
+      `订单号: <code>${orderNumber}</code>\n` +
+      `订阅类型: ${renewalOption?.label}\n` +
+      `订单金额: ${payment.amount} USDT\n\n` +
+      `trx-20 转账地址：\n<code>${address}</code> (点击地址可自动复制)\n\n` +
+      `注意事项：\n` +
+      `1. 请务必按指定金额转账，否则无法自动化延期。\n` +
+      `2. 转账成功10秒钟左右即可自动续费成功。\n` +
+      `3. 如遇到问题，请联系 记账机器人售后客服\n\n` +
+      `⚠️ 订单将在15分钟后失效，请尽快完成支付\n` +
+      `订单过期时间：<b>${expireTime}</b>`;
+
+    // 如果是回调查询，优先尝试 editMessageText
+    if (ctx.callbackQuery?.message?.message_id) {
+      try {
+        await ctx.editMessageText(paymentMessage, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+        return;
+      } catch (err: any) {
+        if (!err?.description?.includes('MESSAGE_NOT_MODIFIED')) {
+          debug('editMessageText error:', err);
+        }
+      }
+    }
+
+    // 普通消息或 editMessageText 失败时，直接 reply
+    await ctx.reply(paymentMessage, {
+      parse_mode: 'HTML',
+      reply_markup: keyboard,
+    });
   },
 );
 
