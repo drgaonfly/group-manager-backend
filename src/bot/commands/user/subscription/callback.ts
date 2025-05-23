@@ -1,5 +1,5 @@
 // src/composers/callback.ts
-import { CallbackQueryContext, Composer } from 'grammy';
+import { CallbackQueryContext, Composer, InlineKeyboard } from 'grammy';
 import createDebug from 'debug';
 import { handleRenewalMessage } from './renewal';
 import { MyContext } from '../../../types';
@@ -42,7 +42,7 @@ export async function generateOrderNumber(): Promise<string> {
 }
 
 // 创建一个 Composer 实例
-const callbackComposer = new Composer();
+const callbackComposer = new Composer<MyContext>();
 
 callbackComposer.callbackQuery(
   'auto_renew',
@@ -50,11 +50,11 @@ callbackComposer.callbackQuery(
     const data = ctx.callbackQuery?.data;
 
     debug(`用户点击了按钮: ${data}`);
-    // await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
     await handleRenewalMessage(ctx);
   },
 );
 
+// 处理订阅套餐选择
 callbackComposer.callbackQuery(
   /^subscribe:/,
   async (ctx: CallbackQueryContext<MyContext>) => {
@@ -111,6 +111,11 @@ callbackComposer.callbackQuery(
       ? payment.expiresAt.toLocaleString('zh-CN', { hour12: false })
       : '未知';
 
+    const keyboard = new InlineKeyboard()
+      .url('📞 联系客服', bot.customer_service_link || 'https://t.me/example')
+      .row()
+      .text('🔄 重新选择套餐', 'renewal:select');
+
     await ctx.reply(
       `<b>订单支付信息</b>\n\n` +
         `订单号: <code>${orderNumber}</code>\n` +
@@ -125,18 +130,21 @@ callbackComposer.callbackQuery(
         `订单过期时间：<b>${expireTime}</b>`,
       {
         parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: '📞 联系客服',
-                url: bot.customer_service_link || 'https://t.me/example',
-              },
-            ],
-          ],
-        },
+        reply_markup: keyboard,
       },
     );
+  },
+);
+
+// 处理“重新选择套餐”按钮点击
+callbackComposer.callbackQuery(
+  'renewal:select',
+  async (ctx: CallbackQueryContext<MyContext>) => {
+    // 编辑消息内容为续费套餐选择界面
+    await handleRenewalMessage(ctx);
+
+    // 可选：确认回调（防止客户端加载动画）
+    await ctx.answerCallbackQuery();
   },
 );
 
