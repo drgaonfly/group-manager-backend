@@ -28,7 +28,6 @@ export const getPayments = handleAsync(async (req: Request, res: Response) => {
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
-    .populate('wallet')
     .populate('botUser')
     .populate('bot')
     .lean()
@@ -50,7 +49,6 @@ export const getPaymentById = handleAsync(
     const payment = await Payment.findOne({
       _id: req.params.id,
     })
-      .populate('wallet')
       .populate('botUser')
       .populate('bot')
       .lean();

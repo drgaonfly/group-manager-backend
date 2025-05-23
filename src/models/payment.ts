@@ -2,7 +2,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { ISubscription } from './subscription';
-import { IWallet } from './wallet';
 
 export interface IPayment extends Document {
   // wallet: Schema.Types.ObjectId | IWallet;
