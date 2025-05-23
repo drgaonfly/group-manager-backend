@@ -4,4 +4,19 @@ TG 昵称：<b><%= nickname %></b>
 TG ID：<%= userId %>
 TG 用户名：@<%= userName %>
 
-余额：<%= currentBalance %> USDT
+注册时间：<%= registerDate %>
+当前余额：<b><%= currentBalance %> USDT</b>
+
+状态：<b><%=
+  {
+    unauthorized: '未授权',
+    trial: '试用中',
+    trialExpired: '试用过期',
+    authorized: '已授权',
+    subscriptionExpired: '授权过期'
+  }[botUserConfig.status] || botUserConfig.status
+%></b>
+<% if (botUserConfig.status === 'trial' || botUserConfig.status === 'trialExpired') { %>试用结束时间：<b><%= botUserConfig.trialEndDate ? botUserConfig.trialEndDate.toISOString().replace('T', ' ').substring(0, 19) : '无' %></b><% } %>
+<% if (botUserConfig.status === 'authorized' || botUserConfig.status === 'subscriptionExpired') { %>订阅到期时间：<b><%= botUserConfig.subscriptionEndDate ? botUserConfig.subscriptionEndDate.toISOString().replace('T', ' ').substring(0, 19) : '无' %></b><% } %>
+当前套餐：<b><%= currentPlan || '无' %></b>
+自动续费：<b><%= botUserConfig.isAutoRenew ? '是' : '否' %></b>
