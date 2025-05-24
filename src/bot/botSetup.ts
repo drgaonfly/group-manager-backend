@@ -50,13 +50,13 @@ export const setupBot = (token: string) => {
   }
 
   // 使用 session 中间件
-  // bot.use(
-  //   session({
-  //     initial: () => ({
-  //       awaitingCustomCharge: false,
-  //     }),
-  //   })
-  // );
+  bot.use(
+    session({
+      initial: () => ({
+        awaitingCustomCharge: false,
+      }),
+    }),
+  );
 
   // 由于 session 已经合并到 context，后续中间件类型也要兼容 MyContext
   // 需要确保所有中间件都用 MyContext 类型
