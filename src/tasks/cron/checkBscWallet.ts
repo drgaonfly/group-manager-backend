@@ -18,12 +18,13 @@ interface BscScanResponse {
 
 const BSC_API_KEY = '7ND64XHWHK7NR5SHU8I4CEZPYID2BJPIM3';
 const USDT_CONTRACT = '0x55d398326f99059fF775485246999027B3197955'; // BSC USDT合约
-const TARGET_ADDRESS = '0x00000047bb99ea4d791bb749d970de71ee0b1a34';
+const TARGET_ADDRESS = '0xbc1052230C4Ca96E052b98B8411f83114905d82d';
 const CHECK_INTERVAL = 30000; // 30秒检查一次
 
-let lastCheckedTimestamp: number = Math.floor(Date.now() / 1000) - 60; // 初始化为1分钟前（秒级时间戳）
-
-async function fetchNewTransfers(): Promise<BscTokenTransfer[]> {
+/**
+ * 获取最近15分钟的BSC USDT转账
+ */
+async function fetchRecent15MinTransfers(): Promise<BscTokenTransfer[]> {
   const url = new URL('https://api.bscscan.com/api');
 
   url.searchParams.set('module', 'account');
@@ -32,8 +33,11 @@ async function fetchNewTransfers(): Promise<BscTokenTransfer[]> {
   url.searchParams.set('address', TARGET_ADDRESS);
   url.searchParams.set('startblock', '0');
   url.searchParams.set('endblock', '99999999');
-  url.searchParams.set('sort', 'asc');
+  url.searchParams.set('sort', 'desc'); // 先返回最新的
   url.searchParams.set('apikey', BSC_API_KEY);
+
+  const now = Math.floor(Date.now() / 1000);
+  const fifteenMinAgo = now - 15 * 60;
 
   try {
     const response = await axios.get<BscScanResponse>(url.toString());
@@ -42,10 +46,9 @@ async function fetchNewTransfers(): Promise<BscTokenTransfer[]> {
       throw new Error(`BscScan API 错误: ${response.data.message}`);
     }
 
+    // 只保留15分钟内的USDT转账
     return response.data.result.filter(
-      (t) =>
-        parseInt(t.timeStamp) > lastCheckedTimestamp &&
-        t.tokenSymbol === 'USDT',
+      (t) => parseInt(t.timeStamp) >= fifteenMinAgo && t.tokenSymbol === 'USDT',
     );
   } catch (error) {
     console.error(
@@ -74,17 +77,17 @@ function processTransfer(transfer: BscTokenTransfer): void {
 
 async function checkTransfers() {
   try {
-    const transfers = await fetchNewTransfers();
+    const transfers = await fetchRecent15MinTransfers();
 
     if (transfers.length > 0) {
-      transfers.forEach((t) => {
-        processTransfer(t);
-        // 更新最后时间戳
-        lastCheckedTimestamp = Math.max(
-          lastCheckedTimestamp,
-          parseInt(t.timeStamp),
-        );
-      });
+      // 按时间升序输出
+      transfers
+        .sort((a, b) => parseInt(a.timeStamp) - parseInt(b.timeStamp))
+        .forEach((t) => {
+          processTransfer(t);
+        });
+    } else {
+      console.log('最近15分钟无USDT交易');
     }
   } catch (error) {
     console.error(
@@ -94,7 +97,7 @@ async function checkTransfers() {
   }
 }
 
-console.log(`🚀 开始监控地址 ${TARGET_ADDRESS} 的BSC USDT交易...`);
+console.log(`🚀 查询地址 ${TARGET_ADDRESS} 近15分钟的BSC USDT交易...`);
 // 立即运行一次后按间隔执行
 checkTransfers();
 setInterval(checkTransfers, CHECK_INTERVAL);
