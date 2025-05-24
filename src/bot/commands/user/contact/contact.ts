@@ -7,7 +7,7 @@ const customerServiceCommand = new Composer<MyContext>();
 const debug = createDebug('bot:contact');
 
 // 监听"联系客服"文本消息
-customerServiceCommand.hears(/联系客服/, checkInBot, async (ctx) => {
+export async function handleContactCommand(ctx: MyContext) {
   debug('联系客服命令被触发');
 
   const bot = ctx.currentBot;
@@ -16,6 +16,10 @@ customerServiceCommand.hears(/联系客服/, checkInBot, async (ctx) => {
   await ctx.reply(bot.contact || '请设置客服内容', {
     parse_mode: 'HTML',
   });
+}
+
+customerServiceCommand.hears(/联系客服/, checkInBot, async (ctx) => {
+  await handleContactCommand(ctx);
 });
 
 export default customerServiceCommand;

@@ -2,8 +2,9 @@
 import { CallbackQueryContext, Composer } from 'grammy';
 import createDebug from 'debug';
 import { MyContext } from '../../../types';
+import { handleContactCommand } from './contact';
 
-const debug = createDebug('help:callback');
+const debug = createDebug('contact:callback');
 
 // 创建一个 Composer 实例
 const callbackComposer = new Composer();
@@ -11,10 +12,9 @@ const callbackComposer = new Composer();
 callbackComposer.callbackQuery(
   'contact',
   async (ctx: CallbackQueryContext<MyContext>) => {
-    const data = ctx.callbackQuery?.data;
-
-    debug(`用户点击了按钮: ${data}`);
-    await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
+    debug(ctx.callbackQuery?.data);
+    await handleContactCommand(ctx);
+    await ctx.answerCallbackQuery();
   },
 );
 
