@@ -3,6 +3,20 @@ import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { ISubscription } from './subscription';
 
+export const chargeOptions = [
+  { amount: 5, label: '5 USDT', callback: 'charge_5' },
+  { amount: 10, label: '10 USDT', callback: 'charge_10' },
+  { amount: 20, label: '20 USDT', callback: 'charge_20' },
+  { amount: 50, label: '50 USDT', callback: 'charge_50' },
+  { amount: 100, label: '100 USDT', callback: 'charge_100' },
+  { amount: 300, label: '300 USDT', callback: 'charge_300' },
+  { amount: 500, label: '500 USDT', callback: 'charge_500' },
+  { amount: 1000, label: '1000 USDT', callback: 'charge_1000' },
+  { amount: 2000, label: '2000 USDT', callback: 'charge_2000' },
+  { amount: null, label: '自定义金额', callback: 'charge_custom' },
+  { amount: null, label: '取消充值', callback: 'close' },
+];
+
 export interface IPayment extends Document {
   // wallet: Schema.Types.ObjectId | IWallet;
   id: string;

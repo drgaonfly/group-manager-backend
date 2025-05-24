@@ -50,7 +50,7 @@ userProfileCommand.hears(/个人信息/, checkInBot, async (ctx) => {
         [
           {
             text: '💰 立即充值',
-            callback_data: 'recharge',
+            callback_data: 'recharge:select',
           },
           {
             text: '🔄 自助续费',

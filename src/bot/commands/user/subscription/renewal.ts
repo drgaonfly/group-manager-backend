@@ -25,7 +25,12 @@ export const handleRenewalMessage = async (ctx: MyContext) => {
   );
 
   // 如果是回调查询，优先尝试 editMessageText
-  if (ctx.callbackQuery && ctx.chat && ctx.callbackQuery?.message?.message_id) {
+  if (
+    ctx.callbackQuery &&
+    ctx.chat &&
+    ctx.callbackQuery?.message?.message_id &&
+    ctx.callbackQuery.data !== 'auto_renew'
+  ) {
     debug('editMessageText');
     try {
       await ctx.editMessageText(message, {

@@ -44,16 +44,6 @@ export async function generateOrderNumber(): Promise<string> {
 // 创建一个 Composer 实例
 const callbackComposer = new Composer<MyContext>();
 
-callbackComposer.callbackQuery(
-  'auto_renew',
-  async (ctx: CallbackQueryContext<MyContext>) => {
-    const data = ctx.callbackQuery?.data;
-
-    debug(`用户点击了按钮: ${data}`);
-    await handleRenewalMessage(ctx);
-  },
-);
-
 // 处理订阅套餐选择
 callbackComposer.callbackQuery(
   /^subscribe:/,
@@ -186,6 +176,7 @@ callbackComposer.callbackQuery(
       `⚠️ 订单将在15分钟后失效，请尽快完成支付\n` +
       `订单过期时间：<b>${expireTime}</b>`;
 
+    debug('ctx.callbackQuery?.data', ctx.callbackQuery?.data);
     // 如果是回调查询，优先尝试 editMessageText
     if (ctx.callbackQuery?.message?.message_id) {
       try {
@@ -211,7 +202,7 @@ callbackComposer.callbackQuery(
 
 // 处理“重新选择套餐”按钮点击
 callbackComposer.callbackQuery(
-  'renewal:select',
+  /^(renewal:select|auto_renew)$/,
   async (ctx: CallbackQueryContext<MyContext>) => {
     // 编辑消息内容为续费套餐选择界面
     await handleRenewalMessage(ctx);

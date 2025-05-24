@@ -1,21 +1,17 @@
 // src/menus/inline/exampleInlineMenu.ts
 import { InlineKeyboard } from 'grammy';
 
-const charger = new InlineKeyboard()
-  .text('5 USDT', 'charge_5')
-  .text('10 USDT', 'charge_10')
-  .text('20 USDT', 'charge_20')
-  .row()
-  .text('50 USDT', 'charge_50')
-  .text('100 USDT', 'charge_100')
-  .text('300 USDT', 'charge_300')
-  .row()
-  .text('500 USDT', 'charge_500')
-  .text('1000 USDT', 'charge_1000')
-  .text('2000 USDT', 'charge_2000')
-  .row()
-  .text('自定义金额', 'charge_custom')
-  .text('取消充值', 'charge_cancel')
-  .row();
+import { chargeOptions } from '../../../models/payment';
+
+const charger = new InlineKeyboard();
+
+chargeOptions.forEach((option, idx) => {
+  charger.text(option.label, option.callback);
+  // 每3个一行，最后一行（自定义/取消）单独一行
+  if ((idx + 1) % 3 === 0 && idx < chargeOptions.length - 2) {
+    charger.row();
+  }
+});
+charger.row(); // 保证最后一行分隔
 
 export default charger;
