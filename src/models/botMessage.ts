@@ -14,7 +14,7 @@ export enum MessageType {
   LOCATION = 'location',
   MENTION = 'mention',
   COMMAND = 'command',
-  IMAGE = 'image',
+  IMAGE = 'photo',
   AUDIO = 'audio',
   FILE = 'file',
   OTHER = 'other',

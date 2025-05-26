@@ -13,9 +13,6 @@ export interface IMessage extends Document {
   chat_id: number; // 聊天id
   chat_type: string;
   chat_title?: string;
-  chat_username?: string;
-  chat_first_name?: string;
-  chat_last_name?: string;
   date: number; // 消息时间戳（秒）
   messageType: string; // 消息类型，如 text, image, command 等
   content: string; // 消息内容
@@ -38,9 +35,6 @@ const messageSchema = new mongoose.Schema(
     chat_id: { type: Number, required: true }, // chat.id
     chat_type: { type: String, required: true }, // chat.type
     chat_title: { type: String },
-    chat_username: { type: String },
-    chat_first_name: { type: String },
-    chat_last_name: { type: String },
     date: {
       type: Number,
       required: true,
