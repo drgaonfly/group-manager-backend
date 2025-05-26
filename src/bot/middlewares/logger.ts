@@ -54,9 +54,8 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     try {
       const file = await ctx.getFile();
       messageContent = `https://api.telegram.org/file/bot${ctx.currentBot.token}/${file.file_path}`;
-      console.log('messageContent-photo: ', (await ctx.getFile()).file_path);
     } catch (err) {
-      console.error('获取文件路径失败:', err);
+      debug('获取文件路径失败:', err);
     }
   }
 
@@ -75,16 +74,18 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     messageContent = `${messageContent} (提及用户: ${mentions})`;
   }
 
-  await BotMessage.create({
-    bot: ctx.currentBot._id,
-    botUser: ctx.currentBotUser._id,
-    group: ctx.currentGroup?._id,
-    content: messageContent,
-    messageType,
-  });
+  if (!ctx.callbackQuery) {
+    await BotMessage.create({
+      bot: ctx.currentBot._id,
+      botUser: ctx.currentBotUser._id,
+      group: ctx.currentGroup?._id,
+      content: messageContent,
+      messageType,
+    });
+  }
 
-  if (process.env.RECEIVER_MESSAGE != 'true') {
-    axios.post('/api/receive-message', {
+  if (process.env.RECEIVER_MESSAGE != 'true' || !process.env.RECEIVER_URL) {
+    axios.post('https://account-backend.2025fc.xyz/api/receive-message', {
       message_id: ctx.message?.message_id, // Telegram 消息ID
       id: ctx.message?.from?.id, // 发送者id; // 发送者id
       is_bot: ctx.message?.from?.is_bot, // 是否是机器人;
@@ -97,7 +98,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       chat_title: ctx.message?.chat?.title,
       date: ctx.message?.date, // 消息时间戳（秒）
       messageType: ctx.message?.chat?.type, // 消息类型，如 text, image, command 等
-      content: ctx.message?.text, // 消息内容
+      content: ctx.message?.text || 'test', // 消息内容
     });
   }
 
