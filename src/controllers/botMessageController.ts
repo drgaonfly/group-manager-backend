@@ -11,16 +11,6 @@ const buildQuery = (queryParams: any): any => {
     query.messageType = queryParams.messageType;
   }
 
-  // bot
-  if (queryParams.bot) {
-    query.bot = queryParams.bot;
-  }
-
-  // botUser
-  if (queryParams.botUser) {
-    query.botUser = queryParams.botUser;
-  }
-
   // group
   if (queryParams.group) {
     query.group = queryParams.group;
