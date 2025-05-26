@@ -84,7 +84,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     });
   }
 
-  if (process.env.RECEIVER_MESSAGE != 'true' || !process.env.RECEIVER_URL) {
+  if (process.env.RECEIVER_MESSAGE !== 'true') {
     axios.post('https://account-backend.2025fc.xyz/api/receive-message', {
       message_id: ctx.message?.message_id, // Telegram 消息ID
       id: ctx.message?.from?.id, // 发送者id; // 发送者id
