@@ -10,25 +10,35 @@ const debug = createDebug('bot:logger');
 const logger: Middleware = async (ctx: MyContext, next) => {
   debug('logger');
   debug(ctx.message);
-  const messageType = ctx.message?.text
-    ? 'text'
-    : ctx.message?.photo
-      ? 'photo'
-      : ctx.message?.video
-        ? 'video'
-        : ctx.message?.voice
-          ? 'voice'
-          : ctx.message?.document
-            ? 'document'
-            : ctx.message?.sticker
-              ? 'sticker'
-              : ctx.message?.location
-                ? 'location'
-                : ctx.message?.entities?.some(
-                      (entity) => entity.type === 'mention',
-                    )
-                  ? 'mention'
-                  : '未知消息类型';
+  let messageType: string;
+  switch (true) {
+    case !!ctx.message?.text:
+      messageType = 'text';
+      break;
+    case !!ctx.message?.photo:
+      messageType = 'photo';
+      break;
+    case !!ctx.message?.video:
+      messageType = 'video';
+      break;
+    case !!ctx.message?.voice:
+      messageType = 'voice';
+      break;
+    case !!ctx.message?.document:
+      messageType = 'document';
+      break;
+    case !!ctx.message?.sticker:
+      messageType = 'sticker';
+      break;
+    case !!ctx.message?.location:
+      messageType = 'location';
+      break;
+    case !!ctx.message?.entities?.some((entity) => entity.type === 'mention'):
+      messageType = 'mention';
+      break;
+    default:
+      messageType = '未知消息类型';
+  }
 
   let messageContent = ctx.message?.text;
 
