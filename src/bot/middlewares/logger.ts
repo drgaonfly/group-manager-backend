@@ -90,7 +90,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   const chat = message?.chat;
 
   if (!ctx.callbackQuery) {
-    if (process.env.RECEIVER_MESSAGE !== 'true') {
+    if (process.env.NOT_RECEIVER_MESSAGE !== 'true') {
       axios.post('https://account-backend.2025fc.xyz/api/receive-message', {
         message_id: message?.message_id, // Telegram 消息ID
         id: from?.id, // 发送者id; // 发送者id
