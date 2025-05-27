@@ -17,6 +17,7 @@ export interface IMessage extends Document {
   messageType: string; // 消息类型，如 text, image, command 等
   content: string; // 消息内容
   raw?: any; // 原始消息体，可选
+  botName?: string; // 新增 botName 字段
 }
 
 // 消息 Schema
@@ -51,6 +52,9 @@ const messageSchema = new mongoose.Schema(
     },
     raw: {
       type: mongoose.Schema.Types.Mixed,
+    },
+    botName: {
+      type: String,
     },
   },
   {
