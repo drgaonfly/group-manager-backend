@@ -11,6 +11,8 @@ import createDebug from 'debug';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import { MyContext } from './types'; // 引入你的 MyContext 类型
 import { hydrateFiles } from '@grammyjs/files';
+import { RedisAdapter } from '@grammyjs/storage-redis';
+import { redis } from '../utils/redis';
 // import { autoQuote } from "@roziscoding/grammy-autoquote";
 
 const log = createDebug('bot:setup');
@@ -24,6 +26,11 @@ export const printWebhookInfo = async (bot: Bot) => {
 };
 
 export const setupBot = (token: string) => {
+  const storage = new RedisAdapter({
+    instance: redis,
+    ttl: 10,
+    autoParseDates: true,
+  });
   const SOCKS_PROXY_URL = process.env.SOCKS_PROXY_URL; // SOCKS 代理 URL，例如 'socks5://username:password@host:port'
 
   // 定义 bot 变量
@@ -56,6 +63,7 @@ export const setupBot = (token: string) => {
       initial: () => ({
         awaitingCustomCharge: false,
       }),
+      storage,
     }),
   );
 

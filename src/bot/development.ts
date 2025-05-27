@@ -2,8 +2,11 @@ import { setupBot } from './botSetup';
 import { default as BotManager } from '../models/bot';
 import createDebug from 'debug';
 import setupDB from '../utils/db';
+import { setupRedis } from '../utils/redis';
 
 const development = async () => {
+  await setupDB();
+  await setupRedis();
   const activeBots = await BotManager.find({ token: process.env.BOT_TOKEN });
 
   for (const activeBot of activeBots) {
@@ -22,7 +25,5 @@ const development = async () => {
     await bot.start();
   }
 };
-
-setupDB();
 
 development();
