@@ -25,8 +25,8 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 22
           script: |
-            cd /www/wwwroot/forwarding-backend.2025fc.xyz/forwarding-backend-remote &&
+            cd /www/wwwroot/account-backend.2025fc.xyz/account-bot-backend-remote &&
             git pull --rebase origin ${GITHUB_REF##*/} &&
-            /www/server/nodejs/v20.16.0/bin/pnpm install &&
+            /www/server/nodejs/v20.16.0/bin/pnpm install --registry=https://registry.npmjs.org &&
             git checkout -f . &&
             npm run copy-to-remote
