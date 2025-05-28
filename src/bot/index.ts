@@ -2,11 +2,12 @@ import dotenv from 'dotenv';
 import { setupBot } from './botSetup';
 import { default as BotManager } from '../models/bot';
 import setupDB from '../utils/db';
-
+import { setupRedis } from '../utils/redis';
 dotenv.config();
 
 export const startWebHookBot = async () => {
   await setupDB();
+  await setupRedis();
   const activeBots = await BotManager.find({ isOnline: true });
 
   for (const activeBot of activeBots) {
