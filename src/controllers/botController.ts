@@ -22,8 +22,18 @@ const buildQuery = async (
     query.token = queryParams.token;
   }
 
+  // id
+  if (queryParams.id) {
+    query.id = { $regex: queryParams.id, $options: 'i' };
+  }
+
   if (queryParams.botName) {
     query.botName = { $regex: queryParams.botName, $options: 'i' };
+  }
+
+  // userName
+  if (queryParams.userName) {
+    query.userName = { $regex: queryParams.userName, $options: 'i' };
   }
 
   if (queryParams.message) {
