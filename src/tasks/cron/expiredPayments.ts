@@ -10,7 +10,7 @@ export async function checkExpiredPayments() {
     // 查询已过期但未处理的订单
     const expiredPayments = await Payment.find({
       status: 'pending',
-      expiresAt: { $lte: new Date() },
+      expiredAt: { $lte: new Date() },
     })
       .populate('botUser')
       .populate('bot');

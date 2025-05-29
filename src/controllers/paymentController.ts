@@ -74,7 +74,7 @@ export const addPayment = handleAsync(async (req: Request, res: Response) => {
     orderNumber: await generateOrderNumber(),
     status: 'pending',
     createdAt: new Date(),
-    expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30分钟后过期
+    expiredAt: new Date(Date.now() + 30 * 60 * 1000), // 30分钟后过期
   });
 
   const savedPayment = await payment.save();

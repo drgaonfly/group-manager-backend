@@ -76,7 +76,7 @@ callbackComposer.callbackQuery(
     debug('开始检查是否存在未过期的相同订阅类型订单');
     const existingPayment = await Payment.findOne({
       status: 'pending',
-      expiresAt: { $gt: new Date() },
+      expiredAt: { $gt: new Date() },
       'subscriptionInfo.type': subscribeType,
       botUser: ctx.currentBotUser._id,
       bot: bot._id,
@@ -87,7 +87,7 @@ callbackComposer.callbackQuery(
     if (existingPayment) {
       debug('找到未过期的相同订阅类型订单:', existingPayment.orderNumber);
       // 如果已存在未过期订单，顺便刷新其过期时间为15分钟后
-      existingPayment.expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15分钟后过期 更新下
+      existingPayment.expiredAt = new Date(Date.now() + 15 * 60 * 1000); // 15分钟后过期 更新下
       await existingPayment.save();
       payment = existingPayment;
     } else {
@@ -113,7 +113,7 @@ callbackComposer.callbackQuery(
         const existingAmountPayment = await Payment.findOne({
           amount,
           status: 'pending',
-          expiresAt: { $gt: new Date() },
+          expiredAt: { $gt: new Date() },
         });
 
         if (!existingAmountPayment) {
@@ -139,7 +139,7 @@ callbackComposer.callbackQuery(
         amount,
         status: 'pending',
         type: 'subscription',
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15分钟后过期
+        expiredAt: new Date(Date.now() + 15 * 60 * 1000), // 15分钟后过期
         botUser: ctx.currentBotUser._id,
         bot: bot._id,
         subscriptionInfo: {
@@ -158,8 +158,8 @@ callbackComposer.callbackQuery(
     }
 
     // 发送支付信息给用户
-    const expireTime = payment.expiresAt
-      ? dayjs(payment.expiresAt).format('YYYY-MM-DD HH:mm:ss')
+    const expireTime = payment.expiredAt
+      ? dayjs(payment.expiredAt).format('YYYY-MM-DD HH:mm:ss')
       : '未知';
 
     const keyboard = new InlineKeyboard()

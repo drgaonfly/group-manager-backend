@@ -28,7 +28,7 @@ export interface IPayment extends Document {
   type: 'recharge' | 'subscription';
   txHash?: string;
   createdAt: Date;
-  expiresAt: Date;
+  expiredAt: Date;
   sendAddress: string;
   receiveAddress?: string;
   // currency: 'USDT_ERC20' | 'USDT_TRC20';
@@ -69,7 +69,7 @@ const paymentSchema = new Schema<IPayment>(
       default: 'pending',
     },
     txHash: String,
-    expiresAt: { type: Date, required: true },
+    expiredAt: { type: Date, required: true },
     sendAddress: { type: String, required: false },
     subscription: {
       type: Schema.Types.ObjectId,
