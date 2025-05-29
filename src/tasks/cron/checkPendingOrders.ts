@@ -67,15 +67,15 @@ export async function checkPendingOrders() {
       }
 
       // 查找是否有金额和订单匹配的转账
-      // 允许误差0.01 USDT（防止小数精度问题）
-      const AMOUNT_TOLERANCE = 0.01;
+      // 允许0.001 USDT的误差（处理不同平台的小数精度差异）
+      const AMOUNT_TOLERANCE = 0.001;
       const matchedTransfer = transfers.find(
-        (t) => Math.abs(t.money - payment.amount) < AMOUNT_TOLERANCE,
+        (t) => Math.abs(t.money - payment.amount) <= AMOUNT_TOLERANCE,
       );
 
       if (!matchedTransfer) {
         console.log(
-          `[checkPendingOrders] 订单 ${payment.orderNumber} 未检测到 ${receiveAddress} 收到 ${payment.amount} USDT 的转账，跳过`,
+          `[checkPendingOrders] 订单 ${payment.orderNumber} 未检测到 ${receiveAddress} 收到 ${payment.amount} USDT 的转账（允许±${AMOUNT_TOLERANCE}误差），跳过`,
         );
         continue;
       }
