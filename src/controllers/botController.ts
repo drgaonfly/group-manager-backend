@@ -28,6 +28,11 @@ const buildQuery = async (
     query.id = { $regex: queryParams.id, $options: 'i' };
   }
 
+  // isExpired
+  if (queryParams.isExpired) {
+    query.isExpired = queryParams.isExpired === 'true';
+  }
+
   if (queryParams.botName) {
     query.botName = { $regex: queryParams.botName, $options: 'i' };
   }

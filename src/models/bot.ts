@@ -20,6 +20,7 @@ export interface IBot extends Document {
   authorized_users?: mongoose.Schema.Types.ObjectId[] | IBotUser[]; // 授权人，存 BotUser _id 关联
   expireAt?: Date; // 到期时间
   type?: 'public' | 'custom'; // 类型
+  isExpired?: boolean; // 是否过期，默认 false
 }
 
 export interface IMenu extends Document {
@@ -119,6 +120,10 @@ const botSchema = new mongoose.Schema(
       default: 'custom',
       trim: true,
     },
+    isExpired: {
+      type: Boolean,
+      default: false,
+    }, // 是否过期，默认 false
   },
   {
     timestamps: true,

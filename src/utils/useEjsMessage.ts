@@ -1,6 +1,7 @@
 import ejs from 'ejs';
 import path from 'path';
 import { IBotUserConfig } from '../models/botUserConfig';
+import { IBot } from '../models/bot';
 
 export const useSummary = () => {
   return async (data: {
@@ -36,6 +37,7 @@ export const useUserProfile = () => {
     currentBalance: number;
     botUserConfig: IBotUserConfig;
     currentPlan: string;
+    bot: IBot;
   }) => {
     const templatePath = path.join(__dirname, '../templates/userProfile.ejs');
     return await ejs.renderFile(templatePath, data);

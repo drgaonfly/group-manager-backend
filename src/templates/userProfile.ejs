@@ -6,7 +6,12 @@ TG 用户名：@<%= userName %>
 
 注册时间：<%= registerDate %>
 当前余额：<b><%= currentBalance %> USDT</b>
-
+<% if (bot.type === 'custom') { %>
+机器人类型：<b>定制</b>
+是否到期：<b><%= bot.isExpired ? '是' : '否' %></b>
+到期时间：<b><%= bot.expireAt ? bot.expireAt.toISOString().replace('T', ' ').substring(0, 19) : '无' %></b>
+<% } else { %>
+机器人类型：<b>公开</b>
 状态：<b><%=
   {
     unauthorized: '未授权',
@@ -20,3 +25,4 @@ TG 用户名：@<%= userName %>
 <% if (botUserConfig.status === 'authorized' || botUserConfig.status === 'subscriptionExpired') { %>订阅到期时间：<b><%= botUserConfig.subscriptionEndDate ? botUserConfig.subscriptionEndDate.toISOString().replace('T', ' ').substring(0, 19) : '无' %></b><% } %>
 当前套餐：<b><%= currentPlan || '无' %></b>
 自动续费：<b><%= botUserConfig.isAutoRenew ? '是' : '否' %></b>
+<% } %>
