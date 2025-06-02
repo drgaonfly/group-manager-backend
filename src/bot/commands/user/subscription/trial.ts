@@ -4,12 +4,13 @@ import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { checkInBot } from '../../../../bot/middlewares/checkInBot';
 import { UserStatus } from '../../../../models/botUserConfig';
+import { checkBotPublic } from '../../../../bot/middlewares/checkBotPublic';
 
 const trialCommand = new Composer<MyContext>();
 const debug = createDebug('bot:trial');
 
 // 监听"试用"文本消息
-trialCommand.hears(/申请试用/, checkInBot, async (ctx) => {
+trialCommand.hears(/申请试用/, checkInBot, checkBotPublic, async (ctx) => {
   debug('试用命令被触发');
 
   const botUserConfig = ctx.currentBotUserConfig;
