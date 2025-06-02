@@ -44,6 +44,11 @@ const buildQuery = async (
     query.remark = { $regex: queryParams.remark, $options: 'i' };
   }
 
+  // type
+  if (queryParams.type && queryParams.type !== '') {
+    query.type = queryParams.type;
+  }
+
   if (queryParams.isOnline !== '') {
     query.isOnline = queryParams.isOnline === 'true';
   }
