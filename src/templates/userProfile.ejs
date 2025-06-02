@@ -9,7 +9,7 @@ TG 用户名：@<%= userName %>
 <% if (bot.type === 'custom') { %>
 机器人类型：<b>定制</b>
 是否到期：<b><%= bot.isExpired ? '是' : '否' %></b>
-到期时间：<b><%= bot.expireAt ? bot.expireAt.toISOString().replace('T', ' ').substring(0, 19) : '无' %></b>
+到期时间：<b><%= bot.expireAt ? bot.expireAt.toLocaleString() : '无' %></b>
 <% } else { %>
 机器人类型：<b>公开</b>
 状态：<b><%=

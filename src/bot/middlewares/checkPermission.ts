@@ -65,6 +65,34 @@ const checkUserPermission = (
   return false;
 };
 
+/**
+ * 检查机器人是否已到期的中间件，仅对 custom 类型 bot 生效
+ */
+/**
+ * 检查传入 bot 是否已到期
+ * @param bot
+ * @returns {boolean} true 表示已到期，false 表示未到期
+ */
+export function isBotExpired(bot: IBot): boolean {
+  // 仅 custom 类型 bot 需要检查过期
+  if (bot.type !== 'custom') {
+    return false;
+  }
+
+  // 如果没有设置到期时间，或者明确标记未过期，则未到期
+  if (!bot.expireAt || !bot.isExpired) {
+    return false;
+  }
+
+  // 检查是否已到期
+  const now = new Date();
+  if (bot.isExpired || (bot.expireAt && now > new Date(bot.expireAt))) {
+    return true;
+  }
+
+  return false;
+}
+
 export const checkPermission = async (
   ctx: MyContext,
   next: () => Promise<void>,
@@ -83,6 +111,22 @@ export const checkPermission = async (
         reply_markup: {
           inline_keyboard: [
             [{ text: '点击申请使用', url: `https://t.me/${ctx.me.username}` }],
+          ],
+        },
+      });
+      return;
+    }
+
+    if (isBotExpired(bot)) {
+      ctx.reply('机器人已到期，请续费或联系管理员', {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '📞 联系客服',
+                url: bot.customer_service_link || 'https://t.me/example',
+              },
+            ],
           ],
         },
       });
