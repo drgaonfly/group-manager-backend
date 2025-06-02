@@ -20,9 +20,10 @@ export const notifyBotExpiration = async () => {
         $lte: threeDaysLater,
       },
       type: 'custom',
-      // Add a field to track if we've sent the pre-expiration notification
       preExpirationNotified: { $ne: true },
-    }).populate('owners');
+    })
+      .populate('owners')
+      .populate('authorized_users');
 
     console.log(
       `[notifyBotExpiration] 查询到 ${expiringBots.length} 个即将过期的机器人`,
