@@ -14,19 +14,19 @@ export interface RenewalOption {
 export const renewalOptions: Record<string, RenewalOption> = {
   biweekly: {
     days: 15,
-    price: 60,
+    price: 30,
     type: 'subscribe:biweekly',
     label: '15天',
   },
   monthly: {
     days: 30,
-    price: 100,
+    price: 50,
     type: 'subscribe:monthly',
     label: '一个月',
   },
   quarterly: {
     days: 90,
-    price: 230,
+    price: 120,
     type: 'subscribe:quarterly',
     label: '三个月',
   },
