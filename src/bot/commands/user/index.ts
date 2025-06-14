@@ -11,6 +11,7 @@ import profileComposer from './profile';
 import startingComposer from './starting';
 import cloneComposer from './clone';
 import cloneConversationComposer from './conversations';
+import walletComposer from './wallet';
 
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
@@ -29,6 +30,7 @@ userComposer.use(startingComposer.middleware());
 userComposer.use(contactComposer.middleware());
 userComposer.use(subscriptionComposer.middleware());
 userComposer.use(cloneComposer.middleware());
-userComposer.use(cloneConversationComposer.middleware());
+userComposer.use(walletComposer.middleware());
 
+userComposer.use(cloneConversationComposer.middleware());
 export default userComposer;
