@@ -72,6 +72,7 @@ export async function checkTransfer() {
         console.log(
           `[checkTransfer] 钱包 ${wallet.address} 已处理过该转账哈希，跳过`,
         );
+        continue;
       }
 
       const receipt = await Receipt.create({
