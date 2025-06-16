@@ -72,7 +72,7 @@ export const handleWalletListWithoutInlineMenu = async (
 
   // 分页查找
   const wallets = await Wallet.find()
-    .sort({ weight: 1, createdAt: -1 })
+    .sort({ createdAt: -1 })
     .skip(skip)
     .limit(ITEMS_PER_PAGE);
 
