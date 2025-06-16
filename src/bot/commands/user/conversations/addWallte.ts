@@ -85,7 +85,7 @@ walletAddComposer.callbackQuery('wallet_add_address', async (ctx) => {
     '\n',
     '⚠️ 请确保输入正确的Tron地址格式',
     '\n',
-    '例如: <code>TT7uDJS5gtDya3hfSHPcSEUFHaPLhsxVtf</code>',
+    '例如: <code>TSggLtscigXrfqWqNVuvMjTWdQwrQACK1h</code>',
     '\n',
     '⏳ 此操作将在 5 分钟后过期',
   ].join('\n');
