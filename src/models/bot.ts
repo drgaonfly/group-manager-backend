@@ -24,6 +24,7 @@ export interface IBot extends Document {
   isExpired?: boolean; // 是否过期，默认 false
   preExpirationNotified?: boolean; // 是否已发送过期提醒，默认 false
   clonedFrom?: mongoose.Schema.Types.ObjectId | IBot; // 新增：从哪个机器人clone的
+  canBeCloned?: boolean; // 新增：是否可克隆
 }
 
 export interface IMenu extends Document {
@@ -140,6 +141,10 @@ const botSchema = new mongoose.Schema(
       ref: 'Bot',
       default: null,
     }, // 新增：从哪个机器人clone的
+    canBeCloned: {
+      type: Boolean,
+      default: false,
+    }, // 新增：是否可克隆
   },
   {
     timestamps: true,
