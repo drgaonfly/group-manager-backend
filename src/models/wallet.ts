@@ -25,6 +25,12 @@ const walletSchema = new Schema<IWallet>(
   { timestamps: true },
 );
 
+walletSchema.virtual('receipts', {
+  ref: 'Receipt',
+  localField: '_id',
+  foreignField: 'wallet',
+});
+
 const Wallet = mongoose.model<IWallet>('Wallet', walletSchema);
 
 export default Wallet;

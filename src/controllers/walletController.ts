@@ -24,6 +24,19 @@ export const getWallets = handleAsync(async (req: Request, res: Response) => {
 
   const wallets = await Wallet.find(query)
     .sort('-createdAt')
+    .populate({
+      path: 'receipts',
+      populate: [
+        {
+          path: 'botUser',
+          select: 'userName displayName',
+        },
+        {
+          path: 'bot',
+          select: 'botName',
+        },
+      ],
+    })
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
     .populate('botUser')

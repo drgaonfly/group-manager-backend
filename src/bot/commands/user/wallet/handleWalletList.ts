@@ -35,7 +35,7 @@ export const handleWalletList = async (
   for (const item of wallets) {
     keyboard
       .text(
-        `${item.address}`,
+        `${item.address} ${item.remark ? `[${item.remark}]` : ' '}`,
         isDelete ? `delete_${item._id}` : `set_${item._id}`,
       )
       .row();
@@ -63,7 +63,9 @@ export const handleWalletListWithoutInlineMenu = async (
   const skip = (page - 1) * ITEMS_PER_PAGE;
 
   // 先查总数
-  const totalItems = await Wallet.countDocuments();
+  const totalItems = await Wallet.countDocuments({
+    isOnline: true,
+  });
   debug('totalItems', totalItems);
 
   if (totalItems === 0) {
@@ -74,7 +76,9 @@ export const handleWalletListWithoutInlineMenu = async (
   }
 
   // 分页查找
-  const wallets = await Wallet.find()
+  const wallets = await Wallet.find({
+    isOnline: true,
+  })
     .sort('-createdAt')
     .skip(skip)
     .limit(ITEMS_PER_PAGE);
@@ -87,7 +91,12 @@ export const handleWalletListWithoutInlineMenu = async (
       : '';
 
   const replyText = `\n<b>🏦 您的监控地址列表：</b>\n\n${wallets
-    .map((wallet, index) => `${index + 1}. ${wallet.address}`)
+    .map(
+      (wallet, index) =>
+        `${index + 1}. ${wallet.address} ${
+          wallet.remark ? `[${wallet.remark}]` : ' '
+        }`,
+    )
     .join('\n')}`;
 
   return {

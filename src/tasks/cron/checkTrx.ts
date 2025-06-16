@@ -79,6 +79,9 @@ export async function getUSDTTransfers(
             trade_id: transfer.transaction_id,
             buyer: transfer.from_address,
           };
+
+          console.log('transferObj', transferObj);
+
           console.log(
             `[getUSDTTransfers] 收到转账: ${transferObj.money} USDT, 来自: ${
               transferObj.buyer

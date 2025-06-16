@@ -19,7 +19,9 @@ walletDeleteComposer.callbackQuery(/delete_([a-f0-9]{24})$/, async (ctx) => {
 
   debug('delete_wallet', walletId);
 
-  await Wallet.findByIdAndDelete(walletId);
+  await Wallet.findByIdAndUpdate(walletId, {
+    isOnline: true,
+  });
 
   await ctx.reply('✅ 删除成功');
 
