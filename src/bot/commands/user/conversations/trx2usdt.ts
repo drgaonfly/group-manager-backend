@@ -132,6 +132,9 @@ exchangeTrxToUsdtComposer.use(
 
 exchangeTrxToUsdtComposer.callbackQuery('trx_to_usdt', async (ctx) => {
   debug('trx_to_usdt callback triggered');
+
+  await ctx.conversation.exitAll();
+
   await ctx.conversation.enter('trxToUsdtExchangeConversation', {
     botUserConfig: ctx.currentBotUserConfig,
   });

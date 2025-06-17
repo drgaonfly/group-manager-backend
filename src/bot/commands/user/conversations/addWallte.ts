@@ -97,6 +97,8 @@ walletAddComposer.callbackQuery('wallet_add_address', async (ctx) => {
     reply_markup: inlineKeyboard,
   });
 
+  await ctx.conversation.exitAll();
+
   await ctx.conversation.enter('walletAddAddressConversation', {
     botUser: ctx.currentBotUser,
     bot: ctx.currentBot,

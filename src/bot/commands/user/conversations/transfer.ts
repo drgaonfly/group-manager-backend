@@ -2,6 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { createConversation, Conversation } from '@grammyjs/conversations';
+import { IBotUserConfig } from '../../../../models/botUserConfig';
 
 const exchangeTransferComposer = new Composer<MyContext>();
 const debug = createDebug('bot:exchange:transfer');
@@ -13,11 +14,16 @@ const cancelKeyboard = new InlineKeyboard().text('❌ 取消', 'close');
 async function transferExchangeConversation(
   conversation: Conversation<MyContext>,
   ctx: MyContext,
+  {
+    botUserConfig,
+  }: {
+    botUserConfig: IBotUserConfig;
+  },
 ) {
   debug('Starting transfer exchange conversation');
 
-  const trx_balance = ctx.currentBotUserConfig.trx_balance;
-  const usdt_balance = ctx.currentBotUserConfig.usdt_balance;
+  const trx_balance = botUserConfig.trx_balance;
+  const usdt_balance = botUserConfig.usdt_balance;
 
   // Step 1: 获取接收地址
   const receiveMessage = [
@@ -131,9 +137,11 @@ exchangeTransferComposer.use(createConversation(transferExchangeConversation));
 
 exchangeTransferComposer.callbackQuery('exchange_to_others', async (ctx) => {
   debug('exchange_to_others callback triggered');
+
+  await ctx.conversation.exitAll();
+
   await ctx.conversation.enter('transferExchangeConversation', {
-    bot: ctx.currentBot,
-    botUser: ctx.currentBotUser,
+    botUserConfig: ctx.currentBotUserConfig,
   });
 });
 

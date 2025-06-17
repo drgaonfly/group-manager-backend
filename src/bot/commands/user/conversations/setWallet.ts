@@ -61,6 +61,8 @@ walletClickComposer.use(createConversation(walletEditRemarkConversation));
 walletClickComposer.callbackQuery(/set_([a-f0-9]{24})$/, async (ctx) => {
   const walletId = ctx.callbackQuery.data.split('_')[1];
 
+  await ctx.conversation.exitAll();
+
   await ctx.conversation.enter('walletEditRemarkConversation', {
     walletId,
   });
