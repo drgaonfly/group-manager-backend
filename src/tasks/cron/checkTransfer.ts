@@ -78,13 +78,13 @@ export async function checkTransfer() {
       });
 
       const message = [
-        `🏠监听账户: ${address}`,
+        `🏠监听账户: <code>${address}</code>`,
         `💸交易类型: 🟢收入`,
         `💸交易金额: ${receipt.amount.toFixed(4)} USDT`,
         `⏰交易时间: ${new Date(receipt.time * 1000).toLocaleString()}`,
         `🔗所属公链: Tron`,
-        `💰监控地址: ${address}`,
-        `💰对方地址: ${matchedTransfer.buyer}`,
+        `💰监控地址: <code>${address}</code>`,
+        `💰对方地址: <code>${matchedTransfer.buyer}</code>`,
       ].join('\n');
 
       //

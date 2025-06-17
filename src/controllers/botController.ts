@@ -7,6 +7,7 @@ import { printWebhookInfo, setupBot } from '../bot/botSetup';
 import { RequestCustom } from 'user';
 import { isProxy, isEmployee } from '../middlewares/authMiddleware';
 import { getUserByUsername } from '../bot/commands/user/operator/add';
+import { encrypt, decrypt } from '../services/encrypt';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -123,11 +124,18 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .limit(+pageSize)
     .exec();
 
+  const botsWithPrivateKey = bots.map((bot) => {
+    return {
+      ...bot,
+      private_key: bot.private_key ? decrypt(bot.private_key) : null,
+    };
+  });
+
   const total = await Bot.countDocuments(query).exec();
 
   res.json({
     success: true,
-    data: bots,
+    data: botsWithPrivateKey,
     total,
     current: +current,
     pageSize: +pageSize,
@@ -201,8 +209,8 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 });
 
 const updateBot = handleAsync(async (req: Request, res: Response) => {
-  console.log('WEBHOOK_URL', WEBHOOK_URL);
   const { id } = req.params;
+  const { private_key, ...restBody } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -211,20 +219,22 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
     throw new Error('机器人不存在');
   }
 
-  const updatedBot = await Bot.findByIdAndUpdate(id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const updateData = {
+    ...restBody,
+  };
 
-  if (updatedBot.isOnline !== botManager.isOnline) {
-    if (updatedBot.isOnline) {
-      setWebhook(updatedBot);
-    } else {
-      // const webhookInfo = await printWebhookInfo(bot);
-      // if (webhookInfo.url) {
-      //   await bot.api.deleteWebhook();
-      // }
-    }
+  if (private_key) {
+    updateData.private_key = encrypt(private_key);
+  }
+
+  const updatedBot = await Bot.findByIdAndUpdate(
+    id,
+    { $set: updateData },
+    { new: true },
+  );
+
+  if (updatedBot.isOnline !== botManager.isOnline && updatedBot.isOnline) {
+    await setWebhook(updatedBot);
   }
 
   res.json({

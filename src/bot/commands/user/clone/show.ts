@@ -14,7 +14,7 @@ cloneShowComposer.hears(/^🆓 免费克隆/, async (ctx) => {
     inline_keyboard: [
       [
         { text: '🚀 立即克隆', callback_data: 'clone_start' },
-        { text: '❌ 取消', callback_data: 'close' },
+        { text: '❌ 关闭', callback_data: 'close' },
       ],
     ],
   };
