@@ -2,7 +2,7 @@ import Bot from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
 import BotUser from '../../models/botUser';
 import Wallet from '../../models/wallet';
-import { getUSDTTransfers } from '../../services/checkTrxIn';
+import { getUSDTTransfers } from '../../services/checkTrxOut';
 import { IdGen } from '../../utils/idGen';
 import Receipt from '../../models/receipt';
 
@@ -11,9 +11,9 @@ import Receipt from '../../models/receipt';
  * 只有当用户所有订阅都过期时，才将 BotUserConfig 状态更新为 SUBSCRIPTION_EXPIRED。
  * 向用户发送详细的订阅过期通知。
  */
-export async function checkTransferIn() {
+export async function checkTransferOut() {
   try {
-    console.log('[checkTransferIn] 开始检查转账...');
+    console.log('[checkTransferOut] 开始检查转账...');
 
     const wallets = await Wallet.find({
       isOnline: true,
@@ -21,7 +21,7 @@ export async function checkTransferIn() {
       .populate('botUser')
       .populate('bot');
 
-    console.log(`[checkTransferIn] 查询到 ${wallets.length} 个在线的钱包`);
+    console.log(`[checkTransferOut] 查询到 ${wallets.length} 个在线的钱包`);
 
     for (const wallet of wallets) {
       const botUser = await BotUser.findById(wallet.botUser);
@@ -30,20 +30,23 @@ export async function checkTransferIn() {
 
       const address = wallet.address;
 
+      console.log('wallet', wallet);
+
       // 发送详细的订阅过期通知
       const telegramBot = setupBot(bot.token);
 
-      // 查询该地址近5天的USDT转账
       let transfers: Awaited<ReturnType<typeof getUSDTTransfers>> = [];
       try {
         transfers = await getUSDTTransfers(address);
       } catch (err) {
         console.error(
-          `[checkTransferIn] 获取地址 ${address} 转账记录失败:`,
+          `[checkTransferOut] 获取地址 ${address} 转账记录失败:`,
           err,
         );
         continue;
       }
+
+      console.log('transfers', transfers);
 
       const matchedTransfer = transfers.find((t) => t.money);
 
@@ -51,7 +54,7 @@ export async function checkTransferIn() {
 
       if (!matchedTransfer) {
         console.log(
-          `[checkTransferIn] 钱包 ${wallet.address} 未检测到收到 USDT 的转账，跳过`,
+          `[checkTransferOut] 钱包 ${wallet.address} 未检测到收到 USDT 的转账，跳过`,
         );
         continue;
       }
@@ -65,14 +68,14 @@ export async function checkTransferIn() {
         }))
       ) {
         console.log(
-          `[checkTransferIn] 钱包 ${wallet.address} 已处理过该转账哈希，跳过`,
+          `[checkTransferOut] 钱包 ${wallet.address} 已处理过该转账哈希，跳过`,
         );
         continue;
       }
 
       const receipt = await Receipt.create({
         id: await IdGen.next(Receipt, 'id', 6),
-        type: 'transferIn',
+        type: 'transferOut',
         wallet: wallet._id,
         amount: matchedTransfer.money,
         hash: matchedTransfer.trade_id,
@@ -83,7 +86,7 @@ export async function checkTransferIn() {
 
       const message = [
         `🏠监听账户: <code>${address}</code>`,
-        `💸交易类型: 🟢收入`,
+        `💸交易类型: 🟢支出`,
         `💸交易金额: ${receipt.amount.toFixed(4)} USDT`,
         `⏰交易时间: ${new Date(receipt.time * 1000).toLocaleString()}`,
         `🔗所属公链: Tron`,
@@ -108,12 +111,12 @@ export async function checkTransferIn() {
           },
         });
       } catch (err) {
-        console.error(`[checkTransferIn] 通知用户 ${botUser.id} 失败:`, err);
+        console.error(`[checkTransferOut] 通知用户 ${botUser.id} 失败:`, err);
       }
     }
 
-    console.log('[checkTransferIn] 转账处理完成');
+    console.log('[checkTransferOut] 转账处理完成');
   } catch (error) {
-    console.error('[checkTransferIn] 处理转账时出错:', error);
+    console.error('[checkTransferOut] 处理转账时出错:', error);
   }
 }
