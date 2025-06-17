@@ -1,10 +1,13 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import { handleWalletListWithoutInlineMenu } from './handleWalletList';
+import createDebug from 'debug';
+
+const debug = createDebug('bot:wallet:show');
 
 const walletShowComposer = new Composer<MyContext>();
 
-walletShowComposer.hears(/^🏦 地址监听$/, async (ctx) => {
+export const handleShow = async (ctx: MyContext, page = 1) => {
   const inlineKeyboard = {
     inline_keyboard: [
       [
@@ -15,13 +18,18 @@ walletShowComposer.hears(/^🏦 地址监听$/, async (ctx) => {
       [{ text: '❌ 取消', callback_data: 'close' }],
     ],
   };
-
-  const { replyText } = await handleWalletListWithoutInlineMenu(1);
+  const { replyText } = await handleWalletListWithoutInlineMenu(page);
 
   await ctx.reply(replyText, {
     parse_mode: 'HTML',
     reply_markup: inlineKeyboard,
   });
+};
+
+walletShowComposer.hears(/^🏦 地址监听$/, async (ctx) => {
+  debug('🏦 地址监听');
+
+  await handleShow(ctx, 1);
 });
 
 export default walletShowComposer;

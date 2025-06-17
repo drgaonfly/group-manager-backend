@@ -3,7 +3,7 @@ import { MyContext } from '../../../types';
 import Wallet from '../../../../models/wallet';
 import { createConversation, Conversation } from '@grammyjs/conversations';
 import createDebug from 'debug';
-import { handleWalletList } from '../wallet/handleWalletList';
+import { handleShow } from '../wallet/show';
 
 const walletClickComposer = new Composer<MyContext>();
 const debug = createDebug('bot:wallet:click');
@@ -56,7 +56,7 @@ async function walletEditRemarkConversation(
 
   await ctx.reply(`✅ 成功修改钱包${wallet.address}的备注为：${newRemark}`);
 
-  await handleWalletList(ctx, 1, null);
+  await handleShow(ctx, 1);
 }
 
 walletClickComposer.use(createConversation(walletEditRemarkConversation));

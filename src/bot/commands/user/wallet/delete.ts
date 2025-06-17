@@ -1,6 +1,7 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import { handleWalletList } from './handleWalletList';
+import { handleShow } from './show';
 import Wallet from '../../../../models/wallet';
 import createDebug from 'debug';
 
@@ -25,7 +26,7 @@ walletDeleteComposer.callbackQuery(/delete_([a-f0-9]{24})$/, async (ctx) => {
 
   await ctx.reply('✅ 删除成功');
 
-  await handleWalletList(ctx, 1, null);
+  await handleShow(ctx, 1);
 });
 
 export default walletDeleteComposer;
