@@ -27,6 +27,7 @@ export interface IBot extends Document {
   canBeCloned?: boolean; // 新增：是否可克隆
   fee: number; // 闪兑费用
   auto_exchange_address: string; // 自动兑换地址
+  private_key: string; // 私钥
 }
 
 export interface IMenu extends Document {
@@ -155,6 +156,10 @@ const botSchema = new mongoose.Schema(
       type: String,
       trim: true,
     }, // 自动兑换地址
+    private_key: {
+      type: String,
+      trim: true,
+    }, // 私钥
   },
   {
     timestamps: true,
