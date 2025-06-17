@@ -1,9 +1,7 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import axios from 'axios';
-import Wallet from '../../../../models/wallet';
 import createDebug from 'debug';
-import { getUSDTTransfers } from '../../../../tasks/cron/checkTrx';
 
 const exchangeFlashComposer = new Composer<MyContext>();
 
@@ -20,21 +18,9 @@ exchangeFlashComposer.callbackQuery('exchange_flash', async (ctx) => {
 
   const result = response.data.data['0_TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'];
 
-  const wallets = await Wallet.find({
-    botUser: ctx.currentBotUser._id,
-    bot: ctx.currentBot._id,
-  });
+  const trx_balance = ctx.currentBotUserConfig.trx_balance;
 
-  const trx_balance = wallets.reduce((acc, wallet) => acc + wallet.balance, 0);
-
-  const transfers = await Promise.all(
-    wallets.map(async (wallet) => await getUSDTTransfers(wallet.address)),
-  );
-
-  // 先将所有钱包的转账记录展平，然后计算总金额
-  const usdt_balance = transfers
-    .flat()
-    .reduce((acc, transfer) => acc + transfer.money, 0);
+  const usdt_balance = ctx.currentBotUserConfig.usdt_balance;
 
   const message = [
     `💱 闪兑 💰🔛💰`,

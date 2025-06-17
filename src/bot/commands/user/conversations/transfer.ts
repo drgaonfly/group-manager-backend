@@ -1,11 +1,7 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
-import Wallet from '../../../../models/wallet';
 import createDebug from 'debug';
-import { getUSDTTransfers } from '../../../../tasks/cron/checkTrx';
 import { createConversation, Conversation } from '@grammyjs/conversations';
-import { IBot } from '../../../../models/bot';
-import { IBotUser } from '../../../../models/botUser';
 
 const exchangeTransferComposer = new Composer<MyContext>();
 const debug = createDebug('bot:exchange:transfer');
@@ -17,22 +13,11 @@ const cancelKeyboard = new InlineKeyboard().text('❌ 取消', 'close');
 async function transferExchangeConversation(
   conversation: Conversation<MyContext>,
   ctx: MyContext,
-  { bot, botUser }: { bot: IBot; botUser: IBotUser },
 ) {
   debug('Starting transfer exchange conversation');
 
-  const wallets = await Wallet.find({
-    botUser: botUser._id,
-    bot: bot._id,
-  });
-
-  const trx_balance = wallets.reduce((acc, wallet) => acc + wallet.balance, 0);
-  const transfers = await Promise.all(
-    wallets.map((wallet) => getUSDTTransfers(wallet.address)),
-  );
-  const usdt_balance = transfers
-    .flat()
-    .reduce((acc, transfer) => acc + transfer.money, 0);
+  const trx_balance = ctx.currentBotUserConfig.trx_balance;
+  const usdt_balance = ctx.currentBotUserConfig.usdt_balance;
 
   // Step 1: 获取接收地址
   const receiveMessage = [

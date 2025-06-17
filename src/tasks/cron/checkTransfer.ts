@@ -17,7 +17,9 @@ export async function checkTransfer() {
 
     const wallets = await Wallet.find({
       isOnline: true,
-    });
+    })
+      .populate('botUser')
+      .populate('bot');
 
     console.log(`[checkTransfer] 查询到 ${wallets.length} 个在线的钱包`);
 
@@ -27,13 +29,6 @@ export async function checkTransfer() {
       const bot = await Bot.findById(wallet.bot);
 
       const address = wallet.address;
-
-      if (!address) {
-        console.warn(
-          `[checkTransfer] 钱包 ${wallet.address} 的机器人未设置收款地址，跳过`,
-        );
-        continue;
-      }
 
       // 发送详细的订阅过期通知
       const telegramBot = setupBot(bot.token);

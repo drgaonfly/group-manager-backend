@@ -25,7 +25,8 @@ export interface IBotUserConfig extends Document {
   subscriptionEndDate?: Date;
   currentPlan?: SubscriptionPlan;
   isAutoRenew: boolean;
-  balance: number; // 用户余额
+  usdt_balance: number; // 用户余额
+  trx_balance: number; // 用户余额
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,7 +69,13 @@ const botUserConfigSchema = new mongoose.Schema(
       required: true,
       default: true,
     },
-    balance: {
+    usdt_balance: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0, // 余额不能小于0
+    },
+    trx_balance: {
       type: Number,
       required: true,
       default: 0,

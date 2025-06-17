@@ -1,11 +1,8 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
-import Wallet from '../../../../models/wallet';
 import createDebug from 'debug';
-import { getUSDTTransfers } from '../../../../tasks/cron/checkTrx';
 import { createConversation, Conversation } from '@grammyjs/conversations';
-import { IBot } from '../../../../models/bot';
-import { IBotUser } from '../../../../models/botUser';
+import { IBotUserConfig } from '../../../../models/botUserConfig';
 
 const exchangeTrxToUsdtComposer = new Composer<MyContext>();
 const debug = createDebug('bot:exchange:trx_to_usdt');
@@ -19,22 +16,17 @@ const cancelKeyboard = new InlineKeyboard().text('❌ 取消', 'close');
 async function trxToUsdtExchangeConversation(
   conversation: Conversation<MyContext>,
   ctx: MyContext,
-  { bot, botUser }: { bot: IBot; botUser: IBotUser },
+  {
+    botUserConfig,
+  }: {
+    botUserConfig: IBotUserConfig;
+  },
 ) {
   debug('Starting TRX to USDT exchange conversation');
 
-  const wallets = await Wallet.find({
-    botUser: botUser._id,
-    bot: bot._id,
-  });
+  const trx_balance = botUserConfig.trx_balance;
 
-  const trx_balance = wallets.reduce((acc, wallet) => acc + wallet.balance, 0);
-  const transfers = await Promise.all(
-    wallets.map(async (wallet) => await getUSDTTransfers(wallet.address)),
-  );
-  const usdt_balance = transfers
-    .flat()
-    .reduce((acc, transfer) => acc + transfer.money, 0);
+  const usdt_balance = botUserConfig.usdt_balance;
 
   const message = [
     '请输入要兑换的TRX金额：',
@@ -141,8 +133,7 @@ exchangeTrxToUsdtComposer.use(
 exchangeTrxToUsdtComposer.callbackQuery('trx_to_usdt', async (ctx) => {
   debug('trx_to_usdt callback triggered');
   await ctx.conversation.enter('trxToUsdtExchangeConversation', {
-    bot: ctx.currentBot,
-    botUser: ctx.currentBotUser,
+    botUserConfig: ctx.currentBotUserConfig,
   });
 });
 

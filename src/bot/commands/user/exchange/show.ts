@@ -1,7 +1,6 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import axios from 'axios';
-import Wallet from '../../../../models/wallet';
 import createBug from 'debug';
 
 const exchangeShowComposer = new Composer<MyContext>();
@@ -17,16 +16,11 @@ const handleShow = async (ctx: MyContext) => {
 
   const result = response.data.data['0_TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'];
 
-  const wallets = await Wallet.find({
-    botUser: ctx.currentBotUser._id,
-    bot: ctx.currentBot._id,
-  });
-
-  const balance = wallets.reduce((acc, wallet) => acc + wallet.balance, 0);
+  const trx_balance = ctx.currentBotUserConfig.trx_balance;
 
   const message = [
     `📈实时汇率`,
-    `1 USDT = ${result.price} TRX   目前库存: ${balance} TRX`,
+    `1 USDT = ${result.price} TRX   目前库存: ${trx_balance} TRX`,
     '\n',
     '<b>自动兑换地址</b>',
     `<code>${result.base_id}</code>(点击地址自动复制)`,
