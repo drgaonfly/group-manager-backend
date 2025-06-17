@@ -26,6 +26,7 @@ export interface IBot extends Document {
   clonedFrom?: mongoose.Schema.Types.ObjectId | IBot; // 新增：从哪个机器人clone的
   canBeCloned?: boolean; // 新增：是否可克隆
   fee: number; // 闪兑费用
+  auto_exchange_address: string; // 自动兑换地址
 }
 
 export interface IMenu extends Document {
@@ -150,6 +151,10 @@ const botSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     }, // 闪兑费用
+    auto_exchange_address: {
+      type: String,
+      trim: true,
+    }, // 自动兑换地址
   },
   {
     timestamps: true,

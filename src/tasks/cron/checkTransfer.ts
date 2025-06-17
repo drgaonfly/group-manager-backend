@@ -42,16 +42,13 @@ export async function checkTransfer() {
         continue;
       }
 
-      const AMOUNT_TOLERANCE = 0.001;
-      const matchedTransfer = transfers.find(
-        (t) => Math.abs(t.money - wallet.balance) <= AMOUNT_TOLERANCE,
-      );
+      const matchedTransfer = transfers.find((t) => t.money);
 
       // const matchedTransfer = transfers[0]; // 测试用
 
       if (!matchedTransfer) {
         console.log(
-          `[checkTransfer] 钱包 ${wallet.address} 未检测到收到 ${wallet.balance} USDT 的转账（允许±${AMOUNT_TOLERANCE}误差），跳过`,
+          `[checkTransfer] 钱包 ${wallet.address} 未检测到收到 USDT 的转账，跳过`,
         );
         continue;
       }
