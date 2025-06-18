@@ -2,7 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import Wallet from '../../../../models/wallet';
 import createBug from 'debug';
-import { getUSDTTransfersIn } from '../../../../services/checkTrxIn';
+import { getUSDTTransfers } from '../../../../services/checkTrx';
 
 // 弃用
 
@@ -20,7 +20,7 @@ exchangeMainMenuComposer.callbackQuery('exchange_main', async (ctx) => {
 
   const trx_balance = wallets.reduce((acc, wallet) => acc + wallet.balance, 0);
 
-  const transfers = await getUSDTTransfersIn(ctx.currentBotUser.id);
+  const transfers = await getUSDTTransfers(ctx.currentBotUser.id);
 
   const usdt_balance = transfers.reduce(
     (acc, transfer) => acc + transfer.money,

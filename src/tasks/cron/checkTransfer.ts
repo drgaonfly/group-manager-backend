@@ -1,103 +1,88 @@
+import Bot from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
-import { IBotUser } from '../../models/botUser';
+import BotUser from '../../models/botUser';
 import Wallet from '../../models/wallet';
-import { getUSDTTransfersIn } from '../../services/checkTrxIn';
-import { getUSDTTransfersOut } from '../../services/checkTrxOut';
+import { getUSDTTransfers } from '../../services/checkTrx';
 import { IdGen } from '../../utils/idGen';
 import Receipt from '../../models/receipt';
-import { IBot } from '../../models/bot';
-
-type TransferType = 'transferIn' | 'transferOut';
-type TransferInfo = {
-  type: TransferType;
-  icon: string;
-  label: string;
-  transfers: any[];
-};
 
 /**
- * 检查钱包的转入和转出交易
- * 向用户发送详细的交易通知
+ * 检查所有钱包的USDT转账记录，包括转入和转出。
+ * 根据from_address和to_address判断交易类型。
+ * 向用户发送详细的交易通知。
  */
 export async function checkTransfer() {
   try {
-    console.log('[checkTransfer] 开始检查转入和转出...');
+    console.log('[checkTransferIn] 开始检查转账...');
 
     const wallets = await Wallet.find({
       isOnline: true,
     })
-      .populate({ model: 'BotUser', path: 'botUser' })
-      .populate({ model: 'Bot', path: 'bot' });
+      .populate('botUser')
+      .populate('bot');
 
-    console.log(`[checkTransfer] 查询到 ${wallets.length} 个在线的钱包`);
+    console.log(`[checkTransferIn] 查询到 ${wallets.length} 个在线的钱包`);
 
     for (const wallet of wallets) {
-      const botUser = wallet.botUser as IBotUser;
-      const bot = wallet.bot as IBot;
+      const botUser = await BotUser.findById(wallet.botUser);
+      const bot = await Bot.findById(wallet.bot);
       const address = wallet.address;
       const telegramBot = setupBot(bot.token);
 
-      // 查询该地址近X天的USDT转入和转出
-      let transfersIn = [];
-      let transfersOut = [];
+      // 查询该地址近5天的USDT转账
+      let transfers: Awaited<ReturnType<typeof getUSDTTransfers>> = [];
       try {
-        [transfersIn, transfersOut] = await Promise.all([
-          getUSDTTransfersIn(address),
-          getUSDTTransfersOut(address),
-        ]);
+        transfers = await getUSDTTransfers(address);
       } catch (err) {
-        console.error(`[checkTransfer] 获取地址 ${address} 转账记录失败:`, err);
+        console.error(
+          `[checkTransferIn] 获取地址 ${address} 转账记录失败:`,
+          err,
+        );
         continue;
       }
 
-      // 定义转账类型信息
-      const transferInfos: TransferInfo[] = [
-        {
-          type: 'transferIn',
-          icon: '🟢',
-          label: '收入',
-          transfers: transfersIn,
-        },
-        {
-          type: 'transferOut',
-          icon: '🔴',
-          label: '支出',
-          transfers: transfersOut,
-        },
-      ];
+      // 检查每一笔转账
+      for (const transfer of transfers) {
+        if (!transfer.money) continue;
 
-      // 处理每种类型的转账
-      for (const info of transferInfos) {
-        const matchedTransfer = info.transfers.find((t) => t.money);
-        if (!matchedTransfer) continue;
+        // 检查是否已处理过该转账
+        if (
+          transfer.trade_id &&
+          (await Receipt.exists({
+            hash: transfer.trade_id,
+            bot: bot._id,
+            botUser: botUser._id,
+          }))
+        ) {
+          console.log(
+            `[checkTransferIn] 钱包 ${wallet.address} 已处理过该转账哈希，跳过`,
+          );
+          continue;
+        }
 
-        const existingReceipt = await Receipt.exists({
-          hash: matchedTransfer.trade_id,
-          bot: bot._id,
-          botUser: botUser._id,
-        });
-
-        if (matchedTransfer.trade_id && existingReceipt) continue;
+        // 判断交易类型
+        const isIncome =
+          transfer.to_address.toLowerCase() === address.toLowerCase();
 
         const receipt = await Receipt.create({
           id: await IdGen.next(Receipt, 'id', 6),
-          type: info.type,
+          type: isIncome ? 'transferIn' : 'transferOut',
           wallet: wallet._id,
-          amount: matchedTransfer.money,
-          hash: matchedTransfer.trade_id,
+          amount: transfer.money,
+          hash: transfer.trade_id,
           bot: bot._id,
           botUser: botUser._id,
-          time: matchedTransfer.time,
+          time: transfer.time,
         });
 
         const message = [
           `🏠监听账户: <code>${address}</code>`,
-          `💸交易类型: ${info.icon}${info.label}`,
+          `💸交易类型: ${isIncome ? '🟢收入' : '🔴支出'}`,
           `💸交易金额: ${receipt.amount.toFixed(4)} USDT`,
           `⏰交易时间: ${new Date(receipt.time * 1000).toLocaleString()}`,
           `🔗所属公链: Tron`,
-          `💰监控地址: <code>${address}</code>`,
-          `💰对方地址: <code>${matchedTransfer.buyer}</code>`,
+          `💰转出地址: <code>${transfer.from_address}</code>`,
+          `💰转入地址: <code>${transfer.to_address}</code>`,
         ].join('\n');
 
         try {
@@ -115,16 +100,13 @@ export async function checkTransfer() {
             },
           });
         } catch (err) {
-          console.error(
-            `[checkTransfer] 通知用户 ${botUser.id} ${info.label}失败:`,
-            err,
-          );
+          console.error(`[checkTransferIn] 通知用户 ${botUser.id} 失败:`, err);
         }
       }
     }
 
-    console.log('[checkTransfer] 转入和转出处理完成');
+    console.log('[checkTransferIn] 转账处理完成');
   } catch (error) {
-    console.error('[checkTransfer] 处理转账时出错:', error);
+    console.error('[checkTransferIn] 处理转账时出错:', error);
   }
 }

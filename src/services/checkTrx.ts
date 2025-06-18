@@ -3,6 +3,8 @@ interface Transfer {
   money: number;
   trade_id: string;
   buyer: string;
+  from_address: string;
+  to_address: string;
 }
 
 interface TransferResponse {
@@ -24,9 +26,9 @@ interface TransferResponse {
  * @param pageSize 每页条数（默认100，最大300）
  * @param minIntervalMs 每次请求间隔，防止频率过高（默认500ms）
  */
-export async function getUSDTTransfersIn(
+export async function getUSDTTransfers(
   address: string,
-  minutes: number = process.env.NODE_ENV === 'development' ? 30 * 24 * 60 : 15,
+  minutes: number = process.env.NODE_ENV === 'development' ? 20 * 24 * 60 : 15,
   maxPages: number = 3,
   pageSize: number = 100,
   minIntervalMs: number = 500,
@@ -44,7 +46,6 @@ export async function getUSDTTransfersIn(
     const params = new URLSearchParams({
       limit: String(pageSize),
       start: String(page * pageSize),
-      direction: 'in',
       relatedAddress: address,
       start_timestamp: start.toString(),
       end_timestamp: end.toString(),
@@ -67,7 +68,8 @@ export async function getUSDTTransfersIn(
       let validCount = 0;
       for (const transfer of data.token_transfers) {
         if (
-          transfer.to_address === address &&
+          (transfer.to_address === address ||
+            transfer.from_address === address) &&
           transfer.finalResult === 'SUCCESS'
         ) {
           if (seenTx.has(transfer.transaction_id)) continue;
@@ -78,13 +80,18 @@ export async function getUSDTTransfersIn(
             money: Number(transfer.quant) / 1_000_000, // USDT 有 6 位小数
             trade_id: transfer.transaction_id,
             buyer: transfer.from_address,
+            from_address: transfer.from_address,
+            to_address: transfer.to_address,
           };
 
           console.log('transferObj', transferObj);
 
+          const isIncome = transfer.to_address === address;
           console.log(
-            `[getUSDTTransfers] 收到转账: ${transferObj.money} USDT, 来自: ${
-              transferObj.buyer
+            `[getUSDTTransfers] ${isIncome ? '收到' : '发送'}转账: ${
+              transferObj.money
+            } USDT, ${isIncome ? '来自' : '发往'}: ${
+              isIncome ? transferObj.from_address : transferObj.to_address
             }, 交易哈希: ${transferObj.trade_id}, 时间: ${new Date(
               transferObj.time * 1000,
             ).toLocaleString()}`,

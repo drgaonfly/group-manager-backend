@@ -5,7 +5,7 @@ import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
 import { IdGen } from '../../utils/idGen';
 import BotUserConfig, { UserStatus } from '../../models/botUserConfig';
-import { getUSDTTransfersIn } from '../../services/checkTrxIn';
+import { getUSDTTransfers } from '../../services/checkTrx';
 
 /**
  * 检查所有 pending 的 payment，只有当 bot.trx20_address 收到正确金额，才生成订阅
@@ -55,9 +55,9 @@ export async function checkPendingOrders() {
       }
 
       // 查询该地址近15分钟的USDT转账
-      let transfers: Awaited<ReturnType<typeof getUSDTTransfersIn>> = [];
+      let transfers: Awaited<ReturnType<typeof getUSDTTransfers>> = [];
       try {
-        transfers = await getUSDTTransfersIn(receiveAddress);
+        transfers = await getUSDTTransfers(receiveAddress);
       } catch (err) {
         console.error(
           `[checkPendingOrders] 获取地址 ${receiveAddress} 转账记录失败:`,
@@ -66,10 +66,15 @@ export async function checkPendingOrders() {
         continue;
       }
 
+      // 查找不为支出的转账
+      const filterdTransfers = transfers.filter(
+        (t) => t.from_address !== receiveAddress,
+      );
+
       // 查找是否有金额和订单匹配的转账
       // 允许0.001 USDT的误差（处理不同平台的小数精度差异）
       const AMOUNT_TOLERANCE = 0.001;
-      const matchedTransfer = transfers.find(
+      const matchedTransfer = filterdTransfers.find(
         (t) => Math.abs(t.money - payment.amount) <= AMOUNT_TOLERANCE,
       );
 
