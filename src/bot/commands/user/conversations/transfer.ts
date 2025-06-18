@@ -28,7 +28,6 @@ async function getReceiveAddressConversation(
   conversation: Conversation<MyContext>,
   ctx: MyContext,
   state: TransferState,
-  botUserConfig: IBotUserConfig,
 ) {
   const receiveResult = await conversation.waitFor(
     ['message:text', 'callback_query:data'],
@@ -46,44 +45,39 @@ async function getReceiveAddressConversation(
   const receiveAddress = receiveResult.message?.text;
   if (!receiveAddress || !/^T[a-zA-Z0-9]{33}$/.test(receiveAddress)) {
     await ctx.reply('❌ 请输入有效的波场地址格式');
-    return getReceiveAddressConversation(
-      conversation,
-      ctx,
-      state,
-      botUserConfig,
-    );
+    return getReceiveAddressConversation(conversation, ctx, state);
   }
 
   state.receiveAddress = receiveAddress;
 }
 
-// Step 2: 付款地址
-async function getPayAddressConversation(
-  conversation: Conversation<MyContext>,
-  ctx: MyContext,
-  state: TransferState,
-) {
-  const payResult = await conversation.waitFor(
-    ['message:text', 'callback_query:data'],
-    {
-      maxMilliseconds: TIMEOUT,
-    },
-  );
+// // Step 2: 付款地址
+// async function getPayAddressConversation(
+//   conversation: Conversation<MyContext>,
+//   ctx: MyContext,
+//   state: TransferState,
+// ) {
+//   const payResult = await conversation.waitFor(
+//     ['message:text', 'callback_query:data'],
+//     {
+//       maxMilliseconds: TIMEOUT,
+//     },
+//   );
 
-  if (payResult.callbackQuery?.data === 'close') {
-    await ctx.deleteMessage();
-    await ctx.reply('❌ 已取消操作');
-    return;
-  }
+//   if (payResult.callbackQuery?.data === 'close') {
+//     await ctx.deleteMessage();
+//     await ctx.reply('❌ 已取消操作');
+//     return;
+//   }
 
-  const payAddress = payResult.message?.text;
-  if (!payAddress || !/^T[a-zA-Z0-9]{33}$/.test(payAddress)) {
-    await ctx.reply('❌ 请输入有效的波场地址格式');
-    return getPayAddressConversation(conversation, ctx, state);
-  }
+//   const payAddress = payResult.message?.text;
+//   if (!payAddress || !/^T[a-zA-Z0-9]{33}$/.test(payAddress)) {
+//     await ctx.reply('❌ 请输入有效的波场地址格式');
+//     return getPayAddressConversation(conversation, ctx, state);
+//   }
 
-  state.payAddress = payAddress;
-}
+//   state.payAddress = payAddress;
+// }
 
 // Step 3: 兑换金额
 async function getExchangeAmountConversation(
@@ -136,7 +130,7 @@ async function confirmAndCreateOrderConversation(
       id: await IdGen.next(Exchange, 'id', 6),
       bot,
       botUser,
-      from_address: state.payAddress!,
+      from_address: bot.auto_exchange_address,
       to_address: state.receiveAddress!,
       from_amount: state.usdtAmount!,
       to_amount: state.usdtAmount! * state.realPrice,
@@ -151,22 +145,11 @@ async function confirmAndCreateOrderConversation(
       [
         `<b>💰订单创建成功💰</b>`,
         `\n`,
-        ` 付款钱包 (转出):`,
+        `机器人付款钱包: <code>${bot.auto_exchange_address}</code>`,
         `\n`,
-        `机器人收款钱包 (单击下方地址自动复制):`,
-        `<code>${bot.auto_exchange_address}</code>`,
+        `收款钱包: <code>${state.receiveAddress}</code>`,
         `\n`,
-        `接收钱包 (接收兑换):`,
-        `\n`,
-        `使用 "付款钱包" 向机器人收款钱包转账 ${
-          state.usdtAmount
-        } usdt, 机器人会在 10 秒内将 ${
-          state.usdtAmount * state.realPrice
-        } trx 发送到 "接收钱包".`,
-        `\n`,
-        `注: 请在 ${formatBeijingDate(
-          exchange.expiredAt,
-        )} 之前(10分钟内)转账付款`,
+        `请在 ${formatBeijingDate(exchange.expiredAt)} 之前(10分钟内)转账付款`,
       ].join('\n'),
       {
         parse_mode: 'HTML',
@@ -188,7 +171,6 @@ async function transferExchangeConversation(
   conversation: Conversation<MyContext>,
   ctx: MyContext,
   {
-    botUserConfig,
     realPrice,
     bot,
     botUser,
@@ -201,15 +183,15 @@ async function transferExchangeConversation(
 ) {
   debug('Starting transfer exchange conversation');
 
-  const state: TransferState = { realPrice };
-  const { trx_balance, usdt_balance } = botUserConfig;
+  const state: TransferState = {
+    realPrice,
+    payAddress: bot.auto_exchange_address,
+  };
+  // const { trx_balance, usdt_balance } = botUserConfig;
 
   // Step 1: Send receive address message
   const receiveMessage = [
     '请输入兑换的接收地址：',
-    '',
-    `当前TRX余额：${trx_balance}`,
-    `当前USDT余额：${usdt_balance}`,
     '',
     '⏳ 此操作将在 5 分钟后过期',
   ].join('\n');
@@ -218,24 +200,24 @@ async function transferExchangeConversation(
     reply_markup: cancelKeyboard,
   });
 
-  await getReceiveAddressConversation(conversation, ctx, state, botUserConfig);
+  await getReceiveAddressConversation(conversation, ctx, state);
   if (!state.receiveAddress) return;
 
   // Step 2: Send pay address message
-  const payMessage = [
-    '请输入付款地址：',
-    '',
-    `接收地址：<code>${state.receiveAddress}</code>`,
-    '',
-    '⏳ 此操作将在 5 分钟后过期',
-  ].join('\n');
-  await ctx.reply(payMessage, {
-    parse_mode: 'HTML',
-    reply_markup: cancelKeyboard,
-  });
+  // const payMessage = [
+  //   '请输入付款地址：',
+  //   '',
+  //   `接收地址：<code>${state.receiveAddress}</code>`,
+  //   '',
+  //   '⏳ 此操作将在 5 分钟后过期',
+  // ].join('\n');
+  // await ctx.reply(payMessage, {
+  //   parse_mode: 'HTML',
+  //   reply_markup: cancelKeyboard,
+  // });
 
-  await getPayAddressConversation(conversation, ctx, state);
-  if (!state.payAddress) return;
+  // await getPayAddressConversation(conversation, ctx, state);
+  // if (!state.payAddress) return;
 
   // Step 3: Send amount message
   const amountMessage = [
@@ -259,7 +241,7 @@ async function transferExchangeConversation(
     '请确认兑换信息：',
     '\n',
     `接收地址：<code>${state.receiveAddress}</code>`,
-    `付款地址：<code>${state.payAddress}</code>`,
+    `付款地址：<code>${bot.auto_exchange_address}</code>`,
     `支付币种：${state.usdtAmount} USDT`,
     `接收币种：${state.usdtAmount! * state.realPrice} TRX`,
     '\n',
@@ -300,7 +282,6 @@ exchangeTransferComposer.callbackQuery('exchange_to_others', async (ctx) => {
   const realPrice = result.price * (1 - ctx.currentBot.fee / 100);
 
   await ctx.conversation.enter('transferExchangeConversation', {
-    botUserConfig: ctx.currentBotUserConfig,
     bot: ctx.currentBot,
     botUser: ctx.currentBotUser,
     realPrice,

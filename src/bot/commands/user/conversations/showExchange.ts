@@ -4,6 +4,10 @@ import axios from 'axios';
 import createBug from 'debug';
 import { createConversation, Conversation } from '@grammyjs/conversations';
 import { IBot } from '../../../../models/bot';
+import Exchange from '../../../../models/exchange';
+import { IdGen } from '../../../../utils/idGen';
+import { IBotUser } from '../../../../models/botUser';
+import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 
 const exchangeShowComposer = new Composer<MyContext>();
 
@@ -18,10 +22,12 @@ async function showExchangeConversation(
   ctx: MyContext,
   {
     bot,
+    botUser,
     realPrice,
     base_id,
   }: {
     bot: IBot;
+    botUser: IBotUser;
     realPrice: number;
     base_id: string;
   },
@@ -53,6 +59,7 @@ async function showExchangeConversation(
 
     return showExchangeConversation(conversation, ctx, {
       bot,
+      botUser,
       realPrice,
       base_id,
     });
@@ -61,15 +68,30 @@ async function showExchangeConversation(
   const usdtAmount = parseFloat(match[1]);
   const trxAmount = usdtAmount * realPrice;
 
+  const exchange = await Exchange.create({
+    id: await IdGen.next(Exchange, 'id', 6),
+    bot,
+    botUser,
+    from_address: bot.auto_exchange_address,
+    to_address: ' ',
+    from_amount: usdtAmount,
+    to_amount: trxAmount,
+    rate: realPrice,
+    fee: bot.fee,
+    status: 'pending',
+    isTransferIntoOther: false,
+    expiredAt: new Date(Date.now() + 10 * 60 * 1000),
+  });
+
   await ctx.reply(
     [
-      `📈实时汇率`,
-      `💱 兑换计算:\n${usdtAmount} USDT = ${trxAmount.toFixed(2)} TRX`,
-      '\n',
-      '<b>自动兑换地址</b>',
-      `<code>${base_id}</code>(点击地址自动复制)`,
-      '\n',
-      '<b>注意: 请认准TK2u开头, JBxYa结尾</b>',
+      `<b>💰订单创建成功💰</b>`,
+      `\n`,
+      `💱 兑换计算:\n${exchange.from_amount} USDT = ${exchange.to_amount} TRX`,
+      `\n`,
+      `机器人收款钱包: <code>${bot.auto_exchange_address}</code>`,
+      `\n`,
+      `请在 ${formatBeijingDate(exchange.expiredAt)} 之前(10分钟内)转账付款`,
     ].join('\n'),
     {
       parse_mode: 'HTML',
@@ -79,6 +101,7 @@ async function showExchangeConversation(
 
   return showExchangeConversation(conversation, ctx, {
     bot,
+    botUser,
     realPrice,
     base_id,
   });
@@ -121,6 +144,7 @@ const handleShow = async (ctx: MyContext) => {
 
   await ctx.conversation.enter('showExchangeConversation', {
     bot: ctx.currentBot,
+    botUser: ctx.currentBotUser,
     realPrice,
     base_id: result.base_id,
   });
