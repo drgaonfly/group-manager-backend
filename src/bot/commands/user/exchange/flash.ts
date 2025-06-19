@@ -7,6 +7,7 @@ const exchangeFlashComposer = new Composer<MyContext>();
 
 const debug = createDebug('bot:exchange:flash');
 
+// 弃用
 exchangeFlashComposer.callbackQuery('exchange_flash', async (ctx) => {
   await ctx.conversation.exitAll();
 
