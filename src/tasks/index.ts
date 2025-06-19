@@ -9,6 +9,7 @@ import setupDB from '../utils/db';
 import { checkTransfer } from './cron/checkTransfer';
 import { checkPendingExchanges } from './cron/checkPendingExchanges';
 import { checkExpiredExchanges } from './cron/expiredExchange';
+import { updateExchange } from './cron/updateExchange';
 import { setupRedis } from '../utils/redis';
 
 const task = async () => {
@@ -26,6 +27,7 @@ const task = async () => {
   await checkTransfer();
   await checkPendingExchanges();
   await checkExpiredExchanges();
+  await updateExchange();
 };
 
 // 执行任务并在完成后退出进程

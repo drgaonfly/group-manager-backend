@@ -66,7 +66,7 @@ const exchangeSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'completed', 'failed', 'expired'],
+      enum: ['pending', 'completed', 'failed', 'expired', 'temporary'],
     },
     hash: {
       type: String,
@@ -78,7 +78,7 @@ const exchangeSchema = new mongoose.Schema(
     },
     expiredAt: {
       type: Date,
-      required: true,
+      required: false,
     },
   },
   {

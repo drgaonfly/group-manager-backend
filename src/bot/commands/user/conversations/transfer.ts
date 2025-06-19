@@ -274,6 +274,11 @@ exchangeTransferComposer.callbackQuery('exchange_to_others', async (ctx) => {
 
   await ctx.conversation.exitAll();
 
+  if (!ctx.currentBot.fee) {
+    await ctx.reply('机器人没有设置手续费，请在后台设置');
+    return;
+  }
+
   const response = await axios.get(
     'https://openapi.sun.io/v2/allpairs?page_size=1&page_num=0&token_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t&orderBy=price',
   );
