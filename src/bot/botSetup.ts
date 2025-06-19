@@ -1,4 +1,4 @@
-import { Bot, GrammyError, HttpError, InlineKeyboard, session } from 'grammy';
+import { Bot, GrammyError, HttpError, session } from 'grammy';
 import logger from './middlewares/logger';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
@@ -14,29 +14,8 @@ import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
 import { redis } from '../utils/redis';
 import { conversations } from '@grammyjs/conversations';
-import axios from 'axios';
-import Exchange from '../models/exchange';
-import { IdGen } from '../utils/idGen';
-// import { autoQuote } from "@roziscoding/grammy-autoquote";
 
 const log = createDebug('bot:setup');
-
-// 添加全局价格变量
-let currentPrice: number | null = null;
-
-// 添加获取价格的函数
-async function fetchPrice() {
-  try {
-    const response = await axios.get(
-      'https://openapi.sun.io/v2/allpairs?page_size=1&page_num=0&token_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t&orderBy=price',
-    );
-    currentPrice =
-      response.data.data['0_TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'].price;
-    log('Price updated:', currentPrice);
-  } catch (error) {
-    log('Error fetching price:', error);
-  }
-}
 
 export const printWebhookInfo = async (bot: Bot) => {
   const info = await bot.api.getWebhookInfo();
@@ -86,8 +65,6 @@ export const setupBot = (token: string) => {
     }),
   );
 
-  // bot.use(autoQuote());
-
   // 由于 session 已经合并到 context，后续中间件类型也要兼容 MyContext
   // 需要确保所有中间件都用 MyContext 类型
   bot.use(conversations());
@@ -119,66 +96,6 @@ export const setupBot = (token: string) => {
     const data = ctx.callbackQuery?.data;
     log(`用户点击了按钮: ${data}`);
     await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
-  });
-
-  // 在初始化时获取价格
-  fetchPrice();
-
-  // 设置定时器，每分钟更新一次价格
-  setInterval(fetchPrice, 60000);
-
-  bot.hears(/^(\d+(?:\.\d+)?)[ ]*u$/i, async (ctx) => {
-    const match = ctx.message?.text.split(' ');
-
-    if (!currentPrice) {
-      await ctx.reply('抱歉，暂时无法获取价格信息，请稍后再试。');
-      return;
-    }
-
-    if (!ctx.currentBot.fee) {
-      await ctx.reply('机器人没有设置手续费，请在后台设置');
-      return;
-    }
-
-    if (!ctx.currentBot.auto_exchange_address) {
-      await ctx.reply('机器人没有设置自动兑换地址，请在后台设置');
-      return;
-    }
-
-    const realPrice = currentPrice * (1 - ctx.currentBot.fee / 100);
-    const usdtAmount = parseFloat(match[0]);
-    const trxAmount = usdtAmount * realPrice;
-
-    await Exchange.create({
-      id: await IdGen.next(Exchange, 'id', 6),
-      bot: ctx.currentBot._id,
-      botUser: ctx.currentBotUser._id,
-      from_address: ctx.currentBot.auto_exchange_address,
-      to_address: ' ',
-      from_amount: usdtAmount,
-      to_amount: trxAmount,
-      rate: realPrice,
-      fee: ctx.currentBot.fee,
-      status: 'temporary',
-      isTransferIntoOther: false,
-    });
-
-    await ctx.reply(
-      [
-        `<b>实时汇率：</b>`,
-        `${usdtAmount} USDT = ${trxAmount} TRX`,
-        `\n`,
-        `<b>自动兑换地址：</b>`,
-        `<code>${
-          ctx.currentBot.auto_exchange_address || '请在后台设置机器人收款地址'
-        }</code> (点击地址自动复制)`,
-        `\n`,
-      ].join('\n'),
-      {
-        parse_mode: 'HTML',
-        reply_markup: new InlineKeyboard().text('❌ 关闭', 'close'),
-      },
-    );
   });
 
   bot.catch((err) => {
