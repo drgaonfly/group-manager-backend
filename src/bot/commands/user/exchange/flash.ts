@@ -29,7 +29,9 @@ exchangeFlashComposer.callbackQuery('exchange_flash', async (ctx) => {
     `100 TRX ≈ ${100 / result.price} USDT`,
     '\n',
     '<b>自动兑换地址</b>',
-    `<code>${result.base_id}</code>(点击地址自动复制)`,
+    `<code>${
+      ctx.currentBot.auto_exchange_address || '请在后台设置机器人收款地址'
+    }</code>(点击地址自动复制)`,
     '----------------------------------------',
     '我当前的余额信息：',
     `💰 USDT: ${usdt_balance.toFixed(4)}`,

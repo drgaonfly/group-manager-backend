@@ -127,7 +127,7 @@ export const setupBot = (token: string) => {
   // 设置定时器，每分钟更新一次价格
   setInterval(fetchPrice, 60000);
 
-  bot.hears(/^(\d+(?:\.\d+)?)U$/i, async (ctx) => {
+  bot.hears(/^(\d+(?:\.\d+)?)[ ]*u$/i, async (ctx) => {
     const match = ctx.message?.text.split(' ');
 
     if (!currentPrice) {
@@ -173,7 +173,6 @@ export const setupBot = (token: string) => {
           ctx.currentBot.auto_exchange_address || '请在后台设置机器人收款地址'
         }</code> (点击地址自动复制)`,
         `\n`,
-        `注意：请认准TK2u开头，JBxYa结尾`,
       ].join('\n'),
       {
         parse_mode: 'HTML',

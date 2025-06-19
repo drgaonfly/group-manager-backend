@@ -23,6 +23,7 @@ export async function checkPendingExchanges() {
 
     const pendingExchanges = await Exchange.find({
       status: 'pending',
+      isTransferIntoOther: true,
       expiredAt: { $gt: new Date() }, // 只查找未过期的兑换记录
     })
       .populate('botUser')
@@ -63,7 +64,7 @@ export async function checkPendingExchanges() {
 
       // 查找是否有金额和订单匹配的转账
       // 允许0.001 USDT的误差（处理不同平台的小数精度差异）
-      const AMOUNT_TOLERANCE = 0.001;
+      const AMOUNT_TOLERANCE = 30;
       const matchedTransfer = filterdTransfers.find(
         (t) => Math.abs(t.money - exchange.from_amount) <= AMOUNT_TOLERANCE,
       );
@@ -94,6 +95,8 @@ export async function checkPendingExchanges() {
         exchange.to_amount,
       );
 
+      // const txid = '假设成功了'
+
       if (!txid) {
         console.error(
           `[checkPendingExchanges] 兑换记录 ${exchange.id} 发送 TRX 失败`,
@@ -105,7 +108,7 @@ export async function checkPendingExchanges() {
 
       // exchange更新
       exchange.status = 'completed';
-      exchange.hash = txid;
+      exchange.hash = matchedTransfer.trade_id;
       await exchange.save();
 
       // 发送支付成功通知
