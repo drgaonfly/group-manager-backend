@@ -145,9 +145,11 @@ async function confirmAndCreateOrderConversation(
       [
         `<b>💰订单创建成功💰</b>`,
         `\n`,
-        `机器人付款钱包: <code>${bot.auto_exchange_address}</code>`,
+        `机器人付款钱包(单击下方地址自动复制): `,
+        `<code>${bot.auto_exchange_address}</code>`,
         `\n`,
-        `收款钱包: <code>${state.receiveAddress}</code>`,
+        `接收钱包 (接收兑换): `,
+        `<code>${state.receiveAddress}</code>`,
         `\n`,
         `请在 ${formatBeijingDate(exchange.expiredAt)} 之前(10分钟内)转账付款`,
       ].join('\n'),
