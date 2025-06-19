@@ -1,5 +1,5 @@
 // src/cron/expiredExchanges.ts
-import Payment from '../../models/payment';
+import Exchange from '../../models/exchange';
 import BotUser from '../../models/botUser';
 import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
@@ -8,7 +8,7 @@ export async function checkExpiredExchanges() {
   try {
     console.log('[expiredExchanges] 开始检查过期兑换记录...');
     // 查询已过期但未处理的兑换记录
-    const expiredExchanges = await Payment.find({
+    const expiredExchanges = await Exchange.find({
       status: 'pending',
       expiredAt: { $lte: new Date() },
     })
@@ -20,15 +20,13 @@ export async function checkExpiredExchanges() {
     );
 
     for (const exchange of expiredExchanges) {
-      console.log(
-        `[expiredExchanges] 正在处理兑换记录: ${exchange.orderNumber}`,
-      );
+      console.log(`[expiredExchanges] 正在处理兑换记录: ${exchange.id}`);
 
       // 设置兑换记录状态为过期
-      await Payment.updateOne({ _id: exchange._id }, { status: 'expired' });
+      await Exchange.updateOne({ _id: exchange._id }, { status: 'expired' });
 
       console.log(
-        `[expiredExchanges] 兑换记录 ${exchange.orderNumber} 状态已更新为 expired`,
+        `[expiredExchanges] 兑换记录 ${exchange.id} 状态已更新为 expired`,
       );
 
       const botUser = await BotUser.findById(exchange.botUser);
@@ -37,23 +35,9 @@ export async function checkExpiredExchanges() {
 
       if (botUser?.id) {
         try {
-          // 构建订阅信息文本
-          let subscriptionInfoText = '';
-          if (exchange.subscriptionInfo) {
-            const { label, price, days } = exchange.subscriptionInfo;
-            subscriptionInfoText =
-              `\n<b>订阅类型:</b> ${label}\n` +
-              `<b>套餐时长:</b> ${days} 天\n` +
-              `<b>兑换记录金额:</b> ${price} USDT\n`;
-          }
-
           await bot.api.sendMessage(
             botUser.id,
-            `⌛ 兑换记录 <code>${
-              exchange.orderNumber
-            }</code> 已超时未支付，自动取消。${
-              subscriptionInfoText ? '\n' + subscriptionInfoText : ''
-            }`,
+            `⌛ 兑换记录 <code>${exchange.id}</code> 已超时未支付，自动取消。`,
             { parse_mode: 'HTML' },
           );
           console.log(
@@ -67,11 +51,11 @@ export async function checkExpiredExchanges() {
         }
       } else {
         console.warn(
-          `[expiredExchanges] 未找到用户信息，无法通知，兑换记录号: ${exchange.orderNumber}`,
+          `[expiredExchanges] 未找到用户信息，无法通知，兑换记录号: ${exchange.id}`,
         );
       }
 
-      console.log(`兑换记录 ${exchange.orderNumber} 已标记为过期`);
+      console.log(`兑换记录 ${exchange.id} 已标记为过期`);
     }
     console.log('[expiredExchanges] 过期兑换记录处理完成');
   } catch (error) {
