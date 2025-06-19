@@ -46,11 +46,11 @@ const exchangeSchema = new mongoose.Schema(
     }, // 机器人自动兑换地址, 收 U 地址
     to_address: {
       type: String,
-      required: true,
+      required: false,
     }, // 转账地址
     receive_address: {
       type: String,
-      required: true,
+      required: false,
     }, // 接收兑换 TRX 的地址
     from_amount: {
       type: Number,
