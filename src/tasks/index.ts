@@ -25,8 +25,8 @@ const task = async () => {
   // await notifyBotExpiration();
   // await updateBotExpiration();
   await checkTransfer();
-  await checkPendingExchanges();
   await checkExpiredExchanges();
+  await checkPendingExchanges();
   await updateExchange();
 };
 
