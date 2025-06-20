@@ -17,6 +17,11 @@ const handleShow = async (ctx: MyContext) => {
     return;
   }
 
+  if (!ctx.currentBot.customer_service_link) {
+    await ctx.reply('机器人没有设置客服链接，请在后台设置');
+    return;
+  }
+
   const response = await axios.get(
     'https://openapi.sun.io/v2/allpairs?page_size=1&page_num=0&token_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t&orderBy=price',
   );
@@ -44,7 +49,10 @@ const handleShow = async (ctx: MyContext) => {
 
   const inline_menu = new InlineKeyboard()
     .text('🔄 兑换给他人', 'exchange_to_others')
-    .url('大额联系老板', ctx.currentBot.contact || 'https://t.me/infoswqz');
+    .url(
+      '大额联系老板',
+      ctx.currentBot.customer_service_link || 'https://t.me/infoswqz',
+    );
 
   await ctx.reply(initialMessage, {
     parse_mode: 'HTML',
