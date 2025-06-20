@@ -3,6 +3,7 @@ import { setupBot } from '../../bot/botSetup';
 import BotUser from '../../models/botUser';
 import Wallet from '../../models/wallet';
 import { getUSDTTransfers } from '../../services/checkTrx';
+import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { IdGen } from '../../utils/idGen';
 import Receipt from '../../models/receipt';
 
@@ -77,12 +78,23 @@ export async function checkTransfer() {
           to_address: transfer.to_address,
         });
 
+        // 计算余额变化
+        const balanceChange = isIncome
+          ? `+${
+              transfer.money ? Number(transfer.money).toFixed(4) : '0.0000'
+            } TRX`
+          : `-${
+              transfer.money ? Number(transfer.money).toFixed(4) : '0.0000'
+            } TRX`;
+
         const message = [
-          `🏠监听账户: <code>${address}</code>`,
-          `💸交易类型: ${isIncome ? '🟢收入' : '🔴支出'}`,
-          `💸交易金额: ${receipt.amount.toFixed(4)} USDT`,
-          `⏰交易时间: ${new Date(receipt.time * 1000).toLocaleString()}`,
+          `📣余额变化: ${balanceChange}`,
+          `\n`,
+          `⏰交易时间: ${formatBeijingDate(receipt.time)}`,
           `🔗所属公链: Tron`,
+          `🏠监听地址·: <code>${address}</code>`,
+          `💸交易类型: ${isIncome ? '🟢收入' : '🔴支出'}`,
+          `💸交易金额: ${receipt.amount.toFixed(4)} TRX`,
           `💰转出地址: <code>${transfer.from_address}</code>`,
           `💰转入地址: <code>${transfer.to_address}</code>`,
         ].join('\n');

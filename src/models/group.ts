@@ -15,6 +15,7 @@ export interface IGroup extends Document {
   botUsers: (mongoose.Schema.Types.ObjectId | IBotUser)[];
   startAt?: Date;
   unit?: string;
+  message: string;
 }
 
 // 群组 Schema
@@ -88,6 +89,10 @@ const groupSchema = new mongoose.Schema(
     unit: {
       type: String,
       default: 'USD',
+    },
+    message: {
+      type: String,
+      required: false,
     },
   },
   {
