@@ -6,7 +6,6 @@ import { IGroup } from './group';
 // 只存客户发给机器人的消息（toBot），不存机器人发给客户的消息（fromBot）
 export interface IGroupMessage extends Document {
   bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的机器人
-  botUser?: mongoose.Schema.Types.ObjectId | IBotUser; // 发送消息的 BotUser
   content: string; // 消息内容
   groups?: mongoose.Schema.Types.ObjectId[] | IGroup[]; // 关联的群（如果是群消息）
   image: string; // 图片
@@ -19,11 +18,6 @@ const groupMessageSchema = new mongoose.Schema(
     bot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
-      required: true,
-    },
-    botUser: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'BotUser',
       required: true,
     },
     image: {
