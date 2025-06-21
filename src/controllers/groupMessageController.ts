@@ -1,24 +1,41 @@
 import { Request, Response } from 'express';
 import GroupMessage from '../models/groupMessage';
 import handleAsync from '../utils/handleAsync';
+import Bot from '../models/bot';
+import Group from '../models/group';
 
 // 构建查询参数
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
-  // content
-  if (queryParams.content) {
-    query.content = queryParams.content;
-  }
-
-  // bot
   if (queryParams.bot) {
-    query.bot = queryParams.bot;
+    const botData = await Bot.find({
+      botName: {
+        $regex: queryParams.bot,
+        $options: 'i',
+      },
+    });
+
+    if (botData && botData.length > 0) {
+      query.bot = { $in: botData.map((bot) => bot._id) };
+    } else {
+      query.bot = null;
+    }
   }
 
-  // botUser
-  if (queryParams.botUser) {
-    query.botUser = queryParams.botUser;
+  if (queryParams.group) {
+    const groupData = await Group.find({
+      title: {
+        $regex: queryParams.group,
+        $options: 'i',
+      },
+    });
+
+    if (groupData && groupData.length > 0) {
+      query.group = { $in: groupData.map((group) => group._id) };
+    } else {
+      query.group = null;
+    }
   }
 
   return query;
@@ -28,11 +45,10 @@ const buildQuery = (queryParams: any): any => {
 const getGroupMessages = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = await buildQuery(req.query);
 
   const groupMessages = await GroupMessage.find(query)
     .populate('bot')
-    .populate('botUser')
     .populate('groups')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
@@ -54,7 +70,6 @@ const getGroupMessages = handleAsync(async (req: Request, res: Response) => {
 const getGroupMessageById = handleAsync(async (req: Request, res: Response) => {
   const groupMessage = await GroupMessage.findById(req.params.id)
     .populate('bot')
-    .populate('botUser')
     .populate('groups')
     .exec();
 

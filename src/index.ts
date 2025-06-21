@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import { errorHandler, notFound } from './middlewares/errorMiddleware';
 import morgan from 'morgan';
 import cors from 'cors';
-import path from 'path';
 import http from 'http';
 import { setupRedis } from './utils/redis';
 import setupDB from './utils/db';
@@ -82,7 +81,7 @@ app.use('/api/receipts', receiptRoutes);
 app.use('/api/exchanges', exchangeRoutes);
 app.use('/api/group-messages', groupMessageRoutes);
 
-app.use('/api/static', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/static', express.static('tmp'));
 
 setupDB();
 setupRedis();

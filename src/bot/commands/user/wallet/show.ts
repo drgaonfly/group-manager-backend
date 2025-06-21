@@ -107,27 +107,33 @@ walletShowComposer.hears(/^🏦 地址监听$/, async (ctx) => {
   await handleShow(ctx, 1);
 });
 
-walletShowComposer.hears(/T[a-zA-Z0-9]{33}$/, async (ctx) => {
-  const address = ctx.match[0];
+walletShowComposer.hears(/T[a-zA-Z0-9]{33}$/, async (ctx, next) => {
+  // 是否在对话状态 conversation
 
-  if (!/T[a-zA-Z0-9]{33}$/.test(address)) {
-    await ctx.reply('❌ 请输入有效的波场地址格式');
-    return;
-  }
+  if (ctx.conversation.active()) {
+    next();
+  } else {
+    const address = ctx.match[0];
 
-  try {
-    const response = await axios.get(
-      `https://apilist.tronscan.org/api/account?address=${address}`,
-    );
+    if (!/T[a-zA-Z0-9]{33}$/.test(address)) {
+      await ctx.reply('❌ 请输入有效的波场地址格式');
+      return;
+    }
 
-    const formattedResponse = await formatWalletInfo(
-      address,
-      response.data,
-      ctx,
-    );
-    await ctx.reply(formattedResponse, { parse_mode: 'HTML' });
-  } catch (error) {
-    await ctx.reply('获取钱包信息失败，请稍后重试。');
+    try {
+      const response = await axios.get(
+        `https://apilist.tronscan.org/api/account?address=${address}`,
+      );
+
+      const formattedResponse = await formatWalletInfo(
+        address,
+        response.data,
+        ctx,
+      );
+      await ctx.reply(formattedResponse, { parse_mode: 'HTML' });
+    } catch (error) {
+      await ctx.reply('获取钱包信息失败，请稍后重试。');
+    }
   }
 });
 

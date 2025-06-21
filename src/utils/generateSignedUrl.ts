@@ -54,15 +54,17 @@ export async function generateSignedUrlForOSS(
   }
 }
 
+export async function generateLocalSignedUrl(
+  filePath: string,
+): Promise<string> {
+  return `${process.env.BACKEND_URL}/api/static/${filePath}`;
+}
+
 export async function generateSignedUrl(
   filePath: string,
   expires = 3600,
 ): Promise<string> {
-  if (process.env.FILE_STORAGE === 'aliyun') {
-    // 当 FILE_STORAGE 为 aliyun 时调用 generateSignedUrlForOSS
-    return generateSignedUrlForOSS(filePath, expires);
-  } else {
-    // 否则调用 generateSignedUrlForS3
-    return generateSignedUrlForS3(filePath, expires);
-  }
+  console.log('expires', expires);
+  return generateLocalSignedUrl(filePath);
+  // return generateSignedUrlForS3(filePath, expires);
 }
