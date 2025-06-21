@@ -71,7 +71,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   await ctx.currentBot.updateOne({
     $addToSet: {
       // 使用 $addToSet 来避免重复添加
-      groups: currentGroup._id,
+      groups: ctx.currentGroup._id,
     },
   });
 
