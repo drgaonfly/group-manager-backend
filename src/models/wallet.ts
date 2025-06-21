@@ -7,7 +7,8 @@ export interface IWallet extends Document {
   bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的 Bot
   name?: string;
   address: string;
-  balance: number;
+  usdt_balance: number;
+  trx_balance: number;
   isOnline: boolean;
   remark: string;
   createdAt: Date;
@@ -20,7 +21,8 @@ const walletSchema = new Schema<IWallet>(
     bot: { type: Schema.Types.ObjectId, ref: 'Bot', required: true }, // 必须关联 Bot
     name: { type: String, trim: true },
     address: { type: String, required: true, trim: true, unique: true },
-    balance: { type: Number, default: 0 },
+    usdt_balance: { type: Number, default: 0 },
+    trx_balance: { type: Number, default: 0 },
     isOnline: { type: Boolean, default: true },
     remark: { type: String, trim: true },
   },

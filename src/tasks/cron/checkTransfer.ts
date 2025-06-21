@@ -3,8 +3,10 @@ import { setupBot } from '../../bot/botSetup';
 import BotUser from '../../models/botUser';
 import Wallet from '../../models/wallet';
 import { getUSDTTransfers } from '../../services/checkTrx';
+import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { IdGen } from '../../utils/idGen';
 import Receipt from '../../models/receipt';
+import axios from 'axios';
 
 /**
  * 检查所有钱包的USDT转账记录，包括转入和转出。
@@ -77,14 +79,40 @@ export async function checkTransfer() {
           to_address: transfer.to_address,
         });
 
+        // 计算余额变化
+        const balanceChange = isIncome
+          ? `+${
+              transfer.money ? Number(transfer.money).toFixed(4) : '0.0000'
+            } TRX`
+          : `-${
+              transfer.money ? Number(transfer.money).toFixed(4) : '0.0000'
+            } TRX`;
+
+        const response = await axios.get(
+          `https://apilist.tronscan.org/api/account?address=${wallet.address}`,
+        );
+
+        const trxBalance = (response.data.balance / 1_000_000).toFixed(6);
+        const usdtToken = response.data.trc20token_balances?.find(
+          (token: any) => token.tokenAbbr === 'USDT',
+        );
+        const usdtBalance = usdtToken ? usdtToken.balance / 1_000_000 : '0';
+
+        wallet.trx_balance = Number(trxBalance);
+        wallet.usdt_balance = Number(usdtBalance);
+        await wallet.save();
+
         const message = [
-          `🏠监听账户: <code>${address}</code>`,
-          `💸交易类型: ${isIncome ? '🟢收入' : '🔴支出'}`,
-          `💸交易金额: ${receipt.amount.toFixed(4)} USDT`,
-          `⏰交易时间: ${new Date(receipt.time * 1000).toLocaleString()}`,
+          `📣余额变化: ${balanceChange}`,
+          `\n`,
+          `⏰交易时间: ${formatBeijingDate(receipt.time)}`,
           `🔗所属公链: Tron`,
-          `💰转出地址: <code>${transfer.from_address}</code>`,
-          `💰转入地址: <code>${transfer.to_address}</code>`,
+          `💰监听地址: <code>${address}</code>`,
+          `💰来源地址: <code>${transfer.from_address}</code>`,
+          `${isIncome ? '🟢' : '🔴'}交易类型: ${isIncome ? '转入' : '转出'}`,
+          `💸交易金额: ${receipt.amount} TRX`,
+          `💸TRX余额: ${wallet.trx_balance} TRX`,
+          `💸USDT余额: ${wallet.usdt_balance} USDT`,
         ].join('\n');
 
         try {

@@ -18,7 +18,10 @@ exchangeMainMenuComposer.callbackQuery('exchange_main', async (ctx) => {
     bot: ctx.currentBot._id,
   });
 
-  const trx_balance = wallets.reduce((acc, wallet) => acc + wallet.balance, 0);
+  const trx_balance = wallets.reduce(
+    (acc, wallet) => acc + wallet.usdt_balance,
+    0,
+  );
 
   const transfers = await getUSDTTransfers(ctx.currentBotUser.id);
 
