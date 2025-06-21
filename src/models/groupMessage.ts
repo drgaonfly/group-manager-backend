@@ -11,6 +11,7 @@ export interface IGroupMessage extends Document {
   group?: mongoose.Schema.Types.ObjectId | IGroup; // 关联的群（如果是群消息）
   image: string; // 图片
   intervalTime: number; // 间隔时间
+  isRealtime: boolean; // 是否实时
 }
 
 const groupMessageSchema = new mongoose.Schema(
@@ -42,6 +43,11 @@ const groupMessageSchema = new mongoose.Schema(
     intervalTime: {
       type: Number,
       required: false,
+    },
+    isRealtime: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   {
