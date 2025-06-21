@@ -1,5 +1,4 @@
 import mongoose, { Document } from 'mongoose';
-import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { IGroup } from './group';
 
