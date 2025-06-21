@@ -29,6 +29,15 @@ export const handleShow = async (ctx: MyContext, page = 1) => {
 };
 
 const formatTransaction = (tx: any, walletAddress: string) => {
+  // 只处理USDT转账交易
+  if (
+    !tx.trigger_info ||
+    tx.trigger_info.methodName !== 'transfer' ||
+    tx.trigger_info.contract_address !== 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
+  ) {
+    return null;
+  }
+
   const date = new Date(tx.timestamp);
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -36,23 +45,12 @@ const formatTransaction = (tx: any, walletAddress: string) => {
   const minute = String(date.getMinutes()).padStart(2, '0');
   const second = String(date.getSeconds()).padStart(2, '0');
 
-  let amount;
-  let symbol;
-
-  // 处理USDT转账
-  if (tx.trigger_info && tx.trigger_info.methodName === 'transfer') {
-    amount = (Number(tx.trigger_info.parameter._value) / 1_000_000).toFixed(2);
-    symbol = 'USDT';
-  } else {
-    // 处理TRX转账
-    amount = (Number(tx.amount) / 1_000_000).toFixed(2);
-    symbol = tx.tokenInfo?.symbol || 'TRX';
-  }
-
-  // 判断转入转出
+  const amount = (Number(tx.trigger_info.parameter._value) / 1_000_000).toFixed(
+    2,
+  );
   const type = tx.ownerAddress === walletAddress ? '－' : '＋';
 
-  return `${month}-${day} ${hour}:${minute}:${second} [${symbol}]${type}<a href="https://tronscan.org/#/transaction/${tx.hash}">${amount}</a>`;
+  return `${month}-${day} ${hour}:${minute}:${second} [USDT]${type}<a href="https://tronscan.org/#/transaction/${tx.hash}">${amount}</a>`;
 };
 
 const formatWalletInfo = async (address: string, data: any, ctx: MyContext) => {
@@ -74,11 +72,13 @@ const formatWalletInfo = async (address: string, data: any, ctx: MyContext) => {
 
   // 获取最近交易
   const txResponse = await axios.get(
-    `https://apilist.tronscan.org/api/transaction?address=${address}&limit=5&sort=-timestamp`,
+    `https://apilist.tronscan.org/api/transaction?address=${address}&limit=20&sort=-timestamp&contract_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`,
   );
 
   const recentTxs = txResponse.data.data
     .map((tx) => formatTransaction(tx, address))
+    .filter(Boolean)
+    .slice(0, 5)
     .join('\n');
 
   return [
