@@ -7,9 +7,9 @@ import setupDB from '../utils/db';
 // import { notifyBotExpiration } from './cron/notifyBotExpiration';
 // import { notifySubscriptionExpiration } from './cron/notifySubscriptionExpiration';
 import { checkTransfer } from './cron/checkTransfer';
-// import { checkPendingExchanges } from './cron/checkPendingExchanges';
-// import { checkExpiredExchanges } from './cron/expiredExchange';
-// import { updateExchange } from './cron/updateExchange';
+import { checkPendingExchanges } from './cron/checkPendingExchanges';
+import { checkExpiredExchanges } from './cron/expiredExchange';
+import { updateExchange } from './cron/updateExchange';
 import { setupRedis } from '../utils/redis';
 
 const task = async () => {
@@ -25,9 +25,9 @@ const task = async () => {
   // await notifyBotExpiration();
   // await updateBotExpiration();
   await checkTransfer();
-  // await checkExpiredExchanges();
-  // await checkPendingExchanges();
-  // await updateExchange();
+  await checkExpiredExchanges();
+  await checkPendingExchanges();
+  await updateExchange();
 };
 
 // 执行任务并在完成后退出进程
