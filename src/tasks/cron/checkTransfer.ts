@@ -103,9 +103,9 @@ export async function checkTransfer() {
         await wallet.save();
 
         const message = [
-          `📣余额变化: ${balanceChange}`,
+          `<b>📣余额变化: ${balanceChange}</b>`,
           `\n`,
-          `⏰交易时间: ${formatBeijingDate(receipt.time)}`,
+          `⏰交易时间: ${formatBeijingDate(receipt.time * 1000)}`,
           `🔗所属公链: Tron`,
           `💰监听地址: <code>${address}</code>`,
           `💰来源地址: <code>${transfer.from_address}</code>`,
