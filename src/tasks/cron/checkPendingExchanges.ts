@@ -85,17 +85,17 @@ export async function checkPendingExchanges() {
       await exchange.save();
       // }
 
-      const txid = await sendTRX(
-        decrypt(bot.private_key),
-        exchange.to_address,
-        exchange.to_amount,
-      );
-
-      // const txid = '假设成功了'
-
-      if (!txid) {
+      let txid: string | undefined;
+      try {
+        txid = await sendTRX(
+          decrypt(bot.private_key),
+          exchange.to_address,
+          exchange.to_amount,
+        );
+      } catch (err) {
         console.error(
-          `[checkPendingExchanges] 兑换记录 ${exchange.id} 发送 TRX 失败`,
+          `[checkPendingExchanges] 兑换记录 ${exchange.id} 发送 TRX 失败:`,
+          err,
         );
         exchange.status = 'failed';
         await exchange.save();
@@ -103,6 +103,7 @@ export async function checkPendingExchanges() {
       }
 
       // exchange更新
+      exchange.txid = txid;
       exchange.status = 'completed';
       exchange.hash = matchedTransfer.trade_id;
       await exchange.save();

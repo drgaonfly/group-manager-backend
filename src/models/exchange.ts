@@ -20,6 +20,7 @@ export interface IExchange extends Document {
   createdAt: Date;
   updatedAt: Date;
   expiredAt: Date;
+  txid: string;
 }
 
 // 交易 Schema
@@ -83,6 +84,10 @@ const exchangeSchema = new mongoose.Schema(
     },
     expiredAt: {
       type: Date,
+      required: false,
+    },
+    txid: {
+      type: String,
       required: false,
     },
   },
