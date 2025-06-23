@@ -8,6 +8,7 @@ import { RequestCustom } from 'user';
 import { isProxy, isEmployee } from '../middlewares/authMiddleware';
 import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';
+import { generateLocalSignedUrl } from '../utils/generateSignedUrl';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -502,6 +503,65 @@ const sendMessage = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
+// group message
+// send message
+const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const { content, image } = req.body;
+
+  const botManager = await Bot.findById(id)
+    .populate('botUsers')
+    .populate('groups');
+
+  const bot_groups = botManager.groups;
+
+  const req_groups = req.body.groups;
+
+  if (req_groups.length === 0) {
+    res.status(400);
+    throw new Error('群组列表不能为空，请选择群组');
+  }
+
+  // 从bot_groups中找到req_groups中存在的group
+  const processed_groups = bot_groups.filter((group: any) =>
+    req_groups.includes(String(group._id)),
+  );
+
+  if (!botManager) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  const telegramBot = setupBot(botManager.token);
+
+  await Promise.all(
+    processed_groups.map(async (group: any) => {
+      if (image) {
+        const processed_image = await generateLocalSignedUrl(image);
+
+        if (processed_image.includes('localhost')) {
+          res.status(400);
+          throw new Error(`必须是在线图片，而不是本地路径: ${processed_image}`);
+        }
+        await telegramBot.api.sendPhoto(group.id, processed_image, {
+          caption: content,
+          parse_mode: 'HTML',
+        });
+      } else {
+        await telegramBot.api.sendMessage(group.id, content, {
+          parse_mode: 'HTML',
+        });
+      }
+    }),
+  );
+
+  res.json({
+    success: true,
+    message: '群发消息成功',
+  });
+});
+
 export {
   getBots,
   addBot,
@@ -514,4 +574,5 @@ export {
   addAuthorizer,
   delAuthorizer,
   sendMessage,
+  sendGroupMessage,
 };
