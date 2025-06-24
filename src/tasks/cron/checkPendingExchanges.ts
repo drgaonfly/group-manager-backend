@@ -13,10 +13,7 @@ export async function checkPendingExchanges() {
 
     const pendingExchanges = await Exchange.find({
       status: 'pending',
-      $or: [
-        { expiredAt: { $gt: new Date() }, isTransferIntoOther: true },
-        { receive_address: null, expiredAt: null, isTransferIntoOther: false },
-      ],
+      expiredAt: { $gt: new Date() },
     })
       .populate('botUser')
       .populate('bot');
