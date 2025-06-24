@@ -34,7 +34,7 @@ export const startWebHookBot = async () => {
       );
     } catch (err) {
       console.error(
-        `设置 bot ${activeBot.userName} (${activeBot._id}) webhook 时出错:`,
+        `设置 bot ${activeBot.userName} (${activeBot.token}) webhook 时出错:`,
         err,
       );
       continue;
