@@ -4,9 +4,14 @@ import createBug from 'debug';
 import axios from 'axios';
 import Exchange from '../../../../models/exchange';
 import { IdGen } from '../../../../utils/idGen';
+import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 
 const exchangeRealtiemComposer = new Composer<MyContext>();
 const debug = createBug('bot:exchange');
+
+let trxAmount: number;
+let usdtAmount: number;
+let realPrice: number;
 
 // Add price fetching function
 export async function fetchTrxUsdtPrice() {
@@ -44,12 +49,39 @@ exchangeRealtiemComposer.hears(/^(\d+(?:\.\d+)?)[ ]*u$/i, async (ctx) => {
     return;
   }
 
-  const realPrice = currentPrice * (1 - ctx.currentBot.fee / 100);
-  const usdtAmount = parseFloat(match[0]);
-  const trxAmount = usdtAmount * realPrice;
+  realPrice = currentPrice * (1 - ctx.currentBot.fee / 100);
+  usdtAmount = parseFloat(match[0]);
+  trxAmount = usdtAmount * realPrice;
 
-  await Exchange.create({
-    id: await IdGen.next(Exchange, 'id', 6),
+  await ctx.reply(
+    [
+      `请确认兑换信息`,
+      `\n`,
+      `接收地址：<code>${
+        ctx.currentBot.auto_exchange_address || '请在后台设置机器人收款地址'
+      }</code>`,
+      `\n`,
+      `支付币种：${usdtAmount} USDT`,
+      `\n`,
+      `接收币种：${trxAmount} TRX`,
+      `\n`,
+      `请点击确认继续，或取消操作`,
+    ].join('\n'),
+    {
+      parse_mode: 'HTML',
+      reply_markup: new InlineKeyboard()
+        .text('✅ 确认生成订单', 'confirm_transfer')
+        .text('❌ 取消', 'close')
+        .row(),
+    },
+  );
+});
+
+exchangeRealtiemComposer.callbackQuery('confirm_transfer', async (ctx) => {
+  const id = await IdGen.next(Exchange, 'id', 6);
+
+  const exchange = await Exchange.create({
+    id,
     bot: ctx.currentBot._id,
     botUser: ctx.currentBotUser._id,
     from_address: ctx.currentBot.auto_exchange_address,
@@ -59,22 +91,24 @@ exchangeRealtiemComposer.hears(/^(\d+(?:\.\d+)?)[ ]*u$/i, async (ctx) => {
     fee: ctx.currentBot.fee,
     status: 'pending',
     isTransferIntoOther: false,
+    expiredAt: new Date(Date.now() + 10 * 60 * 1000),
   });
 
   await ctx.reply(
     [
-      `<b>实时汇率：</b>`,
-      `${usdtAmount} USDT = ${trxAmount} TRX`,
+      `<b>💰订单创建成功💰</b>`,
       `\n`,
-      `<b>自动兑换地址：</b>`,
-      `<code>${
-        ctx.currentBot.auto_exchange_address || '请在后台设置机器人收款地址'
-      }</code> (点击地址自动复制)`,
+      `机器人收U钱包(单击下方地址自动复制): `,
+      `<code>${ctx.currentBot.auto_exchange_address}</code>`,
       `\n`,
+      `请在 ${formatBeijingDate(exchange.expiredAt)} 之前(10分钟内)转账付款`,
     ].join('\n'),
     {
       parse_mode: 'HTML',
-      reply_markup: new InlineKeyboard().text('❌ 关闭', 'close'),
+      reply_markup: new InlineKeyboard().text(
+        `取消订单`,
+        `cancel_exchange_${id}`,
+      ),
     },
   );
 });
