@@ -8,6 +8,7 @@ export const useSummary = () => {
     deposits: any[];
     withdraws: any[];
     feeRate: number;
+    summary: number;
     exchangeRate: number;
     unit?: string;
   }) => {

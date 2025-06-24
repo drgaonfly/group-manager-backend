@@ -27,13 +27,14 @@ showBillCommand.hears(
     const renderSummary = useSummary();
 
     // 获取交易数据
-    const { withdraws, deposits } = await useTransactionData(group);
+    const { withdraws, deposits, summary } = await useTransactionData(group);
 
     // 渲染账单消息
     const message = await renderSummary({
       deposits,
       withdraws,
       feeRate: group.fee_rate,
+      summary,
       exchangeRate: group.exchange_rate,
       unit: group.unit,
     });

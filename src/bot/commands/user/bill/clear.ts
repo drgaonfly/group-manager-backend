@@ -1,15 +1,15 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
-import Exchange from '../../../../models/exchange';
+import Transaction from '../../../../models/transaction';
 
-const exchangeClearCommand = new Composer<MyContext>();
+const clearBillCommand = new Composer<MyContext>();
 
-const debug = createDebug('bot:exchange:clear');
+const debug = createDebug('bot:bill:clear');
 
 // 清除订单回调处理
-exchangeClearCommand.hears('清除兑换记录', async (ctx) => {
-  debug('clear_exchange callback triggered');
+clearBillCommand.hears('清除账单', async (ctx) => {
+  debug('clear_bill callback triggered');
 
   // 查找今天创建的 exchange
   const startOfToday = new Date();
@@ -17,14 +17,14 @@ exchangeClearCommand.hears('清除兑换记录', async (ctx) => {
   const endOfToday = new Date();
   endOfToday.setHours(23, 59, 59, 999);
 
-  await Exchange.deleteMany({
+  await Transaction.deleteMany({
     createdAt: {
       $gte: startOfToday,
       $lte: endOfToday,
     },
   });
 
-  ctx.reply(`今日订单号已清除`);
+  ctx.reply(`今日账单已清除`);
 });
 
-export default exchangeClearCommand;
+export default clearBillCommand;

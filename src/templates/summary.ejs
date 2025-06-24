@@ -6,6 +6,7 @@
 <% }) %>
 总入款: <%= deposits.reduce((sum, item) => sum + item.amount, 0).toFixed(2) %>
 费率：<%= (feeRate).toFixed(2) %>%
+汇总手续费: <%= summary %>
 USD汇率: <%= exchangeRate %><% const totalDeposits = deposits.reduce((sum, item) => sum + item.amount, 0) %><% const shouldPay = (totalDeposits * (1 - feeRate/100)).toFixed(2) %><% const totalWithdraws = withdraws.reduce((sum, item) => sum + item.amount, 0) %><% const balance = (shouldPay - totalWithdraws).toFixed(2) %>
 应下发: <%= shouldPay %>｜<%= (shouldPay/exchangeRate).toFixed(2) %> <%= unit %>
 总下发: <%= totalWithdraws %>｜<%= (totalWithdraws/exchangeRate).toFixed(2) %> <%= unit %>
