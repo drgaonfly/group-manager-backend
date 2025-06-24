@@ -536,17 +536,16 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
 
   const telegramBot = setupBot(botManager.token);
 
+  // 保证catch时跳过，不影响其它的
   await Promise.all(
     processed_groups.map(async (group: any) => {
-      if (!group) {
-        console.log(`[sendGroupMessage] 群组不存在: ${group}`);
-        return;
-      }
+      try {
+        if (!group) {
+          console.log(`[sendGroupMessage] 群组不存在: ${group}`);
+          return;
+        }
 
-      if (image) {
-        const processed_image = await generateLocalSignedUrl(image);
-
-        if (processed_image.includes('localhost')) {
+        if (image) {
           await telegramBot.api.sendPhoto(
             group.id,
             new InputFile(`tmp/${image}`),
@@ -556,15 +555,18 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
             },
           );
         } else {
-          await telegramBot.api.sendPhoto(group.id, processed_image, {
-            caption: content,
+          await telegramBot.api.sendMessage(group.id, content, {
             parse_mode: 'HTML',
           });
         }
-      } else {
-        await telegramBot.api.sendMessage(group.id, content, {
-          parse_mode: 'HTML',
-        });
+      } catch (error) {
+        // 捕获错误，输出日志，跳过本次，不影响其它群组
+        console.error(
+          `[sendGroupMessage] 向群组 ${group?.id} 发送消息失败:`,
+          error,
+        );
+        // 直接return跳过
+        return;
       }
     }),
   );
