@@ -70,47 +70,50 @@ exchangeRealtiemComposer.hears(/^(\d+(?:\.\d+)?)[ ]*u$/i, async (ctx) => {
     {
       parse_mode: 'HTML',
       reply_markup: new InlineKeyboard()
-        .text('✅ 确认生成订单', 'confirm_transfer')
+        .text('✅ 确认生成订单', 'confirm_transfer_second')
         .text('❌ 取消', 'close')
         .row(),
     },
   );
 });
 
-exchangeRealtiemComposer.callbackQuery('confirm_transfer', async (ctx) => {
-  const id = await IdGen.next(Exchange, 'id', 6);
+exchangeRealtiemComposer.callbackQuery(
+  'confirm_transfer_second',
+  async (ctx) => {
+    const id = await IdGen.next(Exchange, 'id', 6);
 
-  const exchange = await Exchange.create({
-    id,
-    bot: ctx.currentBot._id,
-    botUser: ctx.currentBotUser._id,
-    from_address: ctx.currentBot.auto_exchange_address,
-    from_amount: usdtAmount,
-    to_amount: trxAmount,
-    rate: realPrice,
-    fee: ctx.currentBot.fee,
-    status: 'pending',
-    isTransferIntoOther: false,
-    expiredAt: new Date(Date.now() + 10 * 60 * 1000),
-  });
+    const exchange = await Exchange.create({
+      id,
+      bot: ctx.currentBot._id,
+      botUser: ctx.currentBotUser._id,
+      from_address: ctx.currentBot.auto_exchange_address,
+      from_amount: usdtAmount,
+      to_amount: trxAmount,
+      rate: realPrice,
+      fee: ctx.currentBot.fee,
+      status: 'pending',
+      isTransferIntoOther: false,
+      expiredAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
 
-  await ctx.reply(
-    [
-      `<b>💰订单创建成功💰</b>`,
-      `\n`,
-      `机器人收U钱包(单击下方地址自动复制): `,
-      `<code>${ctx.currentBot.auto_exchange_address}</code>`,
-      `\n`,
-      `请在 ${formatBeijingDate(exchange.expiredAt)} 之前(10分钟内)转账付款`,
-    ].join('\n'),
-    {
-      parse_mode: 'HTML',
-      reply_markup: new InlineKeyboard().text(
-        `取消订单`,
-        `cancel_exchange_${id}`,
-      ),
-    },
-  );
-});
+    await ctx.reply(
+      [
+        `<b>💰订单创建成功💰</b>`,
+        `\n`,
+        `机器人收U钱包(单击下方地址自动复制): `,
+        `<code>${ctx.currentBot.auto_exchange_address}</code>`,
+        `\n`,
+        `请在 ${formatBeijingDate(exchange.expiredAt)} 之前(10分钟内)转账付款`,
+      ].join('\n'),
+      {
+        parse_mode: 'HTML',
+        reply_markup: new InlineKeyboard().text(
+          `取消订单`,
+          `cancel_exchange_${id}`,
+        ),
+      },
+    );
+  },
+);
 
 export default exchangeRealtiemComposer;
