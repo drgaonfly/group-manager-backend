@@ -8,7 +8,6 @@ import { RequestCustom } from 'user';
 import { isProxy, isEmployee } from '../middlewares/authMiddleware';
 import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';
-import { generateLocalSignedUrl } from '../utils/generateSignedUrl';
 import dotenv from 'dotenv';
 import { InputFile } from 'grammy';
 
