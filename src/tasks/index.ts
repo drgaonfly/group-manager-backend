@@ -6,6 +6,7 @@ import setupDB from '../utils/db';
 // import { updateBotExpiration } from './cron/updateBotExpiration';
 // import { notifyBotExpiration } from './cron/notifyBotExpiration';
 // import { notifySubscriptionExpiration } from './cron/notifySubscriptionExpiration';
+// import cron from 'node-cron';
 import { checkTransfer } from './cron/checkTransfer';
 import { checkPendingExchanges } from './cron/checkPendingExchanges';
 import { checkExpiredExchanges } from './cron/expiredExchange';
@@ -39,3 +40,15 @@ task()
     console.error('Task failed:', err);
     process.exit(1);
   });
+
+// export function startTaskScheduler() {
+//   cron.schedule('* * * * *', async () => {
+//     console.log(`[定时任务] ${new Date().toLocaleString()} 开始执行`);
+//     try {
+//       await task();
+//       console.log('[定时任务] 执行完成 ✅');
+//     } catch (error) {
+//       console.error('[定时任务] 执行出错 ❌', error);
+//     }
+//   });
+// }
