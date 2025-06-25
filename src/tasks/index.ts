@@ -6,10 +6,10 @@ import setupDB from '../utils/db';
 // import { updateBotExpiration } from './cron/updateBotExpiration';
 // import { notifyBotExpiration } from './cron/notifyBotExpiration';
 // import { notifySubscriptionExpiration } from './cron/notifySubscriptionExpiration';
-import cron from 'node-cron';
-// import { checkTransfer } from './cron/checkTransfer';
-// import { checkPendingExchanges } from './cron/checkPendingExchanges';
-// import { checkExpiredExchanges } from './cron/expiredExchange';
+// import cron from 'node-cron';
+import { checkTransfer } from './cron/checkTransfer';
+import { checkPendingExchanges } from './cron/checkPendingExchanges';
+import { checkExpiredExchanges } from './cron/expiredExchange';
 import { sendGroupMessages } from './cron/groupMessager';
 import { setupRedis } from '../utils/redis';
 
@@ -25,9 +25,9 @@ const task = async () => {
   // await checkExpiredSubscriptions();
   // await notifyBotExpiration();
   // await updateBotExpiration();
-  // await checkTransfer(); // 检查转账记录
-  // await checkExpiredExchanges(); // 检查过期的兑换记录
-  // await checkPendingExchanges(); // 为他人兑换
+  await checkTransfer(); // 检查转账记录
+  await checkExpiredExchanges(); // 检查过期的兑换记录
+  await checkPendingExchanges(); // 为他人兑换
   await sendGroupMessages(); // 发送群发消息
 };
 
@@ -41,14 +41,14 @@ task()
     process.exit(1);
   });
 
-export function startTaskScheduler() {
-  cron.schedule('* * * * *', async () => {
-    console.log(`[定时任务] ${new Date().toLocaleString()} 开始执行`);
-    try {
-      await task();
-      console.log('[定时任务] 执行完成 ✅');
-    } catch (error) {
-      console.error('[定时任务] 执行出错 ❌', error);
-    }
-  });
-}
+// export function startTaskScheduler() {
+//   cron.schedule('* * * * *', async () => {
+//     console.log(`[定时任务] ${new Date().toLocaleString()} 开始执行`);
+//     try {
+//       await task();
+//       console.log('[定时任务] 执行完成 ✅');
+//     } catch (error) {
+//       console.error('[定时任务] 执行出错 ❌', error);
+//     }
+//   });
+// }
