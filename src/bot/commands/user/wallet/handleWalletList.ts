@@ -3,6 +3,8 @@ import { MyContext } from '../../../types';
 import { ITEMS_PER_PAGE } from '../../../../constants';
 import Wallet from '../../../../models/wallet';
 import createDebug from 'debug';
+import BotUser from '../../../../models/botUser';
+import Bot from '../../../../models/bot';
 
 const debug = createDebug('bot:wallet:handleWalletList');
 
@@ -88,6 +90,19 @@ export const handleWalletListWithoutInlineMenu = async (
   ctx: MyContext,
   page = 1,
 ): Promise<{ pageInfo: string; replyText: string }> => {
+  let bot = ctx.currentBot;
+  let botUser = ctx.currentBotUser;
+
+  if (!botUser) {
+    botUser = await BotUser.findOne({
+      id: ctx.update.callback_query.from.id.toString(),
+    });
+  }
+
+  if (!bot) {
+    bot = await Bot.findOne({ id: ctx.me.id.toString() });
+  }
+
   // 使用 limit/skip 进行分页
   const skip = (page - 1) * ITEMS_PER_PAGE;
 
@@ -106,8 +121,8 @@ export const handleWalletListWithoutInlineMenu = async (
 
   // 分页查找
   const wallets = await Wallet.find({
-    botUser: ctx.currentBotUser._id,
-    bot: ctx.currentBot._id,
+    botUser: botUser._id,
+    bot: bot._id,
     isOnline: true,
   })
     .sort('-createdAt')
