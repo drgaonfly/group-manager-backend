@@ -1,7 +1,7 @@
 // src/cron/expiredExchanges.ts
 import Exchange from '../../models/exchange';
 import Bot from '../../models/bot';
-import { getUSDTTransfers } from '../../services/checkTrx';
+import { getUSDTTransfers } from '../../services/checkUsdt';
 import { fetchTrxUsdtPrice } from '../../bot/commands/user/exchange/realtiem';
 
 export async function checkAuthExchanges() {

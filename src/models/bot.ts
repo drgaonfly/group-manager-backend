@@ -11,6 +11,7 @@ export interface IBot extends Document {
   message: string;
   userName: string;
   menus: IMenu[];
+  keyboards: IKeyboard[];
   isOnline: boolean;
   botUsers: mongoose.Schema.Types.ObjectId[] | IBotUser[];
   session?: string;
@@ -39,6 +40,11 @@ export interface IMenu extends Document {
   url: string;
 }
 
+export interface IKeyboard extends Document {
+  command: string;
+  content: string;
+}
+
 const menuSchema = new mongoose.Schema({
   menuName: { type: String, required: true },
   url: {
@@ -51,6 +57,11 @@ const menuSchema = new mongoose.Schema({
       message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
     },
   },
+});
+
+const keyboardSchema = new mongoose.Schema({
+  command: { type: String, required: true },
+  content: { type: String, required: true },
 });
 
 const botSchema = new mongoose.Schema(
@@ -94,6 +105,7 @@ const botSchema = new mongoose.Schema(
       },
     ],
     menus: [menuSchema],
+    keyboards: [keyboardSchema],
     session: {
       type: String,
       trim: true,

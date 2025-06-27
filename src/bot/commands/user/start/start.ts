@@ -2,7 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { startClientAndGetSession } from '../../../services/gramClient';
-import mainKeyboard from '../../../menus/keyboards/mainKeyboard';
+import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkPermission } from '../../../middlewares/checkPermission';
 
 const startCommand = new Composer<MyContext>();
@@ -62,8 +62,35 @@ startCommand.command('start', checkPermission, async (ctx) => {
   });
 
   await ctx.reply(bot.message || '欢迎使用机器人', {
-    reply_markup: mainKeyboard,
+    reply_markup: await createMainKeyboard(ctx),
   });
+});
+
+startCommand.on('message:text', async (ctx, next) => {
+  // 获取当前机器人配置的自定义键盘按钮
+  const customKeyboards = ctx.currentBot?.keyboards || [];
+
+  // 获取用户点击的文本
+  const clickedText = ctx.message.text;
+
+  // 查找是否是自定义键盘按钮
+  const matchedKeyboard = customKeyboards.find(
+    (kb) => kb.command === clickedText,
+  );
+
+  if (matchedKeyboard) {
+    debug(`Handling dynamic keyboard button: ${clickedText}`);
+    try {
+      // 发送按钮配置的内容
+      await ctx.reply(matchedKeyboard.content);
+    } catch (error) {
+      debug('Error handling dynamic keyboard:', error);
+      await ctx.reply('处理请求时发生错误，请稍后重试。');
+    }
+  } else {
+    // 如果不是自定义键盘按钮，让其他处理程序继续处理
+    await next();
+  }
 });
 
 export default startCommand;

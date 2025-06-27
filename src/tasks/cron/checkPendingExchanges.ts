@@ -1,7 +1,7 @@
 import { IBotUser } from '../../models/botUser';
 import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
-import { getUSDTTransfers } from '../../services/checkTrx';
+import { getUSDTTransfers } from '../../services/checkUsdt';
 import Exchange from '../../models/exchange';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { sendTRX } from '../../utils/sendTRX';

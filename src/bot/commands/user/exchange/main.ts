@@ -2,7 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import Wallet from '../../../../models/wallet';
 import createBug from 'debug';
-import { getUSDTTransfers } from '../../../../services/checkTrx';
+import { getUSDTTransfers } from '../../../../services/checkUsdt';
 
 // 弃用
 

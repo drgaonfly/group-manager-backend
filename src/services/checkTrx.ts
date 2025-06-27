@@ -7,30 +7,32 @@ interface Transfer {
   to_address: string;
 }
 
-interface TransferResponse {
-  token_transfers: Array<{
-    to_address: string;
-    finalResult: string;
-    block_ts: number;
-    quant: string;
-    transaction_id: string;
-    from_address: string;
-  }>;
+interface TrxTransaction {
+  toAddress: string;
+  ownerAddress: string;
+  amount: number;
+  hash: string;
+  timestamp: number;
+  contractRet: string;
+}
+
+interface TrxResponse {
+  data: TrxTransaction[];
 }
 
 /**
- * 查询指定地址在指定时间范围内的 USDT 转账（支持自动分页，防止漏单）
+ * 查询指定地址在指定时间范围内的 TRX 转账记录（主币），支持分页+本地时间过滤
  * @param address 查询的地址
  * @param minutes 查询的分钟数（默认15分钟）
  * @param maxPages 最大分页数，防止死循环（默认3页）
- * @param pageSize 每页条数（默认100，最大300）
- * @param minIntervalMs 每次请求间隔，防止频率过高（默认500ms）
+ * @param pageSize 每页条数（默认50）
+ * @param minIntervalMs 请求间隔（默认500ms）
  */
-export async function getUSDTTransfers(
+export async function getTrxTransfers(
   address: string,
-  minutes: number = process.env.NODE_ENV === 'development' ? 20 * 24 * 60 : 15,
+  minutes: number = process.env.NODE_ENV === 'development' ? 5 * 24 * 60 : 15,
   maxPages: number = 3,
-  pageSize: number = 100,
+  pageSize: number = 50,
   minIntervalMs: number = 500,
 ): Promise<Transfer[]> {
   const result: Transfer[] = [];
@@ -39,92 +41,81 @@ export async function getUSDTTransfers(
   let page = 0;
   let fetchedAll = false;
 
-  // 记录已出现过的交易哈希，防止分页重复
   const seenTx = new Set<string>();
 
   while (!fetchedAll && page < maxPages) {
     const params = new URLSearchParams({
+      address,
       limit: String(pageSize),
       start: String(page * pageSize),
-      relatedAddress: address,
-      start_timestamp: start.toString(),
-      end_timestamp: end.toString(),
+      sort: 'timestamp',
     });
 
-    const apiUrl = `https://apilist.tronscan.org/api/token_trc20/transfers?${params}`;
-    console.log(`[getUSDTTransfers] 请求地址: ${apiUrl}`);
+    const apiUrl = `https://apilist.tronscan.org/api/transaction?${params}`;
+    console.log(`[getTrxTransfers] 请求地址: ${apiUrl}`);
 
     try {
       const response = await fetch(apiUrl);
-      const data: TransferResponse = await response.json();
+      const data: TrxResponse = await response.json();
 
-      if (!data?.token_transfers || data.token_transfers.length === 0) {
+      if (!data?.data || data.data.length === 0) {
         console.log(
-          `[getUSDTTransfers] 第${page + 1}页无更多转账记录，提前结束`,
+          `[getTrxTransfers] 第${page + 1}页无更多转账记录，提前结束`,
         );
         break;
       }
 
       let validCount = 0;
-      for (const transfer of data.token_transfers) {
+      for (const tx of data.data) {
         if (
-          (transfer.to_address === address ||
-            transfer.from_address === address) &&
-          transfer.finalResult === 'SUCCESS'
+          (tx.ownerAddress === address || tx.toAddress === address) &&
+          tx.contractRet === 'SUCCESS' &&
+          typeof tx.amount === 'string' &&
+          tx.timestamp >= start &&
+          tx.timestamp <= end
         ) {
-          if (seenTx.has(transfer.transaction_id)) continue;
-          seenTx.add(transfer.transaction_id);
+          if (seenTx.has(tx.hash)) continue;
+          seenTx.add(tx.hash);
 
-          const transferObj: Transfer = {
-            time: transfer.block_ts / 1000,
-            money: Number(transfer.quant) / 1_000_000, // USDT 有 6 位小数
-            trade_id: transfer.transaction_id,
-            buyer: transfer.from_address,
-            from_address: transfer.from_address,
-            to_address: transfer.to_address,
+          const trxObj: Transfer = {
+            time: tx.timestamp / 1000,
+            money: tx.amount / 1_000_000,
+            trade_id: tx.hash,
+            buyer: tx.ownerAddress,
+            from_address: tx.ownerAddress,
+            to_address: tx.toAddress,
           };
 
-          console.log('transferObj', transferObj);
-
-          const isIncome = transfer.to_address === address;
+          const isIncome = tx.toAddress === address;
           console.log(
-            `[getUSDTTransfers] ${isIncome ? '收到' : '发送'}转账: ${
-              transferObj.money
-            } USDT, ${isIncome ? '来自' : '发往'}: ${
-              isIncome ? transferObj.from_address : transferObj.to_address
-            }, 交易哈希: ${transferObj.trade_id}, 时间: ${new Date(
-              transferObj.time * 1000,
+            `[getTrxTransfers] ${isIncome ? '收到' : '发送'} TRX: ${
+              trxObj.money
+            } TRX, ${isIncome ? '来自' : '发往'}: ${
+              isIncome ? trxObj.from_address : trxObj.to_address
+            }, 哈希: ${trxObj.trade_id}, 时间: ${new Date(
+              trxObj.time * 1000,
             ).toLocaleString()}`,
           );
-          result.push(transferObj);
+
+          result.push(trxObj);
           validCount++;
         }
       }
 
-      // 如果本页返回数量小于pageSize，说明已无更多数据
-      if (data.token_transfers.length < pageSize) {
+      if (data.data.length < pageSize || validCount === 0) {
         fetchedAll = true;
       }
 
-      // 如果本页没有有效数据，也提前结束
-      if (validCount === 0 && data.token_transfers.length < pageSize) {
-        break;
-      }
-
       page++;
-      // 控制请求频率
       if (minIntervalMs > 0 && page < maxPages) {
         await new Promise((res) => setTimeout(res, minIntervalMs));
       }
     } catch (error) {
-      console.error(`[getUSDTTransfers] 第${page + 1}页请求失败:`, error);
+      console.error(`[getTrxTransfers] 第${page + 1}页请求失败:`, error);
       break;
     }
   }
 
-  console.log(`[getUSDTTransfers] 共获取到 ${result.length} 条有效转账记录`);
+  console.log(`[getTrxTransfers] 共获取到 ${result.length} 条 TRX 转账记录`);
   return result;
 }
-
-// 调用用例
-// getUSDTTransfers('TT7uDJS5gtDya3hfSHPcSEUFHaPLhsxVtf');
