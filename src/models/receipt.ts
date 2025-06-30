@@ -15,6 +15,7 @@ export interface IReceipt extends Document {
   type: string; // 转入还是转出
   from_address: string;
   to_address: string;
+  crypto_type: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -67,6 +68,10 @@ const receiptSchema = new mongoose.Schema(
     to_address: {
       type: String,
       required: true,
+    },
+    crypto_type: {
+      type: String,
+      enum: ['usdt', 'trx'],
     },
   },
   {

@@ -70,7 +70,6 @@ export async function getTrxTransfers(
         if (
           (tx.ownerAddress === address || tx.toAddress === address) &&
           tx.contractRet === 'SUCCESS' &&
-          typeof tx.amount === 'string' &&
           tx.timestamp >= start &&
           tx.timestamp <= end
         ) {

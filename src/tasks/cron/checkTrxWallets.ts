@@ -64,6 +64,7 @@ export async function checkTrxWallets() {
           time: transfer.time,
           from_address: transfer.from_address,
           to_address: transfer.to_address,
+          crypto_type: 'trx',
         });
 
         // 更新余额
@@ -94,7 +95,7 @@ export async function checkTrxWallets() {
           '',
           `⏰交易时间: ${formatBeijingDate(receipt.time * 1000)}`,
           `🔗所属公链: Tron`,
-          `💰监听地址: <code>${address}</code>`,
+          `💰监听地址: <code>${transfer.to_address}</code>`,
           `💰来源地址: <code>${transfer.from_address}</code>`,
           `${isIncome ? '🟢' : '🔴'}交易类型: ${isIncome ? '转入' : '转出'}`,
           `💸交易金额: ${receipt.amount} TRX`,
