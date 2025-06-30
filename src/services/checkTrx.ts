@@ -30,7 +30,7 @@ interface TrxResponse {
  */
 export async function getTrxTransfers(
   address: string,
-  minutes: number = process.env.NODE_ENV === 'development' ? 2 * 24 * 60 : 15,
+  minutes: number = process.env.NODE_ENV === 'development' ? 5 * 24 * 60 : 15,
   maxPages: number = 3,
   pageSize: number = 50,
   minIntervalMs: number = 500,
