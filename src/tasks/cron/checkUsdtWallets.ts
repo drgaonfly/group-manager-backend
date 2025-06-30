@@ -81,13 +81,10 @@ export async function checkUsdtWallets() {
         });
 
         // 计算余额变化
-        const balanceChange = isIncome
-          ? `+${
-              transfer.money ? Number(transfer.money).toFixed(8) : '0.000000'
-            } USDT`
-          : `-${
-              transfer.money ? Number(transfer.money).toFixed(8) : '0.000000'
-            } USDT`;
+        const amount = Number(transfer.money) || 0;
+        const balanceChange = `${isIncome ? '+' : '-'}${amount.toFixed(
+          8,
+        )} USDT`;
 
         const response = await axios.get(
           `https://apilist.tronscan.org/api/account?address=${wallet.address}`,
@@ -108,8 +105,10 @@ export async function checkUsdtWallets() {
           `\n`,
           `⏰交易时间: ${formatBeijingDate(receipt.time * 1000)}`,
           `🔗所属公链: Tron`,
-          `💰监听地址: <code>${transfer.to_address}</code>`,
-          `💰来源地址: <code>${transfer.from_address}</code>`,
+          `💰监听地址: <code>${address}</code>`,
+          `💰${isIncome ? '来源' : '目标'}地址: <code>${
+            isIncome ? transfer.from_address : transfer.to_address
+          }</code>`,
           `${isIncome ? '🟢' : '🔴'}交易类型: ${isIncome ? '转入' : '转出'}`,
           `💸交易金额: ${receipt.amount} USDT`,
           `💸TRX余额: ${wallet.trx_balance} TRX`,
