@@ -10,6 +10,7 @@ import axios from 'axios';
 
 /**
  * 检查所有钱包的 TRX 主币转账记录，识别转入/转出并通知用户。
+ * 仅处理收到 1 TRX 或以上的转账
  */
 export async function checkTrxWallets() {
   try {
@@ -38,6 +39,13 @@ export async function checkTrxWallets() {
       for (const transfer of transfers) {
         if (!transfer.money) continue;
 
+        // 只处理收到 1 TRX 或以上的转账（仅针对转入）
+        const isIncome =
+          transfer.to_address.toLowerCase() === address.toLowerCase();
+        if (isIncome && transfer.money < 1) {
+          continue;
+        }
+
         const isHandled = await Receipt.exists({
           hash: transfer.trade_id,
           bot: bot._id,
@@ -49,9 +57,6 @@ export async function checkTrxWallets() {
           );
           continue;
         }
-
-        const isIncome =
-          transfer.to_address.toLowerCase() === address.toLowerCase();
 
         const receipt = await Receipt.create({
           id: await IdGen.next(Receipt, 'id', 6),
