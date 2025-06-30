@@ -39,7 +39,7 @@ const exchangeSchema = new mongoose.Schema(
     botUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
-      required: true,
+      required: false,
     },
     from_address: {
       type: String,

@@ -5,6 +5,7 @@ import { sendTRX } from '../../utils/sendTRX';
 import { decrypt } from '../../services/encrypt';
 import { getUSDTTransfers } from '../../services/checkUsdt';
 import { fetchTrxUsdtPrice } from '../../bot/commands/user/exchange/realtiem';
+import { IdGen } from '../../utils/idGen';
 
 export async function checkAutoExchanges() {
   const currentPrice = await fetchTrxUsdtPrice();
@@ -45,8 +46,11 @@ export async function checkAutoExchanges() {
             const realPrice = currentPrice * (1 - bot.fee / 100);
             const trxAmount = transfer.money * realPrice;
 
+            const newId = await IdGen.next(Exchange, 'id', 6);
+
             // 创建已支付的兑换记录
             const exchange = await Exchange.create({
+              id: newId,
               bot: bot._id,
               from_address: bot.auto_exchange_address,
               to_address: transfer.from_address,
