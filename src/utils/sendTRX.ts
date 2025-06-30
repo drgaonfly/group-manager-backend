@@ -1,7 +1,7 @@
 import { TronWeb } from 'tronweb';
 
 const TRONGRID_API = 'https://api.trongrid.io';
-const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // 主网 USDT 合约
+// const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // 主网 USDT 合约
 
 /**
  * 查询当前地址的 USDT 余额，并发送 TRX 到指定地址
@@ -39,16 +39,16 @@ export async function sendTRX(
     }
 
     // 1. 检查是否收到 USDT
-    const usdtContract = await tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
-    const usdtBalance = await usdtContract.balanceOf(fromAddress).call();
-    const usdtBalanceFormatted = Number(usdtBalance.toString()) / 1_000_000;
+    // const usdtContract = await tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
+    // const usdtBalance = await usdtContract.balanceOf(fromAddress).call();
+    // const usdtBalanceFormatted = Number(usdtBalance.toString()) / 1_000_000;
 
-    console.log('------ USDT余额:', usdtBalanceFormatted);
+    // console.log('------ USDT余额:', usdtBalanceFormatted);
 
-    if (usdtBalanceFormatted === 0) {
-      console.log('------ 未收到 USDT，无法进行 TRX 转账');
-      throw new Error('未收到 USDT，无法进行 TRX 转账');
-    }
+    // if (usdtBalanceFormatted === 0) {
+    //   console.log('------ 未收到 USDT，无法进行 TRX 转账');
+    //   throw new Error('未收到 USDT，无法进行 TRX 转账');
+    // }
 
     // 2. 确保有足够 TRX 发起交易
     const trxBalance = await tronWeb.trx.getBalance(fromAddress);
