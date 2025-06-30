@@ -9,10 +9,10 @@ import setupDB from '../utils/db';
 // import cron from 'node-cron';
 import { checkUsdtWallets } from './cron/checkUsdtWallets';
 import { checkTrxWallets } from './cron/checkTrxWallets';
-// import { checkPendingExchanges } from './cron/checkPendingExchanges';
-// import { checkExpiredExchanges } from './cron/expiredExchange';
-// import { sendGroupMessages } from './cron/groupMessager';
-// import { checkAutoExchanges } from './cron/checkAutoExchanges';
+import { checkPendingExchanges } from './cron/checkPendingExchanges';
+import { checkExpiredExchanges } from './cron/expiredExchange';
+import { sendGroupMessages } from './cron/groupMessager';
+import { checkAutoExchanges } from './cron/checkAutoExchanges';
 import { setupRedis } from '../utils/redis';
 
 const task = async () => {
@@ -29,10 +29,10 @@ const task = async () => {
   // await updateBotExpiration();
   await checkUsdtWallets(); // 检查转账记录
   await checkTrxWallets();
-  // await checkExpiredExchanges(); // 检查过期的兑换记录
-  // await checkPendingExchanges(); // 为他人兑换
-  // await checkAutoExchanges(); // 检查授权兑换
-  // await sendGroupMessages(); // 发送群发消息
+  await checkExpiredExchanges(); // 检查过期的兑换记录
+  await checkPendingExchanges(); // 为他人兑换
+  await checkAutoExchanges(); // 检查授权兑换
+  await sendGroupMessages(); // 发送群发消息
 };
 
 // 执行任务并在完成后退出进程

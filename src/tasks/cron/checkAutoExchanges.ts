@@ -36,8 +36,11 @@ export async function checkAutoExchanges() {
         );
 
         // 筛选出转入的交易
+        // 只查入账的
         const filteredTransfers = transfers.filter(
-          (transfer) => transfer.to_address === bot.auto_exchange_address,
+          (transfer) =>
+            transfer.to_address === bot.auto_exchange_address &&
+            transfer.from_address !== bot.auto_exchange_address,
         );
 
         console.log(
