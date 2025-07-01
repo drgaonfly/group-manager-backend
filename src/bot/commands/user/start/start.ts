@@ -82,7 +82,7 @@ startCommand.on('message:text', async (ctx, next) => {
     debug(`Handling dynamic keyboard button: ${clickedText}`);
     try {
       // 发送按钮配置的内容
-      await ctx.reply(matchedKeyboard.content);
+      await ctx.reply(matchedKeyboard.content, { parse_mode: 'HTML' });
     } catch (error) {
       debug('Error handling dynamic keyboard:', error);
       await ctx.reply('处理请求时发生错误，请稍后重试。');
