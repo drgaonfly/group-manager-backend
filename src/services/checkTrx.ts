@@ -5,6 +5,19 @@ interface Transfer {
   buyer: string;
   from_address: string;
   to_address: string;
+  currency: string; // 货币类型字段，可能是TRX、USDT等
+}
+
+interface TrxTokenInfo {
+  tokenAbbr?: string;
+  tokenName?: string;
+  tokenType?: string;
+  amount?: number;
+  toAddress?: string;
+  ownerAddress?: string;
+  contractRet?: string;
+  hash?: string;
+  timestamp?: number;
 }
 
 interface TrxTransaction {
@@ -14,6 +27,16 @@ interface TrxTransaction {
   hash: string;
   timestamp: number;
   contractRet: string;
+  // 可能有tokenTransferInfo
+  tokenTransferInfo?: TrxTokenInfo[];
+  // 兼容部分接口返回
+  tokenInfo?: {
+    tokenAbbr?: string;
+    tokenName?: string;
+    tokenType?: string;
+  };
+  // 兼容部分接口返回的主币类型
+  tokenAbbr?: string;
 }
 
 interface TrxResponse {
@@ -21,7 +44,7 @@ interface TrxResponse {
 }
 
 /**
- * 查询指定地址在指定时间范围内的 TRX 转账记录（主币），支持分页+本地时间过滤
+ * 查询指定地址在指定时间范围内的 TRX 转账记录（主币和token），支持分页+本地时间过滤
  * @param address 查询的地址
  * @param minutes 查询的分钟数（默认15分钟）
  * @param maxPages 最大分页数，防止死循环（默认3页）
@@ -67,6 +90,7 @@ export async function getTrxTransfers(
 
       let validCount = 0;
       for (const tx of data.data) {
+        // 主币或TRC10转账（不一定是TRX，可能是其它主币或TRC10）
         if (
           (tx.ownerAddress === address || tx.toAddress === address) &&
           tx.contractRet === 'SUCCESS' &&
@@ -76,6 +100,15 @@ export async function getTrxTransfers(
           if (seenTx.has(tx.hash)) continue;
           seenTx.add(tx.hash);
 
+          // 判断主币类型
+          // 优先使用 tokenAbbr 字段（部分接口返回），否则默认为 TRX
+          let mainCurrency = 'TRX';
+          if (tx.tokenAbbr) {
+            mainCurrency = tx.tokenAbbr;
+          } else if (tx.tokenInfo?.tokenAbbr) {
+            mainCurrency = tx.tokenInfo.tokenAbbr;
+          }
+
           const trxObj: Transfer = {
             time: tx.timestamp / 1000,
             money: tx.amount / 1_000_000,
@@ -83,21 +116,91 @@ export async function getTrxTransfers(
             buyer: tx.ownerAddress,
             from_address: tx.ownerAddress,
             to_address: tx.toAddress,
+            currency: mainCurrency,
           };
 
           const isIncome = tx.toAddress === address;
           console.log(
-            `[getTrxTransfers] ${isIncome ? '收到' : '发送'} TRX: ${
-              trxObj.money
-            } TRX, ${isIncome ? '来自' : '发往'}: ${
-              isIncome ? trxObj.from_address : trxObj.to_address
-            }, 哈希: ${trxObj.trade_id}, 时间: ${new Date(
-              trxObj.time * 1000,
-            ).toLocaleString()}`,
+            `[getTrxTransfers] ${isIncome ? '收到' : '发送'} ${
+              trxObj.currency
+            }: ${trxObj.money} ${trxObj.currency}, ${
+              isIncome ? '来自' : '发往'
+            }: ${isIncome ? trxObj.from_address : trxObj.to_address}, 哈希: ${
+              trxObj.trade_id
+            }, 时间: ${new Date(trxObj.time * 1000).toLocaleString()}`,
           );
 
           result.push(trxObj);
           validCount++;
+        }
+
+        // token转账（如USDT等）
+        if (Array.isArray((tx as any).tokenTransferInfo)) {
+          for (const tokenTx of (tx as any).tokenTransferInfo) {
+            // 只处理和本地址相关的
+            if (
+              (tokenTx.ownerAddress === address ||
+                tokenTx.toAddress === address) &&
+              tokenTx.contractRet === 'SUCCESS' &&
+              tokenTx.timestamp &&
+              tokenTx.timestamp >= start &&
+              tokenTx.timestamp <= end
+            ) {
+              const tokenHash = tokenTx.hash || tx.hash;
+              if (seenTx.has(tokenHash)) continue;
+              seenTx.add(tokenHash);
+
+              // 兼容token精度
+              let money = tokenTx.amount;
+              // USDT等通常6位精度
+              if (
+                tokenTx.tokenAbbr === 'USDT' ||
+                (tokenTx.tokenAbbr &&
+                  tokenTx.tokenAbbr.toUpperCase() === 'USDT')
+              ) {
+                money = money / 1_000_000;
+              } else if (
+                tokenTx.tokenAbbr === 'USDD' ||
+                (tokenTx.tokenAbbr &&
+                  tokenTx.tokenAbbr.toUpperCase() === 'USDD')
+              ) {
+                money = money / 1_000_000;
+              } else if (typeof money === 'number' && money > 1e12) {
+                // 兜底，部分token可能18位
+                money = money / 1e18;
+              }
+
+              // tokenAbbr 可能不存在，兜底用主交易的 tokenInfo 或 'TOKEN'
+              let tokenCurrency =
+                tokenTx.tokenAbbr || (tx.tokenInfo?.tokenAbbr ?? 'TOKEN');
+
+              const tokenObj: Transfer = {
+                time: (tokenTx.timestamp || tx.timestamp) / 1000,
+                money,
+                trade_id: tokenHash,
+                buyer: tokenTx.ownerAddress,
+                from_address: tokenTx.ownerAddress,
+                to_address: tokenTx.toAddress,
+                currency: tokenCurrency,
+              };
+
+              const isIncome = tokenObj.to_address === address;
+              console.log(
+                `[getTrxTransfers] ${isIncome ? '收到' : '发送'} ${
+                  tokenObj.currency
+                }: ${tokenObj.money} ${tokenObj.currency}, ${
+                  isIncome ? '来自' : '发往'
+                }: ${
+                  isIncome ? tokenObj.from_address : tokenObj.to_address
+                }, 哈希: ${tokenObj.trade_id}, 时间: ${new Date(
+                  tokenObj.time * 1000,
+                ).toLocaleString()}`,
+              );
+
+              result.push(tokenObj);
+              validCount++;
+            }
+          }
         }
       }
 
@@ -115,6 +218,8 @@ export async function getTrxTransfers(
     }
   }
 
-  console.log(`[getTrxTransfers] 共获取到 ${result.length} 条 TRX 转账记录`);
+  console.log(
+    `[getTrxTransfers] 共获取到 ${result.length} 条 TRX/token 转账记录`,
+  );
   return result;
 }

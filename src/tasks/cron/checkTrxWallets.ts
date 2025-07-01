@@ -31,6 +31,8 @@ export async function checkTrxWallets() {
       let transfers = [];
       try {
         transfers = await getTrxTransfers(address);
+        console.log(`[checkTrxWallets] 获取地址 ${address} 的转账成功`);
+        console.log(transfers);
       } catch (err) {
         console.error(`[checkTrxWallets] 获取地址 ${address} 的转账失败:`, err);
         continue;
@@ -43,6 +45,11 @@ export async function checkTrxWallets() {
         const isIncome =
           transfer.to_address.toLowerCase() === address.toLowerCase();
         if (isIncome && transfer.money < 1) {
+          continue;
+        }
+
+        // 只处理货币类型为 TRX 的转账
+        if (transfer.currency.toUpperCase() !== 'TRX') {
           continue;
         }
 
