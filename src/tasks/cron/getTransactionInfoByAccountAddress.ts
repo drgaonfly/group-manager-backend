@@ -17,7 +17,7 @@ const tronWeb = new TronWeb({
  * 检查所有钱包的 TRX 主币转账记录，识别转入/转出并通知用户。
  * 仅处理收到 1 TRX 或以上的转账
  */
-export async function checkTrxWallets() {
+export async function newCheckTrxWallets() {
   try {
     console.log('[checkTrxWallets] 开始检查 TRX 转账...');
 
