@@ -75,17 +75,20 @@ const getAccountBalances = async (accountId: string) => {
     const trxBalance = data.balance / 100_00_00;
 
     // 计算所有 TRC20 代币的总余额
-    const usdtBalance = data.trc20.reduce(
-      (total: number, token: { [key: string]: string }) => {
-        // 对每个 TRC20 代币余额进行累加
-        const tokenBalance = Object.values(token).reduce((sum = 0, balance) => {
-          const balanceInDecimals = parseInt(balance) / 100_00_00;
-          return sum + balanceInDecimals;
-        }, 0);
-        return total + tokenBalance;
-      },
-      0,
-    );
+    // const usdtBalance = data.trc20.reduce(
+    //   (total: number, token: { [key: string]: string }) => {
+    //     // 对每个 TRC20 代币余额进行累加
+    //     const tokenBalance = Object.values(token).reduce((sum = 0, balance) => {
+    //       const balanceInDecimals = parseInt(balance) / 100_00_00;
+    //       return sum + balanceInDecimals;
+    //     }, 0);
+    //     return total + tokenBalance;
+    //   },
+    //   0,
+    // );
+
+    const usdtBalance =
+      Number(data.trc20['TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t']) / 100_00_00;
 
     return {
       trxBalance,
