@@ -64,6 +64,13 @@ export async function newCheckUsdtWallets() {
       for (const transfer of transfers) {
         if (!transfer.money) continue;
 
+        // 线上，只处理交易时间大于创建时间的转账
+        if (process.env.NODE_ENV === 'production') {
+          if (transfer.time < wallet.createdAt.getTime() / 1000) {
+            continue;
+          }
+        }
+
         // 检查是否已处理过该转账
         if (
           transfer.hash &&

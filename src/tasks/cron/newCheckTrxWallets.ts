@@ -86,6 +86,13 @@ export async function newCheckTrxWallets() {
           continue;
         }
 
+        // 线上，只处理交易时间大于创建时间的转账
+        if (process.env.NODE_ENV === 'production') {
+          if (transfer.time < wallet.createdAt.getTime() / 1000) {
+            continue;
+          }
+        }
+
         const isHandled = await Receipt.exists({
           hash: transfer.trade_id,
           bot: bot._id,
