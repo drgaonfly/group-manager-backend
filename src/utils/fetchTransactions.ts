@@ -78,10 +78,10 @@ const getAccountBalances = async (accountId: string) => {
     const usdtBalance = data.trc20.reduce(
       (total: number, token: { [key: string]: string }) => {
         // 对每个 TRC20 代币余额进行累加
-        const tokenBalance = Object.values(token).reduce(
-          (sum, balance) => sum + parseInt(balance),
-          0,
-        );
+        const tokenBalance = Object.values(token).reduce((sum, balance) => {
+          const balanceInDecimals = parseInt(balance) / 10_00_00; // 假设每个代币的精度是6
+          return sum + balanceInDecimals;
+        }, 0);
         return total + tokenBalance;
       },
       0,
