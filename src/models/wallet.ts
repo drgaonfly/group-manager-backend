@@ -30,7 +30,7 @@ const walletSchema = new Schema<IWallet>(
 );
 
 // 添加复合索引 address, bot, botUser
-walletSchema.index({ address: 1, bot: 1, botUser: 1 });
+walletSchema.index({ address: 1, bot: 1, botUser: 1 }, { unique: true });
 
 walletSchema.virtual('receipts', {
   ref: 'Receipt',

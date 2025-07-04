@@ -50,7 +50,6 @@ const receiptSchema = new mongoose.Schema(
     hash: {
       type: String,
       required: true,
-      unique: true,
     },
     time: {
       type: Number,
@@ -79,6 +78,12 @@ const receiptSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   },
+);
+
+// 添加联合索引: botUser, bot, wallet, hash
+receiptSchema.index(
+  { botUser: 1, bot: 1, wallet: 1, hash: 1 },
+  { unique: true },
 );
 
 const Receipt = mongoose.model<IReceipt>('Receipt', receiptSchema);
