@@ -116,7 +116,7 @@ export async function newCheckTrxWallets() {
         try {
           const response = await getAccountBalances(address);
 
-          // console.log('updated 余额', response)
+          console.log('余额变化', response);
 
           wallet.trx_balance = Number(response.trxBalance);
           wallet.usdt_balance = Number(response.usdtBalance);
