@@ -59,36 +59,36 @@ async function fetchTrc20Transactions(address: string) {
 
 const getAccountBalances = async (accountId: string) => {
   const url = `https://api.trongrid.io/v1/accounts/${accountId}`;
-
   const key = getNextApiKey();
-
-  // console.log('key key', key)
 
   try {
     const response = await axios.get(url, {
       headers: { 'TRON-PRO-API-KEY': key },
     });
 
-    const data = response.data.data[0];
+    const data = response.data.data?.[0];
 
-    // 获取 TRX 余额
-    const trxBalance = data.balance / 100_00_00;
+    if (!data) throw new Error('No account data returned');
 
-    // 计算所有 TRC20 代币的总余额
-    // const usdtBalance = data.trc20.reduce(
-    //   (total: number, token: { [key: string]: string }) => {
-    //     // 对每个 TRC20 代币余额进行累加
-    //     const tokenBalance = Object.values(token).reduce((sum = 0, balance) => {
-    //       const balanceInDecimals = parseInt(balance) / 100_00_00;
-    //       return sum + balanceInDecimals;
-    //     }, 0);
-    //     return total + tokenBalance;
-    //   },
-    //   0,
-    // );
+    const trxBalance = data.balance ? data.balance / 1e6 : 0;
 
-    const usdtBalance =
-      Number(data.trc20['TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t']) / 100_00_00;
+    // 修复 USDT 余额获取
+    let usdtBalance = 0;
+    const usdtObj = data.trc20?.find(
+      (item: Record<string, string>) =>
+        'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' in item,
+    );
+
+    if (usdtObj) {
+      const raw = usdtObj['TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'];
+      if (!isNaN(Number(raw))) {
+        usdtBalance = Number(raw) / 1e6;
+      } else {
+        console.warn('USDT value is not a valid number:', raw);
+      }
+    } else {
+      console.warn('USDT contract not found in trc20 tokens');
+    }
 
     return {
       trxBalance,
