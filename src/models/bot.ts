@@ -73,8 +73,8 @@ const keyboardSchema = new mongoose.Schema({
 });
 
 const presetSchema = new mongoose.Schema({
-  keyword: { type: String, required: true },
-  response: { type: String, required: true },
+  keyword: { type: String, required: false },
+  response: { type: String, required: false },
 });
 
 const botSchema = new mongoose.Schema(

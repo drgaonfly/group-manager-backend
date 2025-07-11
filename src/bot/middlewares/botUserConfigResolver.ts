@@ -50,6 +50,10 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
   if (parent) {
     botUserConfig.parent = parent._id; // 将 parent 赋值为 parent 的 _id
     await botUserConfig.save();
+
+    await BotUserConfig.findByIdAndUpdate(parent._id, {
+      $inc: { invited_counts: 1 },
+    });
   }
 
   if (!botUserConfig.spread_code) {
