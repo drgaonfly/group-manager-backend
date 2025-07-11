@@ -13,6 +13,7 @@ import { InputFile } from 'grammy';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { transformDocumentImage } from '../utils/transformUtils';
 import { InlineKeyboard } from 'grammy';
+import BotUserMessage from '../models/botUserMessage';
 
 dotenv.config();
 
@@ -482,9 +483,9 @@ const delAuthorizer = handleAsync(async (req: Request, res: Response) => {
 // send message
 const sendMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { message, menus, menus_per_row } = req.body;
+  const { message, menus, menus_per_row, intervalTime, send_type } = req.body;
 
-  console.log('menus', menus);
+  console.log('req.body', req.body);
 
   const botManager = await Bot.findById(id).populate('botUsers');
 
@@ -539,6 +540,18 @@ const sendMessage = handleAsync(async (req: Request, res: Response) => {
   const failed = results.filter(
     (r) => r.status === 'rejected' || !(r.value as any).success,
   ).length;
+
+  if (send_type === 'scheduled') {
+    await BotUserMessage.create({
+      content: message,
+      type: 'sent',
+      bot: botManager,
+      botUsers: botManager.botUsers,
+      intervalTime,
+      menus,
+      menus_per_row,
+    });
+  }
 
   res.json({
     success: true,

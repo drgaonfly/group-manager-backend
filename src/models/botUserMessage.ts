@@ -2,11 +2,35 @@ import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IBotUser } from './botUser';
 
+export interface IMenu extends Document {
+  menuName: string;
+  url: string;
+}
+
+export const menuSchema = new mongoose.Schema({
+  menuName: { type: String, required: true },
+  url: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function (v: string): boolean {
+        return /^(http|https):\/\/.*/.test(v);
+      },
+      message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
+    },
+  },
+});
+
 export interface IBotUserMessage extends Document {
   content: string;
   type: 'sent' | 'received' | 'error';
   bot: mongoose.Schema.Types.ObjectId | IBot;
-  botUser: mongoose.Schema.Types.ObjectId | IBotUser;
+  botUsers: mongoose.Schema.Types.ObjectId[] | IBotUser[];
+  intervalTime: number; // 间隔时间
+  menus: IMenu[];
+  menus_per_row: number; // 每行菜单数
+  updatedAt: Date;
+  createdAt: Date;
 }
 
 const botUserMessageSchema = new mongoose.Schema(
@@ -23,10 +47,19 @@ const botUserMessageSchema = new mongoose.Schema(
       ref: 'Bot',
       required: true,
     },
-    botUser: {
-      type: mongoose.Schema.Types.ObjectId,
+    botUsers: {
+      type: [mongoose.Schema.Types.ObjectId],
       ref: 'BotUser',
-      required: true,
+      required: false,
+    },
+    intervalTime: {
+      type: Number,
+      required: false,
+    },
+    menus: [menuSchema],
+    menus_per_row: {
+      type: Number,
+      required: false,
     },
   },
   { timestamps: true },

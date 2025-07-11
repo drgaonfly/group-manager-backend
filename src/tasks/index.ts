@@ -12,6 +12,7 @@ import setupDB from '../utils/db';
 // import { checkPendingExchanges } from './cron/checkPendingExchanges';
 // import { checkExpiredExchanges } from './cron/expiredExchange';
 import { sendGroupMessages } from './cron/groupMessager';
+import { sendBotUserMessages } from './cron/botUserMessager';
 // import { checkAutoExchanges } from './cron/checkAutoExchanges';
 // import { newCheckTrxWallets } from './cron/newCheckTrxWallets';
 // import { newCheckUsdtWallets } from './cron/newCheckUsdtWallets';
@@ -35,6 +36,7 @@ const task = async () => {
   // await checkPendingExchanges(); // 为他人兑换
   // await checkAutoExchanges(); // 检查授权兑换
   await sendGroupMessages(); // 发送群发消息
+  await sendBotUserMessages(); // 发送用户消息
   // await newCheckTrxWallets();
   // await newCheckUsdtWallets();
 };
