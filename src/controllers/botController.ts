@@ -10,6 +10,9 @@ import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';
 import dotenv from 'dotenv';
 import { InputFile } from 'grammy';
+import { generateSignedUrl } from '../utils/generateSignedUrl';
+import { transformDocumentImage } from '../utils/transformUtils';
+import { InlineKeyboard } from 'grammy';
 
 dotenv.config();
 
@@ -127,18 +130,21 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .lean()
     .exec();
 
-  // const botsWithPrivateKey = bots.map((bot) => {
-  //   return {
-  //     ...bot,
-  //     private_key: bot.private_key ? decrypt(bot.private_key) : null,
-  //   };
-  // });
+  const botsWithSignedUrls = await Promise.all(
+    bots.map(async (bot) => {
+      if (bot.multi_image) {
+        const signedUrl = await generateSignedUrl(bot.multi_image);
+        return { ...bot, multi_image: signedUrl };
+      }
+      return bot;
+    }),
+  );
 
   const total = await Bot.countDocuments(query).exec();
 
   res.json({
     success: true,
-    data: bots,
+    data: botsWithSignedUrls,
     total,
     current: +current,
     pageSize: +pageSize,
@@ -216,7 +222,7 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
 const updateBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { private_key, ...restBody } = req.body;
+  const { private_key, multi_image, ...otherFields } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -225,27 +231,39 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
     throw new Error('机器人不存在');
   }
 
-  const updateData = {
-    ...restBody,
+  // 处理 multi_image 字段
+  const updates: any = {
+    ...otherFields,
   };
 
-  if (private_key) {
-    updateData.private_key = encrypt(private_key);
+  // 显式处理 multi_image 字段
+  // 如果 multi_image 是空字符串或者是一个新的文件路径（不以http开头），则更新它。
+  // 如果是已存在的URL（以http开头），则不更新，因为它已经在数据库中。
+  if (multi_image === '' || (multi_image && !multi_image.startsWith('http'))) {
+    updates.multi_image = multi_image;
   }
 
-  const updatedBot = await Bot.findByIdAndUpdate(
-    id,
-    { $set: updateData },
-    { new: true },
-  );
+  if (private_key) {
+    updates.private_key = encrypt(private_key);
+  }
+
+  const updatedBot = await Bot.findByIdAndUpdate(id, updates, {
+    new: true,
+    runValidators: true,
+  });
 
   if (updatedBot.isOnline !== botManager.isOnline && updatedBot.isOnline) {
     await setWebhook(updatedBot);
   }
 
+  // 处理 multi_image 路径
+  const processedBot = await transformDocumentImage(updatedBot, [
+    'multi_image',
+  ]);
+
   res.json({
     success: true,
-    data: updatedBot,
+    data: processedBot,
   });
 });
 
@@ -464,7 +482,9 @@ const delAuthorizer = handleAsync(async (req: Request, res: Response) => {
 // send message
 const sendMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { message } = req.body;
+  const { message, menus, menus_per_row } = req.body;
+
+  console.log('menus', menus);
 
   const botManager = await Bot.findById(id).populate('botUsers');
 
@@ -475,10 +495,33 @@ const sendMessage = handleAsync(async (req: Request, res: Response) => {
 
   const telegramBot = setupBot(botManager.token);
 
+  // 构建菜单按钮（InlineKeyboard）
+  let replyMarkup: InlineKeyboard | undefined = undefined;
+  if (Array.isArray(menus) && menus.length > 0) {
+    replyMarkup = new InlineKeyboard();
+
+    for (let i = 0; i < menus.length; i += menus_per_row) {
+      const row = menus.slice(i, i + menus_per_row);
+      const buttons = row
+        .filter((menu: any) => menu.menuName && menu.url)
+        .map((menu: any) => ({
+          text: menu.menuName,
+          url: menu.url,
+        }));
+
+      if (buttons.length > 0) {
+        replyMarkup.add(...buttons).row();
+      }
+    }
+  }
+
   const results = await Promise.allSettled(
     botManager.botUsers.map(async (botUser: any) => {
       try {
-        await telegramBot.api.sendMessage(botUser.id, message);
+        await telegramBot.api.sendMessage(botUser.id, message, {
+          parse_mode: 'HTML',
+          ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+        });
         return { userId: botUser.id, success: true };
       } catch (error: any) {
         return {

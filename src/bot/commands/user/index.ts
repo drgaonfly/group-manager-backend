@@ -13,6 +13,7 @@ import cloneComposer from './clone';
 import walletComposer from './wallet';
 import exchangeComposer from './exchange';
 import conversationsComposer from './conversations';
+import spreadComposer from './spread';
 
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
@@ -34,5 +35,6 @@ userComposer.use(cloneComposer.middleware());
 userComposer.use(walletComposer.middleware());
 userComposer.use(exchangeComposer.middleware());
 userComposer.use(conversationsComposer.middleware());
+userComposer.use(spreadComposer.middleware());
 
 export default userComposer;

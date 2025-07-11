@@ -1,4 +1,6 @@
-import { Composer, InlineKeyboard } from 'grammy';
+import fs from 'fs/promises';
+import path from 'path';
+import { Composer, InlineKeyboard, InputFile } from 'grammy';
 import { MyContext } from '../../../types';
 import createDebug from 'debug';
 import { startClientAndGetSession } from '../../../services/gramClient';
@@ -8,6 +10,41 @@ import { checkPermission } from '../../../middlewares/checkPermission';
 const startCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:start');
+
+export async function handleStart(ctx: MyContext) {
+  const bot = ctx.currentBot;
+  debug('imageurl', bot.multi_image);
+
+  if (!bot.multi_image) {
+    await ctx.reply('您需要到后台上传Start图片');
+    return;
+  }
+
+  const imagePath = path.join(process.cwd(), 'tmp', bot.multi_image);
+
+  // 检查图片文件是否存在
+  try {
+    await fs.access(imagePath);
+  } catch (err) {
+    await ctx.reply('没有找到后台上传的图片，是否已经被删除？');
+    return;
+  }
+
+  if (!bot.trx20_address) {
+    await ctx.reply('您需要到后台填写TRX20地址');
+    return;
+  }
+
+  if (!bot.multi_content) {
+    await ctx.reply('您需要到后台填写Start内容');
+    return;
+  }
+
+  await ctx.replyWithPhoto(new InputFile(imagePath, 'multi.jpg'), {
+    caption: [bot.multi_content].join('\n'),
+    parse_mode: 'HTML',
+  });
+}
 
 // 开始命令处理
 startCommand.command('start', checkPermission, async (ctx) => {
@@ -42,6 +79,8 @@ startCommand.command('start', checkPermission, async (ctx) => {
 
     return;
   }
+
+  await handleStart(ctx);
 
   // 合并原有菜单和添加到群组按钮
   const combinedKeyboard = new InlineKeyboard();

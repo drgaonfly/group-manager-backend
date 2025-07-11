@@ -3,7 +3,7 @@ import { IBot } from '../../models/bot';
 import { IGroup } from '../../models/group';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
-import { InputFile } from 'grammy';
+import { InlineKeyboard, InputFile } from 'grammy';
 
 /**
  * 群发消息任务
@@ -76,6 +76,28 @@ export async function sendGroupMessages() {
               console.log(`[sendGroupMessage] 群组不存在: ${group}`);
               continue;
             }
+            // 构建菜单 InlineKeyboard，支持每行多个菜单按钮
+            let replyMarkup: InlineKeyboard | undefined = undefined;
+            if (Array.isArray(message.menus) && message.menus.length > 0) {
+              const perRow = message.menus_per_row || 1; // 默认每行1个按钮
+              replyMarkup = new InlineKeyboard();
+
+              for (let i = 0; i < message.menus.length; i += perRow) {
+                const rowMenus = message.menus.slice(i, i + perRow);
+                const buttons = rowMenus
+                  .filter((menu) => menu.menuName && menu.url)
+                  .map((menu) => ({
+                    text: menu.menuName,
+                    url: menu.url,
+                  }));
+
+                // 添加这一行按钮
+                if (buttons.length > 0) {
+                  replyMarkup.add(...buttons).row();
+                }
+              }
+            }
+
             // 如果成功，才发送消息
             if (message.image) {
               await telegramBot.api.sendPhoto(
@@ -84,12 +106,14 @@ export async function sendGroupMessages() {
                 {
                   caption: message.content,
                   parse_mode: 'HTML',
+                  ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
                 },
               );
             } else {
               // 发送纯文本消息
               await telegramBot.api.sendMessage(group.id, message.content, {
                 parse_mode: 'HTML',
+                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
               });
             }
             sentCount++;

@@ -33,6 +33,9 @@ export interface IBot extends Document {
   exchange_rate: number; // 闪兑汇率
   groups: mongoose.Schema.Types.ObjectId[] | IGroup[]; // 关联的群组
   webhook_url: string; // webhook url
+  multi_image: string;
+  multi_content: string;
+  presets: Ipreset[];
 }
 
 export interface IMenu extends Document {
@@ -43,6 +46,11 @@ export interface IMenu extends Document {
 export interface IKeyboard extends Document {
   command: string;
   content: string;
+}
+
+export interface Ipreset extends Document {
+  keyword: string;
+  response: string;
 }
 
 const menuSchema = new mongoose.Schema({
@@ -62,6 +70,11 @@ const menuSchema = new mongoose.Schema({
 const keyboardSchema = new mongoose.Schema({
   command: { type: String, required: true },
   content: { type: String, required: true },
+});
+
+const presetSchema = new mongoose.Schema({
+  keyword: { type: String, required: true },
+  response: { type: String, required: true },
 });
 
 const botSchema = new mongoose.Schema(
@@ -190,6 +203,18 @@ const botSchema = new mongoose.Schema(
       type: String,
       trim: true,
     }, // 新增：webhook url
+    multi_image: {
+      type: String,
+      trim: false,
+    }, // 新增：抽奖图片
+    multi_content: {
+      type: String,
+      trim: false,
+    }, // 新增：抽奖描述
+    presets: {
+      type: [presetSchema],
+      default: false,
+    },
   },
   {
     timestamps: true,

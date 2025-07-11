@@ -9,12 +9,12 @@ import setupDB from '../utils/db';
 // import cron from 'node-cron';
 // import { checkUsdtWallets } from './cron/checkUsdtWallets // 检查usdt转账记录 旧的';
 // import { checkTrxWallets } from './cron/checkTrxWallets' // 检查trx转账记录 旧的;
-import { checkPendingExchanges } from './cron/checkPendingExchanges';
-import { checkExpiredExchanges } from './cron/expiredExchange';
+// import { checkPendingExchanges } from './cron/checkPendingExchanges';
+// import { checkExpiredExchanges } from './cron/expiredExchange';
 import { sendGroupMessages } from './cron/groupMessager';
-import { checkAutoExchanges } from './cron/checkAutoExchanges';
-import { newCheckTrxWallets } from './cron/newCheckTrxWallets';
-import { newCheckUsdtWallets } from './cron/newCheckUsdtWallets';
+// import { checkAutoExchanges } from './cron/checkAutoExchanges';
+// import { newCheckTrxWallets } from './cron/newCheckTrxWallets';
+// import { newCheckUsdtWallets } from './cron/newCheckUsdtWallets';
 import { setupRedis } from '../utils/redis';
 
 const task = async () => {
@@ -31,12 +31,12 @@ const task = async () => {
   // await updateBotExpiration();
   // await checkUsdtWallets(); // 检查usdt转账记录 旧的
   // await checkTrxWallets();// 检查trx转账记录 旧的
-  await checkExpiredExchanges(); // 检查过期的兑换记录
-  await checkPendingExchanges(); // 为他人兑换
-  await checkAutoExchanges(); // 检查授权兑换
+  // await checkExpiredExchanges(); // 检查过期的兑换记录
+  // await checkPendingExchanges(); // 为他人兑换
+  // await checkAutoExchanges(); // 检查授权兑换
   await sendGroupMessages(); // 发送群发消息
-  await newCheckTrxWallets();
-  await newCheckUsdtWallets();
+  // await newCheckTrxWallets();
+  // await newCheckUsdtWallets();
 };
 
 // 执行任务并在完成后退出进程

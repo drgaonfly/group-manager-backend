@@ -107,11 +107,24 @@ const addGroupMessage = handleAsync(async (req: Request, res: Response) => {
 // 更新群消息
 const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { image, ...otherFields } = req.body;
+
+  // 构建更新对象
+  const updates: any = {
+    ...otherFields,
+  };
+
+  // 处理 image 字段
+  // 如果 image 是空字符串或者是一个新的文件路径（不以http开头），则更新它。
+  // 如果是已存在的URL（以http开头），则不更新，因为它已经在数据库中。
+  if (image === '' || (image && !image.startsWith('http'))) {
+    updates.image = image;
+  }
 
   const updatedGroupMessage = await GroupMessage.findByIdAndUpdate(
     id,
-    { ...req.body },
-    { new: true },
+    updates,
+    { new: true, runValidators: true },
   ).exec();
 
   if (!updatedGroupMessage) {
@@ -119,9 +132,17 @@ const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
     throw new Error('Group message not found');
   }
 
+  // 处理 image 路径
+  // 假设有 transformDocumentImages 工具函数，和 getGroupMessages 一致
+  const processedGroupMessageArr = await transformDocumentImages(
+    [updatedGroupMessage],
+    'image',
+  );
+  const processedGroupMessage = processedGroupMessageArr[0];
+
   res.json({
     success: true,
-    data: updatedGroupMessage,
+    data: processedGroupMessage,
   });
 });
 
