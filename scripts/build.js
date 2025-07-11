@@ -10,13 +10,13 @@ const cliProgress = require('cli-progress');
 require('dotenv').config();
 
 // 远程部署目录
-const REMOTE_DEPLOY_PATH = '/www/wwwroot/swap-backend';
+const REMOTE_DEPLOY_PATH = '/www/wwwroot/multi-backend';
 
 // NVM Node路径
 const NVM_NODE_PATH = '/root/.nvm/versions/node/v22.15.0/bin';
 
 // PM2 服务名称
-const PM2_SERVICE_NAME = 'swap-backend';
+const PM2_SERVICE_NAME = 'multi-backend';
 
 // 远程服务器配置
 const sshConfig = {

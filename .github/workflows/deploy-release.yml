@@ -19,11 +19,11 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 22
           script: |
-            cd /www/wwwroot/swap-backend.2025fc.xyz/swap-backend &&
+            cd /www/wwwroot/multi-backend.2025fc.xyz/multi-backend &&
             git pull --rebase origin main &&
             /www/server/nodejs/v20.16.0/bin/pnpm install &&
             git checkout -f . &&
             npm run build &&
-            pm2 restart swap-backend && node dist/bot/index.js
+            pm2 restart multi-backend && node dist/bot/index.js
 
 

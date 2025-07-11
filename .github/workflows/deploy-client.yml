@@ -25,7 +25,7 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 22
           script: |
-            cd /www/wwwroot/swap-backend.2025fc.xyz/swap-backend-remote &&
+            cd /www/wwwroot/multi-backend.2025fc.xyz/multi-backend-remote &&
             git pull --rebase origin ${GITHUB_REF##*/} &&
             /www/server/nodejs/v20.16.0/bin/pnpm install &&
             git checkout -f . &&
