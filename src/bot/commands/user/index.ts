@@ -14,6 +14,7 @@ import walletComposer from './wallet';
 import exchangeComposer from './exchange';
 import conversationsComposer from './conversations';
 import spreadComposer from './spread';
+import linkComposer from './link';
 
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
@@ -36,5 +37,6 @@ userComposer.use(walletComposer.middleware());
 userComposer.use(exchangeComposer.middleware());
 userComposer.use(conversationsComposer.middleware());
 userComposer.use(spreadComposer.middleware());
+userComposer.use(linkComposer.middleware());
 
 export default userComposer;
