@@ -49,7 +49,10 @@ const getGroupMessages = handleAsync(async (req: Request, res: Response) => {
   const query = await buildQuery(req.query);
 
   const groupMessages = await GroupMessage.find(query)
-    .populate('bot')
+    .populate({
+      path: 'bot',
+      populate: 'groups',
+    })
     .populate('groups')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
