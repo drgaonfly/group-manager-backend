@@ -13,7 +13,7 @@ export async function handleSpread(ctx: MyContext) {
   const spread_code = ctx.currentBotUserConfig.spread_code;
 
   const message = [
-    `<b>您的推广链接是：</b>`,
+    `<b>您的邀请链接是：</b>`,
     `https://t.me/${userName}?start=${spread_code}`,
   ].join('\n');
 
@@ -23,7 +23,7 @@ export async function handleSpread(ctx: MyContext) {
 }
 
 // 推广命令处理
-spreadCommand.hears(/推广链接/, checkPermission, async (ctx) => {
+spreadCommand.hears(/邀请链接/, checkPermission, async (ctx) => {
   debug('spread');
 
   await handleSpread(ctx);
