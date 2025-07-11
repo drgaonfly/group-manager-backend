@@ -15,35 +15,24 @@ export async function handleStart(ctx: MyContext) {
   const bot = ctx.currentBot;
   debug('imageurl', bot.multi_image);
 
-  if (!bot.multi_image) {
-    await ctx.reply('您需要到后台上传Start图片');
-    return;
+  // 如果 multi_image 和 multi_content 都有，才发送图片和内容，否则什么都不做
+  if (bot.multi_image && bot.multi_content) {
+    const imagePath = path.join(process.cwd(), 'tmp', bot.multi_image);
+
+    // 检查图片文件是否存在
+    try {
+      await fs.access(imagePath);
+    } catch (err) {
+      // 图片不存在，不发送也不提示
+      return;
+    }
+
+    await ctx.replyWithPhoto(new InputFile(imagePath, 'multi.jpg'), {
+      caption: [bot.multi_content].join('\n'),
+      parse_mode: 'HTML',
+    });
   }
-
-  const imagePath = path.join(process.cwd(), 'tmp', bot.multi_image);
-
-  // 检查图片文件是否存在
-  try {
-    await fs.access(imagePath);
-  } catch (err) {
-    await ctx.reply('没有找到后台上传的图片，是否已经被删除？');
-    return;
-  }
-
-  if (!bot.trx20_address) {
-    await ctx.reply('您需要到后台填写TRX20地址');
-    return;
-  }
-
-  if (!bot.multi_content) {
-    await ctx.reply('您需要到后台填写Start内容');
-    return;
-  }
-
-  await ctx.replyWithPhoto(new InputFile(imagePath, 'multi.jpg'), {
-    caption: [bot.multi_content].join('\n'),
-    parse_mode: 'HTML',
-  });
+  // 如果没有 multi_image 或 multi_content，什么都不做
 }
 
 // 开始命令处理
