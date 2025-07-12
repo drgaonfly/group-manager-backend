@@ -36,6 +36,7 @@ import receiptRoutes from './routes/receiptRoutes';
 import exchangeRoutes from './routes/exchangeRoutes';
 import groupMessageRoutes from './routes/groupMessageRoutes';
 import botUserConfigRoutes from './routes/botUserConfigRoutes';
+import botUserMessageRoutes from './routes/botUserMessageRoutes';
 
 dotenv.config();
 
@@ -83,6 +84,7 @@ app.use('/api/receipts', receiptRoutes);
 app.use('/api/exchanges', exchangeRoutes);
 app.use('/api/group-messages', groupMessageRoutes);
 app.use('/api/bot-user-configs', botUserConfigRoutes);
+app.use('/api/bot-user-messages', botUserMessageRoutes);
 
 app.use('/api/static', express.static('tmp'));
 
