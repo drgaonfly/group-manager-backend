@@ -543,6 +543,7 @@ const sendMessage = handleAsync(async (req: Request, res: Response) => {
 
   if (send_type === 'scheduled') {
     await BotUserMessage.create({
+      ...req.body,
       content: message,
       type: 'sent',
       bot: botManager,

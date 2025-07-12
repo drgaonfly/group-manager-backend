@@ -31,6 +31,7 @@ export interface IGroupMessage extends Document {
   isRealtime: boolean; // 是否实时
   menus: IMenu[];
   menus_per_row: number; // 每行菜单数
+  weight: number; // 权重
   createdAt: Date; // 创建时间
   updatedAt: Date; // 更新时间
 }
@@ -64,6 +65,11 @@ const groupMessageSchema = new mongoose.Schema(
       type: Number,
       required: false,
       default: 1,
+    },
+    weight: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   {
