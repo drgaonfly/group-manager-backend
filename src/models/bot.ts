@@ -2,6 +2,8 @@ import mongoose, { Document } from 'mongoose';
 import { IUser } from './user';
 import { IBotUser } from './botUser';
 import { IGroup } from './group';
+import { IGroupMessage } from './groupMessage';
+import { IBotUserMessage } from './botUserMessage';
 
 export interface IBot extends Document {
   token: string;
@@ -36,6 +38,8 @@ export interface IBot extends Document {
   multi_image: string;
   multi_content: string;
   presets: Ipreset[];
+  groupMessages: mongoose.Schema.Types.ObjectId[] | IGroupMessage[]; // 虚拟字段
+  botUserMessages: mongoose.Schema.Types.ObjectId[] | IBotUserMessage[]; // 虚拟字段
 }
 
 export interface IMenu extends Document {
@@ -222,6 +226,18 @@ const botSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   },
 );
+
+botSchema.virtual('groupMessages', {
+  ref: 'GroupMessage',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
+botSchema.virtual('botUserMessages', {
+  ref: 'BotUserMessage',
+  localField: '_id',
+  foreignField: 'bot',
+});
 
 const Bot = mongoose.model<IBot>('Bot', botSchema);
 

@@ -1,5 +1,5 @@
-import BotUserMessage from '../../models/botUserMessage';
-import { IBot } from '../../models/bot';
+import BotUserMessage, { IBotUserMessage } from '../../models/botUserMessage';
+import Bot from '../../models/bot';
 import { IBotUser } from '../../models/botUser';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
@@ -16,16 +16,17 @@ export async function sendBotUserMessages() {
 
     console.log(`[当前时间] ${formatBeijingDate(currentTime)}`);
 
-    // 查询所有需要发送的机器人用户消息，示例只查询定时发送（非实时）消息
-    const botUserMessages = await BotUserMessage.find({
-      type: 'sent', // 假设你也有类似字段标识实时消息
-    })
-      .populate('bot')
-      .populate('botUsers');
+    // 查询所有机器人并填充其关联的机器人用户消息
+    const bots = await Bot.find({}).populate({
+      path: 'botUserMessages',
+      match: { type: 'sent' }, // 只处理定时发送的消息
+      populate: {
+        path: 'botUsers',
+      },
+      options: { sort: { weight: +1 } }, // 按权重升序排序
+    });
 
-    console.log(
-      `[sendBotUserMessages] 查询到 ${botUserMessages.length} 条机器人用户消息`,
-    );
+    console.log(`[sendBotUserMessages] 查询到 ${bots.length} 个机器人`);
 
     const stats = {
       processed: 0,
@@ -34,86 +35,105 @@ export async function sendBotUserMessages() {
       errors: 0,
     };
 
-    for (const message of botUserMessages) {
-      try {
-        stats.processed++;
+    for (const bot of bots) {
+      console.log(
+        `[sendBotUserMessages] 开始处理机器人: ${bot.botName} (${bot._id})`,
+      );
 
-        const bot = message.bot as IBot;
-        // botUsers 可能是 ObjectId[] 或 IBotUser[]，我们需要遍历每个用户
-        const botUsers = message.botUsers as IBotUser[];
+      // 设置机器人
+      const telegramBot = setupBot(bot.token);
 
-        if (!botUsers) {
-          console.warn(
-            `[sendBotUserMessages] 消息 ${message._id} 没有关联机器人用户，跳过`,
-          );
-          stats.skipped++;
-          continue;
-        }
+      // 获取当前机器人需要发送的机器人用户消息
+      const botUserMessages = bot.botUserMessages as IBotUserMessage[];
 
-        // 判断间隔时间，默认24小时
-        const intervalHours = message.intervalTime || 24;
-        const lastSentTime = message.updatedAt || message.createdAt;
-        const hoursSinceLastSent =
-          (currentTime.getTime() - lastSentTime.getTime()) / (1000 * 60 * 60);
+      console.log(
+        `[sendBotUserMessages] 机器人 ${bot.botName} 查询到 ${botUserMessages.length} 条机器人用户消息`,
+      );
 
-        if (hoursSinceLastSent < intervalHours) {
-          console.log(
-            `[sendBotUserMessages] 消息 ${message._id} 距离上次发送不足 ${intervalHours} 小时，跳过`,
-          );
-          stats.skipped++;
-          continue;
-        }
+      if (botUserMessages.length === 0) {
+        console.log(
+          `[sendBotUserMessages] 机器人 ${bot.botName} 没有需要发送的机器人用户消息，跳过`,
+        );
+        continue;
+      }
 
-        // 设置机器人
-        const telegramBot = setupBot(bot.token);
+      for (const message of botUserMessages) {
+        try {
+          stats.processed++;
 
-        // 构建菜单 InlineKeyboard
-        let replyMarkup: InlineKeyboard | undefined = undefined;
-        if (Array.isArray(message.menus) && message.menus.length > 0) {
-          const perRow = message.menus_per_row || 1;
-          replyMarkup = new InlineKeyboard();
+          // botUsers 可能是 ObjectId[] 或 IBotUser[], 我们需要遍历每个用户
+          const botUsers = message.botUsers as IBotUser[];
 
-          for (let i = 0; i < message.menus.length; i += perRow) {
-            const rowMenus = message.menus.slice(i, i + perRow);
-            const buttons = rowMenus
-              .filter((menu) => menu.menuName && menu.url)
-              .map((menu) => ({
-                text: menu.menuName,
-                url: menu.url,
-              }));
+          if (!botUsers || botUsers.length === 0) {
+            console.warn(
+              `[sendBotUserMessages] 消息 ${message._id} 没有关联机器人用户，跳过`,
+            );
+            stats.skipped++;
+            continue;
+          }
 
-            if (buttons.length > 0) {
-              replyMarkup.add(...buttons).row();
+          // 判断间隔时间，默认24小时
+          const intervalHours = message.intervalTime || 24;
+          const lastSentTime = message.updatedAt || message.createdAt;
+          const hoursSinceLastSent =
+            (currentTime.getTime() - lastSentTime.getTime()) / (1000 * 60 * 60);
+
+          if (hoursSinceLastSent < intervalHours) {
+            console.log(
+              `[sendBotUserMessages] 消息 ${message._id} 距离上次发送不足 ${intervalHours} 小时，跳过`,
+            );
+            stats.skipped++;
+            continue;
+          }
+
+          // 构建菜单 InlineKeyboard
+          let replyMarkup: InlineKeyboard | undefined = undefined;
+          if (Array.isArray(message.menus) && message.menus.length > 0) {
+            const perRow = message.menus_per_row || 1;
+            replyMarkup = new InlineKeyboard();
+
+            for (let i = 0; i < message.menus.length; i += perRow) {
+              const rowMenus = message.menus.slice(i, i + perRow);
+              const buttons = rowMenus
+                .filter((menu) => menu.menuName && menu.url)
+                .map((menu) => ({
+                  text: menu.menuName,
+                  url: menu.url,
+                }));
+
+              if (buttons.length > 0) {
+                replyMarkup.add(...buttons).row();
+              }
             }
           }
-        }
 
-        // 发送消息
-        if (message) {
-          for (const botUser of botUsers) {
-            await telegramBot.api.sendMessage(botUser.id, message.content, {
-              parse_mode: 'HTML',
-              ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-            });
-            console.log(
-              `[sendBotUserMessages] 消息 ${message._id} 成功发送给机器人用户 ${botUser.id}`,
-            );
+          // 发送消息
+          if (message) {
+            for (const botUser of botUsers) {
+              await telegramBot.api.sendMessage(botUser.id, message.content, {
+                parse_mode: 'HTML',
+                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+              });
+              console.log(
+                `[sendBotUserMessages] 消息 ${message._id} 成功发送给机器人用户 ${botUser.id}`,
+              );
+            }
           }
+
+          // 更新发送时间
+          await BotUserMessage.findByIdAndUpdate(message._id, {
+            updatedAt: currentTime,
+          });
+
+          stats.sent++;
+        } catch (error) {
+          console.error(
+            `[sendBotUserMessages] 处理消息 ${message._id} 时发生错误:`,
+            error,
+          );
+          stats.errors++;
+          continue;
         }
-
-        // 更新发送时间
-        await BotUserMessage.findByIdAndUpdate(message._id, {
-          updatedAt: currentTime,
-        });
-
-        stats.sent++;
-      } catch (error) {
-        console.error(
-          `[sendBotUserMessages] 处理消息 ${message._id} 时发生错误:`,
-          error,
-        );
-        stats.errors++;
-        continue;
       }
     }
 
@@ -122,7 +142,7 @@ export async function sendBotUserMessages() {
     const taskDuration = (endTime.getTime() - currentTime.getTime()) / 1000;
 
     console.log('\n========== 机器人用户消息任务统计 ==========');
-    console.log(`[统计信息] 总消息数: ${botUserMessages.length}`);
+    console.log(`[统计信息] 总消息数 (所有机器人): ${stats.processed}`);
     console.log(`[统计信息] 处理消息数: ${stats.processed}`);
     console.log(`[统计信息] 发送消息数: ${stats.sent}`);
     console.log(`[统计信息] 跳过消息数: ${stats.skipped}`);
