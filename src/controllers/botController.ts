@@ -567,7 +567,7 @@ const sendMessage = handleAsync(async (req: Request, res: Response) => {
 const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const { content, image } = req.body;
+  const { content, images } = req.body;
 
   const botManager = await Bot.findById(id)
     .populate('botUsers')
@@ -603,15 +603,28 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
           return;
         }
 
-        if (image) {
-          await telegramBot.api.sendPhoto(
-            group.id,
-            new InputFile(`tmp/${image}`),
-            {
-              caption: content,
-              parse_mode: 'HTML',
-            },
-          );
+        if (images && Array.isArray(images) && images.length > 0) {
+          if (images.length === 1) {
+            // 单张图片，直接 sendPhoto
+            await telegramBot.api.sendPhoto(
+              group.id,
+              new InputFile(`tmp/${images[0]}`),
+              {
+                caption: content,
+                parse_mode: 'HTML',
+              },
+            );
+          } else {
+            // 多张图片，使用 sendMediaGroup
+            const media = images.map((img: string, idx: number) => {
+              return {
+                type: 'photo' as const,
+                media: new InputFile(`tmp/${img}`),
+                ...(idx === 0 ? { caption: content, parse_mode: 'HTML' } : {}),
+              };
+            });
+            await telegramBot.api.sendMediaGroup(group.id, media as any);
+          }
         } else {
           await telegramBot.api.sendMessage(group.id, content, {
             parse_mode: 'HTML',

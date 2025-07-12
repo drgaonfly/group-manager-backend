@@ -99,16 +99,36 @@ export async function sendGroupMessages() {
             }
 
             // 如果成功，才发送消息
-            if (message.image) {
-              await telegramBot.api.sendPhoto(
-                group.id,
-                new InputFile(`tmp/${message.image}`),
-                {
-                  caption: message.content,
+            if (Array.isArray(message.images) && message.images.length > 0) {
+              if (message.images.length === 1) {
+                // 单张图片，直接 sendPhoto
+                await telegramBot.api.sendPhoto(
+                  group.id,
+                  new InputFile(`tmp/${message.images[0]}`),
+                  {
+                    caption: message.content,
+                    parse_mode: 'HTML',
+                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                  },
+                );
+              } else {
+                // 多张图片，使用 sendMediaGroup
+                const media = message.images.map((img: string, idx: number) => {
+                  return {
+                    type: 'photo' as const,
+                    media: new InputFile(`tmp/${img}`),
+                    ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
+                  };
+                });
+
+                // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
+                await telegramBot.api.sendMediaGroup(group.id, media as any);
+
+                await telegramBot.api.sendMessage(group.id, message.content, {
                   parse_mode: 'HTML',
                   ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                },
-              );
+                });
+              }
             } else {
               // 发送纯文本消息
               await telegramBot.api.sendMessage(group.id, message.content, {
