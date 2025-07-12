@@ -21,7 +21,7 @@ export async function sendBotUserMessages() {
       type: 'sent', // 假设你也有类似字段标识实时消息
     })
       .populate('bot')
-      .populate('botUser');
+      .populate('botUsers');
 
     console.log(
       `[sendBotUserMessages] 查询到 ${botUserMessages.length} 条机器人用户消息`,
