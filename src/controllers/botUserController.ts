@@ -3,9 +3,6 @@ import BotUser from '../models/botUser'; // 引入botUser模型
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { isEmployee, isProxy } from '../middlewares/authMiddleware';
-// import { IBot } from '../models/bot';
-// import { setupBot } from '../bot/botSetup';
-// import BotUserMessage from '../models/botUserMessage';
 import User from '../models/user';
 
 // Build query based on query parameters
