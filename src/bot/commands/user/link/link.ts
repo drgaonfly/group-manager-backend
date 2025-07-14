@@ -27,7 +27,13 @@ export async function handleLink(ctx: MyContext) {
     );
 
   // 生成排行榜文本
-  let message = `<b>邀请人数排行</b>\n\n`;
+  let message = [
+    `<b>邀请人数排行</b>`,
+    `\n`,
+    `你已经邀请了${ctx.currentBotUserConfig.invited_counts}人`,
+    `\n`,
+  ].join('\n');
+
   if (sortedConfigs.length === 0) {
     message += '暂无数据';
   } else {
