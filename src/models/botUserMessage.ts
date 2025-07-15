@@ -30,6 +30,7 @@ export interface IBotUserMessage extends Document {
   menus: IMenu[];
   menus_per_row: number; // 每行菜单数
   weight: number; // 权重
+  isOnline: boolean; // 是否在线
   updatedAt: Date;
   createdAt: Date;
 }
@@ -66,6 +67,11 @@ const botUserMessageSchema = new mongoose.Schema(
       type: Number,
       required: false,
       default: 0,
+    },
+    isOnline: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   { timestamps: true },

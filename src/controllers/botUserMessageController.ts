@@ -40,6 +40,10 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     }
   }
 
+  if (queryParams.isOnline !== '') {
+    query.isOnline = queryParams.isOnline === 'true';
+  }
+
   return query;
 };
 

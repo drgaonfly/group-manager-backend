@@ -44,7 +44,9 @@ export async function sendBotUserMessages() {
       const telegramBot = setupBot(bot.token);
 
       // 获取当前机器人需要发送的机器人用户消息
-      const botUserMessages = bot.botUserMessages as IBotUserMessage[];
+      const botUserMessages = (bot.botUserMessages as IBotUserMessage[]).filter(
+        (msg) => msg.isOnline === true,
+      );
 
       console.log(
         `[sendBotUserMessages] 机器人 ${bot.botName} 查询到 ${botUserMessages.length} 条机器人用户消息`,

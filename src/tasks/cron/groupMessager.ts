@@ -44,7 +44,10 @@ export async function sendGroupMessages() {
       const telegramBot = setupBot(bot.token);
 
       // 查询当前机器人需要发送的群发消息
-      const groupMessages = bot.groupMessages as IGroupMessage[];
+      // 只筛选 isOnline 为 true 的群发消息
+      const groupMessages = (bot.groupMessages as IGroupMessage[]).filter(
+        (message) => message.isOnline === true,
+      );
 
       console.log(
         `[sendGroupMessages] 机器人 ${bot.botName} 查询到 ${groupMessages.length} 条群发消息`,
@@ -60,7 +63,10 @@ export async function sendGroupMessages() {
       for (const message of groupMessages) {
         try {
           stats.processed++;
+          // 只筛选 isOnline 为 true 的群组
           const groups = message.groups as IGroup[];
+
+          console.log('groups', groups);
 
           if (!groups || groups.length === 0) {
             console.warn(

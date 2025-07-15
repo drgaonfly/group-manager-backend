@@ -32,6 +32,7 @@ export interface IGroupMessage extends Document {
   menus: IMenu[];
   menus_per_row: number; // 每行菜单数
   weight: number; // 权重
+  isOnline: boolean;
   createdAt: Date; // 创建时间
   updatedAt: Date; // 更新时间
 }
@@ -70,6 +71,11 @@ const groupMessageSchema = new mongoose.Schema(
       type: Number,
       required: false,
       default: 0,
+    },
+    isOnline: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   {
