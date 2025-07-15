@@ -8,10 +8,10 @@ export interface IMenu extends Document {
 }
 
 export const menuSchema = new mongoose.Schema({
-  menuName: { type: String, required: true },
+  menuName: { type: String, required: false },
   url: {
     type: String,
-    required: true,
+    required: false,
     validate: {
       validator: function (v: string): boolean {
         return /^(http|https):\/\/.*/.test(v);
