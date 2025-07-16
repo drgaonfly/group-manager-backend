@@ -66,6 +66,7 @@ const getBotUserConfigs = handleAsync(
         path: 'parent',
         populate: { path: 'botUser' },
       })
+      .populate('invited_group')
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)

@@ -6,6 +6,7 @@ import {
 } from './subscription';
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
+import { IGroup } from './group';
 
 export enum UserStatus {
   UNAUTHORIZED = 'unauthorized', // 未授权
@@ -30,6 +31,7 @@ export interface IBotUserConfig extends Document {
   parent: mongoose.Types.ObjectId | IBotUserConfig;
   spread_code: string;
   invited_counts: number; // 邀请人数
+  invited_group: mongoose.Types.ObjectId | IGroup[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,6 +99,11 @@ const botUserConfigSchema = new mongoose.Schema(
       type: Number,
       required: true,
       default: 0,
+    },
+    invited_group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: false,
     },
   },
   {

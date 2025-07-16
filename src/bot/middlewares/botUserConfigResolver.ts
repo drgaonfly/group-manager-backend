@@ -2,6 +2,7 @@ import { Middleware } from 'grammy';
 import BotUserConfig from '../../models/botUserConfig';
 import { MyContext } from '../types';
 import { generateInviteCode } from '../../utils/generateInviteCode';
+import Group from '../../models/group';
 
 const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
   if (!ctx.currentBot) {
@@ -14,15 +15,27 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
     return;
   }
 
+  // 检查是否是 /start 命令，并尝试从 payload 中提取邀请码和群组ID
   let inviteCodeFromStart: string | undefined;
+  let groupIdFromInvite: string | undefined;
 
-  // 检查是否是 /start 命令，并尝试从 payload 中提取邀请码
-  if (ctx.message?.text?.startsWith('/start ')) {
+  if (ctx.message?.text?.startsWith('/start')) {
     const payload = ctx.message.text.split(' ')[1];
+
     if (payload) {
-      inviteCodeFromStart = payload;
+      // 期望格式为 aPMsv_-4636672521
+      const [code, groupId] = payload.split('_');
+      inviteCodeFromStart = code;
+      groupIdFromInvite = groupId;
     }
   }
+
+  console.log(
+    'inviteCodeFromStart',
+    inviteCodeFromStart,
+    'groupIdFromInvite',
+    groupIdFromInvite,
+  );
 
   // 查找或创建用户配置
   const botUserConfig = await BotUserConfig.findOneAndUpdate(
@@ -64,6 +77,21 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
   if (!botUserConfig.spread_code) {
     botUserConfig.spread_code = await generateInviteCode();
     await botUserConfig.save();
+  }
+
+  if (!botUserConfig.invited_group) {
+    if (groupIdFromInvite) {
+      const group = await Group.findOne({ id: groupIdFromInvite });
+      if (group) {
+        botUserConfig.invited_group = group._id;
+
+        await botUserConfig.save();
+      }
+    } else {
+      botUserConfig.invited_group = null;
+
+      await botUserConfig.save();
+    }
   }
 
   ctx.currentBotUserConfig = botUserConfig;
