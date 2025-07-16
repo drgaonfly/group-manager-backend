@@ -4,4 +4,5 @@ export const commandsList = [
   { command: 'help', description: '帮助' },
   { command: 'profile', description: '个人中心' },
   { command: 'links', description: '邀请人数排行' },
+  { command: 'my_link', description: '我的链接' },
 ];

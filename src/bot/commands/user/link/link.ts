@@ -44,9 +44,15 @@ export async function handleLink(ctx: MyContext) {
     });
   }
 
-  await ctx.reply(message, {
-    parse_mode: 'HTML',
-  });
+  if (ctx.message.chat.type === 'private') {
+    await ctx.reply(message, {
+      parse_mode: 'HTML',
+    });
+  } else if (ctx.message.chat.type === 'group') {
+    await ctx.reply([message, `\n`, ctx.currentGroup.message].join('\n'), {
+      parse_mode: 'HTML',
+    });
+  }
 }
 
 // 邀请链接命令处理
