@@ -1,8 +1,8 @@
 // src/commandsList.ts
 export const commandsList = [
-  { command: 'start', description: '开始' },
-  { command: 'help', description: '帮助' },
-  { command: 'profile', description: '个人中心' },
-  { command: 'links', description: '邀请人数排行' },
-  { command: 'my_link', description: '我的链接' },
+  { command: 'start', description: 'Start the bot' },
+  { command: 'help', description: 'Show help information' },
+  { command: 'profile', description: 'View your profile' },
+  { command: 'links', description: 'Top invite rankings' },
+  { command: 'my_link', description: 'Your personal invite link' },
 ];
