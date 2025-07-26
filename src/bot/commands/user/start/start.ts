@@ -38,7 +38,7 @@ export async function handleStart(ctx: MyContext) {
 // 开始命令处理
 startCommand.command('start', checkPermission, async (ctx) => {
   debug('start');
-  const chatId = ctx.chat.id; // 获取群组 ID
+  // const chatId = ctx.chat.id; // 获取群组 ID
   const bot = ctx.currentBot;
 
   const botSession = bot.session;
