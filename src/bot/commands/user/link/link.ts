@@ -56,7 +56,7 @@ export async function handleLink(ctx: MyContext) {
 }
 
 // 邀请链接命令处理
-linkCommand.command('links', checkPermission, async (ctx) => {
+linkCommand.command('links', async (ctx) => {
   debug('link');
 
   await handleLink(ctx);
