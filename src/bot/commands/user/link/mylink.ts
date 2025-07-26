@@ -13,7 +13,7 @@ export async function handleMyLink(ctx: MyContext) {
   const spread_code = ctx.currentBotUserConfig.spread_code;
 
   const message = [
-    `<b>您的邀请链接是：</b>`,
+    `<b>Your invitation link is:</b>`,
     `https://t.me/${userName}?start=${spread_code}_${ctx.currentGroup.id}`,
   ].join('\n');
 

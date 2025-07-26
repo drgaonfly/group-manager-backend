@@ -5,7 +5,7 @@ async function createMainKeyboard(ctx: MyContext) {
   const keyboard = new Keyboard();
 
   // Add default buttons (与原始键一致)
-  keyboard.text('邀请链接');
+  keyboard.text('Invite Link');
 
   // Add custom keyboard buttons from bot configuration
   if (ctx.currentBot?.keyboards && ctx.currentBot.keyboards.length > 0) {
