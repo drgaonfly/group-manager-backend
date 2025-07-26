@@ -85,9 +85,9 @@ startCommand.command('start', checkPermission, async (ctx) => {
   });
 
   // 发送消息和组合后的按钮
-  await ctx.reply('欢迎使用机器人', {
-    reply_markup: combinedKeyboard,
-  });
+  // await ctx.reply('欢迎使用机器人', {
+  //   reply_markup: combinedKeyboard,
+  // });
 
   await ctx.reply(bot.message || '欢迎使用机器人', {
     reply_markup: await createMainKeyboard(ctx),
