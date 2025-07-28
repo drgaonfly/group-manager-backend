@@ -13,7 +13,7 @@ export async function handleLink(ctx: MyContext) {
   const botUserConfigs = await BotUserConfig.find().populate('botUser');
 
   if (botUserConfigs.length === 0) {
-    ctx.reply('暂无用户');
+    ctx.reply('No users found.');
     return;
   }
 
@@ -28,14 +28,14 @@ export async function handleLink(ctx: MyContext) {
 
   // 生成排行榜文本
   let message = [
-    `<b>邀请人数排行</b>`,
+    `<b>Invitation Leaderboard</b>`,
     `\n`,
-    `你已经邀请了${ctx.currentBotUserConfig.invited_counts}人`,
+    `You have invited ${ctx.currentBotUserConfig.invited_counts} people`,
     `\n`,
   ].join('\n');
 
   if (sortedConfigs.length === 0) {
-    message += '暂无数据';
+    message += 'No data';
   } else {
     sortedConfigs.forEach((config: any, idx: number) => {
       message += `${idx + 1}. ${config.botUser.displayName} - <b>${
@@ -56,7 +56,7 @@ export async function handleLink(ctx: MyContext) {
 }
 
 // 邀请链接命令处理
-linkCommand.command('links', checkPermission, async (ctx) => {
+linkCommand.command('links', async (ctx) => {
   debug('link');
 
   await handleLink(ctx);

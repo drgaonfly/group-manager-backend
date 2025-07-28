@@ -10,15 +10,10 @@ import { checkBotCustom } from '../../../../bot/middlewares/checkBotCustom';
 const userProfileCommand = new Composer<MyContext>();
 const debug = createDebug('bot:user-profile');
 
-userProfileCommand.command(
-  'profile',
-  checkInBot,
-  checkBotCustom,
-  async (ctx) => {
-    debug('用户中心命令被触发');
-    await sendUserProfile(ctx);
-  },
-);
+userProfileCommand.command('profile', checkBotCustom, async (ctx) => {
+  debug('用户中心命令被触发');
+  await sendUserProfile(ctx);
+});
 
 // 监听"用户中心"文本消息
 userProfileCommand.hears(
