@@ -3,6 +3,7 @@ import BotUserMessage from '../models/botUserMessage';
 import handleAsync from '../utils/handleAsync';
 import Bot from '../models/bot';
 import BotUser from '../models/botUser';
+import { generateSignedUrl } from '../utils/generateSignedUrl';
 
 // 构建查询参数
 const buildQuery = async (queryParams: any): Promise<any> => {
@@ -63,9 +64,27 @@ const getBotUserMessages = handleAsync(async (req: Request, res: Response) => {
 
   const total = await BotUserMessage.countDocuments(query).exec();
 
+  const processedBotUserMessages = await Promise.all(
+    botUserMessages.map(async (gm) => {
+      // Convert to plain JS object to avoid Mongoose internals in response
+      const doc = gm.toObject ? gm.toObject() : gm;
+
+      // If images array exists, process each image URL in the array
+      if (doc.images && Array.isArray(doc.images)) {
+        doc.images = await Promise.all(
+          doc.images.map(async (imageUrl) => {
+            return await generateSignedUrl(imageUrl);
+          }),
+        );
+      }
+
+      return doc;
+    }),
+  );
+
   res.json({
     success: true,
-    data: botUserMessages,
+    data: processedBotUserMessages,
     total,
     current: +current,
     pageSize: +pageSize,
@@ -110,7 +129,23 @@ const addBotUserMessage = handleAsync(async (req: Request, res: Response) => {
 const updateBotUserMessage = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const updates: any = { ...req.body };
+    const { images, ...otherFields } = req.body;
+
+    // 构建更新对象
+    const updates: any = {
+      ...otherFields,
+    };
+
+    // 处理 images 字段，只保留新的或空的图片路径，否则保留原有的 images
+    if (Array.isArray(images)) {
+      updates.images = images.filter(
+        (image) => image === '' || (image && !image.startsWith('http')),
+      );
+      // 如果全部都是已存在的URL，则保留原有 images，不更新
+      if (updates.images.length === 0) {
+        delete updates.images;
+      }
+    }
 
     const updatedBotUserMessage = await BotUserMessage.findByIdAndUpdate(
       id,

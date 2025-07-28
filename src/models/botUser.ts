@@ -9,12 +9,12 @@ export interface IBotUser extends Document {
   firstName: string;
   lastName: string;
   messages: mongoose.Types.ObjectId[] | IBotUserMessage[];
-  createdAt: Date;
-  updatedAt: Date;
   transactions: ITransaction[]; // 虚拟字段，指向 Transaction 模型的 _id 数组
   subscriptions: ISubscription[]; // 虚拟字段，指向 Subscription 模型的 _id 数组
   isAuthorized: boolean; // 用户是否已授权
   displayName?: string; // 虚拟属性
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const botUserSchema = new mongoose.Schema(

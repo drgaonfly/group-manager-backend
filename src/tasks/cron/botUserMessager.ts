@@ -3,7 +3,7 @@ import Bot from '../../models/bot';
 import { IBotUser } from '../../models/botUser';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
-import { InlineKeyboard } from 'grammy';
+import { InlineKeyboard, InputFile } from 'grammy';
 
 /**
  * 给机器人用户发送消息任务
@@ -109,13 +109,54 @@ export async function sendBotUserMessages() {
             }
           }
 
-          // 发送消息
+          // 发送消息，支持图片
           if (message) {
             for (const botUser of botUsers) {
-              await telegramBot.api.sendMessage(botUser.id, message.content, {
-                parse_mode: 'HTML',
-                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-              });
+              if (Array.isArray(message.images) && message.images.length > 0) {
+                if (message.images.length === 1) {
+                  // 单张图片，直接 sendPhoto
+                  await telegramBot.api.sendPhoto(
+                    botUser.id,
+                    new InputFile(`tmp/${message.images[0]}`),
+                    {
+                      caption: message.content,
+                      parse_mode: 'HTML',
+                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                    },
+                  );
+                } else {
+                  // 多张图片，使用 sendMediaGroup
+                  const media = message.images.map(
+                    (img: string, idx: number) => {
+                      return {
+                        type: 'photo' as const,
+                        media: new InputFile(`tmp/${img}`),
+                        ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
+                      };
+                    },
+                  );
+                  // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
+                  await telegramBot.api.sendMediaGroup(
+                    botUser.id,
+                    media as any,
+                  );
+                  // 再补发文本和菜单
+                  await telegramBot.api.sendMessage(
+                    botUser.id,
+                    message.content,
+                    {
+                      parse_mode: 'HTML',
+                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                    },
+                  );
+                }
+              } else {
+                // 发送纯文本消息
+                await telegramBot.api.sendMessage(botUser.id, message.content, {
+                  parse_mode: 'HTML',
+                  ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                });
+              }
               console.log(
                 `[sendBotUserMessages] 消息 ${message._id} 成功发送给机器人用户 ${botUser.id}`,
               );

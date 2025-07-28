@@ -483,7 +483,8 @@ const delAuthorizer = handleAsync(async (req: Request, res: Response) => {
 // send message
 const sendMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { message, menus, menus_per_row, intervalTime, send_type } = req.body;
+  const { message, menus, menus_per_row, intervalTime, send_type, images } =
+    req.body;
 
   console.log('req.body', req.body);
 
@@ -519,10 +520,43 @@ const sendMessage = handleAsync(async (req: Request, res: Response) => {
   const results = await Promise.allSettled(
     botManager.botUsers.map(async (botUser: any) => {
       try {
-        await telegramBot.api.sendMessage(botUser.id, message, {
-          parse_mode: 'HTML',
-          ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-        });
+        // 支持图片发送
+        if (images && Array.isArray(images) && images.length > 0) {
+          if (images.length === 1) {
+            // 单张图片，直接 sendPhoto
+            await telegramBot.api.sendPhoto(
+              botUser.id,
+              new InputFile(`tmp/${images[0]}`),
+              {
+                caption: message,
+                parse_mode: 'HTML',
+                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+              },
+            );
+          } else {
+            // 多张图片，使用 sendMediaGroup
+            const media = images.map((img: string, idx: number) => {
+              return {
+                type: 'photo' as const,
+                media: new InputFile(`tmp/${img}`),
+                ...(idx === 0
+                  ? {
+                      caption: message,
+                      parse_mode: 'HTML',
+                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                    }
+                  : {}),
+              };
+            });
+            await telegramBot.api.sendMediaGroup(botUser.id, media as any);
+          }
+        } else {
+          // 纯文本消息
+          await telegramBot.api.sendMessage(botUser.id, message, {
+            parse_mode: 'HTML',
+            ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+          });
+        }
         return { userId: botUser.id, success: true };
       } catch (error: any) {
         return {
