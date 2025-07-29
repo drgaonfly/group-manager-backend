@@ -1,6 +1,5 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
-import { checkPermission } from '../../../middlewares/checkPermission';
 import BotUserConfig from '../../../../models/botUserConfig';
 import createDebug from 'debug';
 
