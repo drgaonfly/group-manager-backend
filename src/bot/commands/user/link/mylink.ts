@@ -1,6 +1,6 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
-import { checkGroup } from '../../../middlewares/checkGroup';
+import { checkInBot } from '../../../middlewares/checkInBot';
 
 import createDebug from 'debug';
 
@@ -12,9 +12,11 @@ export async function handleMyLink(ctx: MyContext) {
   const userName = ctx.currentBot.userName;
   const spread_code = ctx.currentBotUserConfig.spread_code;
 
+  // const old_url =  `https://t.me/${userName}?start=${spread_code}_${ctx.currentGroup.id}`
+
   const message = [
     `<b>Your invitation link is:</b>`,
-    `https://t.me/${userName}?start=${spread_code}_${ctx.currentGroup.id}`,
+    `https://t.me/${userName}?start=${spread_code}`,
   ].join('\n');
 
   await ctx.reply(message, {
@@ -23,7 +25,7 @@ export async function handleMyLink(ctx: MyContext) {
 }
 
 // myLink 命令处理
-myLinkCommand.command('my_link', checkGroup, async (ctx) => {
+myLinkCommand.command('my_link', checkInBot, async (ctx) => {
   debug('myLink');
 
   await handleMyLink(ctx);
