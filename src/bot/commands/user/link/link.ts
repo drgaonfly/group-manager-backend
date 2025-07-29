@@ -1,6 +1,7 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import BotUserConfig from '../../../../models/botUserConfig';
+import { checkGroup } from '../../../middlewares/checkGroup';
 import createDebug from 'debug';
 
 const linkCommand = new Composer<MyContext>();
@@ -18,18 +19,30 @@ export async function handleLink(ctx: MyContext) {
 
   debug('botUserConfigs:', botUserConfigs.length);
 
+  console.log('invited_group:', botUserConfigs[0].invited_group);
+
   // 按 invited_counts 降序排序
   const sortedConfigs = botUserConfigs
-    .filter((c: any) => c.invited_counts && c.botUser)
+    .filter(
+      (c: any) =>
+        c.invited_counts &&
+        c.botUser &&
+        c.invited_group === ctx.currentGroup._id.toString(),
+    )
     .sort(
       (a: any, b: any) => (b.invited_counts || 0) - (a.invited_counts || 0),
     );
+
+  const invitation_counts_in_group = await BotUserConfig.find({
+    parent: ctx.currentBotUserConfig._id.toString(),
+    invited_group: ctx.currentGroup._id.toString(),
+  }).countDocuments();
 
   // 生成排行榜文本
   let message = [
     `<b>Invitation Leaderboard</b>`,
     `\n`,
-    `You have invited ${ctx.currentBotUserConfig.invited_counts} people`,
+    `You have invited ${invitation_counts_in_group} people in this Group ${ctx.currentGroup.title}`,
     `\n`,
   ].join('\n');
 
@@ -43,19 +56,23 @@ export async function handleLink(ctx: MyContext) {
     });
   }
 
-  if (ctx.message.chat.type === 'private') {
-    await ctx.reply(message, {
-      parse_mode: 'HTML',
-    });
-  } else if (ctx.message.chat.type === 'group') {
-    await ctx.reply([message, `\n`, ctx.currentGroup.message].join('\n'), {
-      parse_mode: 'HTML',
-    });
-  }
+  // if (ctx.message.chat.type === 'private') {
+  //   await ctx.reply(message, {
+  //     parse_mode: 'HTML',
+  //   });
+  // } else if (ctx.message.chat.type === 'group') {
+  // await ctx.reply([message, `\n`, ctx.currentGroup.message].join('\n'), {
+  //   parse_mode: 'HTML',
+  // });
+  // }
+
+  await ctx.reply([message, `\n`, ctx.currentGroup.message].join('\n'), {
+    parse_mode: 'HTML',
+  });
 }
 
 // 邀请链接命令处理
-linkCommand.command('links', async (ctx) => {
+linkCommand.command('links', checkGroup, async (ctx) => {
   debug('link');
 
   await handleLink(ctx);
