@@ -39,7 +39,7 @@ export async function handleLink(ctx: MyContext) {
     sortedConfigs.forEach((config: any, idx: number) => {
       message += `${idx + 1}. ${config.botUser.displayName} - <b>${
         config.invited_counts || 0
-      }</b> 人\n`;
+      }</b> people\n`;
     });
   }
 

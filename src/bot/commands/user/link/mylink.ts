@@ -25,12 +25,7 @@ export async function handleMyLink(ctx: MyContext) {
 // myLink 命令处理
 myLinkCommand.command('my_link', checkPermission, async (ctx) => {
   debug('myLink');
-
-  if (ctx.message.chat.type === 'group') {
-    await handleMyLink(ctx);
-  } else {
-    await ctx.reply('请在群组中使用此命令');
-  }
+  await ctx.reply('请在群组中使用此命令');
 });
 
 export default myLinkCommand;
