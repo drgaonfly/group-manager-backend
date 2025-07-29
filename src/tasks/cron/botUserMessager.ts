@@ -74,20 +74,35 @@ export async function sendBotUserMessages() {
             continue;
           }
 
-          // 判断间隔时间，默认24小时
-          const intervalHours = message.intervalTime || 24;
-          const lastSentTime = message.updatedAt || message.createdAt;
-          const hoursSinceLastSent =
-            (currentTime.getTime() - lastSentTime.getTime()) / (1000 * 60 * 60);
+          const intervalHours = message.intervalTime || 24; // 默认为24小时
 
-          if (hoursSinceLastSent < intervalHours) {
-            console.log(
-              `[sendBotUserMessages] 消息 ${message._id} 距离上次发送不足 ${intervalHours} 小时，跳过`,
-            );
-            stats.skipped++;
-            continue;
+          const lastSentTime = await BotUserMessage.findOne({
+            isRealtime: false,
+            isOnline: true,
+            _id: { $ne: message._id },
+          }).sort({ updatedAt: -1 });
+
+          if (lastSentTime) {
+            const hoursSinceLastSent =
+              (currentTime.getTime() -
+                new Date(lastSentTime.updatedAt).getTime()) /
+              (1000 * 60 * 60);
+
+            console.log('hoursSinceLastSent', hoursSinceLastSent.toFixed(2));
+            console.log('intervalHours', intervalHours);
+
+            if (hoursSinceLastSent < intervalHours) {
+              console.log(
+                `[sendGroupMessages] 消息 ${
+                  message._id
+                } 距离上一条群发消息不足 ${intervalHours} 小时（${hoursSinceLastSent.toFixed(
+                  2,
+                )} 小时），跳过`,
+              );
+              stats.skipped++;
+              continue;
+            }
           }
-
           // 构建菜单 InlineKeyboard
           let replyMarkup: InlineKeyboard | undefined = undefined;
           if (Array.isArray(message.menus) && message.menus.length > 0) {

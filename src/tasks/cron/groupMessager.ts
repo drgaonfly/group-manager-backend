@@ -78,19 +78,33 @@ export async function sendGroupMessages() {
 
           // 检查是否已达到间隔时间
           const intervalHours = message.intervalTime || 24; // 默认为24小时
-          const lastSentTime = message.updatedAt || message.createdAt;
-          const hoursSinceLastSent =
-            (currentTime.getTime() - lastSentTime.getTime()) / (1000 * 60 * 60);
 
-          console.log('hoursSinceLastSent', hoursSinceLastSent);
-          console.log('intervalHours', intervalHours);
+          const lastSentTime = await GroupMessage.findOne({
+            isRealtime: false,
+            isOnline: true,
+            _id: { $ne: message._id },
+          }).sort({ updatedAt: -1 });
 
-          if (hoursSinceLastSent < intervalHours) {
-            console.log(
-              `[sendGroupMessages] 消息 ${message._id} 距离上次发送不足 ${intervalHours} 小时，跳过`,
-            );
-            stats.skipped++;
-            continue;
+          if (lastSentTime) {
+            const hoursSinceLastSent =
+              (currentTime.getTime() -
+                new Date(lastSentTime.updatedAt).getTime()) /
+              (1000 * 60 * 60);
+
+            console.log('hoursSinceLastSent', hoursSinceLastSent.toFixed(2));
+            console.log('intervalHours', intervalHours);
+
+            if (hoursSinceLastSent < intervalHours) {
+              console.log(
+                `[sendGroupMessages] 消息 ${
+                  message._id
+                } 距离上一条群发消息不足 ${intervalHours} 小时（${hoursSinceLastSent.toFixed(
+                  2,
+                )} 小时），跳过`,
+              );
+              stats.skipped++;
+              continue;
+            }
           }
 
           let sentCount = 0;

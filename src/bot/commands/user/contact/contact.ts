@@ -13,7 +13,7 @@ export async function handleContactCommand(ctx: MyContext) {
   const bot = ctx.currentBot;
 
   // 直接回复客服链接
-  await ctx.reply(bot.contact || '请设置客服内容', {
+  await ctx.reply(bot.contact || 'Please set the content of contact', {
     parse_mode: 'HTML',
   });
 }
