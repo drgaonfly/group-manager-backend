@@ -41,9 +41,11 @@ export async function handleLink(ctx: MyContext) {
   // 生成排行榜文本
   let message = [
     `<b>Invitation Leaderboard</b>`,
-    `\n`,
+    ``,
+    `小帅,Your invitation link is <code>${`https://t.me/${ctx.currentBot.userName}?start=${ctx.currentBotUserConfig.spread_code}_${ctx.currentGroup.id}`}</code> (Click to copy)`,
+    ``,
     `You have invited ${invitation_counts_in_group} people in this Group ${ctx.currentGroup.title}`,
-    `\n`,
+    ``,
   ].join('\n');
 
   if (sortedConfigs.length === 0) {
