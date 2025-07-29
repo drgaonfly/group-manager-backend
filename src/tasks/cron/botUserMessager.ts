@@ -77,7 +77,6 @@ export async function sendBotUserMessages() {
           const intervalHours = message.intervalTime || 24; // 默认为24小时
 
           const lastSentTime = await BotUserMessage.findOne({
-            isRealtime: false,
             isOnline: true,
             _id: { $ne: message._id },
           }).sort({ updatedAt: -1 });

@@ -80,7 +80,6 @@ export async function sendGroupMessages() {
           const intervalHours = message.intervalTime || 24; // 默认为24小时
 
           const lastSentTime = await GroupMessage.findOne({
-            isRealtime: false,
             isOnline: true,
             _id: { $ne: message._id },
           }).sort({ updatedAt: -1 });
