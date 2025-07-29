@@ -1,6 +1,6 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
-import { checkPermission } from '../../../middlewares/checkPermission';
+import { checkGroup } from '../../../middlewares/checkGroup';
 
 import createDebug from 'debug';
 
@@ -23,7 +23,7 @@ export async function handleMyLink(ctx: MyContext) {
 }
 
 // myLink 命令处理
-myLinkCommand.command('my_link', checkPermission, async (ctx) => {
+myLinkCommand.command('my_link', checkGroup, async (ctx) => {
   debug('myLink');
   await ctx.reply('请在群组中使用此命令');
 });
