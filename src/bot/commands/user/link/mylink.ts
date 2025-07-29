@@ -25,7 +25,8 @@ export async function handleMyLink(ctx: MyContext) {
 // myLink 命令处理
 myLinkCommand.command('my_link', checkGroup, async (ctx) => {
   debug('myLink');
-  await ctx.reply('请在群组中使用此命令');
+
+  await handleMyLink(ctx);
 });
 
 export default myLinkCommand;
