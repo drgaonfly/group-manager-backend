@@ -2,10 +2,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import { Composer, InlineKeyboard, InputFile } from 'grammy';
 import { MyContext } from '../../../types';
-import createDebug from 'debug';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
-import { checkPermission } from '../../../middlewares/checkPermission';
+import { checkInBot } from '../../../middlewares/checkInBot';
+import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();
 
@@ -36,7 +36,7 @@ export async function handleStart(ctx: MyContext) {
 }
 
 // 开始命令处理
-startCommand.command('start', checkPermission, async (ctx) => {
+startCommand.command('start', checkInBot, async (ctx) => {
   debug('start');
   // const chatId = ctx.chat.id; // 获取群组 ID
   const bot = ctx.currentBot;
