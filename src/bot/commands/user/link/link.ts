@@ -10,27 +10,12 @@ const debug = createDebug('bot:link');
 
 export async function handleLink(ctx: MyContext) {
   // 查询所有 BotUserConfig，并关联 botUser 字段
-  const botUserConfigs = await BotUserConfig.find().populate('botUser');
+  const sortedConfigs = await BotUserConfig.find({
+    parent: ctx.currentBotUserConfig._id,
+    invited_group: ctx.currentGroup._id,
+  }).populate('botUser');
 
-  if (botUserConfigs.length === 0) {
-    ctx.reply('No users found.');
-    return;
-  }
-
-  debug('botUserConfigs:', botUserConfigs.length);
-
-  console.log('invited_group:', botUserConfigs[0].invited_group);
-
-  // 按 invited_counts 降序排序
-  const sortedConfigs = botUserConfigs
-    .filter(
-      (c: any) =>
-        c.botUser.id === ctx.currentBotUser.id &&
-        c.invited_group === ctx.currentGroup._id.toString(),
-    )
-    .sort(
-      (a: any, b: any) => (b.invited_counts || 0) - (a.invited_counts || 0),
-    );
+  console.log('sortedConfigs:', sortedConfigs);
 
   const invitation_counts_in_group = await BotUserConfig.find({
     parent: ctx.currentBotUserConfig._id.toString(),
@@ -48,7 +33,7 @@ export async function handleLink(ctx: MyContext) {
   ].join('\n');
 
   if (sortedConfigs.length === 0) {
-    message += 'No data';
+    message += '\nNo data';
   } else {
     sortedConfigs.forEach((config: any, idx: number) => {
       message += `${idx + 1}. ${config.botUser.displayName} - <b>${
