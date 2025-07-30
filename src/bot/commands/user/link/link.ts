@@ -34,9 +34,18 @@ export async function handleLink(ctx: MyContext) {
   if (sortedConfigs.length === 0) {
     message += '\nNo data';
   } else {
+    // Gather all counts in parallel
+    const counts = await Promise.all(
+      sortedConfigs.map((config: any) =>
+        BotUserConfig.find({
+          parent: config._id,
+          invited_group: ctx.currentGroup._id,
+        }).countDocuments(),
+      ),
+    );
     sortedConfigs.forEach((config: any, idx: number) => {
       message += `${idx + 1}. ${config.botUser.displayName} - <b>${
-        config.invited_counts || 0
+        counts[idx] || 0
       }</b> people\n`;
     });
   }
