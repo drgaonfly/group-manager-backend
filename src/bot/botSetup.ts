@@ -5,7 +5,7 @@ import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
 import botUserResolver from './middlewares/botUserResolver';
 import groupResolver from './middlewares/groupResolver';
-import { commandsList } from './commandsList';
+import { privateCommandsList, groupCommandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import createDebug from 'debug';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
@@ -111,13 +111,26 @@ export const setupBot = (token: string) => {
     }
   });
 
+  // 设置私聊命令
   bot.api
-    .setMyCommands(commandsList)
+    .setMyCommands(privateCommandsList, {
+      scope: { type: 'all_private_chats' },
+    })
     .then(() => {
-      log('命令已设置成功');
+      log('私聊命令已设置成功');
     })
     .catch((error) => {
-      log('设置命令时发生错误:', error);
+      log('设置私聊命令时发生错误:', error);
+    });
+
+  // 设置群组命令
+  bot.api
+    .setMyCommands(groupCommandsList, { scope: { type: 'all_group_chats' } })
+    .then(() => {
+      log('群组命令已设置成功');
+    })
+    .catch((error) => {
+      log('设置群组命令时发生错误:', error);
     });
 
   bot.api.config.use(hydrateFiles(token));
