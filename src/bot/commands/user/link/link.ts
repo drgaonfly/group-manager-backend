@@ -11,13 +11,13 @@ const debug = createDebug('bot:link');
 export async function handleLink(ctx: MyContext) {
   // 查询所有 BotUserConfig，并关联 botUser 字段
   const sortedConfigs = await BotUserConfig.find({
-    parent: ctx.currentBotUserConfig._id,
     invited_group: ctx.currentGroup._id,
   }).populate('botUser');
 
   console.log('sortedConfigs:', sortedConfigs);
 
   const invitation_counts_in_group = await BotUserConfig.find({
+    parent: ctx.currentBotUserConfig._id,
     invited_group: ctx.currentGroup._id.toString(),
   }).countDocuments();
 
