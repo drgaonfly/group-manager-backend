@@ -1,6 +1,7 @@
 import GroupMessage, { IGroupMessage } from '../../models/groupMessage';
 import Bot from '../../models/bot';
 import { IGroup } from '../../models/group';
+import GroupMessageHistory from '../../models/groupMessageHistory';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
@@ -45,9 +46,9 @@ export async function sendGroupMessages() {
 
       // 查询当前机器人需要发送的群发消息
       // 只筛选 isOnline 为 true 的群发消息
-      const groupMessages = (bot.groupMessages as IGroupMessage[]).filter(
-        (message) => message.isOnline === true,
-      );
+      const groupMessages = (bot.groupMessages as IGroupMessage[])
+        .filter((message) => message.isOnline === true)
+        .sort((a, b) => a.weight - b.weight); // 按权重升序
 
       console.log(
         `[sendGroupMessages] 机器人 ${bot.botName} 查询到 ${groupMessages.length} 条群发消息`,
@@ -76,36 +77,6 @@ export async function sendGroupMessages() {
             continue;
           }
 
-          // 检查是否已达到间隔时间
-          const intervalHours = message.intervalTime || 24; // 默认为24小时
-
-          const lastSentTime = await GroupMessage.findOne({
-            isOnline: true,
-            _id: { $ne: message._id },
-          }).sort({ updatedAt: -1 });
-
-          if (lastSentTime) {
-            const hoursSinceLastSent =
-              (currentTime.getTime() -
-                new Date(lastSentTime.updatedAt).getTime()) /
-              (1000 * 60 * 60);
-
-            console.log('hoursSinceLastSent', hoursSinceLastSent.toFixed(2));
-            console.log('intervalHours', intervalHours);
-
-            if (hoursSinceLastSent < intervalHours) {
-              console.log(
-                `[sendGroupMessages] 消息 ${
-                  message._id
-                } 距离上一条群发消息不足 ${intervalHours} 小时（${hoursSinceLastSent.toFixed(
-                  2,
-                )} 小时），跳过`,
-              );
-              stats.skipped++;
-              continue;
-            }
-          }
-
           let sentCount = 0;
 
           // 向每个群组发送消息
@@ -115,14 +86,58 @@ export async function sendGroupMessages() {
                 console.log(`[sendGroupMessage] 群组不存在: ${group}`);
                 continue;
               }
+
+              const history = await GroupMessageHistory.findOne({
+                group: group._id,
+              });
+
+              let nextMessage: IGroupMessage;
+              let shouldSend = false;
+              const intervalTimeInMs = group.intervalTime * 60 * 60 * 1000;
+
+              if (!history) {
+                // 从没发过，发第一条
+                nextMessage = groupMessages[0];
+                shouldSend = true;
+              } else {
+                const lastSentIndex = groupMessages.findIndex(
+                  (msg) =>
+                    msg._id.toString() === history.lastSentMessage.toString(),
+                );
+
+                const now = Date.now();
+                const timeSinceLastSent =
+                  now - new Date(history.sentAt).getTime();
+
+                if (timeSinceLastSent >= intervalTimeInMs) {
+                  // 下一个要发的消息（循环）
+                  const nextIndex = (lastSentIndex + 1) % groupMessages.length;
+                  nextMessage = groupMessages[nextIndex];
+                  shouldSend = true;
+                } else {
+                  console.log(
+                    `[跳过] 群 ${group.id} 距离上次消息不足 ${group.intervalTime} 小时，跳过`,
+                  );
+                  stats.skipped++;
+                  continue;
+                }
+              }
+
+              if (!shouldSend) continue;
+
+              // ✅ 满足条件，可以发送该条消息
+
               // 构建菜单 InlineKeyboard, 支持每行多个菜单按钮
               let replyMarkup: InlineKeyboard | undefined = undefined;
-              if (Array.isArray(message.menus) && message.menus.length > 0) {
-                const perRow = message.menus_per_row || 1; // 默认每行1个按钮
+              if (
+                Array.isArray(nextMessage.menus) &&
+                nextMessage.menus.length > 0
+              ) {
+                const perRow = nextMessage.menus_per_row || 1; // 默认每行1个按钮
                 replyMarkup = new InlineKeyboard();
 
-                for (let i = 0; i < message.menus.length; i += perRow) {
-                  const rowMenus = message.menus.slice(i, i + perRow);
+                for (let i = 0; i < nextMessage.menus.length; i += perRow) {
+                  const rowMenus = nextMessage.menus.slice(i, i + perRow);
                   const buttons = rowMenus
                     .filter((menu) => menu.menuName && menu.url)
                     .map((menu) => ({
@@ -138,21 +153,24 @@ export async function sendGroupMessages() {
               }
 
               // 如果成功，才发送消息
-              if (Array.isArray(message.images) && message.images.length > 0) {
-                if (message.images.length === 1) {
+              if (
+                Array.isArray(nextMessage.images) &&
+                nextMessage.images.length > 0
+              ) {
+                if (nextMessage.images.length === 1) {
                   // 单张图片，直接 sendPhoto
                   await telegramBot.api.sendPhoto(
                     group.id,
-                    new InputFile(`tmp/${message.images[0]}`),
+                    new InputFile(`tmp/${nextMessage.images[0]}`),
                     {
-                      caption: message.content,
+                      caption: nextMessage.content,
                       parse_mode: 'HTML',
                       ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
                     },
                   );
                 } else {
                   // 多张图片，使用 sendMediaGroup
-                  const media = message.images.map(
+                  const media = nextMessage.images.map(
                     (img: string, idx: number) => {
                       return {
                         type: 'photo' as const,
@@ -165,19 +183,40 @@ export async function sendGroupMessages() {
                   // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
                   await telegramBot.api.sendMediaGroup(group.id, media as any);
 
-                  await telegramBot.api.sendMessage(group.id, message.content, {
-                    parse_mode: 'HTML',
-                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                  });
+                  await telegramBot.api.sendMessage(
+                    group.id,
+                    nextMessage.content,
+                    {
+                      parse_mode: 'HTML',
+                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                    },
+                  );
                 }
               } else {
                 // 发送纯文本消息
-                await telegramBot.api.sendMessage(group.id, message.content, {
-                  parse_mode: 'HTML',
-                  ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                });
+                await telegramBot.api.sendMessage(
+                  group.id,
+                  nextMessage.content,
+                  {
+                    parse_mode: 'HTML',
+                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                  },
+                );
               }
               sentCount++;
+
+              await GroupMessageHistory.findOneAndUpdate(
+                { group: group._id },
+                {
+                  lastSentMessage: nextMessage._id,
+                  sentAt: new Date(),
+                },
+                { upsert: true },
+              );
+
+              console.log(
+                `[sendGroupMessages] 群 ${group.id} 成功发送消息 ${nextMessage._id}`,
+              );
               console.log(`[sendGroupMessages] 已向群组 ${group.id} 发送消息`);
             } catch (err) {
               console.error(
@@ -190,7 +229,7 @@ export async function sendGroupMessages() {
 
           // 只有当消息至少发送到一个群组时才更新发送时间
           if (sentCount > 0) {
-            await GroupMessage.findByIdAndUpdate(message._id, {
+            await GroupMessage.findByIdAndUpdate(message, {
               updatedAt: currentTime,
             });
             stats.sent++;

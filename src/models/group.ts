@@ -16,6 +16,9 @@ export interface IGroup extends Document {
   startAt?: Date;
   unit?: string;
   message: string;
+  intervalTime: number; // 间隔时间
+  updatedAt: Date;
+  createdAt: Date;
 }
 
 // 群组 Schema
@@ -92,6 +95,10 @@ const groupSchema = new mongoose.Schema(
     },
     message: {
       type: String,
+      required: false,
+    },
+    intervalTime: {
+      type: Number,
       required: false,
     },
   },

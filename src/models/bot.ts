@@ -40,6 +40,7 @@ export interface IBot extends Document {
   presets: Ipreset[];
   groupMessages: mongoose.Schema.Types.ObjectId[] | IGroupMessage[]; // 虚拟字段
   botUserMessages: mongoose.Schema.Types.ObjectId[] | IBotUserMessage[]; // 虚拟字段
+  intervalTime: number;
 }
 
 export interface IMenu extends Document {
@@ -218,6 +219,10 @@ const botSchema = new mongoose.Schema(
     presets: {
       type: [presetSchema],
       default: false,
+    },
+    intervalTime: {
+      type: Number,
+      required: false,
     },
   },
   {

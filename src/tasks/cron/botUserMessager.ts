@@ -1,9 +1,10 @@
-import BotUserMessage, { IBotUserMessage } from '../../models/botUserMessage';
+import { IBotUserMessage } from '../../models/botUserMessage';
 import Bot from '../../models/bot';
 import { IBotUser } from '../../models/botUser';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
+import BotUserMessageHistory from '../../models/botUserMessageHistory';
 
 /**
  * 给机器人用户发送消息任务
@@ -36,160 +37,130 @@ export async function sendBotUserMessages() {
     };
 
     for (const bot of bots) {
-      console.log(
-        `[sendBotUserMessages] 开始处理机器人: ${bot.botName} (${bot._id})`,
-      );
-
-      // 设置机器人
       const telegramBot = setupBot(bot.token);
+      const botUserMessages = (bot.botUserMessages as IBotUserMessage[])
+        .filter((msg) => msg.isOnline === true)
+        .sort((a, b) => a.weight - b.weight); // 按权重升序
 
-      // 获取当前机器人需要发送的机器人用户消息
-      const botUserMessages = (bot.botUserMessages as IBotUserMessage[]).filter(
-        (msg) => msg.isOnline === true,
-      );
+      if (botUserMessages.length === 0) continue;
 
-      console.log(
-        `[sendBotUserMessages] 机器人 ${bot.botName} 查询到 ${botUserMessages.length} 条机器人用户消息`,
-      );
+      for (const botUserMessage of botUserMessages) {
+        const botUsers = botUserMessage.botUsers as IBotUser[];
+        if (!botUsers || botUsers.length === 0) continue;
 
-      if (botUserMessages.length === 0) {
-        console.log(
-          `[sendBotUserMessages] 机器人 ${bot.botName} 没有需要发送的机器人用户消息，跳过`,
-        );
-        continue;
-      }
+        for (const botUser of botUsers) {
+          try {
+            const history = await BotUserMessageHistory.findOne({
+              bot: bot._id,
+              botUser: botUser._id,
+            });
 
-      for (const message of botUserMessages) {
-        try {
-          stats.processed++;
+            let nextMessage: IBotUserMessage;
+            let shouldSend = false;
+            const intervalMs = bot.intervalTime * 60 * 60 * 1000;
 
-          // botUsers 可能是 ObjectId[] 或 IBotUser[], 我们需要遍历每个用户
-          const botUsers = message.botUsers as IBotUser[];
-
-          if (!botUsers || botUsers.length === 0) {
-            console.warn(
-              `[sendBotUserMessages] 消息 ${message._id} 没有关联机器人用户，跳过`,
-            );
-            stats.skipped++;
-            continue;
-          }
-
-          const intervalHours = message.intervalTime || 24; // 默认为24小时
-
-          const lastSentTime = await BotUserMessage.findOne({
-            isOnline: true,
-            _id: { $ne: message._id },
-          }).sort({ updatedAt: -1 });
-
-          if (lastSentTime) {
-            const hoursSinceLastSent =
-              (currentTime.getTime() -
-                new Date(lastSentTime.updatedAt).getTime()) /
-              (1000 * 60 * 60);
-
-            console.log('hoursSinceLastSent', hoursSinceLastSent.toFixed(2));
-            console.log('intervalHours', intervalHours);
-
-            if (hoursSinceLastSent < intervalHours) {
-              console.log(
-                `[sendGroupMessages] 消息 ${
-                  message._id
-                } 距离上一条群发消息不足 ${intervalHours} 小时（${hoursSinceLastSent.toFixed(
-                  2,
-                )} 小时），跳过`,
+            if (!history) {
+              // 第一次发送，从第一条开始
+              nextMessage = botUserMessages[0];
+              shouldSend = true;
+            } else {
+              const lastIndex = botUserMessages.findIndex(
+                (msg) =>
+                  msg._id.toString() === history.lastSentMessage.toString(),
               );
-              stats.skipped++;
-              continue;
-            }
-          }
-          // 构建菜单 InlineKeyboard
-          let replyMarkup: InlineKeyboard | undefined = undefined;
-          if (Array.isArray(message.menus) && message.menus.length > 0) {
-            const perRow = message.menus_per_row || 1;
-            replyMarkup = new InlineKeyboard();
 
-            for (let i = 0; i < message.menus.length; i += perRow) {
-              const rowMenus = message.menus.slice(i, i + perRow);
-              const buttons = rowMenus
-                .filter((menu) => menu.menuName && menu.url)
-                .map((menu) => ({
-                  text: menu.menuName,
-                  url: menu.url,
-                }));
-
-              if (buttons.length > 0) {
-                replyMarkup.add(...buttons).row();
+              const timeSinceLast =
+                Date.now() - new Date(history.sentAt).getTime();
+              if (timeSinceLast >= intervalMs) {
+                const nextIndex = (lastIndex + 1) % botUserMessages.length;
+                nextMessage = botUserMessages[nextIndex];
+                shouldSend = true;
+              } else {
+                console.log(
+                  `[跳过] 用户 ${botUser.id} 距离上次发送不足 ${bot.intervalTime} 小时`,
+                );
+                stats.skipped++;
+                continue;
               }
             }
-          }
 
-          // 发送消息，支持图片
-          if (message) {
-            for (const botUser of botUsers) {
-              if (Array.isArray(message.images) && message.images.length > 0) {
-                if (message.images.length === 1) {
-                  // 单张图片，直接 sendPhoto
-                  await telegramBot.api.sendPhoto(
-                    botUser.id,
-                    new InputFile(`tmp/${message.images[0]}`),
-                    {
-                      caption: message.content,
-                      parse_mode: 'HTML',
-                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                    },
-                  );
-                } else {
-                  // 多张图片，使用 sendMediaGroup
-                  const media = message.images.map(
-                    (img: string, idx: number) => {
-                      return {
-                        type: 'photo' as const,
-                        media: new InputFile(`tmp/${img}`),
-                        ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
-                      };
-                    },
-                  );
-                  // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
-                  await telegramBot.api.sendMediaGroup(
-                    botUser.id,
-                    media as any,
-                  );
-                  // 再补发文本和菜单
-                  await telegramBot.api.sendMessage(
-                    botUser.id,
-                    message.content,
-                    {
-                      parse_mode: 'HTML',
-                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                    },
-                  );
-                }
+            if (!shouldSend) continue;
+
+            // === 发送消息逻辑 ===
+            let replyMarkup: InlineKeyboard | undefined;
+            if (
+              Array.isArray(nextMessage.menus) &&
+              nextMessage.menus.length > 0
+            ) {
+              const perRow = nextMessage.menus_per_row || 1;
+              replyMarkup = new InlineKeyboard();
+
+              for (let i = 0; i < nextMessage.menus.length; i += perRow) {
+                const rowMenus = nextMessage.menus.slice(i, i + perRow);
+                const buttons = rowMenus
+                  .filter((menu) => menu.menuName && menu.url)
+                  .map((menu) => ({ text: menu.menuName, url: menu.url }));
+                if (buttons.length > 0) replyMarkup.add(...buttons).row();
+              }
+            }
+
+            if (nextMessage.images?.length > 0) {
+              if (nextMessage.images.length === 1) {
+                await telegramBot.api.sendPhoto(
+                  botUser.id,
+                  new InputFile(`tmp/${nextMessage.images[0]}`),
+                  {
+                    caption: nextMessage.content,
+                    parse_mode: 'HTML',
+                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                  },
+                );
               } else {
-                // 发送纯文本消息
-                await telegramBot.api.sendMessage(botUser.id, message.content, {
+                const media = nextMessage.images.map((img, idx) => ({
+                  type: 'photo' as const,
+                  media: new InputFile(`tmp/${img}`),
+                  ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
+                }));
+                await telegramBot.api.sendMediaGroup(botUser.id, media as any);
+                await telegramBot.api.sendMessage(
+                  botUser.id,
+                  nextMessage.content,
+                  {
+                    parse_mode: 'HTML',
+                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                  },
+                );
+              }
+            } else {
+              await telegramBot.api.sendMessage(
+                botUser.id,
+                nextMessage.content,
+                {
                   parse_mode: 'HTML',
                   ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                });
-              }
-              console.log(
-                `[sendBotUserMessages] 消息 ${message._id} 成功发送给机器人用户 ${botUser.id}`,
+                },
               );
             }
+
+            // 更新历史
+            await BotUserMessageHistory.findOneAndUpdate(
+              { bot: bot._id, botUser: botUser._id },
+              {
+                lastSentMessage: nextMessage._id,
+                sentAt: new Date(),
+              },
+              { upsert: true },
+            );
+
+            console.log(
+              `[✅] 消息 ${nextMessage._id} 成功发送给 ${botUser.id}`,
+            );
+            stats.sent++;
+          } catch (err) {
+            console.error(`[❌] 向 ${botUser.id} 发送消息失败:`, err);
+            stats.errors++;
+            continue;
           }
-
-          // 更新发送时间
-          await BotUserMessage.findByIdAndUpdate(message._id, {
-            updatedAt: currentTime,
-          });
-
-          stats.sent++;
-        } catch (error) {
-          console.error(
-            `[sendBotUserMessages] 处理消息 ${message._id} 时发生错误:`,
-            error,
-          );
-          stats.errors++;
-          continue;
         }
       }
     }
