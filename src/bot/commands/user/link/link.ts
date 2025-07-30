@@ -25,8 +25,7 @@ export async function handleLink(ctx: MyContext) {
   const sortedConfigs = botUserConfigs
     .filter(
       (c: any) =>
-        c.invited_counts &&
-        c.botUser &&
+        c.botUser.id === ctx.currentBotUser.id &&
         c.invited_group === ctx.currentGroup._id.toString(),
     )
     .sort(
