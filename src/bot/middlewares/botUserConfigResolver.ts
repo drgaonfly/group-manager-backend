@@ -79,16 +79,10 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
     await botUserConfig.save();
   }
 
-  if (!botUserConfig.invited_group) {
-    if (groupIdFromInvite) {
-      const group = await Group.findOne({ id: groupIdFromInvite });
-      if (group) {
-        botUserConfig.invited_group = group._id;
-
-        await botUserConfig.save();
-      }
-    } else {
-      botUserConfig.invited_group = null;
+  if (!botUserConfig.invited_group && groupIdFromInvite) {
+    const group = await Group.findOne({ id: groupIdFromInvite });
+    if (group) {
+      botUserConfig.invited_group = group._id;
 
       await botUserConfig.save();
     }
