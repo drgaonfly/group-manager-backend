@@ -84,10 +84,8 @@ function generateMessageHeader(
 
   const inviteLink = generateInviteLink(ctx, isPrivate);
 
-  let header = `${name},Your invitation link is <code>${inviteLink}</code> (Click to copy)\n`;
-  if (!isPrivate && invitationCount !== undefined) {
-    header += `You have invited ${invitationCount} people \n Invitation ranking:\n\n`;
-  }
+  const header = `${name},Your invitation link is <code>${inviteLink}</code> (Click to copy)\nYou have invited ${invitationCount} people \n Invitation ranking:\n`;
+
   return header;
 }
 
@@ -95,7 +93,17 @@ export async function handleLink(ctx: MyContext) {
   if (ctx.chat.type === 'private') {
     // 私聊场景
     const topConfigsWithCounts = await getTopInviters({});
-    let message = generateMessageHeader(ctx, true);
+
+    const invitation_counts_in_private = await BotUserConfig.find({
+      parent: ctx.currentBotUserConfig._id,
+      bot: ctx.currentBotUser._id.toString(),
+    }).countDocuments();
+
+    let message = generateMessageHeader(
+      ctx,
+      true,
+      invitation_counts_in_private,
+    );
     message += generateLeaderboardText(topConfigsWithCounts);
 
     await ctx.reply(message, {
