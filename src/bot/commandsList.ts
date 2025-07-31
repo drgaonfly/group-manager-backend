@@ -7,5 +7,4 @@ export const privateCommandsList = [
 
 export const groupCommandsList = [
   { command: 'links', description: 'Top invite rankings' },
-  { command: 'my_link', description: 'Your personal invite link' },
 ];
