@@ -129,7 +129,7 @@ export async function handleLink(ctx: MyContext) {
 }
 
 // 邀请链接命令处理
-linkCommand.command('links', async (ctx) => {
+linkCommand.command('link', async (ctx) => {
   debug('link');
   await handleLink(ctx);
 });
