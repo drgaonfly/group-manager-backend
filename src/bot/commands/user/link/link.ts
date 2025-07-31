@@ -69,7 +69,9 @@ export async function handleLink(ctx: MyContext) {
   // 生成排行榜文本
   let message = [
     `${
-      ctx.currentBotUser.firstName + '' + ctx.currentBotUser.lastName
+      ctx.currentBotUser.firstName ||
+      ' ' + '' + ctx.currentBotUser.lastName ||
+      ' '
     },Your invitation link is <code>${`https://t.me/${ctx.currentBot.userName}?start=${ctx.currentBotUserConfig.spread_code}_${ctx.currentGroup.id}`}</code> (Click to copy)`,
     ``,
     `You have invited ${invitation_counts_in_group} people in this Group ${ctx.currentGroup.title}`,
