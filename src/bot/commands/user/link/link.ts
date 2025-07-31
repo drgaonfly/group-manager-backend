@@ -50,7 +50,7 @@ function generateLeaderboardText(topConfigsWithCounts: any[]) {
   let text = '';
   topConfigsWithCounts.forEach(({ config, count }, idx) => {
     text += `${idx + 1}. ${
-      config.botUser.displayName
+      config.botUser?.displayName || config.botUser?.userName
     } - <b>${count}</b> people\n`;
   });
   return text;
