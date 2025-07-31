@@ -7,115 +7,122 @@ const linkCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:link');
 
+/**
+ * 获取排行榜数据
+ * @param filter 查询条件
+ * @param groupId 可选，群组ID，用于统计群内邀请数
+ */
+async function getTopInviters(filter: any, groupId?: string) {
+  // 查询所有 BotUserConfig，并关联 botUser 字段
+  const sortedConfigs = await BotUserConfig.find(filter).populate('botUser');
+
+  // 并行统计每个 config 的邀请数
+  const counts = await Promise.all(
+    sortedConfigs.map((config: any) =>
+      BotUserConfig.find({
+        parent: config._id,
+        ...(groupId ? { invited_group: groupId } : {}),
+      }).countDocuments(),
+    ),
+  );
+
+  // 组合 config 和 count
+  const configsWithCounts = sortedConfigs.map((config: any, idx: number) => ({
+    config,
+    count: counts[idx] || 0,
+  }));
+
+  // 按 count 降序排序，取前10
+  const topConfigsWithCounts = configsWithCounts
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  return topConfigsWithCounts;
+}
+
+/**
+ * 生成排行榜文本
+ */
+function generateLeaderboardText(topConfigsWithCounts: any[]) {
+  if (!topConfigsWithCounts || topConfigsWithCounts.length === 0) {
+    return '\nNo data';
+  }
+  let text = '';
+  topConfigsWithCounts.forEach(({ config, count }, idx) => {
+    text += `${idx + 1}. ${
+      config.botUser.displayName
+    } - <b>${count}</b> people\n`;
+  });
+  return text;
+}
+
+/**
+ * 生成邀请链接
+ */
+function generateInviteLink(ctx: MyContext, isPrivate: boolean) {
+  if (isPrivate) {
+    return `https://t.me/${ctx.currentBot.userName}?start=${ctx.currentBotUserConfig.spread_code}`;
+  } else {
+    return `https://t.me/${ctx.currentBot.userName}?start=${ctx.currentBotUserConfig.spread_code}_${ctx.currentGroup.id}`;
+  }
+}
+
+/**
+ * 生成消息头部
+ */
+function generateMessageHeader(
+  ctx: MyContext,
+  isPrivate: boolean,
+  invitationCount?: number,
+) {
+  const name =
+    (ctx.currentBotUser.firstName || '') + (ctx.currentBotUser.lastName || '');
+  const inviteLink = generateInviteLink(ctx, isPrivate);
+
+  let header = `${name},Your invitation link is <code>${inviteLink}</code> (Click to copy)\n`;
+  if (!isPrivate && invitationCount !== undefined) {
+    header += `\nYou have invited ${invitationCount} people in this Group ${ctx.currentGroup.title}\n`;
+  }
+  return header;
+}
+
 export async function handleLink(ctx: MyContext) {
-  if (ctx.chat.type == 'private') {
-    let message = [
-      `${
-        ctx.currentBotUser.firstName + '' + ctx.currentBotUser.lastName
-      },Your invitation link is <code>${`https://t.me/${ctx.currentBot.userName}?start=${ctx.currentBotUserConfig.spread_code}`}</code> (Click to copy)`,
-      `\n`,
-    ].join('\n');
-
-    const sortedConfigs = await BotUserConfig.find({}).populate('botUser');
-
-    if (sortedConfigs.length === 0) {
-      message += '\nNo data';
-    } else {
-      // Gather all counts in parallel
-      const counts = await Promise.all(
-        sortedConfigs.map((config: any) =>
-          BotUserConfig.find({
-            parent: config._id,
-          }).countDocuments(),
-        ),
-      );
-
-      // Combine configs and counts, then sort by counts descending
-      const configsWithCounts = sortedConfigs.map(
-        (config: any, idx: number) => ({
-          config,
-          count: counts[idx] || 0,
-        }),
-      );
-
-      configsWithCounts.sort((a, b) => b.count - a.count);
-
-      configsWithCounts.forEach(({ config, count }, idx) => {
-        message += `${idx + 1}. ${
-          config.botUser.displayName
-        } - <b>${count}</b> people\n`;
-      });
-    }
+  if (ctx.chat.type === 'private') {
+    // 私聊场景
+    const topConfigsWithCounts = await getTopInviters({});
+    let message = generateMessageHeader(ctx, true);
+    message += generateLeaderboardText(topConfigsWithCounts);
 
     await ctx.reply(message, {
       parse_mode: 'HTML',
     });
-
     return;
-  }
-
-  // 查询所有 BotUserConfig，并关联 botUser 字段
-  const sortedConfigs = await BotUserConfig.find({
-    invited_group: ctx.currentGroup._id,
-  }).populate('botUser');
-
-  console.log('sortedConfigs:', sortedConfigs);
-
-  const invitation_counts_in_group = await BotUserConfig.find({
-    parent: ctx.currentBotUserConfig._id,
-    invited_group: ctx.currentGroup._id.toString(),
-  }).countDocuments();
-
-  // 生成排行榜文本
-  let message = [
-    `${
-      ctx.currentBotUser.firstName ||
-      ' ' + '' + ctx.currentBotUser.lastName ||
-      ' '
-    },Your invitation link is <code>${`https://t.me/${ctx.currentBot.userName}?start=${ctx.currentBotUserConfig.spread_code}_${ctx.currentGroup.id}`}</code> (Click to copy)`,
-    ``,
-    `You have invited ${invitation_counts_in_group} people in this Group ${ctx.currentGroup.title}`,
-    `\n`,
-  ].join('\n');
-
-  if (sortedConfigs.length === 0) {
-    message += '\nNo data';
   } else {
-    // Gather all counts in parallel
-    const counts = await Promise.all(
-      sortedConfigs.map((config: any) =>
-        BotUserConfig.find({
-          parent: config._id,
-          invited_group: ctx.currentGroup._id,
-        }).countDocuments(),
-      ),
+    // 群聊场景
+    const groupId = ctx.currentGroup._id;
+    const topConfigsWithCounts = await getTopInviters(
+      { invited_group: groupId },
+      groupId,
     );
-    sortedConfigs.forEach((config: any, idx: number) => {
-      message += `${idx + 1}. ${config.botUser.displayName} - <b>${
-        counts[idx] || 0
-      }</b> people\n`;
+
+    const invitation_counts_in_group = await BotUserConfig.find({
+      parent: ctx.currentBotUserConfig._id,
+      bot: ctx.currentBotUser._id.toString(),
+      invited_group: groupId.toString(),
+    }).countDocuments();
+
+    let message = generateMessageHeader(ctx, false, invitation_counts_in_group);
+    message += generateLeaderboardText(topConfigsWithCounts);
+
+    await ctx.reply([message, `\n`, ctx.currentGroup.message].join('\n'), {
+      parse_mode: 'HTML',
     });
   }
-
-  // if (ctx.message.chat.type === 'private') {
-  //   await ctx.reply(message, {
-  //     parse_mode: 'HTML',
-  //   });
-  // } else if (ctx.message.chat.type === 'group') {
-  // await ctx.reply([message, `\n`, ctx.currentGroup.message].join('\n'), {
-  //   parse_mode: 'HTML',
-  // });
-  // }
-
-  await ctx.reply([message, `\n`, ctx.currentGroup.message].join('\n'), {
-    parse_mode: 'HTML',
-  });
 }
 
 // 邀请链接命令处理
 linkCommand.command('links', async (ctx) => {
   debug('link');
-
   await handleLink(ctx);
 });
 
