@@ -1,7 +1,7 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import BotUserConfig from '../../../../models/botUserConfig';
-import { checkGroup } from '../../../middlewares/checkGroup';
+import { checkInBot } from '../../../middlewares/checkInBot';
 import createDebug from 'debug';
 
 const linkCommand = new Composer<MyContext>();
@@ -66,7 +66,7 @@ export async function handleLink(ctx: MyContext) {
 }
 
 // 邀请链接命令处理
-linkCommand.command('links', checkGroup, async (ctx) => {
+linkCommand.command('links', checkInBot, async (ctx) => {
   debug('link');
 
   await handleLink(ctx);
