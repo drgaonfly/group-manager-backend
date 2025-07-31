@@ -86,7 +86,7 @@ function generateMessageHeader(
 
   let header = `${name},Your invitation link is <code>${inviteLink}</code> (Click to copy)\n`;
   if (!isPrivate && invitationCount !== undefined) {
-    header += `\nYou have invited ${invitationCount} people \n Invitation ranking:\n\n`;
+    header += `You have invited ${invitationCount} people \n Invitation ranking:\n\n`;
   }
   return header;
 }
