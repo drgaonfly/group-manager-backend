@@ -1,7 +1,6 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import BotUserConfig from '../../../../models/botUserConfig';
-import { checkGroup } from '../../../middlewares/checkGroup';
 import createDebug from 'debug';
 
 const linkCommand = new Composer<MyContext>();
@@ -9,6 +8,43 @@ const linkCommand = new Composer<MyContext>();
 const debug = createDebug('bot:link');
 
 export async function handleLink(ctx: MyContext) {
+  if (ctx.chat.type == 'private') {
+    let message = [
+      `${
+        ctx.currentBotUser.firstName + '' + ctx.currentBotUser.lastName
+      },Your invitation link is <code>${`https://t.me/${ctx.currentBot.userName}?start=${ctx.currentBotUserConfig.spread_code}`}</code> (Click to copy)`,
+      `\n`,
+    ].join('\n');
+
+    const sortedConfigs = await BotUserConfig.find({})
+      .populate('botUser')
+      .sort('-invited_counts');
+
+    if (sortedConfigs.length === 0) {
+      message += '\nNo data';
+    } else {
+      // Gather all counts in parallel
+      const counts = await Promise.all(
+        sortedConfigs.map((config: any) =>
+          BotUserConfig.find({
+            parent: config._id,
+          }).countDocuments(),
+        ),
+      );
+      sortedConfigs.forEach((config: any, idx: number) => {
+        message += `${idx + 1}. ${config.botUser.displayName} - <b>${
+          counts[idx] || 0
+        }</b> people\n`;
+      });
+    }
+
+    await ctx.reply(message, {
+      parse_mode: 'HTML',
+    });
+
+    return;
+  }
+
   // 查询所有 BotUserConfig，并关联 botUser 字段
   const sortedConfigs = await BotUserConfig.find({
     invited_group: ctx.currentGroup._id,
@@ -66,7 +102,7 @@ export async function handleLink(ctx: MyContext) {
 }
 
 // 邀请链接命令处理
-linkCommand.command('links', checkGroup, async (ctx) => {
+linkCommand.command('links', async (ctx) => {
   debug('link');
 
   await handleLink(ctx);
