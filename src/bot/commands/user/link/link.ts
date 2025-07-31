@@ -50,7 +50,9 @@ function generateLeaderboardText(topConfigsWithCounts: any[]) {
   let text = '';
   topConfigsWithCounts.forEach(({ config, count }, idx) => {
     text += `${idx + 1}. ${
-      config.botUser?.displayName || config.botUser?.userName
+      config.botUser.firstName && config.botUser.lastName
+        ? config.botUser.firstName + config.botUser.lastName
+        : config.botUser.userName
     } - <b>${count}</b> people\n`;
   });
   return text;
@@ -76,7 +78,10 @@ function generateMessageHeader(
   invitationCount?: number,
 ) {
   const name =
-    (ctx.currentBotUser.firstName || '') + (ctx.currentBotUser.lastName || '');
+    ctx.currentBotUser.firstName && ctx.currentBotUser.lastName
+      ? ctx.currentBotUser.firstName + ctx.currentBotUser.lastName
+      : ctx.currentBotUser.userName;
+
   const inviteLink = generateInviteLink(ctx, isPrivate);
 
   let header = `${name},Your invitation link is <code>${inviteLink}</code> (Click to copy)\n`;
