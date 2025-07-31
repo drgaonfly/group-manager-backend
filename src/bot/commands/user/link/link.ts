@@ -16,9 +16,7 @@ export async function handleLink(ctx: MyContext) {
       `\n`,
     ].join('\n');
 
-    const sortedConfigs = await BotUserConfig.find({})
-      .populate('botUser')
-      .sort('-invited_counts');
+    const sortedConfigs = await BotUserConfig.find({}).populate('botUser');
 
     if (sortedConfigs.length === 0) {
       message += '\nNo data';
@@ -31,10 +29,21 @@ export async function handleLink(ctx: MyContext) {
           }).countDocuments(),
         ),
       );
-      sortedConfigs.forEach((config: any, idx: number) => {
-        message += `${idx + 1}. ${config.botUser.displayName} - <b>${
-          counts[idx] || 0
-        }</b> people\n`;
+
+      // Combine configs and counts, then sort by counts descending
+      const configsWithCounts = sortedConfigs.map(
+        (config: any, idx: number) => ({
+          config,
+          count: counts[idx] || 0,
+        }),
+      );
+
+      configsWithCounts.sort((a, b) => b.count - a.count);
+
+      configsWithCounts.forEach(({ config, count }, idx) => {
+        message += `${idx + 1}. ${
+          config.botUser.displayName
+        } - <b>${count}</b> people\n`;
       });
     }
 
