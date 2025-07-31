@@ -94,15 +94,10 @@ export async function handleLink(ctx: MyContext) {
     // 私聊场景
     const topConfigsWithCounts = await getTopInviters({});
 
-    const invitation_counts_in_private = await BotUserConfig.find({
-      parent: ctx.currentBotUserConfig._id,
-      bot: ctx.currentBotUser._id.toString(),
-    }).countDocuments();
-
     let message = generateMessageHeader(
       ctx,
       true,
-      invitation_counts_in_private,
+      ctx.currentBotUserConfig.invited_counts,
     );
     message += generateLeaderboardText(topConfigsWithCounts);
 
