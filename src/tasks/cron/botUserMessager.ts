@@ -18,7 +18,7 @@ export async function sendBotUserMessages() {
     console.log(`[当前时间] ${formatBeijingDate(currentTime)}`);
 
     // 查询所有机器人并填充其关联的机器人用户消息
-    const bots = await Bot.find({});
+    const bots = await Bot.find({}).populate('botUsers');
 
     console.log(`[sendBotUserMessages] 查询到 ${bots.length} 个机器人`);
 
@@ -49,7 +49,7 @@ export async function sendBotUserMessages() {
       for (const botUserMessage of processed_botUserMessages) {
         console.log('botUsers under botUserMessage', botUserMessage.botUsers);
 
-        const botUsers = botUserMessage.botUsers as IBotUser[];
+        const botUsers = bot.botUsers as IBotUser[];
         if (!botUsers || botUsers.length === 0) continue;
 
         for (const botUser of botUsers) {
