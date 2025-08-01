@@ -1,5 +1,5 @@
 import setupDB from '../utils/db';
-// import { sendGroupMessages } from './cron/groupMessager';
+import { sendGroupMessages } from './cron/groupMessager';
 import { sendBotUserMessages } from './cron/botUserMessager';
 import { setupRedis } from '../utils/redis';
 
@@ -8,7 +8,7 @@ const task = async () => {
   await setupRedis();
   console.log('当前时间:', new Date().toLocaleString());
   console.log('开始执行任务...');
-  // await sendGroupMessages(); // 发送群发消息
+  await sendGroupMessages(); // 发送群发消息
   await sendBotUserMessages(); // 发送用户消息
 };
 
