@@ -1,4 +1,4 @@
-import { IBotUserMessage } from '../../models/botUserMessage';
+import BotUserMessage, { IBotUserMessage } from '../../models/botUserMessage';
 import Bot from '../../models/bot';
 import { IBotUser } from '../../models/botUser';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
@@ -18,14 +18,7 @@ export async function sendBotUserMessages() {
     console.log(`[当前时间] ${formatBeijingDate(currentTime)}`);
 
     // 查询所有机器人并填充其关联的机器人用户消息
-    const bots = await Bot.find({}).populate({
-      path: 'botUserMessages',
-      match: { type: 'sent' }, // 只处理定时发送的消息
-      populate: {
-        path: 'botUsers',
-      },
-      options: { sort: { weight: +1 } }, // 按权重升序排序
-    });
+    const bots = await Bot.find({});
 
     console.log(`[sendBotUserMessages] 查询到 ${bots.length} 个机器人`);
 
@@ -38,13 +31,20 @@ export async function sendBotUserMessages() {
 
     for (const bot of bots) {
       const telegramBot = setupBot(bot.token);
-      const botUserMessages = (bot.botUserMessages as IBotUserMessage[])
+
+      const raw_botUserMessages = await BotUserMessage.find({ bot: bot._id });
+
+      console.log(
+        `[调试] Bot ${bot.userName} 有 ${raw_botUserMessages?.length} 条消息`,
+      );
+
+      const processed_botUserMessages = raw_botUserMessages
         .filter((msg) => msg.isOnline === true)
         .sort((a, b) => a.weight - b.weight); // 按权重升序
 
-      if (botUserMessages.length === 0) continue;
+      if (processed_botUserMessages.length === 0) continue;
 
-      for (const botUserMessage of botUserMessages) {
+      for (const botUserMessage of processed_botUserMessages) {
         const botUsers = botUserMessage.botUsers as IBotUser[];
         if (!botUsers || botUsers.length === 0) continue;
 
@@ -61,10 +61,10 @@ export async function sendBotUserMessages() {
 
             if (!history) {
               // 第一次发送，从第一条开始
-              nextMessage = botUserMessages[0];
+              nextMessage = processed_botUserMessages[0];
               shouldSend = true;
             } else {
-              const lastIndex = botUserMessages.findIndex(
+              const lastIndex = processed_botUserMessages.findIndex(
                 (msg) =>
                   msg._id.toString() === history.lastSentMessage.toString(),
               );
@@ -72,8 +72,9 @@ export async function sendBotUserMessages() {
               const timeSinceLast =
                 Date.now() - new Date(history.sentAt).getTime();
               if (timeSinceLast >= intervalMs) {
-                const nextIndex = (lastIndex + 1) % botUserMessages.length;
-                nextMessage = botUserMessages[nextIndex];
+                const nextIndex =
+                  (lastIndex + 1) % processed_botUserMessages.length;
+                nextMessage = processed_botUserMessages[nextIndex];
                 shouldSend = true;
               } else {
                 console.log(
