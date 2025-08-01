@@ -32,7 +32,9 @@ export async function sendBotUserMessages() {
     for (const bot of bots) {
       const telegramBot = setupBot(bot.token);
 
-      const raw_botUserMessages = await BotUserMessage.find({ bot: bot._id });
+      const raw_botUserMessages = await BotUserMessage.find({
+        bot: bot._id,
+      }).populate('botUsers');
 
       console.log(
         `[调试] Bot ${bot.userName} 有 ${raw_botUserMessages?.length} 条消息`,
@@ -45,6 +47,8 @@ export async function sendBotUserMessages() {
       if (processed_botUserMessages.length === 0) continue;
 
       for (const botUserMessage of processed_botUserMessages) {
+        console.log('botUsers under botUserMessage', botUserMessage.botUsers);
+
         const botUsers = botUserMessage.botUsers as IBotUser[];
         if (!botUsers || botUsers.length === 0) continue;
 
