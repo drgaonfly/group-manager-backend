@@ -108,15 +108,16 @@ export async function handleLink(ctx: MyContext) {
   } else {
     // 群聊场景
     const groupId = ctx.currentGroup._id;
+    const botId = ctx.currentBot._id;
     const topConfigsWithCounts = await getTopInviters(
-      { invited_group: groupId },
+      { invited_group: groupId, bot: botId },
       groupId,
     );
 
     const invitation_counts_in_group = await BotUserConfig.find({
       parent: ctx.currentBotUserConfig._id,
-      bot: ctx.currentBotUser._id.toString(),
-      invited_group: groupId.toString(),
+      bot: botId,
+      invited_group: groupId,
     }).countDocuments();
 
     let message = generateMessageHeader(ctx, false, invitation_counts_in_group);
