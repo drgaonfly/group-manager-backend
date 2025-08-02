@@ -90,9 +90,12 @@ function generateMessageHeader(
 }
 
 export async function handleLink(ctx: MyContext) {
+  const groupId = ctx.currentGroup._id;
+  const botId = ctx.currentBot._id;
+
   if (ctx.chat.type === 'private') {
     // 私聊场景
-    const topConfigsWithCounts = await getTopInviters({});
+    const topConfigsWithCounts = await getTopInviters({ bot: botId });
 
     let message = generateMessageHeader(
       ctx,
@@ -107,8 +110,6 @@ export async function handleLink(ctx: MyContext) {
     return;
   } else {
     // 群聊场景
-    const groupId = ctx.currentGroup._id;
-    const botId = ctx.currentBot._id;
     const topConfigsWithCounts = await getTopInviters(
       { invited_group: groupId, bot: botId },
       groupId,
