@@ -14,6 +14,7 @@ const debug = createDebug('bot:link');
  */
 async function getTopInviters(filter: any, groupId?: string) {
   // 查询所有 BotUserConfig，并关联 botUser 字段
+
   const sortedConfigs = await BotUserConfig.find(filter).populate('botUser');
 
   // 并行统计每个 config 的邀请数
@@ -90,7 +91,6 @@ function generateMessageHeader(
 }
 
 export async function handleLink(ctx: MyContext) {
-  const groupId = ctx.currentGroup._id;
   const botId = ctx.currentBot._id;
 
   if (ctx.chat.type === 'private') {
@@ -110,6 +110,8 @@ export async function handleLink(ctx: MyContext) {
     return;
   } else {
     // 群聊场景
+    const groupId = ctx.currentGroup._id;
+
     const topConfigsWithCounts = await getTopInviters(
       { invited_group: groupId, bot: botId },
       groupId,
