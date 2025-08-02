@@ -109,7 +109,7 @@ export async function handleLink(ctx: MyContext) {
     // 群聊场景
     const groupId = ctx.currentGroup._id;
     const topConfigsWithCounts = await getTopInviters(
-      { invited_group: groupId },
+      { invited_group: groupId, bot: ctx.currentBot._id },
       groupId,
     );
 
