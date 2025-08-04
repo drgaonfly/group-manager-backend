@@ -88,10 +88,11 @@ startCommand.command('start', checkInBot, async (ctx) => {
   // await ctx.reply('欢迎使用机器人', {
   //   reply_markup: combinedKeyboard,
   // });
-
-  await ctx.reply(bot.message || '欢迎使用机器人', {
-    reply_markup: await createMainKeyboard(ctx),
-  });
+  if (bot.message) {
+    await ctx.reply(bot.message || '欢迎使用机器人', {
+      reply_markup: await createMainKeyboard(ctx),
+    });
+  }
 });
 
 export default startCommand;
