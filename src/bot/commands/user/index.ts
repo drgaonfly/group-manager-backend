@@ -15,6 +15,7 @@ import exchangeComposer from './exchange';
 import conversationsComposer from './conversations';
 import spreadComposer from './spread';
 import linkComposer from './link';
+import orderComposer from './order';
 
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
@@ -38,5 +39,6 @@ userComposer.use(exchangeComposer.middleware());
 userComposer.use(conversationsComposer.middleware());
 userComposer.use(spreadComposer.middleware());
 userComposer.use(linkComposer.middleware());
+userComposer.use(orderComposer.middleware());
 
 export default userComposer;
