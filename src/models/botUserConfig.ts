@@ -30,7 +30,8 @@ export interface IBotUserConfig extends Document {
   trx_balance: number; // 用户余额
   parent: mongoose.Types.ObjectId | IBotUserConfig;
   spread_code: string;
-  invited_counts: number; // 邀请人数
+  invited_counts: number; //group  邀请人数
+  invited_counts_bot: number; // private 邀请人数
   invited_group: mongoose.Types.ObjectId | IGroup[];
   createdAt: Date;
   updatedAt: Date;
@@ -96,6 +97,11 @@ const botUserConfigSchema = new mongoose.Schema(
       unique: true,
     },
     invited_counts: {
+      type: Number,
+      required: true,
+      default: 0,
+    }, // 给群用的
+    invited_counts_bot: {
       type: Number,
       required: true,
       default: 0,

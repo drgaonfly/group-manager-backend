@@ -100,7 +100,7 @@ export async function handleLink(ctx: MyContext) {
     let message = generateMessageHeader(
       ctx,
       true,
-      ctx.currentBotUserConfig.invited_counts,
+      ctx.currentBotUserConfig.invited_counts_bot,
     );
     message += generateLeaderboardText(topConfigsWithCounts);
 
