@@ -475,7 +475,7 @@ const delAuthorizer = handleAsync(async (req: Request, res: Response) => {
 });
 
 // send message
-const sendMessage = handleAsync(async (req: Request, res: Response) => {
+const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
   const { message, menus, menus_per_row, intervalTime, send_type, images } =
     req.body;
@@ -579,6 +579,7 @@ const sendMessage = handleAsync(async (req: Request, res: Response) => {
       intervalTime,
       menus,
       menus_per_row,
+      proxy: req.user._id,
     });
   }
 

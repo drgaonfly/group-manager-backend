@@ -1,6 +1,7 @@
 import { Middleware } from 'grammy';
-import Group from '../../models/group';
 import { MyContext } from '../types';
+import { findBotProxy } from '../services/findBotProxy';
+import Group from '../../models/group';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:group');
@@ -27,6 +28,8 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     type: ctx.chat.type,
   });
 
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
   if (!currentGroup) {
     // 如果群组不存在，创建新群组记录
     const newGroup = new Group({
@@ -37,6 +40,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       creator: ctx.currentBotUser._id, // 假设已有用户记录
       exchange_rate: 1,
       fee_rate: 0,
+      proxy: proxyUser._id,
     });
 
     await newGroup.save();

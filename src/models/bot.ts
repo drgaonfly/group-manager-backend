@@ -41,6 +41,7 @@ export interface IBot extends Document {
   groupMessages: mongoose.Schema.Types.ObjectId[] | IGroupMessage[]; // 虚拟字段
   botUserMessages: mongoose.Schema.Types.ObjectId[] | IBotUserMessage[]; // 虚拟字段
   intervalTime: number;
+  botUser: mongoose.Schema.Types.ObjectId | IBotUser;
 }
 
 export interface IMenu extends Document {
@@ -222,6 +223,11 @@ const botSchema = new mongoose.Schema(
     },
     intervalTime: {
       type: Number,
+      required: false,
+    },
+    botUser: {
+      type: mongoose.Types.ObjectId,
+      ref: 'BotUser',
       required: false,
     },
   },

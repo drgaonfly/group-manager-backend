@@ -2,6 +2,7 @@ import { Middleware } from 'grammy';
 import BotUserConfig from '../../models/botUserConfig';
 import { MyContext } from '../types';
 import { generateInviteCode } from '../../utils/generateInviteCode';
+import { findBotProxy } from '../services/findBotProxy';
 import Group from '../../models/group';
 
 const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
@@ -37,6 +38,8 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
     groupIdFromInvite,
   );
 
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
   // 查找或创建用户配置
   const botUserConfig = await BotUserConfig.findOneAndUpdate(
     {
@@ -47,6 +50,7 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
       $setOnInsert: {
         botUser: ctx.currentBotUser._id,
         bot: ctx.currentBot._id,
+        proxy: proxyUser._id,
       },
     },
     { new: true, upsert: true },

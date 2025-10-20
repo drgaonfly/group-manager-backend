@@ -66,6 +66,7 @@ const getBotUserMessages = handleAsync(
 
     const botUserMessages = await BotUserMessage.find(query)
       .populate('bot')
+      .populate('proxy')
       .populate('botUsers')
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)

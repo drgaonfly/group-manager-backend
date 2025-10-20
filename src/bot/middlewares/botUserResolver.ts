@@ -1,5 +1,6 @@
 import { Middleware } from 'grammy';
 import BotUser from '../../models/botUser';
+import { findBotProxy } from '../services/findBotProxy';
 import { MyContext } from '../types';
 
 const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
@@ -10,6 +11,8 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
 
   const { id, username, first_name, last_name } = ctx.from!;
 
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
   // 查找或创建关联用户
   // 查找或创建关联用户，并填充 subscriptions 字段
   const botUser = await BotUser.findOneAndUpdate(
@@ -19,6 +22,7 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
         userName: username,
         firstName: first_name,
         lastName: last_name,
+        proxy: proxyUser._id,
       },
     },
     { new: true, upsert: true },

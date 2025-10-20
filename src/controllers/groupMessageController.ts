@@ -67,6 +67,7 @@ const getGroupMessages = handleAsync(
         path: 'bot',
         populate: 'groups',
       })
+      .populate('proxy')
       .populate('groups')
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
@@ -123,18 +124,21 @@ const getGroupMessageById = handleAsync(async (req: Request, res: Response) => {
 });
 
 // 添加新群消息
-const addGroupMessage = handleAsync(async (req: Request, res: Response) => {
-  const newGroupMessage = new GroupMessage({
-    ...req.body,
-  });
+const addGroupMessage = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const newGroupMessage = new GroupMessage({
+      ...req.body,
+      proxy: req.user._id,
+    });
 
-  const savedGroupMessage = await newGroupMessage.save();
+    const savedGroupMessage = await newGroupMessage.save();
 
-  res.json({
-    success: true,
-    data: savedGroupMessage,
-  });
-});
+    res.json({
+      success: true,
+      data: savedGroupMessage,
+    });
+  },
+);
 
 // 更新群消息
 const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
