@@ -597,7 +597,7 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
 const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const { content, images } = req.body;
+  const { content, images, menus, menus_per_row } = req.body;
 
   const botManager = await Bot.findById(id)
     .populate('botUsers')
@@ -624,6 +624,28 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
 
   const telegramBot = setupBot(botManager.token);
 
+  // 构建菜单 InlineKeyboard, 支持每行多个菜单按钮
+  let replyMarkup: InlineKeyboard | undefined = undefined;
+  if (Array.isArray(menus) && menus.length > 0) {
+    const perRow = menus_per_row || 1; // 默认每行1个按钮
+    replyMarkup = new InlineKeyboard();
+
+    for (let i = 0; i < menus.length; i += perRow) {
+      const rowMenus = menus.slice(i, i + perRow);
+      const buttons = rowMenus
+        .filter((menu: any) => menu.menuName && menu.url)
+        .map((menu: any) => ({
+          text: menu.menuName,
+          url: menu.url,
+        }));
+
+      // 添加这一行按钮
+      if (buttons.length > 0) {
+        replyMarkup.add(...buttons).row();
+      }
+    }
+  }
+
   // 保证catch时跳过，不影响其它的
   await Promise.all(
     processed_groups.map(async (group: any) => {
@@ -642,6 +664,7 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
               {
                 caption: content,
                 parse_mode: 'HTML',
+                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
               },
             );
           } else {
@@ -650,14 +673,24 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
               return {
                 type: 'photo' as const,
                 media: new InputFile(`tmp/${img}`),
-                ...(idx === 0 ? { caption: content, parse_mode: 'HTML' } : {}),
+                ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
               };
             });
+
+            // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
             await telegramBot.api.sendMediaGroup(group.id, media as any);
+
+            // 单独发送文本消息和菜单
+            await telegramBot.api.sendMessage(group.id, content, {
+              parse_mode: 'HTML',
+              ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+            });
           }
         } else {
+          // 发送纯文本消息
           await telegramBot.api.sendMessage(group.id, content, {
             parse_mode: 'HTML',
+            ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
           });
         }
       } catch (error) {
