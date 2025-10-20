@@ -1,6 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IGroup } from './group';
+import { IUser } from './user';
 
 export interface IMenu extends Document {
   menuName: string;
@@ -26,6 +27,7 @@ export interface IGroupMessage extends Document {
   bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的机器
   content: string; // 消息内容
   groups?: mongoose.Schema.Types.ObjectId[] | IGroup[]; // 关联的群（如果是群消息）
+  proxy: mongoose.Types.ObjectId | IUser;
   images: string[]; // 图片
   intervalTime: number; // 间隔时间
   isRealtime: boolean; // 是否实时
@@ -43,6 +45,11 @@ const groupMessageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
       required: true,
+    },
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
     },
     images: {
       type: [String],

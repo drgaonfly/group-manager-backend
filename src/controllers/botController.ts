@@ -5,16 +5,16 @@ import User from '../models/user';
 import BotUser from '../models/botUser';
 import { printWebhookInfo, setupBot } from '../bot/botSetup';
 import { RequestCustom } from 'user';
-import { isProxy, isEmployee } from '../middlewares/authMiddleware';
+import { isProxy } from '../middlewares/authMiddleware';
 import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';
-import dotenv from 'dotenv';
 import { InputFile } from 'grammy';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { transformDocumentImage } from '../utils/transformUtils';
 import { InlineKeyboard } from 'grammy';
 import BotUserMessage from '../models/botUserMessage';
 
+import dotenv from 'dotenv';
 dotenv.config();
 
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
@@ -88,12 +88,6 @@ const buildQuery = async (
   }
 
   if (isProxy(req.user)) {
-    const employees = await User.find({ proxy: req.user._id });
-    const employeeIds = employees.map((employee) => employee._id);
-    query.user = { $in: [...employeeIds, req.user._id] };
-  }
-
-  if (isEmployee(req.user)) {
     query.user = req.user._id;
   }
 

@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import BotUserConfig from '../models/botUserConfig';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
-import { isEmployee, isProxy } from '../middlewares/authMiddleware';
-import User from '../models/user';
+import { isProxy } from '../middlewares/authMiddleware';
 import BotUser from '../models/botUser';
 import Bot from '../models/bot';
 
@@ -40,13 +39,7 @@ const buildQuery = async (queryParams: any, req: RequestCustom) => {
   }
 
   if (isProxy(req.user)) {
-    const employees = await User.find({ proxy: req.user._id });
-    const employeeIds = employees.map((employee) => employee._id);
-    query.user = { $in: [...employeeIds, req.user._id] };
-  }
-
-  if (isEmployee(req.user)) {
-    query.user = req.user._id;
+    query.proxy = req.user._id;
   }
 
   return query;
@@ -61,6 +54,7 @@ const getBotUserConfigs = handleAsync(
 
     const botUserConfigs = await BotUserConfig.find(query)
       .populate('botUser')
+      .populate('proxy')
       .populate('bot')
       .populate({
         path: 'parent',

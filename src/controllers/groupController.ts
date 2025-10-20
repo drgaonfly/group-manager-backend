@@ -2,9 +2,11 @@ import { Request, Response } from 'express';
 import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
+import { isProxy } from '../middlewares/authMiddleware';
+import { RequestCustom } from 'user';
 
 // 构建查询参数
-const buildQuery = (queryParams: any): any => {
+const buildQuery = (queryParams: any, req: RequestCustom): any => {
   const query: any = {};
 
   // title
@@ -17,17 +19,22 @@ const buildQuery = (queryParams: any): any => {
     query.isOnline = queryParams.isOnline;
   }
 
+  if (isProxy(req.user)) {
+    query.proxy = req.user._id;
+  }
+
   return query;
 };
 
 // 获取所有群组
-const getGroups = handleAsync(async (req: Request, res: Response) => {
+const getGroups = handleAsync(async (req: RequestCustom, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = await buildQuery(req.query, req);
 
   const groups = await Group.find(query)
     .populate('bot')
+    .populate('proxy')
     .populate('creator')
     .populate('operators')
     .populate('botUsers')

@@ -1,11 +1,14 @@
 import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IBotUser } from './botUser';
+import { IUser } from './user';
+
 // 群组接口定义
 export interface IGroup extends Document {
   id: number;
   title: string;
   type: string;
+  proxy: mongoose.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
   creator: mongoose.Schema.Types.ObjectId | IBotUser;
   operators: (mongoose.Schema.Types.ObjectId | IBotUser)[]; // 操作人数组
@@ -99,6 +102,11 @@ const groupSchema = new mongoose.Schema(
     },
     intervalTime: {
       type: Number,
+      required: false,
+    },
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       required: false,
     },
   },

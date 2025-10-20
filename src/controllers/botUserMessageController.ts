@@ -4,9 +4,14 @@ import handleAsync from '../utils/handleAsync';
 import Bot from '../models/bot';
 import BotUser from '../models/botUser';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
+import { isProxy } from '../middlewares/authMiddleware';
+import { RequestCustom } from 'user';
 
 // 构建查询参数
-const buildQuery = async (queryParams: any): Promise<any> => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   if (queryParams.bot) {
@@ -45,51 +50,57 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     query.isOnline = queryParams.isOnline === 'true';
   }
 
+  if (isProxy(req.user)) {
+    query.proxy = req.user._id;
+  }
+
   return query;
 };
 
 // 获取所有 BotUser 消息
-const getBotUserMessages = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10' } = req.query;
+const getBotUserMessages = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '10' } = req.query;
 
-  const query = await buildQuery(req.query);
+    const query = await buildQuery(req.query, req);
 
-  const botUserMessages = await BotUserMessage.find(query)
-    .populate('bot')
-    .populate('botUsers')
-    .sort('-createdAt')
-    .skip((+current - 1) * +pageSize)
-    .limit(+pageSize)
-    .exec();
+    const botUserMessages = await BotUserMessage.find(query)
+      .populate('bot')
+      .populate('botUsers')
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .exec();
 
-  const total = await BotUserMessage.countDocuments(query).exec();
+    const total = await BotUserMessage.countDocuments(query).exec();
 
-  const processedBotUserMessages = await Promise.all(
-    botUserMessages.map(async (gm) => {
-      // Convert to plain JS object to avoid Mongoose internals in response
-      const doc = gm.toObject ? gm.toObject() : gm;
+    const processedBotUserMessages = await Promise.all(
+      botUserMessages.map(async (gm) => {
+        // Convert to plain JS object to avoid Mongoose internals in response
+        const doc = gm.toObject ? gm.toObject() : gm;
 
-      // If images array exists, process each image URL in the array
-      if (doc.images && Array.isArray(doc.images)) {
-        doc.images = await Promise.all(
-          doc.images.map(async (imageUrl) => {
-            return await generateSignedUrl(imageUrl);
-          }),
-        );
-      }
+        // If images array exists, process each image URL in the array
+        if (doc.images && Array.isArray(doc.images)) {
+          doc.images = await Promise.all(
+            doc.images.map(async (imageUrl) => {
+              return await generateSignedUrl(imageUrl);
+            }),
+          );
+        }
 
-      return doc;
-    }),
-  );
+        return doc;
+      }),
+    );
 
-  res.json({
-    success: true,
-    data: processedBotUserMessages,
-    total,
-    current: +current,
-    pageSize: +pageSize,
-  });
-});
+    res.json({
+      success: true,
+      data: processedBotUserMessages,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
 
 // 获取 BotUser 消息详情
 const getBotUserMessageById = handleAsync(

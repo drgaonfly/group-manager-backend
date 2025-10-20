@@ -7,6 +7,7 @@ import {
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { IGroup } from './group';
+import { IUser } from './user';
 
 export enum UserStatus {
   UNAUTHORIZED = 'unauthorized', // 未授权
@@ -19,6 +20,7 @@ export enum UserStatus {
 // Bot和User的关系表接口定义
 export interface IBotUserConfig extends Document {
   bot: mongoose.Types.ObjectId | IBot;
+  proxy: mongoose.Types.ObjectId | IUser;
   botUser: mongoose.Types.ObjectId | IBotUser;
   subscription?: mongoose.Types.ObjectId | ISubscription;
   status: UserStatus;
@@ -41,6 +43,11 @@ export interface IBotUserConfig extends Document {
 const botUserConfigSchema = new mongoose.Schema(
   {
     bot: { type: mongoose.Schema.Types.ObjectId, ref: 'Bot', required: true },
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
     botUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',

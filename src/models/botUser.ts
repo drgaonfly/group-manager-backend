@@ -2,9 +2,11 @@ import mongoose, { Document } from 'mongoose';
 import { IBotUserMessage } from './botUserMessage';
 import { ITransaction } from './transaction';
 import { ISubscription } from './subscription';
+import { IUser } from './user';
 
 export interface IBotUser extends Document {
   id: string;
+  proxy: mongoose.Types.ObjectId | IUser;
   userName: string;
   firstName: string;
   lastName: string;
@@ -25,6 +27,11 @@ const botUserSchema = new mongoose.Schema(
     lastName: { type: String, required: false },
     messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BotUserMessage' }],
     isAuthorized: { type: Boolean, default: false }, // 默认未授权
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
   },
   {
     timestamps: true,

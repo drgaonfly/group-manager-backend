@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import BotUser from '../models/botUser'; // 引入botUser模型
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
-import { isEmployee, isProxy } from '../middlewares/authMiddleware';
-import User from '../models/user';
+import { isProxy } from '../middlewares/authMiddleware';
 
 // Build query based on query parameters
 const buildQuery = async (queryParams: any, req: RequestCustom) => {
@@ -31,13 +30,7 @@ const buildQuery = async (queryParams: any, req: RequestCustom) => {
   }
 
   if (isProxy(req.user)) {
-    const employees = await User.find({ proxy: req.user._id });
-    const employeeIds = employees.map((employee) => employee._id);
-    query.user = { $in: [...employeeIds, req.user._id] };
-  }
-
-  if (isEmployee(req.user)) {
-    query.user = req.user._id;
+    query.proxy = req.user._id;
   }
 
   return query;
@@ -50,6 +43,7 @@ const getbotUsers = handleAsync(async (req: RequestCustom, res: Response) => {
   const query = await buildQuery(req.query, req);
 
   const botUsers = await BotUser.find(query)
+    .populate('proxy')
     .populate('transactions')
     .populate('payments')
     .populate('subscriptions')

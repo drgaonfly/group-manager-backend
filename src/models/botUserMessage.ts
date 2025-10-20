@@ -1,6 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IBotUser } from './botUser';
+import { IUser } from './user';
 
 export interface IMenu extends Document {
   menuName: string;
@@ -25,6 +26,7 @@ export interface IBotUserMessage extends Document {
   content: string;
   type: 'sent' | 'received' | 'error';
   bot: mongoose.Schema.Types.ObjectId | IBot;
+  proxy: mongoose.Types.ObjectId | IUser;
   botUsers: mongoose.Schema.Types.ObjectId[] | IBotUser[];
   intervalTime: number; // 间隔时间
   menus: IMenu[];
@@ -39,6 +41,11 @@ export interface IBotUserMessage extends Document {
 const botUserMessageSchema = new mongoose.Schema(
   {
     content: { type: String, required: true },
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
     type: {
       type: String,
       enum: ['sent', 'received', 'error'],

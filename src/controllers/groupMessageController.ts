@@ -4,9 +4,14 @@ import handleAsync from '../utils/handleAsync';
 import Bot from '../models/bot';
 import Group from '../models/group';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
+import { isProxy } from '../middlewares/authMiddleware';
+import { RequestCustom } from 'user';
 
 // 构建查询参数
-const buildQuery = async (queryParams: any): Promise<any> => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   if (queryParams.bot) {
@@ -43,55 +48,61 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     query.isOnline = queryParams.isOnline === 'true';
   }
 
+  if (isProxy(req.user)) {
+    query.proxy = req.user._id;
+  }
+
   return query;
 };
 
 // 获取所有群消息
-const getGroupMessages = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10' } = req.query;
+const getGroupMessages = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '10' } = req.query;
 
-  const query = await buildQuery(req.query);
+    const query = await buildQuery(req.query, req);
 
-  const groupMessages = await GroupMessage.find(query)
-    .populate({
-      path: 'bot',
-      populate: 'groups',
-    })
-    .populate('groups')
-    .sort('-createdAt')
-    .skip((+current - 1) * +pageSize)
-    .limit(+pageSize)
-    .exec();
+    const groupMessages = await GroupMessage.find(query)
+      .populate({
+        path: 'bot',
+        populate: 'groups',
+      })
+      .populate('groups')
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .exec();
 
-  const total = await GroupMessage.countDocuments(query).exec();
+    const total = await GroupMessage.countDocuments(query).exec();
 
-  // Convert Mongoose documents to plain objects and process images
-  const processedGroupMessages = await Promise.all(
-    groupMessages.map(async (gm) => {
-      // Convert to plain JS object to avoid Mongoose internals in response
-      const doc = gm.toObject ? gm.toObject() : gm;
+    // Convert Mongoose documents to plain objects and process images
+    const processedGroupMessages = await Promise.all(
+      groupMessages.map(async (gm) => {
+        // Convert to plain JS object to avoid Mongoose internals in response
+        const doc = gm.toObject ? gm.toObject() : gm;
 
-      // If images array exists, process each image URL in the array
-      if (doc.images && Array.isArray(doc.images)) {
-        doc.images = await Promise.all(
-          doc.images.map(async (imageUrl) => {
-            return await generateSignedUrl(imageUrl);
-          }),
-        );
-      }
+        // If images array exists, process each image URL in the array
+        if (doc.images && Array.isArray(doc.images)) {
+          doc.images = await Promise.all(
+            doc.images.map(async (imageUrl) => {
+              return await generateSignedUrl(imageUrl);
+            }),
+          );
+        }
 
-      return doc;
-    }),
-  );
+        return doc;
+      }),
+    );
 
-  res.json({
-    success: true,
-    data: processedGroupMessages,
-    total,
-    current: +current,
-    pageSize: +pageSize,
-  });
-});
+    res.json({
+      success: true,
+      data: processedGroupMessages,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
 
 // 获取群消息详情
 const getGroupMessageById = handleAsync(async (req: Request, res: Response) => {
