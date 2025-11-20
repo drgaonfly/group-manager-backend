@@ -2,6 +2,7 @@ import mongoose, { Document } from 'mongoose';
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { IGroup } from './group';
+import { IUser } from './user';
 
 // 消息类型q1
 export enum MessageType {
@@ -22,14 +23,17 @@ export enum MessageType {
   UNKNOWN = '未知消息类型',
 }
 
-// 只存客户发给机器人的消息（toBot），不存机器人发给客户的消息（fromBot）
+// 存储客户发给机器人的消息和拥有者回复给客户的消息
 export interface IBotMessage extends Document {
   bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的机器人
-  botUser?: mongoose.Schema.Types.ObjectId | IBotUser; // 发送消息的 BotUser
+  botUser?: mongoose.Schema.Types.ObjectId | IBotUser; // 发送消息的 BotUser（客户或拥有者）
   messageType: string; // 消息类型，如 text, image, command 等
   content: string; // 消息内容
   raw?: any; // 原始消息体，可选
   group?: mongoose.Schema.Types.ObjectId | IGroup; // 关联的群（如果是群消息）
+  telegramMessageId?: number; // Telegram 消息 ID
+  proxyUser?: mongoose.Schema.Types.ObjectId | IUser; // 代理用户
+  isOwnerReply?: boolean; // 是否是拥有者回复的消息
   // direction 字段移除，始终为 toBot
 }
 
@@ -62,6 +66,20 @@ const botMessageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
       required: false,
+    },
+    telegramMessageId: {
+      type: Number,
+      required: false,
+    },
+    proxyUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    isOwnerReply: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     // 不再存 direction 字段
   },

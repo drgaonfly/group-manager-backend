@@ -91,6 +91,38 @@ const logger: Middleware = async (ctx: MyContext, next) => {
         if (originalUserId) {
           const bot = setupBot(ctx.currentBot.token);
 
+          // 获取被回复的客户 BotUser
+          let originalBotUser: any = null;
+          try {
+            originalBotUser = await BotUser.findOne({
+              id: originalUserId.toString(),
+              bot: ctx.currentBot._id,
+            });
+          } catch (err) {
+            console.error('获取原始用户信息失败:', err);
+          }
+
+          // 获取代理信息
+          const { proxyUser } = await findBotProxy(ctx.currentBot);
+
+          // 检测消息类型和内容
+          const mediaTypes = {
+            photo: message?.photo?.[message.photo.length - 1]?.file_id,
+            video: message?.video?.file_id,
+            document: message?.document?.file_id,
+            animation: message?.animation?.file_id,
+            voice: message?.voice?.file_id,
+            audio: message?.audio?.file_id,
+            sticker: message?.sticker?.file_id,
+            video_note: message?.video_note?.file_id,
+          };
+          const mediaType = Object.entries(mediaTypes).find(
+            ([_, id]) => id,
+          )?.[0];
+          const fileId = mediaType ? mediaTypes[mediaType] : null;
+          const ownerReplyMessageType = mediaType || messageType;
+          const ownerReplyContent = fileId || message?.text || messageContent;
+
           try {
             // 将拥有者的回复复制给原始用户
             await bot.api.copyMessage(
@@ -114,6 +146,49 @@ const logger: Middleware = async (ctx: MyContext, next) => {
               console.error('发送回复给用户失败:', copyErr);
               await ctx.reply('❌ 发送失败');
             }
+          }
+
+          // 保存拥有者回复的消息到数据库（关联到客户的 BotUser）
+          // 即使 originalBotUser 不存在，也要尝试保存（使用当前拥有者作为 botUser）
+          try {
+            let targetBotUser = originalBotUser;
+
+            // 如果找不到客户的 BotUser，使用拥有者的 BotUser（可能是拥有者在回复）
+            if (!targetBotUser) {
+              console.warn(
+                `未找到客户 BotUser (ID: ${originalUserId})，使用拥有者 BotUser`,
+              );
+              targetBotUser = ctx.currentBotUser;
+            }
+
+            if (targetBotUser) {
+              await BotMessage.create({
+                bot: ctx.currentBot._id,
+                botUser: targetBotUser._id, // 关联到客户或拥有者
+                group: ctx.currentGroup?._id,
+                content: ownerReplyContent,
+                messageType: ownerReplyMessageType,
+                caption: message?.caption,
+                telegramMessageId: message.message_id, // 电报消息 ID
+                proxyUser: proxyUser?._id, // 代理用户
+                isOwnerReply: true, // 标记为拥有者回复
+                raw: message, // 原始消息体
+              });
+              console.log(
+                `✅ 已保存拥有者回复消息到数据库，关联到: ${
+                  originalBotUser
+                    ? `客户 (${originalUserId})`
+                    : `拥有者 (${targetBotUser.id})`
+                }`,
+              );
+            } else {
+              console.error(
+                `无法保存拥有者回复消息：找不到 BotUser (客户ID: ${originalUserId})`,
+              );
+            }
+          } catch (saveErr: any) {
+            console.error('保存拥有者回复消息失败:', saveErr);
+            console.error('错误详情:', saveErr.message || saveErr);
           }
 
           // 将拥有者的回复也发送给其他拥有者
@@ -142,16 +217,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
               }
             }
 
-            // 获取被回复的客户信息
-            let originalBotUser: any = null;
-            try {
-              originalBotUser = await BotUser.findOne({
-                id: originalUserId.toString(),
-                bot: ctx.currentBot._id,
-              });
-            } catch (err) {
-              console.error('获取原始用户信息失败:', err);
-            }
+            // 获取被回复的客户信息（已在上面获取，这里不需要重复获取）
 
             // 构建客户显示名称：优先 firstName + lastName，没有才用 userName
             let customerDisplayName = '';
@@ -301,6 +367,10 @@ const logger: Middleware = async (ctx: MyContext, next) => {
         content: fileId || message.text || messageContent,
         messageType,
         caption: message?.caption,
+        telegramMessageId: message.message_id, // 电报消息 ID
+        proxyUser: proxyUser?._id, // 代理用户
+        isOwnerReply: false, // 客户消息，不是拥有者回复
+        raw: message, // 原始消息体
       });
 
       // 如果成功保存了消息，给所有 owner 发送通知
