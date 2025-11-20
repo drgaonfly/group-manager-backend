@@ -1,14 +1,14 @@
 // src/middlewares/logger.ts
 import { Middleware } from 'grammy';
-import createDebug from 'debug';
-import BotMessage from '../../models/botMessage';
 import BotUser from '../../models/botUser';
-import { MyContext } from '../types';
+import BotMessage from '../../models/botMessage';
 import { findBotProxy } from '../services/findBotProxy';
+import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import axios from 'axios';
 
-const debug = createDebug('bot:logger');
+import createDebug from 'debug';
+const debug = createDebug('bot:replaceMentions');
 
 // 定义一个日志中间件
 const logger: Middleware = async (ctx: MyContext, next) => {
@@ -114,7 +114,6 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     debug(`${messageContent} (提及用户: ${mentions})`);
   }
 
-  // 获取所有拥有者
   const owners = await BotUser.find({
     _id: { $in: ctx.currentBot.owners || [] },
   });
@@ -129,42 +128,44 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       console.log('回复的消息:', message.reply_to_message);
 
       const replyMsg = message.reply_to_message as any;
-      let originalUserId: number | string | undefined;
 
-      // 首先检查回复的消息是否是转发的消息（forward_from）
-      if (replyMsg.forward_from) {
-        originalUserId = replyMsg.forward_from.id;
-        console.log('通过 forward_from 找到原始用户ID:', originalUserId);
-      }
-      // 如果 forward_from 不可用，尝试从消息文本中提取用户ID
-      else if (replyMsg.text) {
-        // 尝试从文本中提取 ID: xxxxx 格式的用户ID
-        const idMatch = replyMsg.text.match(/ID:\s*(\d+)/);
-        if (idMatch) {
-          originalUserId = idMatch[1];
-          console.log('从消息文本中提取到用户ID:', originalUserId);
+      // 检查回复的消息是否是转发的消息
+      if (replyMsg.forward_from || replyMsg.forward_from_chat) {
+        const originalUserId = replyMsg.forward_from?.id;
+
+        if (originalUserId) {
+          try {
+            const bot = setupBot(ctx.currentBot.token);
+
+            // 将拥有者的回复复制给原始用户
+            await bot.api.copyMessage(
+              originalUserId,
+              ctx.chat.id,
+              message.message_id,
+            );
+
+            console.log(`✅ 已将拥有者的回复发送给用户: ${originalUserId}`);
+
+            // 给拥有者一个确认
+            // await ctx.reply('✅ 回复已发送给用户', {
+            //   reply_to_message_id: message.message_id,
+            // });
+          } catch (copyErr: any) {
+            // 如果复制失败（比如用户还没有和机器人开始对话）
+            if (
+              copyErr.error_code === 400 &&
+              copyErr.description?.includes('chat not found')
+            ) {
+              console.log(
+                `用户 ${originalUserId} 还没有和机器人开始对话，无法发送回复`,
+              );
+              await ctx.reply('❌ 发送失败：用户还没有和机器人开始对话');
+            } else {
+              console.error('发送回复给用户失败:', copyErr);
+              await ctx.reply('❌ 发送失败');
+            }
+          }
         }
-      }
-
-      if (originalUserId) {
-        const bot = setupBot(ctx.currentBot.token);
-
-        // 将拥有者的回复复制给原始用户
-        await bot.api.copyMessage(
-          originalUserId,
-          ctx.chat.id,
-          message.message_id,
-        );
-
-        console.log(`✅ 已将拥有者的回复发送给用户: ${originalUserId}`);
-
-        // 给拥有者一个确认
-        // await ctx.reply('✅ 回复已发送给用户', {
-        //   reply_to_message_id: message.message_id,
-        // });
-      } else {
-        console.warn('⚠️ 无法识别原始发送者，请直接回复转发的消息');
-        await ctx.reply('⚠️ 无法识别原始发送者，请确保回复的是转发的消息');
       }
     } catch (err) {
       console.error('转发拥有者回复失败:', err);
@@ -185,7 +186,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   if (!ctx.callbackQuery && message) {
     try {
       // 统一处理所有消息类型
-      const mediaTypesForForward = {
+      const mediaTypes = {
         photo: message?.photo?.[message.photo.length - 1]?.file_id,
         video: message?.video?.file_id,
         document: message?.document?.file_id,
@@ -197,45 +198,23 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       };
 
       // 查找匹配的媒体类型
-      const mediaTypeForForward = Object.entries(mediaTypesForForward).find(
-        ([_, id]) => id,
-      )?.[0];
-      const fileId = mediaTypeForForward
-        ? mediaTypesForForward[mediaTypeForForward]
-        : null;
+      const mediaType = Object.entries(mediaTypes).find(([_, id]) => id)?.[0];
+      const fileId = mediaType ? mediaTypes[mediaType] : null;
 
       const { proxyUser } = await findBotProxy(ctx.currentBot);
-
-      let messageContentForDb = messageContent;
-
-      // 如果是多媒体文件，获取文件ID或URL
-      if (
-        message?.photo ||
-        message?.video ||
-        message?.document ||
-        message?.animation
-      ) {
-        try {
-          const file = await ctx.getFile();
-          messageContentForDb = `https://api.telegram.org/file/bot${ctx.currentBot.token}/${file.file_path}`;
-        } catch (err) {
-          debug('获取文件路径失败:', err);
-          messageContentForDb = fileId || messageContent;
-        }
-      }
 
       // 创建消息记录
       const savedMessage = await BotMessage.create({
         bot: ctx.currentBot._id,
         botUser: ctx.currentBotUser._id,
         group: ctx.currentGroup?._id,
-        content: fileId || messageContentForDb,
+        content: fileId || message.text || messageContent,
         messageType,
         caption: message?.caption,
       });
 
       // 如果成功保存了消息，给所有 owner 发送通知
-      if (savedMessage && processed_owners.length > 0) {
+      if (savedMessage) {
         try {
           const bot = setupBot(ctx.currentBot.token);
 
@@ -244,50 +223,61 @@ const logger: Middleware = async (ctx: MyContext, next) => {
             if (owner?.id) {
               try {
                 // 直接转发原始消息,用forwardMessage方法
-                // forwardMessage 会保留原始发送者的 forward_from 信息
-                // 这样拥有者回复时，可以通过 forward_from.id 获取原始用户ID
                 await bot.api.forwardMessage(
                   owner.id,
                   ctx.chat.id,
                   ctx.message.message_id,
                 );
               } catch (forwardErr: any) {
-                // 如果转发失败（比如隐私设置不允许转发），尝试使用复制消息
-                console.error('转发消息失败，尝试复制消息:', forwardErr);
+                // 如果转发失败（比如用户还没有和机器人开始对话），尝试使用 sendMessage 发送消息内容
+                console.error(
+                  `转发消息给拥有者 ${owner.id} 失败，尝试其他方式:`,
+                  forwardErr.message || forwardErr.description,
+                );
 
-                // 获取发送者信息，用于在复制消息时标识发送者
-                const senderInfo = `👤 来自用户: ${
-                  ctx.currentBotUser.firstName || ''
-                } ${ctx.currentBotUser.lastName || ''}${
-                  ctx.currentBotUser.userName
-                    ? ` (@${ctx.currentBotUser.userName})`
-                    : ''
-                }\nID: ${ctx.currentBotUser.id}\n\n`;
+                try {
+                  // 获取发送者信息
+                  const senderInfo = `👤 来自用户: ${
+                    ctx.currentBotUser.firstName || ''
+                  } ${ctx.currentBotUser.lastName || ''}${
+                    ctx.currentBotUser.userName
+                      ? ` (@${ctx.currentBotUser.userName})`
+                      : ''
+                  }\nID: ${ctx.currentBotUser.id}\n\n`;
 
-                if (message?.text) {
-                  // 文本消息：直接发送包含发送者信息的消息
-                  await bot.api.sendMessage(
-                    owner.id,
-                    senderInfo + message.text,
-                  );
-                } else {
-                  // 媒体消息：先发送发送者信息，然后复制消息
-                  const infoMsg = await bot.api.sendMessage(
-                    owner.id,
-                    senderInfo,
-                  );
-                  try {
-                    await bot.api.copyMessage(
+                  // 尝试发送消息建立对话
+                  if (message?.text) {
+                    // 文本消息：发送包含发送者信息和消息内容
+                    await bot.api.sendMessage(
                       owner.id,
-                      ctx.chat.id,
-                      ctx.message.message_id,
-                      {
-                        reply_to_message_id: infoMsg.message_id,
-                      },
+                      senderInfo + message.text,
                     );
-                  } catch (copyErr) {
-                    console.error('复制消息也失败:', copyErr);
+                  } else {
+                    // 媒体消息：先尝试发送一条提示消息
+                    const notifyMsg = `${senderInfo}[媒体消息]`;
+                    await bot.api.sendMessage(owner.id, notifyMsg);
+
+                    // 然后尝试复制媒体消息
+                    try {
+                      await bot.api.copyMessage(
+                        owner.id,
+                        ctx.chat.id,
+                        ctx.message.message_id,
+                      );
+                    } catch (copyErr) {
+                      console.error(
+                        `复制媒体消息给拥有者 ${owner.id} 失败:`,
+                        copyErr,
+                      );
+                    }
                   }
+                } catch (sendErr: any) {
+                  // 如果所有方式都失败，说明用户确实还没有和机器人开始对话
+                  // 记录错误但不中断流程
+                  console.error(
+                    `无法发送消息给拥有者 ${owner.id}，用户可能还没有和机器人开始对话:`,
+                    sendErr.message || sendErr.description,
+                  );
                 }
               }
             }
