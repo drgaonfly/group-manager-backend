@@ -121,22 +121,23 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   // 检查当前用户是否是拥有者
   const isOwner = owners.some((owner) => owner.id === ctx.currentBotUser.id);
 
-  // 如果是拥有者回复消息，则转发给原始用户
+  // 如果是拥有者回复消息，则转发给原始用户，同时也发送给其他拥有者
   if (isOwner && message?.reply_to_message) {
     try {
       console.log('=== 拥有者回复检测 ===');
       console.log('回复的消息:', message.reply_to_message);
 
       const replyMsg = message.reply_to_message as any;
+      let originalUserId: number | undefined;
 
       // 检查回复的消息是否是转发的消息
       if (replyMsg.forward_from || replyMsg.forward_from_chat) {
-        const originalUserId = replyMsg.forward_from?.id;
+        originalUserId = replyMsg.forward_from?.id;
 
         if (originalUserId) {
-          try {
-            const bot = setupBot(ctx.currentBot.token);
+          const bot = setupBot(ctx.currentBot.token);
 
+          try {
             // 将拥有者的回复复制给原始用户
             await bot.api.copyMessage(
               originalUserId,
@@ -145,11 +146,6 @@ const logger: Middleware = async (ctx: MyContext, next) => {
             );
 
             console.log(`✅ 已将拥有者的回复发送给用户: ${originalUserId}`);
-
-            // 给拥有者一个确认
-            // await ctx.reply('✅ 回复已发送给用户', {
-            //   reply_to_message_id: message.message_id,
-            // });
           } catch (copyErr: any) {
             // 如果复制失败（比如用户还没有和机器人开始对话）
             if (
@@ -163,6 +159,146 @@ const logger: Middleware = async (ctx: MyContext, next) => {
             } else {
               console.error('发送回复给用户失败:', copyErr);
               await ctx.reply('❌ 发送失败');
+            }
+          }
+
+          // 将拥有者的回复也发送给其他拥有者
+          const otherOwners = owners.filter(
+            (owner) =>
+              owner.id !== ctx.currentBotUser.id && owner.id !== originalUserId,
+          );
+
+          if (otherOwners.length > 0) {
+            console.log(`📢 将回复同步给其他 ${otherOwners.length} 个拥有者`);
+
+            // 获取回复的拥有者信息（当前发送消息的用户）
+            const replyOwner = ctx.currentBotUser;
+            let replyOwnerDisplayName = '';
+            if (replyOwner) {
+              const firstName = replyOwner.firstName || '';
+              const lastName = replyOwner.lastName || '';
+              const userName = replyOwner.userName || '';
+
+              if (firstName || lastName) {
+                replyOwnerDisplayName = `${firstName} ${lastName}`.trim();
+              } else if (userName) {
+                replyOwnerDisplayName = `@${userName}`;
+              } else {
+                replyOwnerDisplayName = `ID: ${replyOwner.id}`;
+              }
+            }
+
+            // 获取被回复的客户信息
+            let originalBotUser: any = null;
+            try {
+              originalBotUser = await BotUser.findOne({
+                id: originalUserId.toString(),
+                bot: ctx.currentBot._id,
+              });
+            } catch (err) {
+              console.error('获取原始用户信息失败:', err);
+            }
+
+            // 构建客户显示名称：优先 firstName + lastName，没有才用 userName
+            let customerDisplayName = '';
+            if (originalBotUser) {
+              const firstName = originalBotUser.firstName || '';
+              const lastName = originalBotUser.lastName || '';
+              const userName = originalBotUser.userName || '';
+
+              if (firstName || lastName) {
+                customerDisplayName = `${firstName} ${lastName}`.trim();
+              } else if (userName) {
+                customerDisplayName = `@${userName}`;
+              } else {
+                customerDisplayName = `ID: ${originalUserId}`;
+              }
+            } else {
+              customerDisplayName = `ID: ${originalUserId}`;
+            }
+
+            for (const otherOwner of otherOwners) {
+              if (otherOwner?.id) {
+                try {
+                  // 使用 forwardMessage 转发两条消息，都使用 forward
+                  // 第一条：转发客户的原始消息（显示客户信息）
+                  try {
+                    await bot.api.forwardMessage(
+                      otherOwner.id,
+                      ctx.chat.id,
+                      replyMsg.message_id,
+                    );
+                    console.log(`✅ 已转发客户消息给拥有者 ${otherOwner.id}`);
+                  } catch (forwardCustomerErr: any) {
+                    // 如果转发客户消息失败，记录但不中断
+                    console.error(
+                      `转发客户消息给拥有者 ${otherOwner.id} 失败:`,
+                      forwardCustomerErr.message ||
+                        forwardCustomerErr.description,
+                    );
+                  }
+
+                  // 第二条：转发拥有者的回复（forward_from 会自动显示回复的拥有者信息）
+                  try {
+                    await bot.api.forwardMessage(
+                      otherOwner.id,
+                      ctx.chat.id,
+                      message.message_id,
+                    );
+                    console.log(
+                      `✅ 已转发拥有者回复给拥有者 ${otherOwner.id} (回复者: ${replyOwnerDisplayName})`,
+                    );
+                  } catch (forwardReplyErr: any) {
+                    // 如果转发失败，尝试复制消息并发送提示信息
+                    console.error(
+                      `转发拥有者回复给拥有者 ${otherOwner.id} 失败，尝试复制:`,
+                      forwardReplyErr.message || forwardReplyErr.description,
+                    );
+
+                    // 先发送提示信息：哪个拥有者回复了哪个客户
+                    const syncMessage = `💬 拥有者回复客户\n\n回复者: ${replyOwnerDisplayName}\n客户: ${customerDisplayName}\n回复内容:\n\n`;
+
+                    let infoMsg: any = null;
+                    try {
+                      infoMsg = await bot.api.sendMessage(
+                        otherOwner.id,
+                        syncMessage,
+                      );
+                    } catch (sendErr: any) {
+                      console.error(
+                        `发送提示信息给拥有者 ${otherOwner.id} 失败:`,
+                        sendErr.message || sendErr.description,
+                      );
+                    }
+
+                    // 然后复制消息
+                    try {
+                      await bot.api.copyMessage(
+                        otherOwner.id,
+                        ctx.chat.id,
+                        message.message_id,
+                        infoMsg
+                          ? { reply_to_message_id: infoMsg.message_id }
+                          : undefined,
+                      );
+                      console.log(
+                        `✅ 已复制拥有者回复给拥有者 ${otherOwner.id}`,
+                      );
+                    } catch (copyErr) {
+                      console.error(
+                        `复制拥有者回复给拥有者 ${otherOwner.id} 也失败:`,
+                        copyErr,
+                      );
+                    }
+                  }
+                } catch (syncErr: any) {
+                  // 如果同步失败，记录错误但不中断流程
+                  console.error(
+                    `同步回复给拥有者 ${otherOwner.id} 失败:`,
+                    syncErr.message || syncErr.description,
+                  );
+                }
+              }
             }
           }
         }
