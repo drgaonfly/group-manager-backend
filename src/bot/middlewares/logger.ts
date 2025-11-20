@@ -129,28 +129,42 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       console.log('回复的消息:', message.reply_to_message);
 
       const replyMsg = message.reply_to_message as any;
+      let originalUserId: number | string | undefined;
 
-      // 检查回复的消息是否是转发的消息
-      if (replyMsg.forward_from || replyMsg.forward_from_chat) {
-        const originalUserId = replyMsg.forward_from?.id;
-
-        if (originalUserId) {
-          const bot = setupBot(ctx.currentBot.token);
-
-          // 将拥有者的回复复制给原始用户
-          await bot.api.copyMessage(
-            originalUserId,
-            ctx.chat.id,
-            message.message_id,
-          );
-
-          console.log(`✅ 已将拥有者的回复发送给用户: ${originalUserId}`);
-
-          // 给拥有者一个确认
-          // await ctx.reply('✅ 回复已发送给用户', {
-          //   reply_to_message_id: message.message_id,
-          // });
+      // 首先检查回复的消息是否是转发的消息（forward_from）
+      if (replyMsg.forward_from) {
+        originalUserId = replyMsg.forward_from.id;
+        console.log('通过 forward_from 找到原始用户ID:', originalUserId);
+      }
+      // 如果 forward_from 不可用，尝试从消息文本中提取用户ID
+      else if (replyMsg.text) {
+        // 尝试从文本中提取 ID: xxxxx 格式的用户ID
+        const idMatch = replyMsg.text.match(/ID:\s*(\d+)/);
+        if (idMatch) {
+          originalUserId = idMatch[1];
+          console.log('从消息文本中提取到用户ID:', originalUserId);
         }
+      }
+
+      if (originalUserId) {
+        const bot = setupBot(ctx.currentBot.token);
+
+        // 将拥有者的回复复制给原始用户
+        await bot.api.copyMessage(
+          originalUserId,
+          ctx.chat.id,
+          message.message_id,
+        );
+
+        console.log(`✅ 已将拥有者的回复发送给用户: ${originalUserId}`);
+
+        // 给拥有者一个确认
+        // await ctx.reply('✅ 回复已发送给用户', {
+        //   reply_to_message_id: message.message_id,
+        // });
+      } else {
+        console.warn('⚠️ 无法识别原始发送者，请直接回复转发的消息');
+        await ctx.reply('⚠️ 无法识别原始发送者，请确保回复的是转发的消息');
       }
     } catch (err) {
       console.error('转发拥有者回复失败:', err);
@@ -228,12 +242,54 @@ const logger: Middleware = async (ctx: MyContext, next) => {
           // 循环所有 owner.id 发送
           for (const owner of processed_owners) {
             if (owner?.id) {
-              // 直接转发原始消息,用forwardMessage方法
-              await bot.api.forwardMessage(
-                owner.id,
-                ctx.chat.id,
-                ctx.message.message_id,
-              );
+              try {
+                // 直接转发原始消息,用forwardMessage方法
+                // forwardMessage 会保留原始发送者的 forward_from 信息
+                // 这样拥有者回复时，可以通过 forward_from.id 获取原始用户ID
+                await bot.api.forwardMessage(
+                  owner.id,
+                  ctx.chat.id,
+                  ctx.message.message_id,
+                );
+              } catch (forwardErr: any) {
+                // 如果转发失败（比如隐私设置不允许转发），尝试使用复制消息
+                console.error('转发消息失败，尝试复制消息:', forwardErr);
+
+                // 获取发送者信息，用于在复制消息时标识发送者
+                const senderInfo = `👤 来自用户: ${
+                  ctx.currentBotUser.firstName || ''
+                } ${ctx.currentBotUser.lastName || ''}${
+                  ctx.currentBotUser.userName
+                    ? ` (@${ctx.currentBotUser.userName})`
+                    : ''
+                }\nID: ${ctx.currentBotUser.id}\n\n`;
+
+                if (message?.text) {
+                  // 文本消息：直接发送包含发送者信息的消息
+                  await bot.api.sendMessage(
+                    owner.id,
+                    senderInfo + message.text,
+                  );
+                } else {
+                  // 媒体消息：先发送发送者信息，然后复制消息
+                  const infoMsg = await bot.api.sendMessage(
+                    owner.id,
+                    senderInfo,
+                  );
+                  try {
+                    await bot.api.copyMessage(
+                      owner.id,
+                      ctx.chat.id,
+                      ctx.message.message_id,
+                      {
+                        reply_to_message_id: infoMsg.message_id,
+                      },
+                    );
+                  } catch (copyErr) {
+                    console.error('复制消息也失败:', copyErr);
+                  }
+                }
+              }
             }
           }
         } catch (err) {
