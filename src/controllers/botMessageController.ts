@@ -3,7 +3,6 @@ import BotMessage from '../models/botMessage';
 import Group from '../models/group';
 import BotUser from '../models/botUser';
 import Bot from '../models/bot';
-import User from '../models/user';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
