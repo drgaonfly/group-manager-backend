@@ -61,6 +61,7 @@ const getGroupById = handleAsync(async (req: Request, res: Response) => {
     .populate('bot')
     .populate('creator')
     .populate('operators')
+    .populate('botUsers')
     .populate('transactions')
     .exec();
 

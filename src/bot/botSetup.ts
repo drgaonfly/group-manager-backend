@@ -111,7 +111,7 @@ export const setupBot = (token: string) => {
     }
   });
 
-  // 设置私聊命令
+  // 设置私聊命令（只保留 /start）
   bot.api
     .setMyCommands(privateCommandsList, {
       scope: { type: 'all_private_chats' },
@@ -123,15 +123,17 @@ export const setupBot = (token: string) => {
       log('设置私聊命令时发生错误:', error);
     });
 
-  // 设置群组命令
-  bot.api
-    .setMyCommands(groupCommandsList, { scope: { type: 'all_group_chats' } })
-    .then(() => {
-      log('群组命令已设置成功');
-    })
-    .catch((error) => {
-      log('设置群组命令时发生错误:', error);
-    });
+  // 不再设置群组命令
+  if (groupCommandsList.length > 0) {
+    bot.api
+      .setMyCommands(groupCommandsList, { scope: { type: 'all_group_chats' } })
+      .then(() => {
+        log('群组命令已设置成功');
+      })
+      .catch((error) => {
+        log('设置群组命令时发生错误:', error);
+      });
+  }
 
   bot.api.config.use(hydrateFiles(token));
 

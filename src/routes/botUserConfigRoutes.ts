@@ -6,6 +6,7 @@ import {
   updateBotUserConfig,
   deleteBotUserConfig,
   deleteMultipleBotUserConfigs,
+  sendMessage,
 } from '../controllers/botUserConfigController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -24,5 +25,7 @@ router
   .get(protect, checkPermission, getBotUserConfigById) // 获取单个机器人
   .put(protect, checkPermission, updateBotUserConfig) // 更新机器人
   .delete(protect, checkPermission, deleteBotUserConfig); // 删除机器人
+
+router.route('/:id/send-message').post(protect, checkPermission, sendMessage);
 
 export default router;
