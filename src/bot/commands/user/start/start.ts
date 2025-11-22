@@ -1,8 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Composer, InputFile } from 'grammy';
+import { Composer, InlineKeyboard, InputFile } from 'grammy';
 import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
+import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkInBot } from '../../../middlewares/checkInBot';
 import createDebug from 'debug';
 
@@ -69,6 +70,24 @@ startCommand.command('start', checkInBot, async (ctx) => {
   // }
 
   await handleStart(ctx);
+
+  // 合并原有菜单和添加到群组按钮
+  const combinedKeyboard = new InlineKeyboard();
+
+  // 添加群组按钮
+  combinedKeyboard
+    .url('➕ 添加到群聊', `https://t.me/${ctx.me.username}?startgroup=true`)
+    .row();
+
+  // 添加原有菜单项
+  bot.menus.forEach((item) => {
+    combinedKeyboard.url(item.menuName, item.url).row();
+  });
+
+  // 发送消息和键盘
+  await ctx.reply(bot.message || '欢迎使用机器人', {
+    reply_markup: await createMainKeyboard(ctx),
+  });
 });
 
 export default startCommand;
