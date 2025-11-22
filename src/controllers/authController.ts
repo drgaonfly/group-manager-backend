@@ -65,8 +65,8 @@ export const setup2FA = handleAsync(
 
     const secret = speakeasy.generateSecret({
       length: 32,
-      name: `billingBot(${user.email})`,
-      issuer: 'BillingBotBackend', // 请替换为实际项目名称
+      name: `multiBot(${user.email})`,
+      issuer: 'multiBotBackend', // 请替换为实际项目名称
     });
 
     await User.findByIdAndUpdate(user._id, {

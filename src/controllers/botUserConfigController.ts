@@ -5,6 +5,7 @@ import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import BotUser from '../models/botUser';
 import Bot from '../models/bot';
+import { setupBot } from '../bot/botSetup';
 
 // Build query based on query parameters
 const buildQuery = async (queryParams: any, req: RequestCustom) => {
@@ -163,6 +164,56 @@ const deleteMultipleBotUserConfigs = handleAsync(
   },
 );
 
+// 发送消息给 BotUserConfig 关联的用户
+const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
+  const { id } = req.params;
+  const { message, parseMode } = req.body;
+
+  if (!message || !message.trim()) {
+    res.status(400);
+    throw new Error('消息内容不能为空');
+  }
+
+  const botUserConfig = await BotUserConfig.findById(id)
+    .populate('bot')
+    .populate('botUser')
+    .exec();
+
+  if (!botUserConfig) {
+    res.status(404);
+    throw new Error('Bot user config not found');
+  }
+
+  const bot = botUserConfig.bot as any;
+  const botUser = botUserConfig.botUser as any;
+
+  if (!bot || !bot.token) {
+    res.status(404);
+    throw new Error('机器人不存在或未配置token');
+  }
+
+  if (!botUser || !botUser.id) {
+    res.status(404);
+    throw new Error('用户不存在');
+  }
+
+  const telegramBot = setupBot(bot.token);
+
+  try {
+    await telegramBot.api.sendMessage(botUser.id, message, {
+      parse_mode: parseMode || undefined,
+    });
+
+    res.json({
+      success: true,
+      message: '消息发送成功',
+    });
+  } catch (error: any) {
+    res.status(500);
+    throw new Error(error.message || '发送消息失败');
+  }
+});
+
 export {
   getBotUserConfigs,
   getBotUserConfigById,
@@ -170,4 +221,5 @@ export {
   updateBotUserConfig,
   deleteBotUserConfig,
   deleteMultipleBotUserConfigs,
+  sendMessage,
 };

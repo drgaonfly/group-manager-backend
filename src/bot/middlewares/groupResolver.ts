@@ -46,7 +46,9 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     await newGroup.save();
     ctx.currentGroup = newGroup;
 
-    await ctx.reply('感谢您把我添加到贵群!\n下一步设置费率，请发：设置费率x%');
+    if (ctx.currentBot?.message) {
+      await ctx.reply(ctx.currentBot.message || '欢迎使用机器人');
+    }
   } else {
     // 更新群组信息
     // 只在群组标题或类型发生变化时才更新
