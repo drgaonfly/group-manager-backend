@@ -23,6 +23,11 @@ export interface IUser extends Document {
 
   isOnline: boolean;
   lastOnline: Date; // 最后在线时间
+
+  bidirectional: boolean; // 双向
+  groupMessage: boolean; // 群发
+  menuConfig: boolean; // 菜单配置
+  botCount: number; // 机器人数量
 }
 
 const userSchema = new mongoose.Schema(
@@ -68,6 +73,11 @@ const userSchema = new mongoose.Schema(
     lastLoginIp: { type: String },
 
     lastOnline: { type: Date },
+
+    bidirectional: { type: Boolean, default: false }, // 双向
+    groupMessage: { type: Boolean, default: false }, // 群发
+    menuConfig: { type: Boolean, default: false }, // 菜单配置
+    botCount: { type: Number, default: 1 }, // 机器人数量
   },
   { timestamps: true },
 );

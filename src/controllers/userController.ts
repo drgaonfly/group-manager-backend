@@ -221,6 +221,10 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     proxySharingRate,
     stackingChannel,
     serviceLink,
+    bidirectional,
+    groupMessage,
+    menuConfig,
+    botCount,
     ...body
   } = req.body;
 
@@ -254,6 +258,10 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       liquidRate,
       stakeRate,
       serviceLink, // 服务链接
+      bidirectional, // 双向
+      groupMessage, // 群发
+      menuConfig, // 菜单配置
+      botCount, // 机器人数量
     },
     { new: true },
   );
