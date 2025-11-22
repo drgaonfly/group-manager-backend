@@ -225,6 +225,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     groupMessage,
     menuConfig,
     botCount,
+    availableBotCount,
     ...body
   } = req.body;
 
@@ -261,7 +262,8 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       bidirectional, // 双向
       groupMessage, // 群发
       menuConfig, // 菜单配置
-      botCount, // 机器人数量
+      botCount, // 当前机器人数量
+      availableBotCount, // 可用机器人数量
     },
     { new: true },
   );
