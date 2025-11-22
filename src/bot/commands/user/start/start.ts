@@ -84,15 +84,10 @@ startCommand.command('start', checkInBot, async (ctx) => {
     combinedKeyboard.url(item.menuName, item.url).row();
   });
 
-  // 发送消息和组合后的按钮
-  // await ctx.reply('欢迎使用机器人', {
-  //   reply_markup: combinedKeyboard,
-  // });
-  if (bot.message) {
-    await ctx.reply(bot.message || '欢迎使用机器人', {
-      reply_markup: await createMainKeyboard(ctx),
-    });
-  }
+  // 发送消息和键盘
+  await ctx.reply(bot.message || '欢迎使用机器人', {
+    reply_markup: await createMainKeyboard(ctx),
+  });
 });
 
 export default startCommand;

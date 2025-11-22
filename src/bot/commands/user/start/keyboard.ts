@@ -10,9 +10,9 @@ keyboardCommand.on('message:text', async (ctx, next) => {
   // 获取用户点击的文本
   const clickedText = ctx.message.text;
 
-  // 查找是否是自定义键盘按钮
+  // 查找是否是自定义键盘按钮（通过 label 或 command 匹配）
   const matchedKeyboard = customKeyboards.find(
-    (kb) => kb.command === clickedText,
+    (kb) => kb.label === clickedText || kb.command === clickedText,
   );
 
   if (matchedKeyboard) {

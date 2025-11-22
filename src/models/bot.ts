@@ -50,6 +50,8 @@ export interface IMenu extends Document {
 }
 
 export interface IKeyboard extends Document {
+  row: number;
+  label: string;
   command: string;
   content: string;
 }
@@ -74,6 +76,8 @@ const menuSchema = new mongoose.Schema({
 });
 
 const keyboardSchema = new mongoose.Schema({
+  row: { type: Number, required: false, default: 1 },
+  label: { type: String, required: false },
   command: { type: String, required: true },
   content: { type: String, required: true },
 });
