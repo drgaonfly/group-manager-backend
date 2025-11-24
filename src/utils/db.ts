@@ -42,4 +42,29 @@ const setupDB = async (): Promise<void | null> => {
   }
 };
 
+const closeDB = async (): Promise<void> => {
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await mongoose.connection.close();
+      console.log('MongoDB 连接已关闭');
+    } catch (error) {
+      console.error('关闭 MongoDB 连接时出错:', error);
+    }
+  }
+};
+
+// 监听进程退出信号，优雅关闭数据库连接
+process.on('SIGINT', async () => {
+  console.log('收到 SIGINT 信号，正在关闭数据库连接...');
+  await closeDB();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('收到 SIGTERM 信号，正在关闭数据库连接...');
+  await closeDB();
+  process.exit(0);
+});
+
 export default setupDB;
+export { closeDB };

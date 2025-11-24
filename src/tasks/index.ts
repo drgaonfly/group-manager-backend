@@ -1,35 +1,49 @@
-import setupDB from '../utils/db';
-import { sendGroupMessages } from './cron/groupMessager';
-import { sendBotUserMessages } from './cron/botUserMessager';
 import { setupRedis } from '../utils/redis';
+import setupDB, { closeDB } from '../utils/db';
+
+import { sendGroupMessages } from './cron/groupMessager';
+import cron from 'node-cron';
 
 const task = async () => {
-  await setupDB();
-  await setupRedis();
   console.log('当前时间:', new Date().toLocaleString());
-  console.log('开始执行任务...');
-  await sendGroupMessages(); // 发送群发消息
-  await sendBotUserMessages(); // 发送用户消息
+  console.log('开始执行群发消息任务...');
+
+  await sendGroupMessages();
 };
 
-// 执行任务并在完成后退出进程
-task()
-  .then(() => {
+// 初始化数据库和 Redis
+(async () => {
+  await setupDB();
+  await setupRedis();
+  console.log('数据库和 Redis 连接已建立');
+
+  // 使用 node-cron 每10秒执行一次
+  cron.schedule(
+    '*/10 * * * * *',
+    async () => {
+      try {
+        await task();
+      } catch (err) {
+        console.error('群发消息任务执行失败:', err);
+      }
+    },
+    {
+      timezone: 'Asia/Shanghai',
+    },
+  );
+
+  console.log('群发消息定时任务已启动，每5秒执行一次');
+
+  // 优雅退出处理
+  process.on('SIGINT', async () => {
+    console.log('收到 SIGINT 信号，正在关闭...');
+    await closeDB();
     process.exit(0);
-  })
-  .catch((err) => {
-    console.error('Task failed:', err);
-    process.exit(1);
   });
 
-// export function startTaskScheduler() {
-//   cron.schedule('* * * * *', async () => {
-//     console.log(`[定时任务] ${new Date().toLocaleString()} 开始执行`);
-//     try {
-//       await task();
-//       console.log('[定时任务] 执行完成 ✅');
-//     } catch (error) {
-//       console.error('[定时任务] 执行出错 ❌', error);
-//     }
-//   });
-// }
+  process.on('SIGTERM', async () => {
+    console.log('收到 SIGTERM 信号，正在关闭...');
+    await closeDB();
+    process.exit(0);
+  });
+})();
