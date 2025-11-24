@@ -103,6 +103,7 @@ const groupSchema = new mongoose.Schema(
     intervalTime: {
       type: Number,
       required: false,
+      default: 0,
     },
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
