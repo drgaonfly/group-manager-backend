@@ -44,6 +44,8 @@ export async function sendGroupMessages() {
       try {
         stats.processed++;
 
+        console.log('message', message);
+
         const bot = message.bot as any;
         if (!bot) {
           console.warn(
@@ -69,8 +71,6 @@ export async function sendGroupMessages() {
 
         // 获取关联的群组
         const groups = message.groups as IGroup[];
-
-        console.log('groups', groups);
 
         if (!groups || groups.length === 0) {
           console.warn(
@@ -102,10 +102,13 @@ export async function sendGroupMessages() {
 
             let nextMessage: IGroupMessage;
             let shouldSend = false;
-            const intervalTimeInMs = group.intervalTime * 60 * 60 * 1000;
+            const intervalTimeInMs = message.intervalTime * 60 * 60 * 1000;
 
             if (!history) {
               // 从没发过，发第一条
+              console.log(
+                `[首次发送] 群 ${group.id} 从未发送过消息，准备发送第一条`,
+              );
               nextMessage = botGroupMessages[0];
               shouldSend = true;
             } else {
@@ -118,14 +121,31 @@ export async function sendGroupMessages() {
               const timeSinceLastSent =
                 now - new Date(history.sentAt).getTime();
 
+              console.log(`[时间检查] 群 ${group.id}:`);
+              console.log(
+                `  上次发送时间: ${new Date(history.sentAt).toLocaleString(
+                  'zh-CN',
+                )}`,
+              );
+              console.log(
+                `  当前时间: ${new Date(now).toLocaleString('zh-CN')}`,
+              );
+              console.log(`  经过时间(ms): ${timeSinceLastSent}`);
+              console.log(`  需要间隔(ms): ${intervalTimeInMs}`);
+              console.log(`  需要间隔(小时): ${message.intervalTime}`);
+
               if (timeSinceLastSent >= intervalTimeInMs) {
                 // 下一个要发的消息（循环）
                 const nextIndex = (lastSentIndex + 1) % botGroupMessages.length;
                 nextMessage = botGroupMessages[nextIndex];
                 shouldSend = true;
               } else {
+                const timeSinceLastSentHours = (
+                  timeSinceLastSent /
+                  (60 * 60 * 1000)
+                ).toFixed(2);
                 console.log(
-                  `[跳过] 群 ${group.id} 距离上次消息不足 ${group.intervalTime} 小时，跳过`,
+                  `[跳过] 群 ${group.id} 距离上次消息 ${timeSinceLastSentHours} 小时，不足 ${message.intervalTime} 小时，跳过`,
                 );
                 stats.skipped++;
                 continue;
