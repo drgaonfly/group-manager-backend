@@ -36,6 +36,8 @@ jobs:
             /www/server/nodejs/v20.16.0/bin/pnpm install &&
             git checkout -f . &&
             npm run build &&
-            pm2 restart multi-backend && node dist/bot/index.js
+            pm2 reload ecosystem.config.js &&
+            pm2 restart multi-bot &&
+            pm2 save
 
 
