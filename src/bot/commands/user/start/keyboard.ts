@@ -1,9 +1,19 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
+import { findBotProxy } from '../../../services/findBotProxy';
 
 const keyboardCommand = new Composer<MyContext>();
 
 keyboardCommand.on('message:text', async (ctx, next) => {
+  // 获取代理用户权限
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
+  // 如果没有自定义键盘权限，直接跳过
+  if (!proxyUser?.keyboardConfig) {
+    await next();
+    return;
+  }
+
   // 获取当前机器人配置的自定义键盘按钮
   const customKeyboards = ctx.currentBot?.keyboards || [];
 

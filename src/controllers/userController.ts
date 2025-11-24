@@ -223,7 +223,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     serviceLink,
     bidirectional,
     groupMessage,
-    menuConfig,
+    keyboardConfig,
     botCount,
     availableBotCount,
     ...body
@@ -261,7 +261,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       serviceLink, // 服务链接
       bidirectional, // 双向
       groupMessage, // 群发
-      menuConfig, // 菜单配置
+      keyboardConfig, // 菜单配置
       botCount, // 当前机器人数量
       availableBotCount, // 可用机器人数量
     },

@@ -26,7 +26,7 @@ export interface IUser extends Document {
 
   bidirectional: boolean; // 双向
   groupMessage: boolean; // 群发
-  menuConfig: boolean; // 菜单配置
+  keyboardConfig: boolean; // 菜单配置
   botCount: number; // 当前机器人数量
   availableBotCount: number; // 可用机器人数量
 }
@@ -77,7 +77,7 @@ const userSchema = new mongoose.Schema(
 
     bidirectional: { type: Boolean, default: false }, // 双向
     groupMessage: { type: Boolean, default: false }, // 群发
-    menuConfig: { type: Boolean, default: false }, // 菜单配置
+    keyboardConfig: { type: Boolean, default: false }, // 菜单配置
     botCount: { type: Number, default: 0 }, // 当前机器人数量
     availableBotCount: { type: Number, default: 1 }, // 可用机器人数量
   },

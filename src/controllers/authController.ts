@@ -223,6 +223,9 @@ const updateUserProfile = handleAsync(
       currentPassword,
       confirmPassword,
       serviceLink,
+      bidirectional,
+      groupMessage,
+      keyboardConfig,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -254,16 +257,30 @@ const updateUserProfile = handleAsync(
       hashPassword = await bcrypt.hash(password, salt);
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      user._id,
-      {
-        name: name || user.name,
-        email: email || user.email,
-        password: hashPassword,
-        serviceLink: serviceLink,
-      },
-      { new: true },
-    );
+    // 构建更新对象
+    const updateData: any = {
+      name: name || user.name,
+      email: email || user.email,
+      password: hashPassword,
+      serviceLink: serviceLink,
+    };
+
+    // 只有管理员可以修改权限相关字段
+    if (req.user.isAdmin) {
+      if (typeof bidirectional !== 'undefined') {
+        updateData.bidirectional = bidirectional;
+      }
+      if (typeof groupMessage !== 'undefined') {
+        updateData.groupMessage = groupMessage;
+      }
+      if (typeof keyboardConfig !== 'undefined') {
+        updateData.keyboardConfig = keyboardConfig;
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(user._id, updateData, {
+      new: true,
+    });
 
     // 如果修改了密码，更新密码修改时间
     if (password) {
@@ -277,6 +294,9 @@ const updateUserProfile = handleAsync(
       serviceLink,
       name: updatedUser?.name,
       email: updatedUser?.email,
+      bidirectional: updatedUser?.bidirectional,
+      groupMessage: updatedUser?.groupMessage,
+      keyboardConfig: updatedUser?.keyboardConfig,
       token: generateToken(updatedUser!.id), // 注意: 请确保 generateToken 可以接受用户的 id 类型
     });
   },

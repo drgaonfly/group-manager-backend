@@ -5,6 +5,7 @@ import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkInBot } from '../../../middlewares/checkInBot';
+import { findBotProxy } from '../../../services/findBotProxy';
 import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();
@@ -71,6 +72,9 @@ startCommand.command('start', checkInBot, async (ctx) => {
 
   await handleStart(ctx);
 
+  // 获取代理用户权限
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
   // 合并原有菜单和添加到群组按钮
   const combinedKeyboard = new InlineKeyboard();
 
@@ -84,10 +88,15 @@ startCommand.command('start', checkInBot, async (ctx) => {
     combinedKeyboard.url(item.menuName, item.url).row();
   });
 
+  // 根据权限决定是否使用自定义键盘
+  const replyOptions: any = {};
+  if (proxyUser?.keyboardConfig && bot.keyboards && bot.keyboards.length > 0) {
+    // 有权限且配置了键盘，使用自定义键盘
+    replyOptions.reply_markup = await createMainKeyboard(ctx);
+  }
+
   // 发送消息和键盘
-  await ctx.reply(bot.message || '欢迎使用机器人', {
-    reply_markup: await createMainKeyboard(ctx),
-  });
+  await ctx.reply(bot.message || '欢迎使用机器人', replyOptions);
 });
 
 export default startCommand;

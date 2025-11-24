@@ -170,6 +170,12 @@ export const setWebhook = async (botManager: IBot) => {
 
 const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
   console.log('WEBHOOK_URL', WEBHOOK_URL);
+
+  if (req.user.botCount >= req.user.availableBotCount) {
+    res.status(400);
+    throw new Error('您已达到最大机器人数量');
+  }
+
   const { token, isOnline } = req.body;
 
   const botExists = await Bot.findOne({ token });
@@ -194,6 +200,8 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
   }
 
   await botManager.save();
+
+  await User.findByIdAndUpdate(req.user._id, { $inc: { botCount: 1 } });
 
   res.status(201).json({
     success: true,
@@ -262,15 +270,42 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-const deleteBot = handleAsync(async (req: Request, res: Response) => {
+const deleteBot = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
 
-  const bot = await Bot.findByIdAndDelete(id);
+  // 1. 先查找机器人（不删除）
+  const bot = await Bot.findById(id);
 
   if (!bot) {
     res.status(404);
     throw new Error('机器人不存在');
   }
+
+  // 2. 检查机器人是否属于当前用户
+  if (bot.user.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('您无权删除此机器人');
+  }
+
+  // 3. 检查用户的 botCount
+  if (req.user.botCount === 0) {
+    res.status(400);
+    throw new Error('您没有创建机器人，无法删除');
+  }
+
+  // 4. 删除机器人
+  await Bot.findByIdAndDelete(id);
+
+  // 5. 更新用户的 botCount
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    { $inc: { botCount: -1 } },
+    { new: true },
+  );
+
+  console.log(
+    `✅ 机器人删除成功，用户 ${req.user.name} 的 botCount: ${updatedUser?.botCount}`,
+  );
 
   res.json({
     success: true,
@@ -278,36 +313,71 @@ const deleteBot = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-const deleteMultipleBots = handleAsync(async (req: Request, res: Response) => {
-  const { ids } = req.body;
+const deleteMultipleBots = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { ids } = req.body;
 
-  const bots = await Bot.find({ _id: { $in: ids } });
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      res.status(400);
+      throw new Error('请提供要删除的机器人 ID');
+    }
 
-  if (bots.length === 0) {
-    res.status(404);
-    throw new Error('机器人不存在');
-  }
+    // 1. 查找所有机器人
+    const bots = await Bot.find({ _id: { $in: ids } });
 
-  // for (const botManager of bots) {
-  //   const bot = setupBot(botManager.token);
-  //   const webhookInfo = await printWebhookInfo(bot);
-  //   if (webhookInfo.url) {
-  //     await bot.api.deleteWebhook();
-  //     console.log(`${botManager.userName} Webhook ${botManager.token} 已删除`);
-  //   }
-  // }
+    if (bots.length === 0) {
+      res.status(404);
+      throw new Error('机器人不存在');
+    }
 
-  const botIds = bots.map((bot) => bot._id);
+    // 2. 检查所有机器人是否都属于当前用户
+    const unauthorizedBots = bots.filter(
+      (bot) => bot.user.toString() !== req.user._id.toString(),
+    );
 
-  await Bot.deleteMany({
-    _id: { $in: botIds },
-  });
+    if (unauthorizedBots.length > 0) {
+      res.status(403);
+      throw new Error('您无权删除部分机器人');
+    }
 
-  res.json({
-    success: true,
-    message: `成功删除 ${ids.length} 个机器人`,
-  });
-});
+    // 3. 检查用户的 botCount 是否足够
+    if (req.user.botCount < bots.length) {
+      res.status(400);
+      throw new Error('机器人数量不足，无法删除');
+    }
+
+    // for (const botManager of bots) {
+    //   const bot = setupBot(botManager.token);
+    //   const webhookInfo = await printWebhookInfo(bot);
+    //   if (webhookInfo.url) {
+    //     await bot.api.deleteWebhook();
+    //     console.log(`${botManager.userName} Webhook ${botManager.token} 已删除`);
+    //   }
+    // }
+
+    // 4. 删除机器人
+    const botIds = bots.map((bot) => bot._id);
+    await Bot.deleteMany({
+      _id: { $in: botIds },
+    });
+
+    // 5. 更新用户的 botCount（扣减实际删除的数量）
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $inc: { botCount: -bots.length } },
+      { new: true },
+    );
+
+    console.log(
+      `✅ 批量删除成功，用户 ${req.user.name} 删除了 ${bots.length} 个机器人，剩余 botCount: ${updatedUser?.botCount}`,
+    );
+
+    res.json({
+      success: true,
+      message: `成功删除 ${bots.length} 个机器人`,
+    });
+  },
+);
 
 const addOwner = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;

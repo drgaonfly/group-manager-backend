@@ -75,8 +75,11 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   // 检查当前用户是否是拥有者
   const isOwner = owners.some((owner) => owner.id === ctx.currentBotUser.id);
 
-  // 如果是拥有者回复消息，则转发给原始用户，同时也发送给其他拥有者
-  if (isOwner && message?.reply_to_message) {
+  // 获取代理用户权限
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
+  // 如果是拥有者回复消息，且代理用户开启了双向转发权限，则转发给原始用户，同时也发送给其他拥有者
+  if (isOwner && message?.reply_to_message && proxyUser?.bidirectional) {
     try {
       console.log('=== 拥有者回复检测 ===');
       console.log('回复的消息:', message.reply_to_message);
@@ -101,9 +104,6 @@ const logger: Middleware = async (ctx: MyContext, next) => {
           } catch (err) {
             console.error('获取原始用户信息失败:', err);
           }
-
-          // 获取代理信息
-          const { proxyUser } = await findBotProxy(ctx.currentBot);
 
           // 检测消息类型和内容
           const mediaTypes = {
@@ -357,24 +357,22 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       const mediaType = Object.entries(mediaTypes).find(([_, id]) => id)?.[0];
       const fileId = mediaType ? mediaTypes[mediaType] : null;
 
-      const { proxyUser } = await findBotProxy(ctx.currentBot);
+      // 代理用户开启了群发权限，给所有 owner 发送通知
+      if (proxyUser?.groupMessage) {
+        // 创建消息记录
+        await BotMessage.create({
+          bot: ctx.currentBot._id,
+          botUser: ctx.currentBotUser._id,
+          group: ctx.currentGroup?._id,
+          content: fileId || message.text || messageContent,
+          messageType,
+          caption: message?.caption,
+          telegramMessageId: message.message_id, // 电报消息 ID
+          proxyUser: proxyUser?._id, // 代理用户
+          isOwnerReply: false, // 客户消息，不是拥有者回复
+          raw: message, // 原始消息体
+        });
 
-      // 创建消息记录
-      const savedMessage = await BotMessage.create({
-        bot: ctx.currentBot._id,
-        botUser: ctx.currentBotUser._id,
-        group: ctx.currentGroup?._id,
-        content: fileId || message.text || messageContent,
-        messageType,
-        caption: message?.caption,
-        telegramMessageId: message.message_id, // 电报消息 ID
-        proxyUser: proxyUser?._id, // 代理用户
-        isOwnerReply: false, // 客户消息，不是拥有者回复
-        raw: message, // 原始消息体
-      });
-
-      // 如果成功保存了消息，给所有 owner 发送通知
-      if (savedMessage) {
         try {
           const bot = setupBot(ctx.currentBot.token);
 
