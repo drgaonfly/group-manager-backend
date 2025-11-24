@@ -32,7 +32,7 @@ const task = async () => {
     },
   );
 
-  console.log('群发消息定时任务已启动，每5秒执行一次');
+  console.log('群发消息定时任务已启动，每10秒执行一次');
 
   // 优雅退出处理
   process.on('SIGINT', async () => {
