@@ -13,6 +13,10 @@ import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { transformDocumentImage } from '../utils/transformUtils';
 import { InlineKeyboard } from 'grammy';
 import BotUserMessage from '../models/botUserMessage';
+import { createTelegramClient } from '../bot/services/gramClient';
+import createDebug from 'debug';
+
+const debug = createDebug('bot:controller');
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -168,6 +172,40 @@ export const setWebhook = async (botManager: IBot) => {
   await botManager.save();
 };
 
+// 使用 gramjs 获取机器人信息
+const getBotInfoWithGramjs = async (token: string) => {
+  const gramClient = createTelegramClient('');
+  try {
+    await gramClient.connect();
+    await gramClient.start({ botAuthToken: token });
+    const botInfo = await gramClient.getMe();
+    await gramClient.disconnect();
+
+    debug('获取到的机器人信息:', botInfo);
+
+    // 处理 id，可能是 BigInt 或对象
+    let botId = '';
+    if (botInfo.id) {
+      if (typeof botInfo.id === 'object' && 'value' in botInfo.id) {
+        botId = String((botInfo.id as any).value);
+      } else {
+        botId = String(botInfo.id);
+      }
+    }
+
+    return {
+      id: botId,
+      username: botInfo.username || '',
+      firstName: botInfo.firstName || '',
+      lastName: botInfo.lastName || '',
+    };
+  } catch (error) {
+    debug('使用 gramjs 获取机器人信息失败:', error);
+    await gramClient.disconnect().catch(() => {});
+    throw error;
+  }
+};
+
 const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
   console.log('WEBHOOK_URL', WEBHOOK_URL);
 
@@ -185,9 +223,25 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
     throw new Error('该 Bot Token 已被使用，请使用其他 Token');
   }
 
+  // 使用 gramjs 获取机器人信息
+  let botInfo = null;
+  try {
+    botInfo = await getBotInfoWithGramjs(token);
+    debug('成功获取机器人信息:', botInfo);
+  } catch (error) {
+    debug('获取机器人信息失败，继续创建机器人:', error);
+    // 如果获取信息失败，仍然创建机器人，但不更新用户名等信息
+  }
+
   const botManager = new Bot({
     ...req.body,
     user: req.user._id,
+    // 如果成功获取到机器人信息，更新相关字段
+    ...(botInfo && {
+      userName: botInfo.username || '',
+      botName: botInfo.firstName || botInfo.username || '',
+      id: botInfo.id || '',
+    }),
   });
 
   if (isOnline) {
