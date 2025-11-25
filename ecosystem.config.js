@@ -50,27 +50,27 @@ module.exports = {
       compress: true,
     },
     // 群发消息任务 - 使用 node-cron 每10秒执行一次
-    {
-      name: 'multi-group-messages',
-      script: 'dist/tasks/index.js',
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true, // 常驻进程，PM2 保障自动重启
-      watch: false,
-      env: {
-        NODE_ENV: 'production',
-        DEBUG: 'bot*',
-      },
-      // 日志配置
-      error_file: './logs/group-messages-error.log',
-      out_file: './logs/group-messages-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true,
-      // 日志切割配置（保留7天）
-      max_size: '10M',
-      retain: 7,
-      compress: true,
-    },
+    // {
+    //   name: 'multi-group-messages',
+    //   script: 'dist/tasks/index.js',
+    //   instances: 1,
+    //   exec_mode: 'fork',
+    //   autorestart: true, // 常驻进程，PM2 保障自动重启
+    //   watch: false,
+    //   env: {
+    //     NODE_ENV: 'production',
+    //     DEBUG: 'bot*',
+    //   },
+    //   // 日志配置
+    //   error_file: './logs/group-messages-error.log',
+    //   out_file: './logs/group-messages-out.log',
+    //   log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    //   merge_logs: true,
+    //   // 日志切割配置（保留7天）
+    //   max_size: '10M',
+    //   retain: 7,
+    //   compress: true,
+    // },
   ],
 };
 
