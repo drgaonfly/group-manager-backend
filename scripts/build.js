@@ -139,6 +139,7 @@ async function uploadAndExtract() {
               { src: 'build/dist.zip', dest: `${REMOTE_DEPLOY_PATH}/dist.zip` },
               { src: 'package.json', dest: `${REMOTE_DEPLOY_PATH}/package.json` },
               { src: 'pnpm-lock.yaml', dest: `${REMOTE_DEPLOY_PATH}/pnpm-lock.yaml` },
+              { src: 'ecosystem.config.js', dest: `${REMOTE_DEPLOY_PATH}/ecosystem.config.js` },
               { src: '.env', dest: `${REMOTE_DEPLOY_PATH}/.env` }
             ];
             
