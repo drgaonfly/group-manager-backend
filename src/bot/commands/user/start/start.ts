@@ -8,7 +8,6 @@ import { checkInBot } from '../../../middlewares/checkInBot';
 import { findBotProxy } from '../../../services/findBotProxy';
 import createDebug from 'debug';
 import PromotionLink from '../../../../models/promotionLink';
-import BotUser from '../../../../models/botUser';
 
 const startCommand = new Composer<MyContext>();
 
