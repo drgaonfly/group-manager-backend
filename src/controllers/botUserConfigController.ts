@@ -75,6 +75,84 @@ const getBotUserConfigs = handleAsync(
   },
 );
 
+// 根据推广链接获取该链接下的用户配置列表
+const getBotUserConfigsByPromotionLink = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '10' } = req.query;
+    const { promotionLinkId } = req.params;
+
+    if (!promotionLinkId) {
+      res.status(400);
+      throw new Error('promotionLinkId is required');
+    }
+
+    const query: any = { promotionLink: promotionLinkId };
+
+    if (isProxy(req.user)) {
+      query.proxy = req.user._id;
+    }
+
+    const botUserConfigs = await BotUserConfig.find(query)
+      .populate('botUser')
+      .populate('proxy')
+      .populate('bot')
+      .populate('promotionLink', 'title link code')
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .exec();
+
+    const total = await BotUserConfig.countDocuments(query).exec();
+
+    res.json({
+      success: true,
+      data: botUserConfigs,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
+
+// 根据机器人获取该机器人下的用户配置列表
+const getBotUserConfigsByBot = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '10' } = req.query;
+    const { botId } = req.params;
+
+    if (!botId) {
+      res.status(400);
+      throw new Error('botId is required');
+    }
+
+    const query: any = { bot: botId };
+
+    if (isProxy(req.user)) {
+      query.proxy = req.user._id;
+    }
+
+    const botUserConfigs = await BotUserConfig.find(query)
+      .populate('botUser')
+      .populate('proxy')
+      .populate('bot')
+      .populate('promotionLink', 'title link code')
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .exec();
+
+    const total = await BotUserConfig.countDocuments(query).exec();
+
+    res.json({
+      success: true,
+      data: botUserConfigs,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
+
 // 根据 ID 获取用户配置
 const getBotUserConfigById = handleAsync(
   async (req: Request, res: Response) => {
@@ -218,4 +296,6 @@ export {
   deleteBotUserConfig,
   deleteMultipleBotUserConfigs,
   sendMessage,
+  getBotUserConfigsByPromotionLink,
+  getBotUserConfigsByBot,
 };
