@@ -254,6 +254,13 @@ botSchema.virtual('botUserMessages', {
   foreignField: 'bot',
 });
 
+// 虚拟字段：关联的 BotUserConfig，用于统计/查看机器人下的用户配置
+botSchema.virtual('botUserConfigs', {
+  ref: 'BotUserConfig',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
 const Bot = mongoose.model<IBot>('Bot', botSchema);
 
 export default Bot;

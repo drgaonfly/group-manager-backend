@@ -125,11 +125,23 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('authorized_users')
     .populate('clonedFrom')
     .populate('creator')
+    .populate({
+      path: 'botUserConfigs',
+      populate: [
+        {
+          path: 'botUser',
+          select: 'id userName firstName lastName',
+        },
+        {
+          path: 'bot',
+          select: 'botName userName',
+        },
+      ],
+    })
     .sort('-createdAt')
     .select('-private_key')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
-    .lean()
     .exec();
 
   const botsWithSignedUrls = await Promise.all(

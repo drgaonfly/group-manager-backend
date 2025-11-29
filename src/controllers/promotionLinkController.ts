@@ -31,6 +31,19 @@ export const getPromotionLinks = handleAsync(
 
     const promotionLinks = await PromotionLink.find(query)
       .populate('bot', 'userName botName')
+      .populate({
+        path: 'botUserConfigs',
+        populate: [
+          {
+            path: 'botUser',
+            select: 'id userName firstName lastName',
+          },
+          {
+            path: 'bot',
+            select: 'botName userName',
+          },
+        ],
+      })
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)

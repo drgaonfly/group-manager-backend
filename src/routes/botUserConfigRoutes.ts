@@ -7,8 +7,6 @@ import {
   deleteBotUserConfig,
   deleteMultipleBotUserConfigs,
   sendMessage,
-  getBotUserConfigsByPromotionLink,
-  getBotUserConfigsByBot,
 } from '../controllers/botUserConfigController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -29,15 +27,5 @@ router
   .delete(protect, checkPermission, deleteBotUserConfig); // 删除机器人
 
 router.route('/:id/send-message').post(protect, checkPermission, sendMessage);
-
-// 根据推广链接获取该链接下的用户配置列表
-router
-  .route('/by-promotion-link/:promotionLinkId')
-  .get(protect, checkPermission, getBotUserConfigsByPromotionLink);
-
-// 根据机器人获取该机器人下的用户配置列表
-router
-  .route('/by-bot/:botId')
-  .get(protect, checkPermission, getBotUserConfigsByBot);
 
 export default router;

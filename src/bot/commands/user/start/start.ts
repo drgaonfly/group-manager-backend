@@ -65,16 +65,7 @@ startCommand.command('start', checkInBot, async (ctx) => {
         ctx.currentBotUserConfig.promotionLink = promotionLink._id;
         await ctx.currentBotUserConfig.save();
 
-        // 累加该推广链接的用户数量（BotUserConfig 数量）
-        promotionLink.userCount = (promotionLink.userCount || 0) + 1;
-        await promotionLink.save();
-
-        debug(
-          'Promotion link associated:',
-          promotionLink.title,
-          'userCount:',
-          promotionLink.userCount,
-        );
+        debug('Promotion link associated:', promotionLink.title);
 
         // 如果开启了双向功能，通知拥有者
         if (proxyUser?.bidirectional) {
