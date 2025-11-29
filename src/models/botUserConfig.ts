@@ -6,7 +6,6 @@ import {
 } from './subscription';
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
-import { IGroup } from './group';
 import { IUser } from './user';
 
 export enum UserStatus {
