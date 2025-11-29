@@ -7,6 +7,8 @@ import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkInBot } from '../../../middlewares/checkInBot';
 import { findBotProxy } from '../../../services/findBotProxy';
 import createDebug from 'debug';
+import PromotionLink from '../../../../models/promotionLink';
+import BotUser from '../../../../models/botUser';
 
 const startCommand = new Composer<MyContext>();
 
@@ -41,6 +43,37 @@ startCommand.command('start', checkInBot, async (ctx) => {
   debug('start');
   // const chatId = ctx.chat.id; // 获取群组 ID
   const bot = ctx.currentBot;
+
+  // 处理推广链接关联
+  // 获取 start 命令的参数（例如：/start JXCAZEAX）
+  const startParam = ctx.match as string;
+
+  if (startParam && ctx.currentBotUser) {
+    const code = startParam.trim();
+    debug('start command code:', code);
+
+    try {
+      // 查找对应的推广链接
+      const promotionLink = await PromotionLink.findOne({ code, bot: bot._id });
+
+      if (promotionLink && !ctx.currentBotUser.promotionLink) {
+        // 关联推广链接到 BotUser（只有在没有关联时才更新）
+        ctx.currentBotUser.promotionLink = promotionLink._id;
+        await ctx.currentBotUser.save();
+        debug('Promotion link associated:', promotionLink.title);
+      } else if (promotionLink && ctx.currentBotUser.promotionLink) {
+        debug(
+          'BotUser already has promotion link:',
+          ctx.currentBotUser.promotionLink,
+        );
+      } else {
+        debug('No promotion link found for code:', code);
+      }
+    } catch (error) {
+      debug('Error associating promotion link:', error);
+      // 不阻止后续流程继续执行
+    }
+  }
 
   const botSession = bot.session;
 
