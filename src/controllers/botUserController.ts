@@ -47,7 +47,6 @@ const getbotUsers = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('transactions')
     .populate('payments')
     .populate('subscriptions')
-    .populate('promotionLink', 'title link code')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -70,7 +69,6 @@ const getbotUserById = handleAsync(async (req: Request, res: Response) => {
     .populate('transactions')
     .populate('payments')
     .populate('subscriptions')
-    .populate('promotionLink', 'title link code')
     .exec();
 
   if (!getBotUser) {

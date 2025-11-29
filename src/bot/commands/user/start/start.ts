@@ -8,6 +8,7 @@ import { checkInBot } from '../../../middlewares/checkInBot';
 import { findBotProxy } from '../../../services/findBotProxy';
 import createDebug from 'debug';
 import PromotionLink from '../../../../models/promotionLink';
+import BotUserConfig from '../../../../models/botUserConfig';
 
 const startCommand = new Composer<MyContext>();
 
@@ -47,7 +48,7 @@ startCommand.command('start', checkInBot, async (ctx) => {
   // 获取 start 命令的参数（例如：/start JXCAZEAX）
   const startParam = ctx.match as string;
 
-  if (startParam && ctx.currentBotUser) {
+  if (startParam && ctx.currentBotUserConfig) {
     const code = startParam.trim();
     debug('start command code:', code);
 
@@ -55,15 +56,15 @@ startCommand.command('start', checkInBot, async (ctx) => {
       // 查找对应的推广链接
       const promotionLink = await PromotionLink.findOne({ code, bot: bot._id });
 
-      if (promotionLink && !ctx.currentBotUser.promotionLink) {
-        // 关联推广链接到 BotUser（只有在没有关联时才更新）
-        ctx.currentBotUser.promotionLink = promotionLink._id;
-        await ctx.currentBotUser.save();
+      if (promotionLink && !ctx.currentBotUserConfig.promotionLink) {
+        // 关联推广链接到 BotUserConfig（只有在没有关联时才更新）
+        ctx.currentBotUserConfig.promotionLink = promotionLink._id;
+        await ctx.currentBotUserConfig.save();
         debug('Promotion link associated:', promotionLink.title);
-      } else if (promotionLink && ctx.currentBotUser.promotionLink) {
+      } else if (promotionLink && ctx.currentBotUserConfig.promotionLink) {
         debug(
-          'BotUser already has promotion link:',
-          ctx.currentBotUser.promotionLink,
+          'BotUserConfig already has promotion link:',
+          ctx.currentBotUserConfig.promotionLink,
         );
       } else {
         debug('No promotion link found for code:', code);

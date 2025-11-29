@@ -57,11 +57,7 @@ const getBotUserConfigs = handleAsync(
       .populate('botUser')
       .populate('proxy')
       .populate('bot')
-      .populate({
-        path: 'parent',
-        populate: { path: 'botUser' },
-      })
-      .populate('invited_group')
+      .populate('promotionLink', 'title link code')
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)

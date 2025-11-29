@@ -30,11 +30,7 @@ export interface IBotUserConfig extends Document {
   isAutoRenew: boolean;
   usdt_balance: number; // 用户余额
   trx_balance: number; // 用户余额
-  parent: mongoose.Types.ObjectId | IBotUserConfig;
-  spread_code: string;
-  invited_counts: number; //group  邀请人数
-  invited_counts_bot: number; // private 邀请人数
-  invited_group: mongoose.Types.ObjectId | IGroup[];
+  promotionLink?: mongoose.Types.ObjectId; // 关联的推广链接
   createdAt: Date;
   updatedAt: Date;
 }
@@ -94,28 +90,9 @@ const botUserConfigSchema = new mongoose.Schema(
       default: 0,
       min: 0, // 余额不能小于0
     },
-    parent: {
+    promotionLink: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'BotUserConfig',
-      required: false,
-    },
-    spread_code: {
-      type: String,
-      unique: true,
-    },
-    invited_counts: {
-      type: Number,
-      required: true,
-      default: 0,
-    }, // 给群用的
-    invited_counts_bot: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    invited_group: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Group',
+      ref: 'PromotionLink',
       required: false,
     },
   },
