@@ -88,7 +88,7 @@ startCommand.command('start', checkInBot, async (ctx) => {
               const notificationMessage =
                 `🔗 新用户通过推广链接启动\n\n` +
                 `用户: ${customerName}\n` +
-                `推广链接标题: ${promotionLink.title}\n` +
+                `推广链接标题: <b>${promotionLink.title}</b>\n` +
                 (promotionLink.link
                   ? `\n推广链接:\n${promotionLink.link}`
                   : '');
@@ -100,6 +100,7 @@ startCommand.command('start', checkInBot, async (ctx) => {
                     await botInstance.api.sendMessage(
                       owner.id,
                       notificationMessage,
+                      { parse_mode: 'HTML' },
                     );
                     debug(`✅ 已发送推广链接通知给拥有者: ${owner.id}`);
                   } catch (sendErr: any) {
