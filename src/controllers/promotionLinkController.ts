@@ -89,9 +89,7 @@ export const addPromotionLink = handleAsync(
 export const updatePromotionLink = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-
-    // 不允许更新 code 字段
-    const { code, ...updateData } = req.body;
+    const updateData = { ...req.body };
 
     const updatedPromotionLink = await PromotionLink.findByIdAndUpdate(
       id,
