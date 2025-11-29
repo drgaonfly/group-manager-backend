@@ -9,17 +9,8 @@ const myLinkCommand = new Composer<MyContext>();
 const debug = createDebug('bot:myLink');
 
 export async function handleMyLink(ctx: MyContext) {
-  const userName = ctx.currentBot.userName;
-  const spread_code = ctx.currentBotUserConfig.spread_code;
-
-  // const old_url =  `https://t.me/${userName}?start=${spread_code}_${ctx.currentGroup.id}`
-
-  const message = [
-    `<b>Your invitation link is:</b>`,
-    `https://t.me/${userName}?start=${spread_code}`,
-  ].join('\n');
-
-  await ctx.reply(message, {
+  // 邀请功能已废弃
+  await ctx.reply('此功能已废弃，请使用推广链接功能。', {
     parse_mode: 'HTML',
   });
 }
