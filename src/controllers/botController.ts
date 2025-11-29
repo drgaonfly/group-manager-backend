@@ -65,7 +65,7 @@ const buildQuery = async (
     query.type = queryParams.type;
   }
 
-  if (queryParams.isOnline !== '') {
+  if (queryParams.isOnline !== undefined && queryParams.isOnline !== '') {
     query.isOnline = queryParams.isOnline === 'true';
   }
 
@@ -114,6 +114,9 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     return;
   }
 
+  debug('getBots query:', JSON.stringify(query));
+  debug('getBots user:', req.user._id, 'isProxy:', isProxy(req.user));
+
   const bots = await Bot.find(query)
     .populate('user')
     .populate('botUsers')
@@ -140,6 +143,8 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
   );
 
   const total = await Bot.countDocuments(query).exec();
+
+  debug('getBots result:', { total, botsCount: bots.length, query });
 
   res.json({
     success: true,
