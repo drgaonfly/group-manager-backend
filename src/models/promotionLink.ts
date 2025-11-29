@@ -1,10 +1,12 @@
 import mongoose, { Document } from 'mongoose';
+import { IBot } from './bot';
 
 export interface IPromotionLink extends Document {
   title: string;
   remark?: string;
   link: string;
   code: string; // 随机码，6-8位字母，唯一
+  bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的机器人
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +34,11 @@ const promotionLinkSchema = new mongoose.Schema(
       unique: true,
       uppercase: true,
       trim: true,
+    },
+    bot: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Bot',
+      required: true,
     },
   },
   {

@@ -30,6 +30,7 @@ export const getPromotionLinks = handleAsync(
     const query = buildQuery(req.query);
 
     const promotionLinks = await PromotionLink.find(query)
+      .populate('bot', 'userName botName')
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)
@@ -50,7 +51,9 @@ export const getPromotionLinks = handleAsync(
 // 获取单个推广链接
 export const getPromotionLinkById = handleAsync(
   async (req: Request, res: Response) => {
-    const promotionLink = await PromotionLink.findById(req.params.id).exec();
+    const promotionLink = await PromotionLink.findById(req.params.id)
+      .populate('bot', 'userName botName')
+      .exec();
 
     if (!promotionLink) {
       res.status(404);
@@ -67,6 +70,11 @@ export const getPromotionLinkById = handleAsync(
 // 添加推广链接
 export const addPromotionLink = handleAsync(
   async (req: Request, res: Response) => {
+    if (!req.body.bot) {
+      res.status(400);
+      throw new Error('机器人是必填项');
+    }
+
     // 生成随机码（6-8位随机）
     const codeLength = Math.floor(Math.random() * 3) + 6; // 6, 7, 8 随机选择
     const code = await generatePromotionCode(codeLength, PromotionLink);
@@ -95,7 +103,9 @@ export const updatePromotionLink = handleAsync(
       id,
       updateData,
       { new: true },
-    ).exec();
+    )
+      .populate('bot', 'userName botName')
+      .exec();
 
     if (!updatedPromotionLink) {
       res.status(404);
