@@ -7,6 +7,7 @@ export interface IPromotionLink extends Document {
   link: string;
   code: string; // 随机码，6-8位字母，唯一
   bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的机器人
+  userCount?: number; // 通过该推广链接启动的 BotUserConfig 数量
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +40,10 @@ const promotionLinkSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
       required: true,
+    },
+    userCount: {
+      type: Number,
+      default: 0,
     },
   },
   {
