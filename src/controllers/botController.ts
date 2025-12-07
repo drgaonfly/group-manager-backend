@@ -146,11 +146,12 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const botsWithSignedUrls = await Promise.all(
     bots.map(async (bot) => {
-      if (bot.multi_image) {
-        const signedUrl = await generateSignedUrl(bot.multi_image);
-        return { ...bot, multi_image: signedUrl };
+      const botObj = bot.toObject ? bot.toObject() : bot;
+      if (botObj.multi_image) {
+        const signedUrl = await generateSignedUrl(botObj.multi_image);
+        return { ...botObj, multi_image: signedUrl };
       }
-      return bot;
+      return botObj;
     }),
   );
 
