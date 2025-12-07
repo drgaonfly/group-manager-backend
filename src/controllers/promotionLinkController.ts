@@ -30,7 +30,7 @@ export const getPromotionLinks = handleAsync(
     const query = buildQuery(req.query);
 
     const promotionLinks = await PromotionLink.find(query)
-      .populate('bot', 'userName botName')
+      .populate('bot', 'userName botName message')
       .populate({
         path: 'botUserConfigs',
         populate: [
@@ -65,7 +65,7 @@ export const getPromotionLinks = handleAsync(
 export const getPromotionLinkById = handleAsync(
   async (req: Request, res: Response) => {
     const promotionLink = await PromotionLink.findById(req.params.id)
-      .populate('bot', 'userName botName')
+      .populate('bot', 'userName botName message')
       .exec();
 
     if (!promotionLink) {
@@ -117,7 +117,7 @@ export const updatePromotionLink = handleAsync(
       updateData,
       { new: true },
     )
-      .populate('bot', 'userName botName')
+      .populate('bot', 'userName botName message')
       .exec();
 
     if (!updatedPromotionLink) {
