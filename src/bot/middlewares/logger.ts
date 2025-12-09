@@ -144,7 +144,12 @@ const logger: Middleware = async (ctx: MyContext, next) => {
               await ctx.reply('❌ 发送失败：用户还没有和机器人开始对话');
             } else {
               console.error('发送回复给用户失败:', copyErr);
-              await ctx.reply('❌ 发送失败');
+              const errorMsg =
+                copyErr?.message ||
+                copyErr?.description ||
+                copyErr?.toString() ||
+                '未知错误';
+              await ctx.reply(`❌ 发送失败：${errorMsg}`);
             }
           }
 
@@ -323,9 +328,11 @@ const logger: Middleware = async (ctx: MyContext, next) => {
           }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('转发拥有者回复失败:', err);
-      await ctx.reply('❌ 发送失败');
+      const errorMsg =
+        err?.message || err?.description || err?.toString() || '未知错误';
+      await ctx.reply(`❌ 发送失败：${errorMsg}`);
     }
 
     // 拥有者的回复不需要继续处理
