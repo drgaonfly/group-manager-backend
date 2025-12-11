@@ -1,9 +1,11 @@
 name: Auto Deploy to Release Server
 on:
-  push:
-    branches:
-      - main
-      - release
+  workflow_dispatch:  # 手动触发配置
+    inputs:
+      branch:
+        description: '需要部署的分支'
+        required: true
+        default: 'main'
 jobs:
 
   build:
