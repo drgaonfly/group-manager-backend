@@ -10,13 +10,13 @@ const cliProgress = require('cli-progress');
 require('dotenv').config();
 
 // 远程部署目录
-const REMOTE_DEPLOY_PATH = '/www/wwwroot/multi-backend';
+const REMOTE_DEPLOY_PATH = '/www/wwwroot/manager-backend';
 
 // NVM Node路径
-const NVM_NODE_PATH = '/root/.nvm/versions/node/v22.15.0/bin';
+const NVM_NODE_PATH = '/www/server/nodejs/v24.12.0/bin';
 
 // PM2 服务名称
-const PM2_SERVICE_NAME = 'multi-backend';
+const PM2_SERVICE_NAME = 'manager-backend';
 
 // 远程服务器配置
 const sshConfig = {
@@ -104,9 +104,6 @@ async function processFiles() {
   } else {
     console.log('跳过远程部署: 缺少SSH_HOST或SSH_PRIVATE_KEY环境变量');
   }
-  
-  // 执行完成后退出进程
-  process.exit(0);
 }
 
 // 上传并解压文件到远程服务器
@@ -118,15 +115,15 @@ async function uploadAndExtract() {
     conn.on('ready', async () => {
       console.log('远程服务器连接成功');
       try {
-        // 先确保远程目录存在
+        // 先确保远程目录及其 tmp 和 logs 子目录存在
         await new Promise((res, rej) => {
           conn.exec(
-            `mkdir -p ${REMOTE_DEPLOY_PATH} ${REMOTE_DEPLOY_PATH}/tmp ${REMOTE_DEPLOY_PATH}/logs`,
+            `mkdir -p ${REMOTE_DEPLOY_PATH} && mkdir -p ${REMOTE_DEPLOY_PATH}/tmp && mkdir -p ${REMOTE_DEPLOY_PATH}/logs`,
             (err, stream) => {
               if (err) return rej(err);
               stream.on('close', () => res());
               stream.on('data', () => {});
-              stream.stderr.on('data', (data) => console.error('STDERR: ' + data));
+              stream.stderr.on('data', () => {});
             }
           );
         });
@@ -140,7 +137,7 @@ async function uploadAndExtract() {
               { src: 'package.json', dest: `${REMOTE_DEPLOY_PATH}/package.json` },
               { src: 'pnpm-lock.yaml', dest: `${REMOTE_DEPLOY_PATH}/pnpm-lock.yaml` },
               { src: 'ecosystem.config.js', dest: `${REMOTE_DEPLOY_PATH}/ecosystem.config.js` },
-              { src: '.env', dest: `${REMOTE_DEPLOY_PATH}/.env` }
+              { src: '.env', dest: `${REMOTE_DEPLOY_PATH}/.env` },
             ];
             
             console.log('开始上传文件...');
@@ -169,6 +166,24 @@ async function uploadAndExtract() {
           });
         });
 
+        // 修改 ecosystem.config.js，将第一个主进程的 instances 改为 'max'
+        console.log('修改 ecosystem.config.js 配置...');
+        await new Promise((res, rej) => {
+          conn.exec(
+            `cd ${REMOTE_DEPLOY_PATH} && \
+            sed -i "/name: 'manager-backend'/,/^    },/ { s|instances: 1,|instances: 'max', // 使用所有CPU核心|; }" ecosystem.config.js`,
+            (err, stream) => {
+              if (err) return rej(err);
+              stream.on('close', () => {
+                console.log('ecosystem.config.js 配置修改完成');
+                res();
+              });
+              stream.on('data', (data) => console.log('STDOUT: ' + data));
+              stream.stderr.on('data', (data) => console.error('STDERR: ' + data));
+            }
+          );
+        });
+
         // 解压文件并安装依赖
         console.log('开始解压文件并安装依赖...');
         await new Promise((res, rej) => {
@@ -179,8 +194,9 @@ async function uploadAndExtract() {
             unzip -o dist.zip -d dist && \
             rm dist.zip && \
             PATH="${NVM_NODE_PATH}:$PATH" pnpm install && \
-            PATH="${NVM_NODE_PATH}:$PATH" pm2 restart ${PM2_SERVICE_NAME} && \
-            PATH="${NVM_NODE_PATH}:$PATH" node dist/bot/index.js`,
+            PATH="${NVM_NODE_PATH}:$PATH" pm2 reload ecosystem.config.js && \
+            PATH="${NVM_NODE_PATH}:$PATH" pm2 restart manager-bot && \
+            PATH="${NVM_NODE_PATH}:$PATH" pm2 save`,
             (err, stream) => {
               if (err) rej(err);
               stream.on('close', () => {
@@ -250,7 +266,9 @@ async function uploadAndExecuteCleanScript() {
   });
 }
 
-processFiles().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+processFiles()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error(err);
+    process.exit(1);
+  });

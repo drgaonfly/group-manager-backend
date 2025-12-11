@@ -37,7 +37,7 @@ jobs:
             git checkout -f . &&
             npm run build &&
             pm2 reload ecosystem.config.js &&
-            pm2 restart manager-backend &&
+            pm2 restart manager-bot &&
             pm2 save
 
 
