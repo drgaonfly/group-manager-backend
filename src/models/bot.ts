@@ -42,6 +42,10 @@ export interface IBot extends Document {
   botUserMessages: mongoose.Schema.Types.ObjectId[] | IBotUserMessage[]; // 虚拟字段
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
+  // 发言必须超过n个字符才进入统计
+  minSpeechLength: number;
+  // 是否允许纯数字发言才进入统计
+  allowPureNumberSpeech: boolean;
 }
 
 export interface IMenu extends Document {
@@ -233,6 +237,14 @@ const botSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: 'BotUser',
       required: false,
+    },
+    minSpeechLength: {
+      type: Number,
+      default: 1,
+    },
+    allowPureNumberSpeech: {
+      type: Boolean,
+      default: false,
     },
   },
   {

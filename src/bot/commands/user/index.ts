@@ -7,6 +7,7 @@ import helpComposer from './help';
 import contactComposer from './contact';
 // import subscriptionComposer from './subscription';
 import profileComposer from './profile';
+import speechStaticComposer from './speechStatic';
 import startingComposer from './starting';
 // import cloneComposer from './clone';
 // import walletComposer from './wallet';
@@ -21,6 +22,7 @@ const userComposer = new Composer();
 
 userComposer.use(startComposer.middleware());
 userComposer.use(helpComposer.middleware());
+userComposer.use(speechStaticComposer.middleware());
 
 // 在群里使用的
 // userComposer.use(operatorComposer.middleware());
