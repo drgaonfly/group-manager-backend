@@ -6,7 +6,7 @@ module.exports = {
   apps: [
     // 主应用
     {
-      name: 'multi-backend',
+      name: 'manager-backend',
       script: 'dist/index.js',
       instances: 1,
       autorestart: true,
@@ -28,7 +28,7 @@ module.exports = {
     },
     // Bot 应用 - 部署时执行一次（设置 Webhook）
     {
-      name: 'multi-bot',
+      name: 'manager-bot',
       script: 'dist/bot/index.js',
       instances: 1,
       autorestart: false, // 执行一次后退出，不自动重启
