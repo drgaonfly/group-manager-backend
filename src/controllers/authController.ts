@@ -226,6 +226,7 @@ const updateUserProfile = handleAsync(
       bidirectional,
       groupMessage,
       keyboardConfig,
+      speech_static,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -275,6 +276,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof keyboardConfig !== 'undefined') {
         updateData.keyboardConfig = keyboardConfig;
+      }
+      if (typeof speech_static !== 'undefined') {
+        updateData.speech_static = speech_static;
       }
     }
 

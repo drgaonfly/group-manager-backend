@@ -57,7 +57,7 @@ const botMessageSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: true,
+      required: false,
     },
     raw: {
       type: mongoose.Schema.Types.Mixed,

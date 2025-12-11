@@ -214,6 +214,7 @@ export const getUserById = handleAsync(async (req: Request, res: Response) => {
 
 export const updateUser = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+
   const {
     liquidRate,
     stakeRate,
@@ -226,8 +227,11 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     keyboardConfig,
     botCount,
     availableBotCount,
+    speech_static,
     ...body
   } = req.body;
+
+  console.log('speech_static', speech_static);
 
   const user = await User.findById(id).select('+password');
 
@@ -264,9 +268,12 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       keyboardConfig, // 菜单配置
       botCount, // 当前机器人数量
       availableBotCount, // 可用机器人数量
+      speech_static,
     },
     { new: true },
   );
+
+  console.log('updatedUser.speech_static', updatedUser?.speech_static);
 
   res.json({
     success: true,

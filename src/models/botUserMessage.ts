@@ -40,7 +40,7 @@ export interface IBotUserMessage extends Document {
 
 const botUserMessageSchema = new mongoose.Schema(
   {
-    content: { type: String, required: true },
+    content: { type: String, required: false },
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
