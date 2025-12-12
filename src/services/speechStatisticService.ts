@@ -1,6 +1,6 @@
 import BotMessage from '../models/botMessage';
-import BotUser from '../models/botUser';
-import { Types } from 'mongoose';
+import BotUser, { IBotUser } from '../models/botUser';
+import { IGroup } from '../models/group';
 
 export interface SpeechStatistic {
   botUserId: string;
@@ -73,7 +73,7 @@ export class SpeechStatisticService {
    * 获取群组中所有用户的发言统计
    */
   static async getGroupSpeechStatistics(
-    groupId: Types.ObjectId,
+    groupId: IGroup,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<GroupSpeechStatistics | null> {
@@ -160,8 +160,8 @@ export class SpeechStatisticService {
    * 获取单个用户在群组中的发言统计
    */
   static async getBotUserSpeechStatistic(
-    groupId: Types.ObjectId,
-    botUserId: Types.ObjectId,
+    groupId: IGroup,
+    botUserId: IBotUser,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<SpeechStatistic | null> {
@@ -194,7 +194,7 @@ export class SpeechStatisticService {
    * 获取用户在所有群组中的发言统计
    */
   static async getBotUserTotalSpeechStatistic(
-    botUserId: Types.ObjectId,
+    botUserId: IBotUser,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<{
@@ -271,7 +271,7 @@ export class SpeechStatisticService {
    * 获取排行榜（按发言数排序）
    */
   static async getLeaderboard(
-    groupId: Types.ObjectId,
+    groupId: IGroup,
     period: 'day' | 'week' | 'month' = 'day',
     limit: number = 10,
     date?: Date,
@@ -285,7 +285,7 @@ export class SpeechStatisticService {
    * 获取分页的群组发言统计
    */
   static async getGroupSpeechStatisticsPaginated(
-    groupId: Types.ObjectId,
+    groupId: IGroup,
     period: 'day' | 'week' | 'month' = 'day',
     page: number = 1,
     pageSize: number = 10,
