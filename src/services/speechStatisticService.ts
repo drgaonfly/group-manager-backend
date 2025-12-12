@@ -1,5 +1,7 @@
+import Bot from '../models/bot';
 import BotMessage from '../models/botMessage';
 import BotUser from '../models/botUser';
+import Group from '../models/group';
 
 export interface SpeechStatistic {
   botUserId: string;
@@ -79,13 +81,15 @@ export class SpeechStatisticService {
     const { startDate, endDate, displayDate } = this.getDateRange(period, date);
 
     // 获取群组信息并关联 Bot
-    const Group = require('../models/group').default;
     const group = await Group.findById(groupId).populate('bot');
+
+    const bot = await Bot.findById(group.bot);
+
     if (!group) return null;
 
     // 从 Bot 获取动态配置，使用默认值兜底
-    const minSpeechLength = group.bot?.minSpeechLength ?? 1;
-    const allowPureNumberSpeech = group.bot?.allowPureNumberSpeech ?? false;
+    const minSpeechLength = bot?.minSpeechLength ?? 1;
+    const allowPureNumberSpeech = bot?.allowPureNumberSpeech ?? false;
 
     // 构建匹配条件
     const matchConditions: any = {
@@ -175,7 +179,6 @@ export class SpeechStatisticService {
       },
     });
 
-    const BotUser = require('../models/botUser').default;
     const botUser = await BotUser.findById(botUserId);
     if (!botUser) return null;
 
@@ -210,7 +213,6 @@ export class SpeechStatisticService {
   } | null> {
     const { startDate, endDate, displayDate } = this.getDateRange(period, date);
 
-    const BotUser = require('../models/botUser').default;
     const botUser = await BotUser.findById(botUserId);
     if (!botUser) return null;
 
@@ -237,7 +239,7 @@ export class SpeechStatisticService {
     ]);
 
     // 获取群组信息
-    const Group = require('../models/group').default;
+
     const groupIds = statistics.map((stat: any) => stat._id).filter(Boolean);
     const groups = await Group.find({ _id: { $in: groupIds } });
     const groupMap = new Map(groups.map((g: any) => [g._id.toString(), g]));
