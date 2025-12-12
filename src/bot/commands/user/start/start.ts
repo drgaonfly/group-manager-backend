@@ -6,6 +6,7 @@ import { startClientAndGetSession } from '../../../services/gramClient';
 import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkInBot } from '../../../middlewares/checkInBot';
 import { findBotProxy } from '../../../services/findBotProxy';
+import { PermissionChecker } from '../../../utils/permissionChecker';
 import createDebug from 'debug';
 import PromotionLink from '../../../../models/promotionLink';
 import BotUser from '../../../../models/botUser';
@@ -67,8 +68,8 @@ startCommand.command('start', checkInBot, async (ctx) => {
 
         debug('Promotion link associated:', promotionLink.title);
 
-        // 如果开启了双向功能，通知拥有者
-        if (proxyUser?.bidirectional) {
+        // 如果双向功能可用，通知拥有者
+        if (PermissionChecker.canUseBidirectional(proxyUser, bot)) {
           try {
             // 获取所有拥有者
             const owners = await BotUser.find({
@@ -175,10 +176,14 @@ startCommand.command('start', checkInBot, async (ctx) => {
     combinedKeyboard.url(item.menuName, item.url).row();
   });
 
-  // 根据权限决定是否使用自定义键盘
+  // 根据权限和机器人配置决定是否使用自定义键盘
   const replyOptions: any = {};
-  if (proxyUser?.keyboardConfig && bot.keyboards && bot.keyboards.length > 0) {
-    // 有权限且配置了键盘，使用自定义键盘
+  if (
+    PermissionChecker.canUseFreeKeyboard(proxyUser, bot) &&
+    bot.keyboards &&
+    bot.keyboards.length > 0
+  ) {
+    // 自由键盘功能可用且配置了键盘，使用自定义键盘
     replyOptions.reply_markup = await createMainKeyboard(ctx);
   }
 

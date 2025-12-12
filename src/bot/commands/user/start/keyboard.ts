@@ -1,6 +1,7 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import { findBotProxy } from '../../../services/findBotProxy';
+import { PermissionChecker } from '../../../utils/permissionChecker';
 
 const keyboardCommand = new Composer<MyContext>();
 
@@ -8,8 +9,8 @@ keyboardCommand.on('message:text', async (ctx, next) => {
   // 获取代理用户权限
   const { proxyUser } = await findBotProxy(ctx.currentBot);
 
-  // 如果没有自定义键盘权限，直接跳过
-  if (!proxyUser?.keyboardConfig) {
+  // 如果自由键盘功能不可用，直接跳过
+  if (!PermissionChecker.canUseFreeKeyboard(proxyUser, ctx.currentBot)) {
     await next();
     return;
   }
