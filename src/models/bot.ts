@@ -58,6 +58,9 @@ export interface IBot extends Document {
 
   // 双向
   canBidirectional?: boolean;
+
+  // 欢迎进群
+  canGroupWelcome?: boolean;
 }
 
 export interface IMenu extends Document {
@@ -272,6 +275,10 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     canBidirectional: {
+      type: Boolean,
+      default: false,
+    },
+    canGroupWelcome: {
       type: Boolean,
       default: false,
     },

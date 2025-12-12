@@ -228,6 +228,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     botCount,
     availableBotCount,
     speech_static,
+    groupWelcome,
     ...body
   } = req.body;
 
@@ -269,6 +270,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       botCount, // 当前机器人数量
       availableBotCount, // 可用机器人数量
       speech_static,
+      groupWelcome,
     },
     { new: true },
   );

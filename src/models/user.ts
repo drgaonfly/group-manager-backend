@@ -31,6 +31,7 @@ export interface IUser extends Document {
   groupMessage: boolean; // 群发
   keyboardConfig: boolean; // 菜单配置
   speech_static: boolean; // 群组内发言统计
+  groupWelcome: boolean; // 欢迎进群
 }
 
 const userSchema = new mongoose.Schema(
@@ -84,6 +85,7 @@ const userSchema = new mongoose.Schema(
     groupMessage: { type: Boolean, default: false }, // 群发
     keyboardConfig: { type: Boolean, default: false }, // 菜单配置
     speech_static: { type: Boolean, default: false }, // 群组内发言统计
+    groupWelcome: { type: Boolean, default: false }, // 欢迎进群
   },
   { timestamps: true },
 );

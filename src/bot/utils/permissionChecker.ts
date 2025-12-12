@@ -45,6 +45,10 @@ export class PermissionChecker {
     return !!(proxyUser?.bidirectional && bot?.canBidirectional);
   }
 
+  static canUseGroupWelcome(proxyUser: IUser | null, bot: IBot): boolean {
+    return !!(proxyUser?.groupWelcome && bot?.canGroupWelcome);
+  }
+
   /**
    * 获取所有功能的可用状态
    * @param proxyUser 代理用户
@@ -57,6 +61,7 @@ export class PermissionChecker {
       freeKeyboard: this.canUseFreeKeyboard(proxyUser, bot),
       groupMessaging: this.canUseGroupMessaging(proxyUser, bot),
       bidirectional: this.canUseBidirectional(proxyUser, bot),
+      groupWelcome: this.canUseGroupWelcome(proxyUser, bot),
     };
   }
 }

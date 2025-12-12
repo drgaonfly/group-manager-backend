@@ -1,6 +1,7 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import { findBotProxy } from '../services/findBotProxy';
+import { PermissionChecker } from '../utils/permissionChecker';
 import Group from '../../models/group';
 import createDebug from 'debug';
 
@@ -13,6 +14,10 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     ctx.currentGroup = null;
     return await next();
   }
+
+  // 检查是否有新成员加入群组
+  const isNewMemberJoined =
+    ctx.message?.new_chat_members && ctx.message.new_chat_members.length > 0;
 
   const chatId = ctx.chat.id;
 
@@ -82,6 +87,37 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   });
 
   debug('Added user to group botUsers:', ctx.currentBotUser._id);
+
+  // 处理新成员加入群组的欢迎消息
+  if (isNewMemberJoined && ctx.message?.new_chat_members) {
+    const { proxyUser } = await findBotProxy(ctx.currentBot);
+
+    // 检查代理用户是否开启了群组欢迎功能
+    if (PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)) {
+      const newMembers = ctx.message.new_chat_members;
+
+      for (const member of newMembers) {
+        // 跳过机器人自己
+        if (member.is_bot && member.id === ctx.me.id) {
+          continue;
+        }
+
+        const memberName =
+          member.first_name + (member.last_name ? ` ${member.last_name}` : '');
+        const username = member.username ? `@${member.username}` : memberName;
+
+        // 发送欢迎消息
+        const welcomeMessage = `欢迎 ${username} 加入群组！👋`;
+
+        try {
+          await ctx.reply(welcomeMessage);
+          debug(`Welcome message sent for new member: ${username}`);
+        } catch (error) {
+          debug('Failed to send welcome message:', error);
+        }
+      }
+    }
+  }
 
   // 继续处理后续中间件
   await next();
