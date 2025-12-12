@@ -1,6 +1,5 @@
 import BotMessage from '../models/botMessage';
-import BotUser, { IBotUser } from '../models/botUser';
-import { IGroup } from '../models/group';
+import BotUser from '../models/botUser';
 
 export interface SpeechStatistic {
   botUserId: string;
@@ -73,7 +72,7 @@ export class SpeechStatisticService {
    * 获取群组中所有用户的发言统计
    */
   static async getGroupSpeechStatistics(
-    groupId: IGroup,
+    groupId: any,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<GroupSpeechStatistics | null> {
@@ -160,8 +159,8 @@ export class SpeechStatisticService {
    * 获取单个用户在群组中的发言统计
    */
   static async getBotUserSpeechStatistic(
-    groupId: IGroup,
-    botUserId: IBotUser,
+    groupId: any,
+    botUserId: any,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<SpeechStatistic | null> {
@@ -194,7 +193,7 @@ export class SpeechStatisticService {
    * 获取用户在所有群组中的发言统计
    */
   static async getBotUserTotalSpeechStatistic(
-    botUserId: IBotUser,
+    botUserId: any,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<{
@@ -271,7 +270,7 @@ export class SpeechStatisticService {
    * 获取排行榜（按发言数排序）
    */
   static async getLeaderboard(
-    groupId: IGroup,
+    groupId: any,
     period: 'day' | 'week' | 'month' = 'day',
     limit: number = 10,
     date?: Date,
@@ -285,7 +284,7 @@ export class SpeechStatisticService {
    * 获取分页的群组发言统计
    */
   static async getGroupSpeechStatisticsPaginated(
-    groupId: IGroup,
+    groupId: any,
     period: 'day' | 'week' | 'month' = 'day',
     page: number = 1,
     pageSize: number = 10,
