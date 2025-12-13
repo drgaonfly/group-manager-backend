@@ -5,6 +5,7 @@ import BotMessage from '../../models/botMessage';
 import { findBotProxy } from '../services/findBotProxy';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
+import { PermissionChecker } from '../utils/permissionChecker';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:replaceMentions');
@@ -78,8 +79,12 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   // 获取代理用户权限
   const { proxyUser } = await findBotProxy(ctx.currentBot);
 
-  // 如果是拥有者回复消息，且代理用户开启了双向转发权限，则转发给原始用户，同时也发送给其他拥有者
-  if (isOwner && message?.reply_to_message && proxyUser?.bidirectional) {
+  // 如果是拥有者回复消息，且双向功能可用，则转发给原始用户，同时也发送给其他拥有者
+  if (
+    isOwner &&
+    message?.reply_to_message &&
+    PermissionChecker.canUseBidirectional(proxyUser, ctx.currentBot)
+  ) {
     try {
       console.log('=== 拥有者回复检测 ===');
       console.log('回复的消息:', message.reply_to_message);
@@ -364,8 +369,8 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       const mediaType = Object.entries(mediaTypes).find(([_, id]) => id)?.[0];
       const fileId = mediaType ? mediaTypes[mediaType] : null;
 
-      // 代理用户开启了群发权限，给所有 owner 发送通知
-      if (proxyUser?.groupMessage) {
+      // 群发功能可用，给所有 owner 发送通知
+      if (PermissionChecker.canUseGroupMessaging(proxyUser, ctx.currentBot)) {
         // 创建消息记录
         await BotMessage.create({
           bot: ctx.currentBot._id,

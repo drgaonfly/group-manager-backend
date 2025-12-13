@@ -1,6 +1,7 @@
+import Bot from '../models/bot';
 import BotMessage from '../models/botMessage';
 import BotUser from '../models/botUser';
-import { Types } from 'mongoose';
+import Group from '../models/group';
 
 export interface SpeechStatistic {
   botUserId: string;
@@ -73,20 +74,22 @@ export class SpeechStatisticService {
    * 获取群组中所有用户的发言统计
    */
   static async getGroupSpeechStatistics(
-    groupId: Types.ObjectId,
+    groupId: any,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<GroupSpeechStatistics | null> {
     const { startDate, endDate, displayDate } = this.getDateRange(period, date);
 
     // 获取群组信息并关联 Bot
-    const Group = require('../models/group').default;
     const group = await Group.findById(groupId).populate('bot');
+
+    const bot = await Bot.findById(group.bot);
+
     if (!group) return null;
 
     // 从 Bot 获取动态配置，使用默认值兜底
-    const minSpeechLength = group.bot?.minSpeechLength ?? 1;
-    const allowPureNumberSpeech = group.bot?.allowPureNumberSpeech ?? false;
+    const minSpeechLength = bot?.minSpeechLength ?? 1;
+    const allowPureNumberSpeech = bot?.allowPureNumberSpeech ?? false;
 
     // 构建匹配条件
     const matchConditions: any = {
@@ -160,8 +163,8 @@ export class SpeechStatisticService {
    * 获取单个用户在群组中的发言统计
    */
   static async getBotUserSpeechStatistic(
-    groupId: Types.ObjectId,
-    botUserId: Types.ObjectId,
+    groupId: any,
+    botUserId: any,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<SpeechStatistic | null> {
@@ -176,7 +179,6 @@ export class SpeechStatisticService {
       },
     });
 
-    const BotUser = require('../models/botUser').default;
     const botUser = await BotUser.findById(botUserId);
     if (!botUser) return null;
 
@@ -194,7 +196,7 @@ export class SpeechStatisticService {
    * 获取用户在所有群组中的发言统计
    */
   static async getBotUserTotalSpeechStatistic(
-    botUserId: Types.ObjectId,
+    botUserId: any,
     period: 'day' | 'week' | 'month' = 'day',
     date?: Date,
   ): Promise<{
@@ -211,7 +213,6 @@ export class SpeechStatisticService {
   } | null> {
     const { startDate, endDate, displayDate } = this.getDateRange(period, date);
 
-    const BotUser = require('../models/botUser').default;
     const botUser = await BotUser.findById(botUserId);
     if (!botUser) return null;
 
@@ -238,7 +239,7 @@ export class SpeechStatisticService {
     ]);
 
     // 获取群组信息
-    const Group = require('../models/group').default;
+
     const groupIds = statistics.map((stat: any) => stat._id).filter(Boolean);
     const groups = await Group.find({ _id: { $in: groupIds } });
     const groupMap = new Map(groups.map((g: any) => [g._id.toString(), g]));
@@ -271,7 +272,7 @@ export class SpeechStatisticService {
    * 获取排行榜（按发言数排序）
    */
   static async getLeaderboard(
-    groupId: Types.ObjectId,
+    groupId: any,
     period: 'day' | 'week' | 'month' = 'day',
     limit: number = 10,
     date?: Date,
@@ -285,7 +286,7 @@ export class SpeechStatisticService {
    * 获取分页的群组发言统计
    */
   static async getGroupSpeechStatisticsPaginated(
-    groupId: Types.ObjectId,
+    groupId: any,
     period: 'day' | 'week' | 'month' = 'day',
     page: number = 1,
     pageSize: number = 10,

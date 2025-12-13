@@ -13,7 +13,6 @@ export interface IBot extends Document {
   message: string;
   userName: string;
   menus: IMenu[];
-  keyboards: IKeyboard[];
   isOnline: boolean;
   botUsers: mongoose.Schema.Types.ObjectId[] | IBotUser[];
   session?: string;
@@ -42,10 +41,26 @@ export interface IBot extends Document {
   botUserMessages: mongoose.Schema.Types.ObjectId[] | IBotUserMessage[]; // 虚拟字段
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
-  // 发言必须超过n个字符才进入统计
-  minSpeechLength: number;
-  // 是否允许纯数字发言才进入统计
-  allowPureNumberSpeech: boolean;
+
+  // 多功能配置
+
+  // 群内统计
+  canSpeechStatic?: boolean;
+  minSpeechLength: number; // 发言必须超过n个字符才进入统计
+  allowPureNumberSpeech: boolean; // 是否允许纯数字发言才进入统计
+
+  // 自由键盘
+  canFreeKeyboard?: boolean;
+  keyboards: IKeyboard[];
+
+  // 群发
+  canGroupMessaging?: boolean;
+
+  // 双向
+  canBidirectional?: boolean;
+
+  // 欢迎进群
+  canGroupWelcome?: boolean;
 }
 
 export interface IMenu extends Document {
@@ -243,6 +258,27 @@ const botSchema = new mongoose.Schema(
       default: 1,
     },
     allowPureNumberSpeech: {
+      type: Boolean,
+      default: false,
+    },
+    // 功能开关
+    canSpeechStatic: {
+      type: Boolean,
+      default: false,
+    },
+    canFreeKeyboard: {
+      type: Boolean,
+      default: false,
+    },
+    canGroupMessaging: {
+      type: Boolean,
+      default: false,
+    },
+    canBidirectional: {
+      type: Boolean,
+      default: false,
+    },
+    canGroupWelcome: {
       type: Boolean,
       default: false,
     },

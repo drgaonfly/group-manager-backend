@@ -227,6 +227,7 @@ const updateUserProfile = handleAsync(
       groupMessage,
       keyboardConfig,
       speech_static,
+      groupWelcome,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -280,6 +281,9 @@ const updateUserProfile = handleAsync(
       if (typeof speech_static !== 'undefined') {
         updateData.speech_static = speech_static;
       }
+      if (typeof groupWelcome !== 'undefined') {
+        updateData.groupWelcome = groupWelcome;
+      }
     }
 
     const updatedUser = await User.findByIdAndUpdate(user._id, updateData, {
@@ -298,9 +302,6 @@ const updateUserProfile = handleAsync(
       serviceLink,
       name: updatedUser?.name,
       email: updatedUser?.email,
-      bidirectional: updatedUser?.bidirectional,
-      groupMessage: updatedUser?.groupMessage,
-      keyboardConfig: updatedUser?.keyboardConfig,
       token: generateToken(updatedUser!.id), // 注意: 请确保 generateToken 可以接受用户的 id 类型
     });
   },
