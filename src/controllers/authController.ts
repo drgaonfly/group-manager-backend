@@ -228,6 +228,7 @@ const updateUserProfile = handleAsync(
       keyboardConfig,
       speech_static,
       groupWelcome,
+      channelPost,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -283,6 +284,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof groupWelcome !== 'undefined') {
         updateData.groupWelcome = groupWelcome;
+      }
+      if (typeof channelPost !== 'undefined') {
+        updateData.channelPost = channelPost;
       }
     }
 

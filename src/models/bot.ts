@@ -61,6 +61,11 @@ export interface IBot extends Document {
 
   // 欢迎进群
   canGroupWelcome?: boolean;
+
+  // 定时频道
+  canOpenChannelPost: boolean;
+  lastChannelPostId?: number; // 上次发送频道的消息ID
+  isClearLastPost?: boolean; // 是否允许发送的频道消息累积
 }
 
 export interface IMenu extends Document {
@@ -282,6 +287,21 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    canOpenChannelPost: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    lastChannelPostId: {
+      type: Number,
+      required: false,
+    },
+    isClearLastPost: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -298,6 +318,12 @@ botSchema.virtual('groupMessages', {
 
 botSchema.virtual('botUserMessages', {
   ref: 'BotUserMessage',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
+botSchema.virtual('channel_posts', {
+  ref: 'ChannelPost',
   localField: '_id',
   foreignField: 'bot',
 });

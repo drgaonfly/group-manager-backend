@@ -125,6 +125,7 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('authorized_users')
     .populate('clonedFrom')
     .populate('creator')
+    .populate('channel_posts')
     .populate({
       path: 'botUserConfigs',
       populate: [
