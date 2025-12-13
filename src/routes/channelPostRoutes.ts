@@ -6,7 +6,6 @@ import {
   updateChannelPost,
   deleteChannelPost,
   deleteMultipleChannelPosts,
-  getUserBots,
 } from '../controllers/channelPostController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 const router: Router = express.Router();
