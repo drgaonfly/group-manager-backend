@@ -15,6 +15,7 @@ export interface IChannelPost extends Document {
   interval: number; // 发送间隔时间，单位分钟
   lastPostTime?: Date; // 上次发送时间
   lastPostMessageId?: number; // 上次发送的消息ID
+  isClearLastPost: boolean; // 是否清除上一条消息
   isOnline: boolean; // 是否启用定时发送
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
@@ -26,6 +27,11 @@ const channelPostSchema = new mongoose.Schema(
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
+    },
+    bot: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Bot',
       required: true,
     },
     content: {
@@ -65,14 +71,13 @@ const channelPostSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
+    isClearLastPost: {
+      type: Boolean,
+      default: false,
+    },
     isOnline: {
       type: Boolean,
       default: true,
-    },
-    bot: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Bot',
-      required: true,
     },
   },
   {

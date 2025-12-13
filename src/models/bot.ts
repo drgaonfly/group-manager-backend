@@ -64,8 +64,6 @@ export interface IBot extends Document {
 
   // 定时频道
   canOpenChannelPost: boolean;
-  lastChannelPostId?: number; // 上次发送频道的消息ID
-  isClearLastPost?: boolean; // 是否允许发送的频道消息累积
 }
 
 export interface IMenu extends Document {
@@ -289,15 +287,6 @@ const botSchema = new mongoose.Schema(
     },
 
     canOpenChannelPost: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    lastChannelPostId: {
-      type: Number,
-      required: false,
-    },
-    isClearLastPost: {
       type: Boolean,
       required: false,
       default: false,

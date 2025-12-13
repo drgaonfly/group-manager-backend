@@ -70,8 +70,8 @@ export async function channelPost() {
               continue;
             }
 
-            // 如果有上一条消息ID，先删除上一条消息
-            if (bot.isClearLastPost === true && channel.lastPostMessageId) {
+            // 如果频道设置了清除上一条消息且有上一条消息ID，先删除上一条消息
+            if (channel.isClearLastPost === true && channel.lastPostMessageId) {
               try {
                 await telegramBot.api.deleteMessage(
                   channelTarget,
