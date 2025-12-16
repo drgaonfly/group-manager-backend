@@ -1,7 +1,7 @@
 // src/composers/index.ts
 import { Composer } from 'grammy';
 import startComposer from './start';
-import helpComposer from './help';
+// import helpComposer from './help';
 // import operatorComposer from './operator';
 // import setComposer from './set';
 import contactComposer from './contact';
