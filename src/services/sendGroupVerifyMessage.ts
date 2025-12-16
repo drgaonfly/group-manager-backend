@@ -71,13 +71,6 @@ async function addMutedUser(chatId: number, userId: number): Promise<void> {
 }
 
 /**
- * 从禁言列表移除用户
- */
-async function removeMutedUser(chatId: number, userId: number): Promise<void> {
-  await Group.updateOne({ id: chatId }, { $pull: { mutedUsers: userId } });
-}
-
-/**
  * 发送群组验证消息
  * @param ctx 上下文
  * @param username 用户名
