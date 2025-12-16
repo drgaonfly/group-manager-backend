@@ -6,6 +6,7 @@ import { findBotProxy } from '../services/findBotProxy';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
+import { isUserPendingVerification } from '../../services/sendGroupVerifyMessage';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:replaceMentions');
@@ -16,6 +17,21 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   const message = ctx.message;
 
   debug(message);
+
+  // 检查用户是否在验证中或被禁言，如果是则删除消息
+  if (ctx.chat && ctx.chat.type !== 'private' && ctx.from && message) {
+    const isPending = await isUserPendingVerification(ctx.chat.id, ctx.from.id);
+    if (isPending) {
+      try {
+        await ctx.deleteMessage();
+        debug(`已删除验证中/禁言用户 ${ctx.from.id} 的消息`);
+      } catch (deleteError) {
+        debug('删除验证中用户消息失败:', deleteError);
+      }
+      // 不继续处理
+      return;
+    }
+  }
 
   // 检查消息类型的配置
   const mediaTypes = {
