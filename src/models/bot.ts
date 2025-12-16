@@ -5,6 +5,7 @@ import { IGroup } from './group';
 import { IGroupMessage } from './groupMessage';
 import { IBotUserMessage } from './botUserMessage';
 import { IGroupWelcome } from './groupWelcome';
+import { IGroupVerify } from './groupVerify';
 
 export interface IBot extends Document {
   token: string;
@@ -62,18 +63,14 @@ export interface IBot extends Document {
 
   // 欢迎进群
   canGroupWelcome?: boolean;
-  groupWelcome?: {
-    contents: string[];
-    caption?: string;
-    medias?: string[];
-    menus: {
-      name: string;
-      url: string;
-    }[];
-  };
+  groupWelcome?: IGroupWelcome;
 
   // 定时频道
   canOpenChannelPost: boolean;
+
+  // 群验证
+  canGroupVerify: boolean;
+  groupVerify?: IGroupVerify;
 }
 
 export interface IMenu extends Document {
@@ -333,6 +330,15 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: false,
+    },
+    canGroupVerify: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    groupVerify: {
+      type: groupWelcomeEmbeddedSchema,
+      required: false,
     },
   },
   {
