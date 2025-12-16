@@ -148,10 +148,30 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
   const botsWithSignedUrls = await Promise.all(
     bots.map(async (bot) => {
       const botObj = bot.toObject ? bot.toObject() : bot;
+
+      // 处理 multi_image
       if (botObj.multi_image) {
         const signedUrl = await generateSignedUrl(botObj.multi_image);
-        return { ...botObj, multi_image: signedUrl };
+        botObj.multi_image = signedUrl;
       }
+
+      // 处理 groupWelcome 中的 medias
+      if (
+        botObj.groupWelcome &&
+        botObj.groupWelcome.medias &&
+        Array.isArray(botObj.groupWelcome.medias)
+      ) {
+        const processedMedias = await Promise.all(
+          botObj.groupWelcome.medias.map(async (mediaUrl: string) => {
+            if (mediaUrl) {
+              return await generateSignedUrl(mediaUrl);
+            }
+            return mediaUrl;
+          }),
+        );
+        botObj.groupWelcome.medias = processedMedias;
+      }
+
       return botObj;
     }),
   );

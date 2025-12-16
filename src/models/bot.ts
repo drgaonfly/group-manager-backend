@@ -4,6 +4,7 @@ import { IBotUser } from './botUser';
 import { IGroup } from './group';
 import { IGroupMessage } from './groupMessage';
 import { IBotUserMessage } from './botUserMessage';
+import { IGroupWelcome } from './groupWelcome';
 
 export interface IBot extends Document {
   token: string;
@@ -61,6 +62,15 @@ export interface IBot extends Document {
 
   // 欢迎进群
   canGroupWelcome?: boolean;
+  groupWelcome?: {
+    contents: string[];
+    caption?: string;
+    medias?: string[];
+    menus: {
+      name: string;
+      url: string;
+    }[];
+  };
 
   // 定时频道
   canOpenChannelPost: boolean;
@@ -108,6 +118,36 @@ const presetSchema = new mongoose.Schema({
   keyword: { type: String, required: false },
   response: { type: String, required: false },
 });
+
+const groupWelcomeEmbeddedSchema = new mongoose.Schema(
+  {
+    contents: {
+      type: [String],
+      required: false,
+    },
+    caption: {
+      type: String,
+      required: false,
+    },
+    medias: {
+      type: [String],
+      required: false,
+    },
+    menus: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
+  },
+  { _id: false },
+);
 
 const botSchema = new mongoose.Schema(
   {
@@ -285,7 +325,10 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
+    groupWelcome: {
+      type: groupWelcomeEmbeddedSchema,
+      required: false,
+    },
     canOpenChannelPost: {
       type: Boolean,
       required: false,
