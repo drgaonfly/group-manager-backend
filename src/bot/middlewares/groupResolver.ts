@@ -3,6 +3,10 @@ import { MyContext } from '../types';
 import { findBotProxy } from '../services/findBotProxy';
 import { PermissionChecker } from '../utils/permissionChecker';
 import { sendGroupWelcomeMessage } from '../../services/sendGroupWelcomeMessage';
+import {
+  sendGroupVerifyMessage,
+  isUserPendingVerification,
+} from '../../services/sendGroupVerifyMessage';
 import Group from '../../models/group';
 import createDebug from 'debug';
 
@@ -89,24 +93,40 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
   debug('Added user to group botUsers:', ctx.currentBotUser._id);
 
-  // 处理新成员加入群组的欢迎消息
+  // 处理新成员加入群组的欢迎消息和验证
   if (isNewMemberJoined && ctx.message?.new_chat_members) {
     const { proxyUser } = await findBotProxy(ctx.currentBot);
 
-    // 检查代理用户是否开启了群组欢迎功能
-    if (PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)) {
-      const newMembers = ctx.message.new_chat_members;
+    const newMembers = ctx.message.new_chat_members;
 
-      for (const member of newMembers) {
-        // 跳过机器人自己
-        if (member.is_bot && member.id === ctx.me.id) {
-          continue;
+    for (const member of newMembers) {
+      // 跳过机器人自己
+      if (member.is_bot && member.id === ctx.me.id) {
+        continue;
+      }
+
+      const memberName =
+        member.first_name + (member.last_name ? ` ${member.last_name}` : '');
+      const username = member.username ? `@${member.username}` : memberName;
+
+      // 优先处理群组验证
+      if (PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot)) {
+        try {
+          // 发送验证消息，使用新成员的 ID 来生成回调数据
+          await sendGroupVerifyMessage(
+            ctx,
+            username,
+            ctx.currentBot.groupVerify,
+            member.id, // 传递新成员的 ID
+          );
+          debug(`Verification message sent for new member: ${username}`);
+        } catch (error) {
+          debug('Failed to send verification message:', error);
         }
-
-        const memberName =
-          member.first_name + (member.last_name ? ` ${member.last_name}` : '');
-        const username = member.username ? `@${member.username}` : memberName;
-
+      } else if (
+        PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)
+      ) {
+        // 如果没有启用验证功能，则发送欢迎消息
         try {
           await sendGroupWelcomeMessage(
             ctx,
@@ -120,6 +140,26 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         }
       }
     }
+
+    // 新成员加入消息不需要继续处理，直接返回
+    // 这样可以避免 logger 中间件将其当成普通消息处理
+    return;
+  }
+
+  // 检查用户是否在验证中，如果是则删除消息
+  if (
+    ctx.from &&
+    ctx.message &&
+    isUserPendingVerification(ctx.chat.id, ctx.from.id)
+  ) {
+    try {
+      await ctx.deleteMessage();
+      debug(`已删除验证中用户 ${ctx.from.id} 的消息`);
+    } catch (deleteError) {
+      debug('删除验证中用户消息失败:', deleteError);
+    }
+    // 不继续处理后续中间件
+    return;
   }
 
   // 继续处理后续中间件

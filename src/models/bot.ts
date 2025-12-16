@@ -146,6 +146,29 @@ const groupWelcomeEmbeddedSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const groupVerifyEmbeddedSchema = new mongoose.Schema(
+  {
+    question: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    asks: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        isCorrect: {
+          type: Boolean,
+          required: true,
+        },
+      },
+    ],
+  },
+  { _id: false },
+);
+
 const botSchema = new mongoose.Schema(
   {
     id: {
@@ -337,7 +360,7 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     groupVerify: {
-      type: groupWelcomeEmbeddedSchema,
+      type: groupVerifyEmbeddedSchema,
       required: false,
     },
   },
