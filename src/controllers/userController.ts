@@ -229,6 +229,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     availableBotCount,
     speech_static,
     groupWelcome,
+    groupVerify,
     channelPost,
     ...body
   } = req.body;
@@ -272,6 +273,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       availableBotCount, // 可用机器人数量
       speech_static,
       groupWelcome,
+      groupVerify,
       channelPost,
     },
     { new: true },
