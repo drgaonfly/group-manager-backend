@@ -2,6 +2,7 @@ import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import { findBotProxy } from '../services/findBotProxy';
 import { PermissionChecker } from '../utils/permissionChecker';
+import { sendGroupWelcomeMessage } from '../../services/sendGroupWelcomeMessage';
 import Group from '../../models/group';
 import createDebug from 'debug';
 
@@ -106,11 +107,13 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
           member.first_name + (member.last_name ? ` ${member.last_name}` : '');
         const username = member.username ? `@${member.username}` : memberName;
 
-        // 发送欢迎消息
-        const welcomeMessage = `欢迎 ${username} 加入群组！👋`;
-
         try {
-          await ctx.reply(welcomeMessage);
+          await sendGroupWelcomeMessage(
+            ctx,
+            username,
+            memberName,
+            ctx.currentBot.groupWelcome,
+          );
           debug(`Welcome message sent for new member: ${username}`);
         } catch (error) {
           debug('Failed to send welcome message:', error);
