@@ -61,6 +61,9 @@ export interface IBot extends Document {
 
   // 欢迎进群
   canGroupWelcome?: boolean;
+
+  // 定时频道
+  canOpenChannelPost: boolean;
 }
 
 export interface IMenu extends Document {
@@ -282,6 +285,12 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    canOpenChannelPost: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -298,6 +307,12 @@ botSchema.virtual('groupMessages', {
 
 botSchema.virtual('botUserMessages', {
   ref: 'BotUserMessage',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
+botSchema.virtual('channel_posts', {
+  ref: 'ChannelPost',
   localField: '_id',
   foreignField: 'bot',
 });

@@ -32,6 +32,7 @@ export interface IUser extends Document {
   keyboardConfig: boolean; // 菜单配置
   speech_static: boolean; // 群组内发言统计
   groupWelcome: boolean; // 欢迎进群
+  channelPost: boolean; // 频道推广
 }
 
 const userSchema = new mongoose.Schema(
@@ -86,6 +87,7 @@ const userSchema = new mongoose.Schema(
     keyboardConfig: { type: Boolean, default: false }, // 菜单配置
     speech_static: { type: Boolean, default: false }, // 群组内发言统计
     groupWelcome: { type: Boolean, default: false }, // 欢迎进群
+    channelPost: { type: Boolean, default: false }, // 频道推广
   },
   { timestamps: true },
 );
