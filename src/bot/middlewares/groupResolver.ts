@@ -3,10 +3,7 @@ import { MyContext } from '../types';
 import { findBotProxy } from '../services/findBotProxy';
 import { PermissionChecker } from '../utils/permissionChecker';
 import { sendGroupWelcomeMessage } from '../../services/sendGroupWelcomeMessage';
-import {
-  sendGroupVerifyMessage,
-  isUserPendingVerification,
-} from '../../services/sendGroupVerifyMessage';
+import { sendGroupVerifyMessage } from '../../services/sendGroupVerifyMessage';
 import Group from '../../models/group';
 import createDebug from 'debug';
 
@@ -143,22 +140,6 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
     // 新成员加入消息不需要继续处理，直接返回
     // 这样可以避免 logger 中间件将其当成普通消息处理
-    return;
-  }
-
-  // 检查用户是否在验证中，如果是则删除消息
-  if (
-    ctx.from &&
-    ctx.message &&
-    isUserPendingVerification(ctx.chat.id, ctx.from.id)
-  ) {
-    try {
-      await ctx.deleteMessage();
-      debug(`已删除验证中用户 ${ctx.from.id} 的消息`);
-    } catch (deleteError) {
-      debug('删除验证中用户消息失败:', deleteError);
-    }
-    // 不继续处理后续中间件
     return;
   }
 

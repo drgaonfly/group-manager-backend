@@ -3,6 +3,7 @@ import { InlineKeyboard } from 'grammy';
 import { sendGroupWelcomeMessage } from './sendGroupWelcomeMessage';
 import { findBotProxy } from '../bot/services/findBotProxy';
 import { PermissionChecker } from '../bot/utils/permissionChecker';
+import Group from '../models/group';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:group-verify');
@@ -15,34 +16,58 @@ interface GroupVerifyConfig {
   }[];
 }
 
-// 存储正在验证中的用户 Map<`chatId_userId`, timestamp>
-const pendingVerifications = new Map<string, number>();
-
 /**
- * 检查用户是否正在验证中
+ * 检查用户是否正在验证中或被禁言
  */
-export function isUserPendingVerification(
+export async function isUserPendingVerification(
   chatId: number,
   userId: number,
-): boolean {
-  const key = `${chatId}_${userId}`;
-  return pendingVerifications.has(key);
+): Promise<boolean> {
+  const group = await Group.findOne({ id: chatId });
+  if (!group) return false;
+  return (
+    group.pendingVerifyUsers?.includes(userId) ||
+    group.mutedUsers?.includes(userId)
+  );
 }
 
 /**
  * 添加用户到验证队列
  */
-function addPendingVerification(chatId: number, userId: number): void {
-  const key = `${chatId}_${userId}`;
-  pendingVerifications.set(key, Date.now());
+async function addPendingVerification(
+  chatId: number,
+  userId: number,
+): Promise<void> {
+  await Group.updateOne(
+    { id: chatId },
+    { $addToSet: { pendingVerifyUsers: userId } },
+  );
 }
 
 /**
  * 从验证队列移除用户
  */
-function removePendingVerification(chatId: number, userId: number): void {
-  const key = `${chatId}_${userId}`;
-  pendingVerifications.delete(key);
+async function removePendingVerification(
+  chatId: number,
+  userId: number,
+): Promise<void> {
+  await Group.updateOne(
+    { id: chatId },
+    { $pull: { pendingVerifyUsers: userId } },
+  );
+}
+
+/**
+ * 添加用户到禁言列表
+ */
+async function addMutedUser(chatId: number, userId: number): Promise<void> {
+  await Group.updateOne(
+    { id: chatId },
+    {
+      $addToSet: { mutedUsers: userId },
+      $pull: { pendingVerifyUsers: userId },
+    },
+  );
 }
 
 /**
@@ -78,10 +103,10 @@ export async function sendGroupVerifyMessage(
 
   try {
     // 将用户添加到验证队列
-    addPendingVerification(ctx.chat!.id, targetUserId);
+    await addPendingVerification(ctx.chat!.id, targetUserId);
 
     const message = [
-      '🔐 群组验证',
+      '🔐 群组验证 ',
       '',
       `欢迎 ${username}！`,
       '',
@@ -161,7 +186,7 @@ export async function handleVerifyCallback(
     }
 
     // 从验证队列移除用户
-    removePendingVerification(ctx.chat!.id, ctx.from!.id);
+    await removePendingVerification(ctx.chat!.id, ctx.from!.id);
 
     if (isCorrect) {
       // 验证成功
@@ -191,7 +216,7 @@ export async function handleVerifyCallback(
         debug('发送欢迎消息失败:', welcomeError);
       }
     } else {
-      // 验证失败，踢出用户
+      // 验证失败，禁言用户
       const userName =
         ctx.from?.first_name +
         (ctx.from?.last_name ? ` ${ctx.from.last_name}` : '');
@@ -199,15 +224,42 @@ export async function handleVerifyCallback(
         ? `@${ctx.from.username}`
         : userName;
 
-      try {
-        await ctx.api.banChatMember(ctx.chat!.id, ctx.from!.id);
-        await ctx.editMessageText(`❌ 验证失败！${displayName} 已被移出群组。`);
+      // 检查是否是超级群组
+      const isSupergroup = ctx.chat?.type === 'supergroup';
+
+      if (isSupergroup) {
+        // 超级群组：使用禁言
+        try {
+          await ctx.api.restrictChatMember(ctx.chat!.id, ctx.from!.id, {
+            can_send_messages: false,
+            can_send_audios: false,
+            can_send_documents: false,
+            can_send_photos: false,
+            can_send_videos: false,
+            can_send_video_notes: false,
+            can_send_voice_notes: false,
+            can_send_polls: false,
+            can_send_other_messages: false,
+            can_add_web_page_previews: false,
+          });
+          // 添加到禁言列表
+          await addMutedUser(ctx.chat!.id, ctx.from!.id);
+          await ctx.editMessageText(`❌ 验证失败！${displayName} 已被禁言。`);
+          await ctx.answerCallbackQuery('验证失败');
+          debug(`用户 ${ctx.from?.id} 验证失败，已被禁言`);
+        } catch (muteError) {
+          debug('禁言用户失败:', muteError);
+          // 禁言失败，添加到禁言列表（用于删除消息）
+          await addMutedUser(ctx.chat!.id, ctx.from!.id);
+          await ctx.editMessageText(`❌ ${displayName} 验证失败！`);
+          await ctx.answerCallbackQuery('验证失败');
+        }
+      } else {
+        // 普通群组：只能删除消息，添加到禁言列表
+        await addMutedUser(ctx.chat!.id, ctx.from!.id);
+        await ctx.editMessageText(`❌ ${displayName} 验证失败！`);
         await ctx.answerCallbackQuery('验证失败');
-        debug(`用户 ${ctx.from?.id} 验证失败，已被踢出群组`);
-      } catch (kickError) {
-        debug('踢出用户失败:', kickError);
-        await ctx.editMessageText(`❌ ${displayName} 验证失败！请联系管理员。`);
-        await ctx.answerCallbackQuery('验证失败');
+        debug(`用户 ${ctx.from?.id} 验证失败，消息将被删除`);
       }
     }
   } catch (error) {
@@ -237,7 +289,7 @@ async function handleAdminVerifyAction(
   const targetId = parseInt(targetUserId, 10);
 
   // 从验证队列移除用户
-  removePendingVerification(ctx.chat!.id, targetId);
+  await removePendingVerification(ctx.chat!.id, targetId);
 
   // 尝试获取被验证用户的信息
   let targetUserName = `用户(${targetId})`;
@@ -280,20 +332,47 @@ async function handleAdminVerifyAction(
       debug('发送欢迎消息失败:', welcomeError);
     }
   } else if (action === 'reject') {
-    // 管理员拒绝验证，踢出用户
-    try {
-      await ctx.api.banChatMember(ctx.chat!.id, targetId);
-      await ctx.editMessageText(
-        `❌ 管理员已拒绝 ${targetUserName} 的验证，已被移出群组。`,
-      );
+    // 管理员拒绝验证，禁言用户
+    // 检查是否是超级群组
+    const isSupergroup = ctx.chat?.type === 'supergroup';
+
+    if (isSupergroup) {
+      // 超级群组：使用禁言
+      try {
+        await ctx.api.restrictChatMember(ctx.chat!.id, targetId, {
+          can_send_messages: false,
+          can_send_audios: false,
+          can_send_documents: false,
+          can_send_photos: false,
+          can_send_videos: false,
+          can_send_video_notes: false,
+          can_send_voice_notes: false,
+          can_send_polls: false,
+          can_send_other_messages: false,
+          can_add_web_page_previews: false,
+        });
+        // 添加到禁言列表
+        await addMutedUser(ctx.chat!.id, targetId);
+        await ctx.editMessageText(
+          `❌ 管理员已拒绝 ${targetUserName} 的验证，已被禁言。`,
+        );
+        await ctx.answerCallbackQuery('已拒绝验证');
+        debug(`管理员 ${ctx.from?.id} 拒绝了用户 ${targetId} 的验证，已禁言`);
+      } catch (muteError) {
+        debug('禁言用户失败:', muteError);
+        // 禁言失败，添加到禁言列表（用于删除消息）
+        await addMutedUser(ctx.chat!.id, targetId);
+        await ctx.editMessageText(`❌ 管理员已拒绝 ${targetUserName} 的验证`);
+        await ctx.answerCallbackQuery('拒绝成功，但禁言失败');
+      }
+    } else {
+      // 普通群组：只能删除消息，添加到禁言列表
+      await addMutedUser(ctx.chat!.id, targetId);
+      await ctx.editMessageText(`❌ 管理员已拒绝 ${targetUserName} 的验证`);
       await ctx.answerCallbackQuery('已拒绝验证');
-      debug(`管理员 ${ctx.from?.id} 拒绝了用户 ${targetId} 的验证`);
-    } catch (kickError) {
-      debug('踢出用户失败:', kickError);
-      await ctx.editMessageText(
-        `❌ 管理员已拒绝 ${targetUserName} 的验证，但移出失败，请手动处理。`,
+      debug(
+        `管理员 ${ctx.from?.id} 拒绝了用户 ${targetId} 的验证，消息将被删除`,
       );
-      await ctx.answerCallbackQuery('拒绝成功，但踢出失败');
     }
   }
 }
