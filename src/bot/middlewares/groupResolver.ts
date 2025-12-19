@@ -106,7 +106,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         member.first_name + (member.last_name ? ` ${member.last_name}` : '');
       const username = member.username ? `@${member.username}` : memberName;
 
-      // 优先处理群组验证
+      // 处理群组验证
       if (PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot)) {
         try {
           // 发送验证消息，使用新成员的 ID 来生成回调数据
@@ -120,10 +120,10 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         } catch (error) {
           debug('Failed to send verification message:', error);
         }
-      } else if (
-        PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)
-      ) {
-        // 如果没有启用验证功能，则发送欢迎消息
+      }
+
+      // 处理欢迎消息
+      if (PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)) {
         try {
           await sendGroupWelcomeMessage(
             ctx,
