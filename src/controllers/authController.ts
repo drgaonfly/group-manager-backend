@@ -230,6 +230,8 @@ const updateUserProfile = handleAsync(
       groupWelcome,
       groupVerify,
       channelPost,
+      botCount,
+      availableBotCount,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -266,7 +268,9 @@ const updateUserProfile = handleAsync(
       name: name || user.name,
       email: email || user.email,
       password: hashPassword,
-      serviceLink: serviceLink,
+      serviceLink,
+      botCount,
+      availableBotCount,
     };
 
     // 只有管理员可以修改权限相关字段
