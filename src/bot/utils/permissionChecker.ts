@@ -54,7 +54,14 @@ export class PermissionChecker {
   }
 
   static canUseGroupVerify(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.groupVerify && bot?.canGroupVerify);
+    // 检查权限开启 + 配置完整（有问题和答案选项）
+    const config = bot?.groupVerify;
+    const hasValidConfig = !!(
+      config?.question &&
+      config?.asks &&
+      config.asks.length > 0
+    );
+    return !!(proxyUser?.groupVerify && bot?.canGroupVerify && hasValidConfig);
   }
 
   /**

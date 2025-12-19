@@ -57,6 +57,10 @@ export async function generateSignedUrlForOSS(
 export async function generateLocalSignedUrl(
   filePath: string,
 ): Promise<string> {
+  // 如果已经是完整 URL，直接返回
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
   return `${process.env.BACKEND_URL}/api/static/${filePath}`;
 }
 

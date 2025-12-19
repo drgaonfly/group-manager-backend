@@ -10,13 +10,13 @@ const cliProgress = require('cli-progress');
 require('dotenv').config();
 
 // 远程部署目录
-const REMOTE_DEPLOY_PATH = '/www/wwwroot/multi-backend';
+const REMOTE_DEPLOY_PATH = '/www/wwwroot/manager-backend';
 
 // NVM Node路径
-const NVM_NODE_PATH = '/root/.nvm/versions/node/v22.15.0/bin';
+const NVM_NODE_PATH = '/www/server/nodejs/v24.12.0/bin';
 
 // PM2 服务名称
-const PM2_SERVICE_NAME = 'multi-backend';
+const PM2_SERVICE_NAME = 'manager-backend';
 
 // 远程服务器配置
 const sshConfig = {
@@ -104,9 +104,6 @@ async function processFiles() {
   } else {
     console.log('跳过远程部署: 缺少SSH_HOST或SSH_PRIVATE_KEY环境变量');
   }
-  
-  // 执行完成后退出进程
-  process.exit(0);
 }
 
 // 上传并解压文件到远程服务器
@@ -198,7 +195,11 @@ async function uploadAndExtract() {
             rm dist.zip && \
             PATH="${NVM_NODE_PATH}:$PATH" pnpm install && \
             PATH="${NVM_NODE_PATH}:$PATH" pm2 reload ecosystem.config.js && \
+<<<<<<< HEAD
             PATH="${NVM_NODE_PATH}:$PATH" pm2 restart multi-bot && \
+=======
+            PATH="${NVM_NODE_PATH}:$PATH" pm2 restart manager-bot && \
+>>>>>>> 74b95d0c062f484c56eed41484c85093a9b0ab7f
             PATH="${NVM_NODE_PATH}:$PATH" pm2 save`,
             (err, stream) => {
               if (err) rej(err);
