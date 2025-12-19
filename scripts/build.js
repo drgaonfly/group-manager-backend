@@ -10,13 +10,13 @@ const cliProgress = require('cli-progress');
 require('dotenv').config();
 
 // 远程部署目录
-const REMOTE_DEPLOY_PATH = '/www/wwwroot/manager-backend';
+const REMOTE_DEPLOY_PATH = '/www/wwwroot/multi-backend';
 
 // NVM Node路径
 const NVM_NODE_PATH = '/www/server/nodejs/v24.12.0/bin';
 
 // PM2 服务名称
-const PM2_SERVICE_NAME = 'manager-backend';
+const PM2_SERVICE_NAME = 'multi-backend';
 
 // 远程服务器配置
 const sshConfig = {
@@ -195,11 +195,7 @@ async function uploadAndExtract() {
             rm dist.zip && \
             PATH="${NVM_NODE_PATH}:$PATH" pnpm install && \
             PATH="${NVM_NODE_PATH}:$PATH" pm2 reload ecosystem.config.js && \
-<<<<<<< HEAD
             PATH="${NVM_NODE_PATH}:$PATH" pm2 restart multi-bot && \
-=======
-            PATH="${NVM_NODE_PATH}:$PATH" pm2 restart manager-bot && \
->>>>>>> 74b95d0c062f484c56eed41484c85093a9b0ab7f
             PATH="${NVM_NODE_PATH}:$PATH" pm2 save`,
             (err, stream) => {
               if (err) rej(err);
