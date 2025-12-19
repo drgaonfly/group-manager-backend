@@ -224,42 +224,28 @@ export async function handleVerifyCallback(
         ? `@${ctx.from.username}`
         : userName;
 
-      // 检查是否是超级群组
-      const isSupergroup = ctx.chat?.type === 'supergroup';
-
-      if (isSupergroup) {
-        // 超级群组：使用禁言
-        try {
-          await ctx.api.restrictChatMember(ctx.chat!.id, ctx.from!.id, {
-            can_send_messages: false,
-            can_send_audios: false,
-            can_send_documents: false,
-            can_send_photos: false,
-            can_send_videos: false,
-            can_send_video_notes: false,
-            can_send_voice_notes: false,
-            can_send_polls: false,
-            can_send_other_messages: false,
-            can_add_web_page_previews: false,
-          });
-          // 添加到禁言列表
-          await addMutedUser(ctx.chat!.id, ctx.from!.id);
-          await ctx.editMessageText(`❌ 验证失败！${displayName} 已被禁言。`);
-          await ctx.answerCallbackQuery('验证失败');
-          debug(`用户 ${ctx.from?.id} 验证失败，已被禁言`);
-        } catch (muteError) {
-          debug('禁言用户失败:', muteError);
-          // 禁言失败，添加到禁言列表（用于删除消息）
-          await addMutedUser(ctx.chat!.id, ctx.from!.id);
-          await ctx.editMessageText(`❌ ${displayName} 验证失败！`);
-          await ctx.answerCallbackQuery('验证失败');
-        }
-      } else {
-        // 普通群组：只能删除消息，添加到禁言列表
+      try {
+        await ctx.api.restrictChatMember(ctx.chat!.id, ctx.from!.id, {
+          can_send_messages: false,
+          can_send_audios: false,
+          can_send_documents: false,
+          can_send_photos: false,
+          can_send_videos: false,
+          can_send_video_notes: false,
+          can_send_voice_notes: false,
+          can_send_polls: false,
+          can_send_other_messages: false,
+          can_add_web_page_previews: false,
+        });
+        await addMutedUser(ctx.chat!.id, ctx.from!.id);
+        await ctx.editMessageText(`❌ 验证失败！${displayName} 已被禁言。`);
+        await ctx.answerCallbackQuery('验证失败');
+        debug(`用户 ${ctx.from?.id} 验证失败，已被禁言`);
+      } catch (muteError) {
+        debug('禁言用户失败:', muteError);
         await addMutedUser(ctx.chat!.id, ctx.from!.id);
         await ctx.editMessageText(`❌ ${displayName} 验证失败！`);
         await ctx.answerCallbackQuery('验证失败');
-        debug(`用户 ${ctx.from?.id} 验证失败，消息将被删除`);
       }
     }
   } catch (error) {
@@ -333,46 +319,30 @@ async function handleAdminVerifyAction(
     }
   } else if (action === 'reject') {
     // 管理员拒绝验证，禁言用户
-    // 检查是否是超级群组
-    const isSupergroup = ctx.chat?.type === 'supergroup';
-
-    if (isSupergroup) {
-      // 超级群组：使用禁言
-      try {
-        await ctx.api.restrictChatMember(ctx.chat!.id, targetId, {
-          can_send_messages: false,
-          can_send_audios: false,
-          can_send_documents: false,
-          can_send_photos: false,
-          can_send_videos: false,
-          can_send_video_notes: false,
-          can_send_voice_notes: false,
-          can_send_polls: false,
-          can_send_other_messages: false,
-          can_add_web_page_previews: false,
-        });
-        // 添加到禁言列表
-        await addMutedUser(ctx.chat!.id, targetId);
-        await ctx.editMessageText(
-          `❌ 管理员已拒绝 ${targetUserName} 的验证，已被禁言。`,
-        );
-        await ctx.answerCallbackQuery('已拒绝验证');
-        debug(`管理员 ${ctx.from?.id} 拒绝了用户 ${targetId} 的验证，已禁言`);
-      } catch (muteError) {
-        debug('禁言用户失败:', muteError);
-        // 禁言失败，添加到禁言列表（用于删除消息）
-        await addMutedUser(ctx.chat!.id, targetId);
-        await ctx.editMessageText(`❌ 管理员已拒绝 ${targetUserName} 的验证`);
-        await ctx.answerCallbackQuery('拒绝成功，但禁言失败');
-      }
-    } else {
-      // 普通群组：只能删除消息，添加到禁言列表
+    try {
+      await ctx.api.restrictChatMember(ctx.chat!.id, targetId, {
+        can_send_messages: false,
+        can_send_audios: false,
+        can_send_documents: false,
+        can_send_photos: false,
+        can_send_videos: false,
+        can_send_video_notes: false,
+        can_send_voice_notes: false,
+        can_send_polls: false,
+        can_send_other_messages: false,
+        can_add_web_page_previews: false,
+      });
+      await addMutedUser(ctx.chat!.id, targetId);
+      await ctx.editMessageText(
+        `❌ 管理员已拒绝 ${targetUserName} 的验证，已被禁言。`,
+      );
+      await ctx.answerCallbackQuery('已拒绝验证');
+      debug(`管理员 ${ctx.from?.id} 拒绝了用户 ${targetId} 的验证，已禁言`);
+    } catch (muteError) {
+      debug('禁言用户失败:', muteError);
       await addMutedUser(ctx.chat!.id, targetId);
       await ctx.editMessageText(`❌ 管理员已拒绝 ${targetUserName} 的验证`);
-      await ctx.answerCallbackQuery('已拒绝验证');
-      debug(
-        `管理员 ${ctx.from?.id} 拒绝了用户 ${targetId} 的验证，消息将被删除`,
-      );
+      await ctx.answerCallbackQuery('拒绝成功，但禁言失败');
     }
   }
 }
