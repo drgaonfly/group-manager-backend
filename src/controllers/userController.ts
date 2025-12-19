@@ -231,6 +231,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     groupWelcome,
     groupVerify,
     channelPost,
+    reportGroupMemberNameUpdated,
     ...body
   } = req.body;
 
@@ -275,6 +276,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       groupWelcome,
       groupVerify,
       channelPost,
+      reportGroupMemberNameUpdated,
     },
     { new: true },
   );

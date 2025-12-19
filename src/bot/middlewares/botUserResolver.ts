@@ -2,6 +2,7 @@ import { Middleware } from 'grammy';
 import BotUser from '../../models/botUser';
 import { findBotProxy } from '../services/findBotProxy';
 import { MyContext } from '../types';
+import { PermissionChecker } from '../utils/permissionChecker';
 
 const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
   if (!ctx.currentBot) {
@@ -18,7 +19,9 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
 
   const { proxyUser } = await findBotProxy(ctx.currentBot);
 
-  // 查找或创建关联用户
+  // 先查找现有用户，用于检测信息变更
+  const existingUser = await BotUser.findOne({ id: id.toString() });
+
   // 查找或创建关联用户，并填充 subscriptions 字段
   const botUser = await BotUser.findOneAndUpdate(
     { id: id.toString() },
@@ -32,6 +35,40 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
     },
     { new: true, upsert: true },
   ).populate('subscriptions');
+
+  // 检测用户信息变更并报告到群组
+  if (
+    existingUser &&
+    ctx.chat &&
+    ctx.chat.type !== 'private' &&
+    PermissionChecker.canReportMemberNameUpdated(proxyUser, ctx.currentBot)
+  ) {
+    const changes: string[] = [];
+
+    if (
+      existingUser.userName !== username &&
+      (existingUser.userName || username)
+    ) {
+      changes.push(`用户名: @${existingUser.userName} → @${username}`);
+    }
+    if (
+      existingUser.firstName !== first_name &&
+      (existingUser.firstName || first_name)
+    ) {
+      changes.push(`名字: ${existingUser.firstName} → ${first_name}`);
+    }
+    if (
+      existingUser.lastName !== last_name &&
+      (existingUser.lastName || last_name)
+    ) {
+      changes.push(`姓氏: ${existingUser.lastName} → ${last_name}`);
+    }
+
+    if (changes.length > 0) {
+      const message = [`🔔 用户信息变更 (ID: ${id})`, ...changes].join('\n');
+      await ctx.reply(message);
+    }
+  }
 
   // 将当前用户添加到机器人的用户列表中
   await ctx.currentBot.updateOne({

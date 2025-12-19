@@ -71,6 +71,9 @@ export interface IBot extends Document {
   // 群验证
   canGroupVerify: boolean;
   groupVerify?: IGroupVerify;
+
+  // 报道群内成员昵称或用户名更新
+  canReportMemberNameUpdated: boolean;
 }
 
 export interface IMenu extends Document {
@@ -362,6 +365,11 @@ const botSchema = new mongoose.Schema(
     groupVerify: {
       type: groupVerifyEmbeddedSchema,
       required: false,
+    },
+    canReportMemberNameUpdated: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   {
