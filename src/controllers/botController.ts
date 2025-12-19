@@ -196,7 +196,20 @@ export const setWebhook = async (botManager: IBot) => {
   console.log('删除 webhook');
   await bot.api.deleteWebhook();
 
-  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`);
+  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`, {
+    allowed_updates: [
+      'message',
+      'edited_message',
+      'channel_post',
+      'edited_channel_post',
+      'callback_query',
+      'inline_query',
+      'chosen_inline_result',
+      'chat_member', // 群组成员变化（加入/离开）
+      'my_chat_member', // bot 自己的成员状态变化
+      'chat_join_request', // 加群请求
+    ],
+  });
 
   console.log(
     `Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/bot-webhooks/${botManager._id}`,
@@ -283,14 +296,7 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
     }),
   });
 
-  if (isOnline) {
-    try {
-      setWebhook(botManager);
-    } catch (e) {
-      console.log(e);
-      throw new Error('token 无效');
-    }
-  }
+  setWebhook(botManager);
 
   await botManager.save();
 
@@ -434,10 +440,10 @@ const deleteMultipleBots = handleAsync(
     }
 
     // 3. 检查用户的 botCount 是否足够
-    if (req.user.botCount < bots.length) {
-      res.status(400);
-      throw new Error('机器人数量不足，无法删除');
-    }
+    // if (req.user.botCount < bots.length) {
+    //   res.status(400);
+    //   throw new Error('机器人数量不足，无法删除');
+    // }
 
     // for (const botManager of bots) {
     //   const bot = setupBot(botManager.token);
