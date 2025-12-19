@@ -296,7 +296,9 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
     }),
   });
 
-  setWebhook(botManager);
+  if (isOnline) {
+    setWebhook(botManager);
+  }
 
   await botManager.save();
 
@@ -440,19 +442,21 @@ const deleteMultipleBots = handleAsync(
     }
 
     // 3. 检查用户的 botCount 是否足够
-    // if (req.user.botCount < bots.length) {
-    //   res.status(400);
-    //   throw new Error('机器人数量不足，无法删除');
-    // }
+    if (req.user.botCount < bots.length) {
+      res.status(400);
+      throw new Error('机器人数量不足，无法删除');
+    }
 
-    // for (const botManager of bots) {
-    //   const bot = setupBot(botManager.token);
-    //   const webhookInfo = await printWebhookInfo(bot);
-    //   if (webhookInfo.url) {
-    //     await bot.api.deleteWebhook();
-    //     console.log(`${botManager.userName} Webhook ${botManager.token} 已删除`);
-    //   }
-    // }
+    for (const botManager of bots) {
+      const bot = setupBot(botManager.token);
+      const webhookInfo = await printWebhookInfo(bot);
+      if (webhookInfo.url) {
+        await bot.api.deleteWebhook();
+        console.log(
+          `${botManager.userName} Webhook ${botManager.token} 已删除`,
+        );
+      }
+    }
 
     // 4. 删除机器人
     const botIds = bots.map((bot) => bot._id);
