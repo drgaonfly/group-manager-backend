@@ -9,7 +9,12 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
     return;
   }
 
-  const { id, username, first_name, last_name } = ctx.from!;
+  // 系统消息（如新成员加入）可能没有 from
+  if (!ctx.from) {
+    return await next();
+  }
+
+  const { id, username, first_name, last_name } = ctx.from;
 
   const { proxyUser } = await findBotProxy(ctx.currentBot);
 
