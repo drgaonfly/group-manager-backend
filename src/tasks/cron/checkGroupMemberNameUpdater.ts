@@ -5,12 +5,12 @@ import { setupBot } from '../../bot/botSetup';
 import { findBotProxy } from '../../bot/services/findBotProxy';
 import { PermissionChecker } from '../../bot/utils/permissionChecker';
 import { checkMemberNameUpdated } from '../../utils/checkMemberNameUpdated';
-import { getOrCreateGramClient } from '../../bot/services/gramClient';
+import { getGramClient } from '../../bot/services/gramClient';
 
 /**
  * 定时检测群成员名称变更
  * 通过 MTProto client.getParticipants 获取群成员最新信息，与数据库对比，发现变更则通知群组
- * 使用持久化连接池，避免频繁 start() 导致 FloodWait
+ * 使用数据库保存的 session 进行连接，避免频繁 start() 导致 FloodWait
  */
 export const checkGroupMemberNameUpdater = async () => {
   try {
@@ -29,10 +29,9 @@ export const checkGroupMemberNameUpdater = async () => {
 
       const botInstance = setupBot(bot.token);
 
-      let gramClient;
+      let gramClient: Awaited<ReturnType<typeof getGramClient>> | null = null;
       try {
-        // 使用持久化连接池，复用已有连接
-        gramClient = await getOrCreateGramClient(bot.token);
+        gramClient = await getGramClient(bot.token);
       } catch (err) {
         console.error(
           `[checkGroupMemberNameUpdater] Bot ${bot.botName} gramClient 连接失败:`,
@@ -108,7 +107,8 @@ export const checkGroupMemberNameUpdater = async () => {
           );
         }
       }
-      // 不再 disconnect，保持连接复用
+      // 用完断开连接
+      await gramClient.disconnect();
     }
 
     console.log('[checkGroupMemberNameUpdater] 检测完成');
