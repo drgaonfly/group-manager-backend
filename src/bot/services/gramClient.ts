@@ -73,6 +73,7 @@ export async function disconnectGramClient(botToken: string): Promise<void> {
  */
 export async function disconnectAllGramClients(): Promise<void> {
   for (const [token, client] of clientPool) {
+    console.log('token', token);
     try {
       await client.disconnect();
     } catch (e) {
