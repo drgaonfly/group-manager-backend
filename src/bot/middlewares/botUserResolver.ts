@@ -3,6 +3,7 @@ import BotUser from '../../models/botUser';
 import { findBotProxy } from '../services/findBotProxy';
 import { MyContext } from '../types';
 import { PermissionChecker } from '../utils/permissionChecker';
+import { checkMemberNameUpdated } from '../../utils/checkMemberNameUpdated';
 
 const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
   if (!ctx.currentBot) {
@@ -43,29 +44,13 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
     ctx.chat.type !== 'private' &&
     PermissionChecker.canReportMemberNameUpdated(proxyUser, ctx.currentBot)
   ) {
-    const changes: string[] = [];
-
-    if (
-      existingUser.userName !== username &&
-      (existingUser.userName || username)
-    ) {
-      changes.push(`用户名: @${existingUser.userName} → @${username}`);
-    }
-    if (
-      existingUser.firstName !== first_name &&
-      (existingUser.firstName || first_name)
-    ) {
-      changes.push(`名字: ${existingUser.firstName} → ${first_name}`);
-    }
-    if (
-      existingUser.lastName !== last_name &&
-      (existingUser.lastName || last_name)
-    ) {
-      changes.push(`姓氏: ${existingUser.lastName} → ${last_name}`);
-    }
-
-    if (changes.length > 0) {
-      const message = [`🔔 用户信息变更 (ID: ${id})`, ...changes].join('\n');
+    const message = checkMemberNameUpdated(existingUser, {
+      id,
+      username,
+      first_name,
+      last_name,
+    });
+    if (message) {
       await ctx.reply(message);
     }
   }

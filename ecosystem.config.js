@@ -93,6 +93,28 @@ module.exports = {
       retain: 7,
       compress: true,
     },
+    // 群组成员名称变更任务
+    {
+      name: 'multi-chatmember-name-updated',
+      script: 'dist/tasks/checkGroupMemberNameUpdated.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true, // 常驻进程，PM2 保障自动重启
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      // 日志配置
+      error_file: './logs/chatmember-name-updated-error.log',
+      out_file: './logs/chatmember-name-updated-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      // 日志切割配置（保留7天）
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
   ],
 };
 
