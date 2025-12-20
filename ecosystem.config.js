@@ -6,7 +6,7 @@ module.exports = {
   apps: [
     // 主应用
     {
-      name: 'manager-backend',
+      name: 'multi-backend',
       script: 'dist/index.js',
       instances: 1,
       autorestart: true,
@@ -28,7 +28,7 @@ module.exports = {
     },
     // Bot 应用 - 部署时执行一次（设置 Webhook）
     {
-      name: 'manager-bot',
+      name: 'multi-bot',
       script: 'dist/bot/index.js',
       instances: 1,
       autorestart: false, // 执行一次后退出，不自动重启
@@ -51,7 +51,7 @@ module.exports = {
     },
     // 群发消息任务 - 使用 node-cron 每10秒执行一次
     {
-      name: 'multi-group-messages',
+      name: 'multi-task',
       script: 'dist/tasks/index.js',
       instances: 1,
       exec_mode: 'fork',
@@ -73,7 +73,7 @@ module.exports = {
     },
     // 频道定时发送任务
     {
-      name: 'multi-channel-post',
+      name: 'multi-task-channel-post',
       script: 'dist/tasks/checkChannelPost.js',
       instances: 1,
       exec_mode: 'fork',
