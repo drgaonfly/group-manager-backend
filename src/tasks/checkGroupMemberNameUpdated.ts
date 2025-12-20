@@ -20,9 +20,9 @@ const task = async () => {
   // 创建队列，同一时间只执行一个任务，防止任务重叠
   const queue = new PQueue({ concurrency: 1 });
 
-  // 使用 node-cron 每5分钟执行一次
+  // 使用 node-cron 每10秒执行一次
   cron.schedule(
-    '*/5 * * * *',
+    '*/10 * * * * *',
     () => {
       queue.add(async () => {
         try {
