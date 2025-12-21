@@ -18,40 +18,74 @@ function formatUsername(username: string | null | undefined): string {
 }
 
 /**
+ * 获取昵称（firstName + lastName 的组合）
+ */
+function getNickname(
+  firstName?: string | null,
+  lastName?: string | null,
+): string {
+  const first = firstName || '';
+  const last = lastName || '';
+  const nickname = `${first} ${last}`.trim();
+  return nickname || '(空)';
+}
+
+/**
  * 检测用户信息变更，返回变更消息（如果有）
  */
 export function checkMemberNameUpdated(
   existingUser: IBotUser,
   newInfo: UserInfo,
 ): string | null {
-  const changes: string[] = [];
+  // 计算原昵称和新昵称
+  const oldNickname = getNickname(
+    existingUser.firstName,
+    existingUser.lastName,
+  );
+  const newNickname = getNickname(newInfo.first_name, newInfo.last_name);
 
-  if (
-    existingUser.userName !== newInfo.username &&
-    (existingUser.userName || newInfo.username)
-  ) {
-    const oldUsername = formatUsername(existingUser.userName);
-    const newUsername = formatUsername(newInfo.username);
-    changes.push(`用户名: @${oldUsername} → @${newUsername}`);
-  }
-  if (
-    existingUser.firstName !== newInfo.first_name &&
-    (existingUser.firstName || newInfo.first_name)
-  ) {
-    const oldFirstName = existingUser.firstName || '(空)';
-    const newFirstName = newInfo.first_name || '(空)';
-    changes.push(`名字: ${oldFirstName} → ${newFirstName}`);
-  }
-  if (
-    existingUser.lastName !== newInfo.last_name &&
-    (existingUser.lastName || newInfo.last_name)
-  ) {
-    const oldLastName = existingUser.lastName || '(空)';
-    const newLastName = newInfo.last_name || '(空)';
-    changes.push(`姓氏: ${oldLastName} → ${newLastName}`);
+  // 检测昵称变化
+  const nicknameChanged = oldNickname !== newNickname;
+
+  // 检测用户名变化
+  const oldUsername = formatUsername(existingUser.userName);
+  const newUsername = formatUsername(newInfo.username);
+  const usernameChanged = oldUsername !== newUsername;
+
+  // 如果没有变化，返回 null
+  if (!nicknameChanged && !usernameChanged) {
+    return null;
   }
 
-  if (changes.length === 0) return null;
+  // 构建变更项列表（用于标题）
+  const changeItems: string[] = [];
+  if (nicknameChanged) {
+    changeItems.push('昵称');
+  }
+  if (usernameChanged) {
+    changeItems.push('用户名');
+  }
+  const changeText = changeItems.join('和');
 
-  return [`🔔 用户信息变更 (ID: ${newInfo.id})`, ...changes].join('\n');
+  // 构建消息内容
+  const messageParts: string[] = [];
+  messageParts.push(`系统检测到用户 ${newInfo.id} 修改了${changeText}`);
+  messageParts.push(''); // 空行
+
+  // 添加昵称变化信息
+  if (nicknameChanged) {
+    messageParts.push(`原昵称: ${oldNickname}`);
+    messageParts.push(`新昵称: ${newNickname}`);
+  }
+
+  // 添加用户名变化信息
+  if (usernameChanged) {
+    messageParts.push(`原用户名: @${oldUsername}`);
+    messageParts.push(`新用户名: @${newUsername}`);
+  }
+
+  messageParts.push('');
+  messageParts.push('请注意规避风险⚠️');
+
+  return messageParts.join('\n');
 }
