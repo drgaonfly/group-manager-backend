@@ -6,7 +6,7 @@ module.exports = {
   apps: [
     // 主应用
     {
-      name: 'manager-backend',
+      name: 'multi-backend',
       script: 'dist/index.js',
       instances: 1,
       autorestart: true,
@@ -28,7 +28,7 @@ module.exports = {
     },
     // Bot 应用 - 部署时执行一次（设置 Webhook）
     {
-      name: 'manager-bot',
+      name: 'multi-bot',
       script: 'dist/bot/index.js',
       instances: 1,
       autorestart: false, // 执行一次后退出，不自动重启
@@ -51,7 +51,7 @@ module.exports = {
     },
     // 群发消息任务 - 使用 node-cron 每10秒执行一次
     {
-      name: 'multi-group-messages',
+      name: 'multi-task',
       script: 'dist/tasks/index.js',
       instances: 1,
       exec_mode: 'fork',
@@ -73,7 +73,7 @@ module.exports = {
     },
     // 频道定时发送任务
     {
-      name: 'multi-channel-post',
+      name: 'multi-task-channel-post',
       script: 'dist/tasks/checkChannelPost.js',
       instances: 1,
       exec_mode: 'fork',
@@ -86,6 +86,28 @@ module.exports = {
       // 日志配置
       error_file: './logs/channel-post-error.log',
       out_file: './logs/channel-post-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      // 日志切割配置（保留7天）
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
+    // 群组成员名称变更任务
+    {
+      name: 'multi-chatmember-name-updated',
+      script: 'dist/tasks/checkGroupMemberNameUpdated.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true, // 常驻进程，PM2 保障自动重启
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      // 日志配置
+      error_file: './logs/chatmember-name-updated-error.log',
+      out_file: './logs/chatmember-name-updated-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       // 日志切割配置（保留7天）

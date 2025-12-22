@@ -64,6 +64,15 @@ export class PermissionChecker {
     return !!(proxyUser?.groupVerify && bot?.canGroupVerify && hasValidConfig);
   }
 
+  static canReportMemberNameUpdated(
+    proxyUser: IUser | null,
+    bot: IBot,
+  ): boolean {
+    return !!(
+      proxyUser?.reportGroupMemberNameUpdated && bot?.canReportMemberNameUpdated
+    );
+  }
+
   /**
    * 获取所有功能的可用状态
    * @param proxyUser 代理用户
