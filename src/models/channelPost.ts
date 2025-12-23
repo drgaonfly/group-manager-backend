@@ -7,6 +7,7 @@ export interface IChannelPost extends Document {
   title: string;
   url: string;
   content: string;
+  medias: string[]; // 媒体文件（图片、视频等）
   menus: {
     name: string;
     url: string;
@@ -38,6 +39,10 @@ const channelPostSchema = new mongoose.Schema(
       type: String,
       required: false,
       trim: true,
+    },
+    medias: {
+      type: [String],
+      default: [],
     },
     menus: [
       {

@@ -3,7 +3,7 @@ import ChannelPost from '../../models/channelPost';
 import { findBotProxy } from '../../bot/services/findBotProxy';
 import { PermissionChecker } from '../../bot/utils/permissionChecker';
 import { setupBot } from '../../bot/botSetup';
-import { InlineKeyboard } from 'grammy';
+import { InlineKeyboard, InputFile } from 'grammy';
 
 /**
  * 定时发送频道消息到指定群组
@@ -96,14 +96,96 @@ export async function channelPost() {
             } = buildSingleChannelMessage(bot, channel);
 
             // 发送新消息到频道
-            const sentMessage = await telegramBot.api.sendMessage(
-              channelTarget,
-              singleChannelMessage,
-              {
-                parse_mode: 'HTML',
-                reply_markup: singleChannelKeyboard,
-              },
-            );
+            let sentMessage;
+
+            // 判断媒体类型的辅助函数
+            const getMediaType = (filename: string): 'photo' | 'video' => {
+              const ext = filename.toLowerCase().split('.').pop();
+              const videoExtensions = [
+                'mp4',
+                'avi',
+                'mov',
+                'mkv',
+                'webm',
+                'flv',
+                'wmv',
+              ];
+              return videoExtensions.includes(ext || '') ? 'video' : 'photo';
+            };
+
+            // 检查是否有媒体文件
+            if (
+              channel.medias &&
+              Array.isArray(channel.medias) &&
+              channel.medias.length > 0
+            ) {
+              if (channel.medias.length === 1) {
+                const mediaType = getMediaType(channel.medias[0]);
+                if (mediaType === 'video') {
+                  sentMessage = await telegramBot.api.sendVideo(
+                    channelTarget,
+                    new InputFile(`tmp/${channel.medias[0]}`),
+                    {
+                      caption: singleChannelMessage,
+                      parse_mode: 'HTML',
+                      reply_markup: singleChannelKeyboard,
+                    },
+                  );
+                } else {
+                  sentMessage = await telegramBot.api.sendPhoto(
+                    channelTarget,
+                    new InputFile(`tmp/${channel.medias[0]}`),
+                    {
+                      caption: singleChannelMessage,
+                      parse_mode: 'HTML',
+                      reply_markup: singleChannelKeyboard,
+                    },
+                  );
+                }
+              } else {
+                // 多个媒体文件，使用 sendMediaGroup
+                const media = channel.medias.map(
+                  (file: string, idx: number) => {
+                    const type = getMediaType(file);
+                    return {
+                      type: type as 'photo' | 'video',
+                      media: new InputFile(`tmp/${file}`),
+                      ...(idx === 0
+                        ? { caption: singleChannelMessage, parse_mode: 'HTML' }
+                        : {}),
+                    };
+                  },
+                );
+
+                const mediaMessages = await telegramBot.api.sendMediaGroup(
+                  channelTarget,
+                  media as any,
+                );
+                sentMessage = mediaMessages[0]; // 取第一条消息的ID
+
+                // sendMediaGroup 不支持 reply_markup，单独发送菜单（如果有菜单按钮）
+                if (channel.menus && channel.menus.length > 0) {
+                  await telegramBot.api.sendMessage(
+                    channelTarget,
+                    '👆 点击上方按钮',
+                    {
+                      parse_mode: 'HTML',
+                      reply_markup: singleChannelKeyboard,
+                    },
+                  );
+                }
+              }
+            } else {
+              // 发送纯文本消息
+              sentMessage = await telegramBot.api.sendMessage(
+                channelTarget,
+                singleChannelMessage,
+                {
+                  parse_mode: 'HTML',
+                  reply_markup: singleChannelKeyboard,
+                },
+              );
+            }
 
             console.log(
               `成功发送消息到频道 ${channel.title} (${channelTarget}) 使用机器人 ${bot.botName}, 新消息ID: ${sentMessage.message_id}`,

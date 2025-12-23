@@ -28,7 +28,7 @@ export interface IGroupMessage extends Document {
   content: string; // 消息内容
   groups?: mongoose.Schema.Types.ObjectId[] | IGroup[]; // 关联的群（如果是群消息）
   proxy: mongoose.Types.ObjectId | IUser;
-  images: string[]; // 图片
+  medias: string[]; // 媒体文件（图片、视频等）
   intervalTime: number; // 间隔时间
   isRealtime: boolean; // 是否实时
   menus: IMenu[];
@@ -51,7 +51,7 @@ const groupMessageSchema = new mongoose.Schema(
       ref: 'User',
       required: false,
     },
-    images: {
+    medias: {
       type: [String],
       required: false,
     },

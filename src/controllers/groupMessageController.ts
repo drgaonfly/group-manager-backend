@@ -76,17 +76,17 @@ const getGroupMessages = handleAsync(
 
     const total = await GroupMessage.countDocuments(query).exec();
 
-    // Convert Mongoose documents to plain objects and process images
+    // Convert Mongoose documents to plain objects and process medias
     const processedGroupMessages = await Promise.all(
       groupMessages.map(async (gm) => {
         // Convert to plain JS object to avoid Mongoose internals in response
         const doc = gm.toObject ? gm.toObject() : gm;
 
-        // If images array exists, process each image URL in the array
-        if (doc.images && Array.isArray(doc.images)) {
-          doc.images = await Promise.all(
-            doc.images.map(async (imageUrl) => {
-              return await generateSignedUrl(imageUrl);
+        // If medias array exists, process each media URL in the array
+        if (doc.medias && Array.isArray(doc.medias)) {
+          doc.medias = await Promise.all(
+            doc.medias.map(async (mediaUrl) => {
+              return await generateSignedUrl(mediaUrl);
             }),
           );
         }
@@ -143,7 +143,7 @@ const addGroupMessage = handleAsync(
 // 更新群消息
 const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { images, ...otherFields } = req.body;
+  const { medias, ...otherFields } = req.body;
 
   // 构建更新对象
   const updates: any = {
@@ -152,14 +152,14 @@ const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
 
   // 如果是已存在的URL（以http开头），则不更新，因为它已经在数据库中。
 
-  // 处理 images 字段，只保留新的或空的图片路径，否则保留原有的 images
-  if (Array.isArray(images)) {
-    updates.images = images.filter(
-      (image) => image === '' || (image && !image.startsWith('http')),
+  // 处理 medias 字段，只保留新的或空的媒体路径，否则保留原有的 medias
+  if (Array.isArray(medias)) {
+    updates.medias = medias.filter(
+      (media) => media === '' || (media && !media.startsWith('http')),
     );
-    // 如果全部都是已存在的URL，则保留原有 images，不更新
-    if (updates.images.length === 0) {
-      delete updates.images;
+    // 如果全部都是已存在的URL，则保留原有 medias，不更新
+    if (updates.medias.length === 0) {
+      delete updates.medias;
     }
   }
 

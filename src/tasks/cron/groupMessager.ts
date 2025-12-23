@@ -183,28 +183,58 @@ export async function sendGroupMessages() {
 
             // 如果成功，才发送消息
             if (
-              Array.isArray(nextMessage.images) &&
-              nextMessage.images.length > 0
+              Array.isArray(nextMessage.medias) &&
+              nextMessage.medias.length > 0
             ) {
-              if (nextMessage.images.length === 1) {
-                // 单张图片，直接 sendPhoto
-                await telegramBot.api.sendPhoto(
-                  group.id,
-                  new InputFile(`tmp/${nextMessage.images[0]}`),
-                  {
-                    caption: nextMessage.content,
-                    parse_mode: 'HTML',
-                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                  },
-                );
+              // 判断媒体类型
+              const getMediaType = (filename: string): 'photo' | 'video' => {
+                const ext = filename.toLowerCase().split('.').pop();
+                const videoExtensions = [
+                  'mp4',
+                  'avi',
+                  'mov',
+                  'mkv',
+                  'webm',
+                  'flv',
+                  'wmv',
+                ];
+                return videoExtensions.includes(ext || '') ? 'video' : 'photo';
+              };
+
+              if (nextMessage.medias.length === 1) {
+                const mediaType = getMediaType(nextMessage.medias[0]);
+                if (mediaType === 'video') {
+                  await telegramBot.api.sendVideo(
+                    group.id,
+                    new InputFile(`tmp/${nextMessage.medias[0]}`),
+                    {
+                      caption: nextMessage.content,
+                      parse_mode: 'HTML',
+                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                    },
+                  );
+                } else {
+                  await telegramBot.api.sendPhoto(
+                    group.id,
+                    new InputFile(`tmp/${nextMessage.medias[0]}`),
+                    {
+                      caption: nextMessage.content,
+                      parse_mode: 'HTML',
+                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                    },
+                  );
+                }
               } else {
-                // 多张图片，使用 sendMediaGroup
-                const media = nextMessage.images.map(
-                  (img: string, idx: number) => {
+                // 多个媒体文件，使用 sendMediaGroup
+                const media = nextMessage.medias.map(
+                  (file: string, idx: number) => {
+                    const type = getMediaType(file);
                     return {
-                      type: 'photo' as const,
-                      media: new InputFile(`tmp/${img}`),
-                      ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
+                      type: type as 'photo' | 'video',
+                      media: new InputFile(`tmp/${file}`),
+                      ...(idx === 0
+                        ? { caption: nextMessage.content, parse_mode: 'HTML' }
+                        : {}),
                     };
                   },
                 );
@@ -212,14 +242,17 @@ export async function sendGroupMessages() {
                 // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
                 await telegramBot.api.sendMediaGroup(group.id, media as any);
 
-                await telegramBot.api.sendMessage(
-                  group.id,
-                  nextMessage.content,
-                  {
-                    parse_mode: 'HTML',
-                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                  },
-                );
+                // 单独发送菜单
+                if (replyMarkup) {
+                  await telegramBot.api.sendMessage(
+                    group.id,
+                    '👆 点击上方按钮',
+                    {
+                      parse_mode: 'HTML',
+                      reply_markup: replyMarkup,
+                    },
+                  );
+                }
               }
             } else {
               // 发送纯文本消息

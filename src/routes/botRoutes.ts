@@ -12,6 +12,7 @@ import {
   delAuthorizer,
   sendMessage,
   sendGroupMessage,
+  sendChannelPost,
 } from '../controllers/botController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -46,5 +47,9 @@ router.route('/:id/send-message').post(protect, checkPermission, sendMessage);
 router
   .route('/:id/send-group-message')
   .put(protect, checkPermission, sendGroupMessage);
+
+router
+  .route('/:id/send-channel-post')
+  .put(protect, checkPermission, sendChannelPost);
 
 export default router;
