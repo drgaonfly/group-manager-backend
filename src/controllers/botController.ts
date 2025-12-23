@@ -856,26 +856,23 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
               );
             }
           } else {
-            // 多个媒体文件，使用 sendMediaGroup
-            const media = medias.map((file: string, idx: number) => {
+            // 多个媒体文件，使用 sendMediaGroup（不带 caption）
+            const media = medias.map((file: string) => {
               const type = getMediaType(file);
               return {
                 type: type as 'photo' | 'video',
                 media: new InputFile(`tmp/${file}`),
-                ...(idx === 0 ? { caption: content, parse_mode: 'HTML' } : {}),
               };
             });
 
             // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
             await telegramBot.api.sendMediaGroup(group.id, media as any);
 
-            // 单独发送菜单
-            if (replyMarkup) {
-              await telegramBot.api.sendMessage(group.id, '👆 点击上方按钮', {
-                parse_mode: 'HTML',
-                reply_markup: replyMarkup,
-              });
-            }
+            // 发送完媒体组后，单独发送 caption 和内联菜单
+            await telegramBot.api.sendMessage(group.id, content, {
+              parse_mode: 'HTML',
+              ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+            });
           }
         } else {
           // 发送纯文本消息
@@ -984,27 +981,22 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
           );
         }
       } else {
-        // 多个媒体文件，使用 sendMediaGroup
-        const media = medias.map((file: string, idx: number) => {
+        // 多个媒体文件，使用 sendMediaGroup（不带 caption）
+        const media = medias.map((file: string) => {
           const type = getMediaType(file);
           return {
             type: type as 'photo' | 'video',
             media: new InputFile(`tmp/${file}`),
-            ...(idx === 0
-              ? { caption: messageContent, parse_mode: 'HTML' }
-              : {}),
           };
         });
 
         await telegramBot.api.sendMediaGroup(channelTarget, media as any);
 
-        // sendMediaGroup 不支持 reply_markup，单独发送菜单
-        if (replyMarkup) {
-          await telegramBot.api.sendMessage(channelTarget, '👆 点击上方按钮', {
-            parse_mode: 'HTML',
-            reply_markup: replyMarkup,
-          });
-        }
+        // 发送完媒体组后，单独发送 caption 和内联菜单
+        await telegramBot.api.sendMessage(channelTarget, messageContent, {
+          parse_mode: 'HTML',
+          ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+        });
       }
     } else {
       // 发送纯文本消息

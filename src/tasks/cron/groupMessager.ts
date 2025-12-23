@@ -225,34 +225,27 @@ export async function sendGroupMessages() {
                   );
                 }
               } else {
-                // 多个媒体文件，使用 sendMediaGroup
-                const media = nextMessage.medias.map(
-                  (file: string, idx: number) => {
-                    const type = getMediaType(file);
-                    return {
-                      type: type as 'photo' | 'video',
-                      media: new InputFile(`tmp/${file}`),
-                      ...(idx === 0
-                        ? { caption: nextMessage.content, parse_mode: 'HTML' }
-                        : {}),
-                    };
-                  },
-                );
+                // 多个媒体文件，使用 sendMediaGroup（不带 caption）
+                const media = nextMessage.medias.map((file: string) => {
+                  const type = getMediaType(file);
+                  return {
+                    type: type as 'photo' | 'video',
+                    media: new InputFile(`tmp/${file}`),
+                  };
+                });
 
                 // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
                 await telegramBot.api.sendMediaGroup(group.id, media as any);
 
-                // 单独发送菜单
-                if (replyMarkup) {
-                  await telegramBot.api.sendMessage(
-                    group.id,
-                    '👆 点击上方按钮',
-                    {
-                      parse_mode: 'HTML',
-                      reply_markup: replyMarkup,
-                    },
-                  );
-                }
+                // 发送完媒体组后，单独发送 caption 和内联菜单
+                await telegramBot.api.sendMessage(
+                  group.id,
+                  nextMessage.content,
+                  {
+                    parse_mode: 'HTML',
+                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                  },
+                );
               }
             } else {
               // 发送纯文本消息
