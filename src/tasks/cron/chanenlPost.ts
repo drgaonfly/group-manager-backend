@@ -64,7 +64,9 @@ export async function channelPost() {
             const channelTarget = extractChannelTarget(channel.url);
 
             if (!channelTarget) {
-              console.log(`频道 ${channel.url} 的URL格式不正确，跳过`);
+              console.log(
+                `频道 ${channel.title} 的URL格式不正确，跳过: ${channel.url}`,
+              );
               continue;
             }
 
@@ -76,11 +78,11 @@ export async function channelPost() {
                   channel.lastPostMessageId,
                 );
                 console.log(
-                  `成功删除频道 ${channel.url} 中的上一条消息 (ID: ${channel.lastPostMessageId})`,
+                  `成功删除频道 ${channel.title} 中的上一条消息 (ID: ${channel.lastPostMessageId})`,
                 );
               } catch (deleteError) {
                 console.log(
-                  `删除频道 ${channel.url} 中的上一条消息失败 (ID: ${channel.lastPostMessageId}):`,
+                  `删除频道 ${channel.title} 中的上一条消息失败 (ID: ${channel.lastPostMessageId}):`,
                   deleteError,
                 );
                 // 删除失败不影响发送新消息，继续执行
@@ -178,7 +180,7 @@ export async function channelPost() {
             }
 
             console.log(
-              `成功发送消息到频道 ${channel.url} (${channelTarget}) 使用机器人 ${bot.botName}, 新消息ID: ${sentMessage.message_id}`,
+              `成功发送消息到频道 ${channel.title} (${channelTarget}) 使用机器人 ${bot.botName}, 新消息ID: ${sentMessage.message_id}`,
             );
 
             // 更新频道推广的最后发送时间和消息ID
@@ -188,7 +190,7 @@ export async function channelPost() {
             });
           } catch (channelError) {
             console.error(
-              `[channelPost] 向频道 ${channel.url} 发送消息时出错:`,
+              `[channelPost] 向频道 ${channel.title} 发送消息时出错:`,
               channelError,
             );
             // 继续处理下一个频道，不中断整个流程
@@ -245,14 +247,14 @@ function buildSingleChannelMessage(
   bot: any,
   channel: any,
 ): { messageContent: string; keyboard: InlineKeyboard } {
-  // 构建消息内容 - 直接使用 content
-  let messageContent = '';
+  // 构建消息内容
+  let messageContent = `<b>${channel.title}</b>`;
 
   // 如果有自定义内容，使用自定义内容，否则使用默认格式
   if (channel.content) {
-    messageContent = channel.content;
+    messageContent += `\n\n${channel.content}`;
   } else {
-    messageContent = bot.purchasing_introduction || '📺 频道推荐';
+    messageContent += `\n\n${bot.purchasing_introduction || '📺 频道推荐'}`;
   }
 
   // 构建内联键盘
@@ -280,7 +282,7 @@ function buildSingleChannelMessage(
   } else {
     // 使用默认按钮布局
     // 添加频道链接按钮
-    keyboard.url(`📺 频道`, channel.url).row();
+    keyboard.url(`📺 ${channel.title}`, channel.url).row();
   }
 
   // 添加机器人的客服和机器人链接（如果有的话）
@@ -303,13 +305,13 @@ function checkChannelSendInterval(channel: any): boolean {
 
   // 如果间隔设置为0，表示禁用发送
   if (intervalMinutes === 0) {
-    console.log(`频道 ${channel.url} 间隔设置为0，禁用发送`);
+    console.log(`频道 ${channel.title} 间隔设置为0，禁用发送`);
     return false;
   }
 
   // 如果没有上次发送时间，说明是第一次发送，允许发送
   if (!channel.lastPostTime) {
-    console.log(`频道 ${channel.url} 首次发送，允许发送`);
+    console.log(`频道 ${channel.title} 首次发送，允许发送`);
     return true;
   }
 
@@ -318,7 +320,7 @@ function checkChannelSendInterval(channel: any): boolean {
   const timeDiffMinutes = timeDiff / (1000 * 60); // 转换为分钟
 
   console.log(
-    `频道 ${channel.url} 上次发送时间: ${
+    `频道 ${channel.title} 上次发送时间: ${
       channel.lastPostTime
     }, 间隔设置: ${intervalMinutes}分钟, 实际间隔: ${timeDiffMinutes.toFixed(
       2,

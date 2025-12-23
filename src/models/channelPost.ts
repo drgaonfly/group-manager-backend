@@ -4,6 +4,7 @@ import { IBot } from './bot';
 
 // 频道推广接口定义
 export interface IChannelPost extends Document {
+  title: string;
   url: string;
   content: string;
   medias: string[]; // 媒体文件（图片、视频等）
@@ -49,6 +50,11 @@ const channelPostSchema = new mongoose.Schema(
         url: String,
       },
     ],
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     url: {
       type: String,
       required: true,

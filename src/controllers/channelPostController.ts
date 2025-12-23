@@ -12,6 +12,10 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
+  if (queryParams.title) {
+    query.title = { $regex: queryParams.title, $options: 'i' };
+  }
+
   if (queryParams.url) {
     query.url = { $regex: queryParams.url, $options: 'i' };
   }
