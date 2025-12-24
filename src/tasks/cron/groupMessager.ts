@@ -5,6 +5,7 @@ import GroupMessageHistory from '../../models/groupMessageHistory';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
+import { getMediaType } from '../../utils/mediaUtils';
 
 /**
  * 群发消息任务
@@ -186,21 +187,6 @@ export async function sendGroupMessages() {
               Array.isArray(nextMessage.medias) &&
               nextMessage.medias.length > 0
             ) {
-              // 判断媒体类型
-              const getMediaType = (filename: string): 'photo' | 'video' => {
-                const ext = filename.toLowerCase().split('.').pop();
-                const videoExtensions = [
-                  'mp4',
-                  'avi',
-                  'mov',
-                  'mkv',
-                  'webm',
-                  'flv',
-                  'wmv',
-                ];
-                return videoExtensions.includes(ext || '') ? 'video' : 'photo';
-              };
-
               if (nextMessage.medias.length === 1) {
                 const mediaType = getMediaType(nextMessage.medias[0]);
                 if (mediaType === 'video') {

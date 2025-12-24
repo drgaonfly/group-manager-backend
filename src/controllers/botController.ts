@@ -15,6 +15,7 @@ import { InlineKeyboard } from 'grammy';
 import BotUserMessage from '../models/botUserMessage';
 import { createTelegramClient } from '../bot/services/gramClient';
 import createDebug from 'debug';
+import { getMediaType } from '../utils/mediaUtils';
 
 const debug = createDebug('bot:controller');
 
@@ -1016,15 +1017,6 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
     throw new Error(error?.description || '发送频道消息失败');
   }
 });
-
-/**
- * 根据文件扩展名判断媒体类型
- */
-function getMediaType(filename: string): 'photo' | 'video' {
-  const ext = filename.toLowerCase().split('.').pop();
-  const videoExtensions = ['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'wmv'];
-  return videoExtensions.includes(ext || '') ? 'video' : 'photo';
-}
 
 /**
  * 从频道URL中提取Telegram频道ID或用户名

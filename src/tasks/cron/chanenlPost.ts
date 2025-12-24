@@ -4,6 +4,7 @@ import { findBotProxy } from '../../bot/services/findBotProxy';
 import { PermissionChecker } from '../../bot/utils/permissionChecker';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
+import { getMediaType } from '../../utils/mediaUtils';
 
 /**
  * 定时发送频道消息到指定群组
@@ -97,21 +98,6 @@ export async function channelPost() {
 
             // 发送新消息到频道
             let sentMessage;
-
-            // 判断媒体类型的辅助函数
-            const getMediaType = (filename: string): 'photo' | 'video' => {
-              const ext = filename.toLowerCase().split('.').pop();
-              const videoExtensions = [
-                'mp4',
-                'avi',
-                'mov',
-                'mkv',
-                'webm',
-                'flv',
-                'wmv',
-              ];
-              return videoExtensions.includes(ext || '') ? 'video' : 'photo';
-            };
 
             // 检查是否有媒体文件
             if (

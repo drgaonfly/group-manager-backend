@@ -6,6 +6,8 @@ import { isProxy } from '../middlewares/authMiddleware';
 import BotUser from '../models/botUser';
 import Bot from '../models/bot';
 import { setupBot } from '../bot/botSetup';
+import { InputFile } from 'grammy';
+import { getMediaType } from '../utils/mediaUtils';
 
 // Build query based on query parameters
 const buildQuery = async (queryParams: any, req: RequestCustom) => {
@@ -163,7 +165,7 @@ const deleteMultipleBotUserConfigs = handleAsync(
 // 发送消息给 BotUserConfig 关联的用户
 const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
-  const { message, parseMode } = req.body;
+  const { message, parseMode, medias } = req.body;
 
   if (!message || !message.trim()) {
     res.status(400);
@@ -196,9 +198,53 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
   const telegramBot = setupBot(bot.token);
 
   try {
-    await telegramBot.api.sendMessage(botUser.id, message, {
-      parse_mode: parseMode || undefined,
-    });
+    // 有媒体文件
+    if (medias && Array.isArray(medias) && medias.length > 0) {
+      if (medias.length === 1) {
+        // 单个媒体文件
+        const mediaType = getMediaType(medias[0]);
+        if (mediaType === 'video') {
+          await telegramBot.api.sendVideo(
+            botUser.id,
+            new InputFile(`tmp/${medias[0]}`),
+            {
+              caption: message,
+              parse_mode: parseMode || undefined,
+            },
+          );
+        } else {
+          await telegramBot.api.sendPhoto(
+            botUser.id,
+            new InputFile(`tmp/${medias[0]}`),
+            {
+              caption: message,
+              parse_mode: parseMode || undefined,
+            },
+          );
+        }
+      } else {
+        // 多个媒体文件，使用 sendMediaGroup
+        const media = medias.map((file: string) => {
+          const type = getMediaType(file);
+          return {
+            type: type as 'photo' | 'video',
+            media: new InputFile(`tmp/${file}`),
+          };
+        });
+
+        await telegramBot.api.sendMediaGroup(botUser.id, media as any);
+
+        // sendMediaGroup 不支持 caption，单独发送文本消息
+        await telegramBot.api.sendMessage(botUser.id, message, {
+          parse_mode: parseMode || undefined,
+        });
+      }
+    } else {
+      // 纯文本消息
+      await telegramBot.api.sendMessage(botUser.id, message, {
+        parse_mode: parseMode || undefined,
+      });
+    }
 
     res.json({
       success: true,
