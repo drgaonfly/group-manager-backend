@@ -65,7 +65,7 @@ const getGroupMessages = handleAsync(
     const groupMessages = await GroupMessage.find(query)
       .populate({
         path: 'bot',
-        populate: 'groups',
+        populate: { path: 'groups' },
       })
       .populate('proxy')
       .populate('groups')

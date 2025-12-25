@@ -80,7 +80,10 @@ export const getChannelPosts = handleAsync(
 
     const channelPosts = await ChannelPost.find(query)
       .populate('proxy')
-      .populate('bot')
+      .populate({
+        path: 'bot',
+        populate: { path: 'groups' },
+      })
       .populate('channel')
       .populate('channels')
       .sort('weight createdAt')
