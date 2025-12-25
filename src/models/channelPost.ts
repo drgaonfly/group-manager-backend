@@ -1,11 +1,14 @@
 import mongoose, { Document } from 'mongoose';
 import { IUser } from './user';
 import { IBot } from './bot';
+import { IGroup } from './group';
 
 // 频道推广接口定义
 export interface IChannelPost extends Document {
-  title: string;
-  url: string;
+  title?: string; // 保留用于兼容旧数据
+  url?: string; // 保留用于兼容旧数据
+  channel?: mongoose.Schema.Types.ObjectId | IGroup; // 保留用于兼容旧数据（单个频道）
+  channels?: (mongoose.Schema.Types.ObjectId | IGroup)[]; // 关联的多个频道 Group
   content: string;
   medias: string[]; // 媒体文件（图片、视频等）
   menus: {
@@ -35,6 +38,17 @@ const channelPostSchema = new mongoose.Schema(
       ref: 'Bot',
       required: true,
     },
+    channel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: false, // 保留用于兼容旧数据
+    },
+    channels: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Group',
+      },
+    ],
     content: {
       type: String,
       required: false,
@@ -52,12 +66,12 @@ const channelPostSchema = new mongoose.Schema(
     ],
     title: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     url: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     weight: {

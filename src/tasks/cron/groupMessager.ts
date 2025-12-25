@@ -2,6 +2,7 @@ import User from '../../models/user';
 import GroupMessage, { IGroupMessage } from '../../models/groupMessage';
 import { IGroup } from '../../models/group';
 import GroupMessageHistory from '../../models/groupMessageHistory';
+import GroupMessageRecord from '../../models/groupMessageRecord';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
@@ -183,48 +184,64 @@ export async function sendGroupMessages() {
             }
 
             // 如果成功，才发送消息
-            if (
-              Array.isArray(nextMessage.medias) &&
-              nextMessage.medias.length > 0
-            ) {
-              if (nextMessage.medias.length === 1) {
-                const mediaType = getMediaType(nextMessage.medias[0]);
-                if (mediaType === 'video') {
-                  await telegramBot.api.sendVideo(
-                    group.id,
-                    new InputFile(`tmp/${nextMessage.medias[0]}`),
-                    {
-                      caption: nextMessage.content,
-                      parse_mode: 'HTML',
-                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                    },
-                  );
+            let sentMessageId: number | undefined;
+            try {
+              if (
+                Array.isArray(nextMessage.medias) &&
+                nextMessage.medias.length > 0
+              ) {
+                if (nextMessage.medias.length === 1) {
+                  const mediaType = getMediaType(nextMessage.medias[0]);
+                  if (mediaType === 'video') {
+                    const result = await telegramBot.api.sendVideo(
+                      group.id,
+                      new InputFile(`tmp/${nextMessage.medias[0]}`),
+                      {
+                        caption: nextMessage.content,
+                        parse_mode: 'HTML',
+                        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                      },
+                    );
+                    sentMessageId = result.message_id;
+                  } else {
+                    const result = await telegramBot.api.sendPhoto(
+                      group.id,
+                      new InputFile(`tmp/${nextMessage.medias[0]}`),
+                      {
+                        caption: nextMessage.content,
+                        parse_mode: 'HTML',
+                        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                      },
+                    );
+                    sentMessageId = result.message_id;
+                  }
                 } else {
-                  await telegramBot.api.sendPhoto(
+                  // 多个媒体文件，使用 sendMediaGroup（不带 caption）
+                  const media = nextMessage.medias.map((file: string) => {
+                    const type = getMediaType(file);
+                    return {
+                      type: type as 'photo' | 'video',
+                      media: new InputFile(`tmp/${file}`),
+                    };
+                  });
+
+                  // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
+                  await telegramBot.api.sendMediaGroup(group.id, media as any);
+
+                  // 发送完媒体组后，单独发送 caption 和内联菜单
+                  const result = await telegramBot.api.sendMessage(
                     group.id,
-                    new InputFile(`tmp/${nextMessage.medias[0]}`),
+                    nextMessage.content,
                     {
-                      caption: nextMessage.content,
                       parse_mode: 'HTML',
                       ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
                     },
                   );
+                  sentMessageId = result.message_id;
                 }
               } else {
-                // 多个媒体文件，使用 sendMediaGroup（不带 caption）
-                const media = nextMessage.medias.map((file: string) => {
-                  const type = getMediaType(file);
-                  return {
-                    type: type as 'photo' | 'video',
-                    media: new InputFile(`tmp/${file}`),
-                  };
-                });
-
-                // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
-                await telegramBot.api.sendMediaGroup(group.id, media as any);
-
-                // 发送完媒体组后，单独发送 caption 和内联菜单
-                await telegramBot.api.sendMessage(
+                // 发送纯文本消息
+                const result = await telegramBot.api.sendMessage(
                   group.id,
                   nextMessage.content,
                   {
@@ -232,34 +249,59 @@ export async function sendGroupMessages() {
                     ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
                   },
                 );
+                sentMessageId = result.message_id;
               }
-            } else {
-              // 发送纯文本消息
-              await telegramBot.api.sendMessage(group.id, nextMessage.content, {
-                parse_mode: 'HTML',
-                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-              });
-            }
-            sentCount++;
 
-            await GroupMessageHistory.findOneAndUpdate(
-              { group: group._id },
-              {
-                lastSentMessage: nextMessage._id,
+              // 记录成功发送
+              await GroupMessageRecord.create({
+                groupMessage: nextMessage._id,
+                bot: bot._id,
+                proxy: message.proxy,
+                group: group._id,
+                groupId: group.id,
+                messageId: sentMessageId,
+                content: nextMessage.content,
+                medias: nextMessage.medias || [],
+                status: 'success',
                 sentAt: new Date(),
-              },
-              { upsert: true },
-            );
+              });
 
-            console.log(
-              `[sendGroupMessages] 群 ${group.id} 成功发送消息 ${nextMessage._id}`,
-            );
-            console.log(`[sendGroupMessages] 已向群组 ${group.id} 发送消息`);
+              sentCount++;
+
+              await GroupMessageHistory.findOneAndUpdate(
+                { group: group._id },
+                {
+                  lastSentMessage: nextMessage._id,
+                  sentAt: new Date(),
+                },
+                { upsert: true },
+              );
+
+              console.log(
+                `[sendGroupMessages] 群 ${group.id} 成功发送消息 ${nextMessage._id}`,
+              );
+              console.log(`[sendGroupMessages] 已向群组 ${group.id} 发送消息`);
+            } catch (sendErr: any) {
+              // 记录发送失败
+              await GroupMessageRecord.create({
+                groupMessage: nextMessage._id,
+                bot: bot._id,
+                proxy: message.proxy,
+                group: group._id,
+                groupId: group.id,
+                content: nextMessage.content,
+                medias: nextMessage.medias || [],
+                status: 'failed',
+                errorMessage: sendErr?.message || String(sendErr),
+                sentAt: new Date(),
+              });
+              console.error(
+                `[sendGroupMessages] 向群组 ${group?.id} 发送消息失败:`,
+                sendErr,
+              );
+            }
           } catch (err) {
-            console.error(
-              `[sendGroupMessages] 向群组 ${group?.id} 发送消息失败:`,
-              err,
-            );
+            // 外层错误已在内部处理
             continue;
           }
         }

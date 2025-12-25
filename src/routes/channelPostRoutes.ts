@@ -6,9 +6,13 @@ import {
   updateChannelPost,
   deleteChannelPost,
   deleteMultipleChannelPosts,
+  getUserChannels,
 } from '../controllers/channelPostController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 const router: Router = express.Router();
+
+// 获取用户的频道列表
+router.route('/channels').get(protect, getUserChannels);
 
 // 管理员路由 - 需要认证和权限检查
 router
