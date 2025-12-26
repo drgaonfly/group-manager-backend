@@ -916,7 +916,7 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
   }
 
   // 获取目标频道列表
-  let channelTargets: (string | number)[] = [];
+  const channelTargets: (string | number)[] = [];
 
   // 优先使用 channels 数组（新版本）
   if (channels && Array.isArray(channels) && channels.length > 0) {
