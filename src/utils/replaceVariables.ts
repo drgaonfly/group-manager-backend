@@ -31,6 +31,9 @@ export const replaceVariables = (
 
   let result = content;
 
+  // 处理 HTML 实体
+  result = result.replace(/&nbsp;/g, ' ');
+
   // 替换时间和群组相关变量（始终可用）
   result = result
     .replace(/\{currentTime\}/g, beijingTime)
