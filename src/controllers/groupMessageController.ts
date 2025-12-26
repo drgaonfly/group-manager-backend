@@ -14,7 +14,10 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
-  if (queryParams.bot) {
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  } else if (queryParams.bot) {
     const botData = await Bot.find({
       botName: {
         $regex: queryParams.bot,
@@ -44,7 +47,7 @@ const buildQuery = async (
     }
   }
 
-  if (queryParams.isOnline !== '') {
+  if (queryParams.isOnline !== '' && queryParams.isOnline !== undefined) {
     query.isOnline = queryParams.isOnline === 'true';
   }
 

@@ -43,7 +43,10 @@ const buildQuery = async (
     }
   }
 
-  if (queryParams.bot) {
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  } else if (queryParams.bot) {
     let searchText: string;
     try {
       const botParam = JSON.parse(String(queryParams.bot));
