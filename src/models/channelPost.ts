@@ -16,11 +16,13 @@ export interface IChannelPost extends Document {
     url: string;
   }[];
   weight: number;
-  interval: number; // 发送间隔时间，单位分钟
+  interval: number; // 发送间隔时间（单位：分钟）
   lastPostTime?: Date; // 上次发送时间
   lastPostMessageId?: number; // 上次发送的消息ID
   isClearLastPost: boolean; // 是否清除上一条消息
   isOnline: boolean; // 是否启用定时发送
+  startAt?: Date; // 发送时间窗口开始
+  endAt?: Date; // 发送时间窗口结束
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
 }
@@ -97,6 +99,14 @@ const channelPostSchema = new mongoose.Schema(
     isOnline: {
       type: Boolean,
       default: true,
+    },
+    startAt: {
+      type: Date,
+      required: false,
+    },
+    endAt: {
+      type: Date,
+      required: false,
     },
   },
   {

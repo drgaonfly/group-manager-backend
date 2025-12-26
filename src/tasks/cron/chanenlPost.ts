@@ -5,6 +5,7 @@ import { findBotProxy } from '../../bot/services/findBotProxy';
 import { PermissionChecker } from '../../bot/utils/permissionChecker';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
+import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { getMediaType } from '../../utils/mediaUtils';
 
 /**
@@ -45,10 +46,21 @@ export async function channelPost() {
           continue;
         }
 
-        // 筛选出需要发送的频道推广（检查间隔时间）
-        const postsToSend = allChannelPosts.filter((post) =>
-          checkChannelSendInterval(post),
-        );
+        // 筛选出需要发送的频道推广（检查间隔时间和时间窗口）
+        const postsToSend = allChannelPosts.filter((post) => {
+          // 先检查时间窗口
+          if (!isWithinTimeWindow(post.startAt, post.endAt)) {
+            console.log(
+              `频道推广 ${post._id} 不在发送时间窗口内 (${formatTimeWindow(
+                post.startAt,
+                post.endAt,
+              )})，跳过`,
+            );
+            return false;
+          }
+          // 再检查发送间隔
+          return checkChannelSendInterval(post);
+        });
 
         if (postsToSend.length === 0) {
           console.log(`机器人 ${bot.botName} 没有到达发送间隔的频道推广，跳过`);

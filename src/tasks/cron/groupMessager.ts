@@ -4,6 +4,7 @@ import { IGroup } from '../../models/group';
 import GroupMessageHistory from '../../models/groupMessageHistory';
 import GroupMessageRecord from '../../models/groupMessageRecord';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
+import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
 import { getMediaType } from '../../utils/mediaUtils';
@@ -68,6 +69,20 @@ export async function sendGroupMessages() {
           continue;
         }
 
+        // 检查是否在发送时间窗口内
+        if (!isWithinTimeWindow(message.startAt, message.endAt)) {
+          console.log(
+            `[sendGroupMessages] 消息 ${
+              message._id
+            } 不在发送时间窗口内 (${formatTimeWindow(
+              message.startAt,
+              message.endAt,
+            )})，跳过`,
+          );
+          stats.skipped++;
+          continue;
+        }
+
         // 设置机器人
         const telegramBot = setupBot(bot.token);
 
@@ -104,7 +119,7 @@ export async function sendGroupMessages() {
 
             let nextMessage: IGroupMessage;
             let shouldSend = false;
-            const intervalTimeInMs = message.intervalTime * 60 * 60 * 1000;
+            const intervalTimeInMs = message.intervalTime * 60 * 1000; // intervalTime 单位为分钟
 
             if (!history) {
               // 从没发过，发第一条
@@ -134,7 +149,7 @@ export async function sendGroupMessages() {
               );
               console.log(`  经过时间(ms): ${timeSinceLastSent}`);
               console.log(`  需要间隔(ms): ${intervalTimeInMs}`);
-              console.log(`  需要间隔(小时): ${message.intervalTime}`);
+              console.log(`  需要间隔(分钟): ${message.intervalTime}`);
 
               if (timeSinceLastSent >= intervalTimeInMs) {
                 // 下一个要发的消息（循环）
@@ -142,12 +157,12 @@ export async function sendGroupMessages() {
                 nextMessage = botGroupMessages[nextIndex];
                 shouldSend = true;
               } else {
-                const timeSinceLastSentHours = (
+                const timeSinceLastSentMinutes = (
                   timeSinceLastSent /
-                  (60 * 60 * 1000)
+                  (60 * 1000)
                 ).toFixed(2);
                 console.log(
-                  `[跳过] 群 ${group.id} 距离上次消息 ${timeSinceLastSentHours} 小时，不足 ${message.intervalTime} 小时，跳过`,
+                  `[跳过] 群 ${group.id} 距离上次消息 ${timeSinceLastSentMinutes} 分钟，不足 ${message.intervalTime} 分钟，跳过`,
                 );
                 stats.skipped++;
                 continue;
