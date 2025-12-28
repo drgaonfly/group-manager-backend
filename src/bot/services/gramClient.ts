@@ -10,12 +10,28 @@ const apiId = 1025907;
 const apiHash = '452b0359b988148995f22ff0f4229750';
 
 // 创建并返回一个新的 Telegram 客户端实例
-export function createTelegramClient(stringSession: string = '') {
-  return new TelegramClient(new StringSession(stringSession), apiId, apiHash, {
-    connectionRetries: 5,
-    timeout: 30, // 设置连接超时时间（秒）
-    requestRetries: 3, // 请求重试次数
-  });
+export function createTelegramClient(
+  stringSession: string = '',
+  disableUpdates: boolean = false,
+) {
+  const client = new TelegramClient(
+    new StringSession(stringSession),
+    apiId,
+    apiHash,
+    {
+      connectionRetries: 5,
+      timeout: 30, // 设置连接超时时间（秒）
+      requestRetries: 3, // 请求重试次数
+    },
+  );
+
+  if (disableUpdates) {
+    // 禁用更新循环，避免 TIMEOUT 错误
+    // @ts-ignore - 内部属性，用于禁用更新处理
+    client._updateLoop = async () => {};
+  }
+
+  return client;
 }
 
 /**
@@ -33,11 +49,8 @@ export async function getGramClient(botToken: string): Promise<TelegramClient> {
       savedSession ? '有' : '无'
     }`,
   );
-  const client = createTelegramClient(savedSession);
-
-  // 禁用更新循环，避免 TIMEOUT 错误
-  // 这个客户端只用于查询，不需要监听实时更新
-  client.setParseMode('html');
+  // 第二个参数 true 表示禁用更新循环
+  const client = createTelegramClient(savedSession, true);
 
   if (savedSession) {
     // 有 session，直接 connect
