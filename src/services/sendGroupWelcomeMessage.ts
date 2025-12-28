@@ -1,6 +1,7 @@
 import { InlineKeyboard, InputFile } from 'grammy';
 import { MyContext } from '../bot/types';
 import { generateLocalSignedUrl } from '../utils/generateSignedUrl';
+import { getMediaType } from '../utils/mediaUtils';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:group-welcome');
@@ -87,36 +88,25 @@ export const sendGroupWelcomeMessage = async (
           : undefined;
 
         // 判断媒体类型
-        const isVideo = /\.(mp4|mov|avi|mkv)$/i.test(mediaUrl);
-        const isPhoto = /\.(jpg|jpeg|png|gif|webp)$/i.test(mediaUrl);
+        const mediaType = getMediaType(mediaUrl);
 
         // 只有在没有发送过文本内容时才在媒体上添加键盘
         const shouldAddKeyboardToMedia =
           keyboard &&
           (!groupWelcome.contents || groupWelcome.contents.length === 0);
 
-        if (isVideo) {
+        if (mediaType === 'video') {
           await ctx.replyWithVideo(new InputFile({ url: processedMediaUrl }), {
             caption: processedCaption,
             reply_markup: shouldAddKeyboardToMedia ? keyboard : undefined,
             parse_mode: 'HTML',
           });
-        } else if (isPhoto) {
+        } else {
           await ctx.replyWithPhoto(new InputFile({ url: processedMediaUrl }), {
             caption: processedCaption,
             reply_markup: shouldAddKeyboardToMedia ? keyboard : undefined,
             parse_mode: 'HTML',
           });
-        } else {
-          // 其他类型文件
-          await ctx.replyWithDocument(
-            new InputFile({ url: processedMediaUrl }),
-            {
-              caption: processedCaption,
-              reply_markup: shouldAddKeyboardToMedia ? keyboard : undefined,
-              parse_mode: 'HTML',
-            },
-          );
         }
       } else {
         // 处理caption，替换占位符
@@ -132,35 +122,15 @@ export const sendGroupWelcomeMessage = async (
             const processedMediaUrl = await generateLocalSignedUrl(mediaUrl);
 
             // 判断媒体类型
-            const isVideo = /\.(mp4|mov|avi|mkv)$/i.test(mediaUrl);
-            const isPhoto = /\.(jpg|jpeg|png|gif|webp)$/i.test(mediaUrl);
+            const mediaType = getMediaType(mediaUrl);
 
-            if (isVideo) {
-              return {
-                type: 'video' as const,
-                media: new InputFile({ url: processedMediaUrl }),
-                ...(idx === 0 && processedCaption
-                  ? { caption: processedCaption, parse_mode: 'HTML' }
-                  : {}),
-              };
-            } else if (isPhoto) {
-              return {
-                type: 'photo' as const,
-                media: new InputFile({ url: processedMediaUrl }),
-                ...(idx === 0 && processedCaption
-                  ? { caption: processedCaption, parse_mode: 'HTML' }
-                  : {}),
-              };
-            } else {
-              // 对于其他类型文件，作为document处理
-              return {
-                type: 'document' as const,
-                media: new InputFile({ url: processedMediaUrl }),
-                ...(idx === 0 && processedCaption
-                  ? { caption: processedCaption, parse_mode: 'HTML' }
-                  : {}),
-              };
-            }
+            return {
+              type: mediaType as 'photo' | 'video',
+              media: new InputFile({ url: processedMediaUrl }),
+              ...(idx === 0 && processedCaption
+                ? { caption: processedCaption, parse_mode: 'HTML' }
+                : {}),
+            };
           }),
         );
 

@@ -5,6 +5,7 @@ import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
 import botUserResolver from './middlewares/botUserResolver';
 import groupResolver from './middlewares/groupResolver';
+import replyRuleHandler from './middlewares/replyRuleHandler';
 import { privateCommandsList, groupCommandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import createDebug from 'debug';
@@ -74,6 +75,7 @@ export const setupBot = (token: string) => {
   bot.use(groupResolver);
   bot.use(errorHandler);
   bot.use(logger);
+  bot.use(replyRuleHandler);
   bot.use(userComposer.middleware());
   // bot.use(adminComposer.middleware());
 

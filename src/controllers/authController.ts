@@ -231,6 +231,7 @@ const updateUserProfile = handleAsync(
       groupVerify,
       channelPost,
       reportGroupMemberNameUpdated,
+      replyRule,
       botCount,
       availableBotCount,
     } = req.body;
@@ -299,6 +300,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof reportGroupMemberNameUpdated !== 'undefined') {
         updateData.reportGroupMemberNameUpdated = reportGroupMemberNameUpdated;
+      }
+      if (typeof replyRule !== 'undefined') {
+        updateData.replyRule = replyRule;
       }
     }
 

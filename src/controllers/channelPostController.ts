@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import ChannelPost from '../models/channelPost';
 import User from '../models/user';
 import Bot from '../models/bot';
+import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
@@ -42,7 +43,10 @@ const buildQuery = async (
     }
   }
 
-  if (queryParams.bot) {
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  } else if (queryParams.bot) {
     let searchText: string;
     try {
       const botParam = JSON.parse(String(queryParams.bot));
@@ -79,7 +83,12 @@ export const getChannelPosts = handleAsync(
 
     const channelPosts = await ChannelPost.find(query)
       .populate('proxy')
-      .populate('bot')
+      .populate({
+        path: 'bot',
+        populate: { path: 'groups' },
+      })
+      .populate('channel')
+      .populate('channels')
       .sort('weight createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)
@@ -211,6 +220,37 @@ export const getUserBots = handleAsync(
     res.json({
       success: true,
       data: bots,
+    });
+  },
+);
+
+// 获取用户的频道列表（type 为 channel 的 group）
+export const getUserChannels = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { botId } = req.query;
+
+    const query: any = {
+      type: 'channel',
+    };
+
+    // 如果指定了 botId，则只查询该机器人的频道
+    if (botId) {
+      query.bot = botId;
+    } else {
+      // 否则查询用户所有机器人的频道
+      const userBots = await Bot.find({ user: req.user._id }).select('_id');
+      query.bot = { $in: userBots.map((bot) => bot._id) };
+    }
+
+    const channels = await Group.find(query)
+      .select('_id id title bot')
+      .populate('bot', 'botName')
+      .lean()
+      .exec();
+
+    res.json({
+      success: true,
+      data: channels,
     });
   },
 );

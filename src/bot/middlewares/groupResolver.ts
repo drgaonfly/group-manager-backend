@@ -11,9 +11,9 @@ import createDebug from 'debug';
 const debug = createDebug('bot:group');
 
 const groupResolver: Middleware<MyContext> = async (ctx, next) => {
-  // 检查是否在群组中
+  // 检查是否在群组或频道中
   if (!ctx.chat || ctx.chat.type === 'private') {
-    debug('请在群组中使用此命令');
+    debug('请在群组或频道中使用此命令');
     ctx.currentGroup = null;
     return await next();
   }
@@ -21,6 +21,15 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   // 调试：打印完整的 message 对象
   debug('ctx.message:', JSON.stringify(ctx.message, null, 2));
   debug('ctx.update:', JSON.stringify(ctx.update, null, 2));
+
+  // 检查是否是机器人自己被添加到频道/群组（my_chat_member 事件）
+  const myChatMemberUpdate = ctx.myChatMember;
+  const isBotAddedToChat =
+    myChatMemberUpdate &&
+    ['left', 'kicked'].includes(myChatMemberUpdate.old_chat_member.status) &&
+    ['member', 'administrator', 'creator'].includes(
+      myChatMemberUpdate.new_chat_member.status,
+    );
 
   // 检查是否有新成员加入群组
   // 在 supergroup 中，新成员事件通过 chat_member update 传递
@@ -73,7 +82,16 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   const { proxyUser } = await findBotProxy(ctx.currentBot);
 
   if (!currentGroup) {
-    if (ctx.message?.group_chat_created || ctx.message?.new_chat_members) {
+    // 判断是否应该创建新群组记录
+    // 1. 群组创建事件
+    // 2. 新成员加入事件（包括机器人被添加到群组）
+    // 3. 机器人被添加到频道（my_chat_member 事件）
+    const shouldCreateGroup =
+      ctx.message?.group_chat_created ||
+      ctx.message?.new_chat_members ||
+      (isBotAddedToChat && ctx.chat.type === 'channel');
+
+    if (shouldCreateGroup) {
       // 如果群组不存在且为群组创建事件，创建新群组记录
       const newGroup = new Group({
         id: chatId,
@@ -89,7 +107,13 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       await newGroup.save();
       ctx.currentGroup = newGroup;
 
-      await ctx.reply('感谢您把我添加到贵群!');
+      // 频道和群组使用不同的欢迎消息
+      if (ctx.chat.type === 'channel') {
+        debug(`✅ 已创建频道记录: ${ctx.chat.title} (${chatId})`);
+        // 频道中不发送欢迎消息，因为机器人通常没有发送权限
+      } else {
+        await ctx.reply('感谢您把我添加到贵群!');
+      }
     } else {
       // 处理群组升级事件
       const oldChatId = ctx.message?.migrate_from_chat_id;
@@ -158,7 +182,84 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
   debug('Added user to group botUsers:', ctx.currentBotUser?.userName);
 
-  // 处理成员离开事件
+  // 处理频道订阅/取消订阅事件
+  if (ctx.chat.type === 'channel' && chatMemberUpdate) {
+    const oldStatus = chatMemberUpdate.old_chat_member.status;
+    const newStatus = chatMemberUpdate.new_chat_member.status;
+    const user = chatMemberUpdate.new_chat_member.user;
+
+    // 用户订阅频道
+    const isChannelSubscribed =
+      ['left', 'kicked'].includes(oldStatus) &&
+      ['member', 'administrator', 'creator'].includes(newStatus);
+
+    // 用户取消订阅频道
+    const isChannelUnsubscribed =
+      ['member', 'administrator', 'creator'].includes(oldStatus) &&
+      ['left', 'kicked'].includes(newStatus);
+
+    if (isChannelSubscribed) {
+      debug(`📢 用户订阅频道: ${user.id} (${user.first_name})`);
+
+      try {
+        // 查找或创建 BotUser
+        let botUser = await BotUser.findOne({ id: user.id.toString() });
+
+        if (!botUser) {
+          botUser = new BotUser({
+            id: user.id.toString(),
+            userName: user.username || '',
+            firstName: user.first_name,
+            lastName: user.last_name || '',
+            bot: ctx.currentBot._id,
+          });
+          await botUser.save();
+          debug(`✅ 创建新 BotUser: ${user.id}`);
+        }
+
+        // 将用户添加到频道的 botUsers 列表
+        await Group.updateOne(
+          { _id: ctx.currentGroup._id },
+          {
+            $addToSet: {
+              botUsers: botUser._id,
+            },
+          },
+        );
+        debug(`✅ 用户 ${user.id} 已添加到频道订阅者列表`);
+      } catch (error) {
+        debug('处理频道订阅事件失败:', error);
+      }
+
+      return;
+    }
+
+    if (isChannelUnsubscribed) {
+      debug(`📢 用户取消订阅频道: ${user.id} (${user.first_name})`);
+
+      try {
+        const botUser = await BotUser.findOne({ id: user.id.toString() });
+
+        if (botUser) {
+          await Group.updateOne(
+            { _id: ctx.currentGroup._id },
+            {
+              $pull: {
+                botUsers: botUser._id,
+              },
+            },
+          );
+          debug(`✅ 用户 ${user.id} 已从频道订阅者列表移除`);
+        }
+      } catch (error) {
+        debug('处理频道取消订阅事件失败:', error);
+      }
+
+      return;
+    }
+  }
+
+  // 处理成员离开事件（群组）
   // 在 supergroup 中，离开事件通过 chat_member update 传递
   const isMemberLeft =
     (chatMemberUpdate &&
@@ -168,7 +269,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       chatMemberUpdate.new_chat_member.status === 'left') ||
     ctx.message?.left_chat_member;
 
-  if (isMemberLeft) {
+  if (isMemberLeft && ctx.chat.type !== 'channel') {
     // 获取离开成员的 ID
     const leftMemberId =
       chatMemberUpdate?.new_chat_member.user.id ||

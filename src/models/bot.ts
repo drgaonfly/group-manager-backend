@@ -74,6 +74,9 @@ export interface IBot extends Document {
 
   // 报道群内成员昵称或用户名更新
   canReportMemberNameUpdated: boolean;
+
+  // 关键词回复
+  canReplyRule: boolean;
 }
 
 export interface IMenu extends Document {
@@ -367,6 +370,11 @@ const botSchema = new mongoose.Schema(
       required: false,
     },
     canReportMemberNameUpdated: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    canReplyRule: {
       type: Boolean,
       required: false,
       default: false,
