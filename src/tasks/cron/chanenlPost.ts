@@ -128,28 +128,46 @@ export async function channelPost() {
                     }
                   } else {
                     // 多个媒体文件，使用 sendMediaGroup
-                    const media = post.medias.map((file: string) => {
-                      const type = getMediaType(file);
-                      return {
-                        type: type as 'photo' | 'video',
-                        media: new InputFile(`tmp/${file}`),
-                      };
-                    });
+                    // 检查是否有内联菜单需要发送
+                    const hasInlineKeyboard =
+                      post.menus && post.menus.length > 0;
 
-                    await telegramBot.api.sendMediaGroup(
-                      channelTarget,
-                      media as any,
-                    );
-
-                    // 发送完媒体组后，单独发送内容和内联菜单
-                    sentMessage = await telegramBot.api.sendMessage(
-                      channelTarget,
-                      messageContent,
-                      {
-                        parse_mode: 'HTML',
-                        reply_markup: keyboard,
+                    const media = post.medias.map(
+                      (file: string, index: number) => {
+                        const type = getMediaType(file);
+                        const mediaItem: any = {
+                          type: type as 'photo' | 'video',
+                          media: new InputFile(`tmp/${file}`),
+                        };
+                        // 如果没有内联菜单，把 caption 放在第一个媒体上
+                        if (!hasInlineKeyboard && index === 0) {
+                          mediaItem.caption = messageContent;
+                          mediaItem.parse_mode = 'HTML';
+                        }
+                        return mediaItem;
                       },
                     );
+
+                    const mediaGroupMessages =
+                      await telegramBot.api.sendMediaGroup(
+                        channelTarget,
+                        media as any,
+                      );
+
+                    // 只有在有内联菜单时，才单独发送内容和内联菜单
+                    if (hasInlineKeyboard) {
+                      sentMessage = await telegramBot.api.sendMessage(
+                        channelTarget,
+                        messageContent,
+                        {
+                          parse_mode: 'HTML',
+                          reply_markup: keyboard,
+                        },
+                      );
+                    } else {
+                      // 没有内联菜单时，使用媒体组的第一条消息作为 sentMessage
+                      sentMessage = mediaGroupMessages[0];
+                    }
                   }
                 } else {
                   // 发送纯文本消息
