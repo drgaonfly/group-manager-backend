@@ -10,15 +10,34 @@ const apiId = 1025907;
 const apiHash = '452b0359b988148995f22ff0f4229750';
 
 // 创建并返回一个新的 Telegram 客户端实例
-export function createTelegramClient(stringSession: string = '') {
-  return new TelegramClient(new StringSession(stringSession), apiId, apiHash, {
-    connectionRetries: 5,
-  });
+export function createTelegramClient(
+  stringSession: string = '',
+  disableUpdates: boolean = false,
+) {
+  const client = new TelegramClient(
+    new StringSession(stringSession),
+    apiId,
+    apiHash,
+    {
+      connectionRetries: 5,
+      timeout: 30, // 设置连接超时时间（秒）
+      requestRetries: 3, // 请求重试次数
+    },
+  );
+
+  if (disableUpdates) {
+    // 禁用更新循环，避免 TIMEOUT 错误
+    // @ts-ignore - 内部属性，用于禁用更新处理
+    client._updateLoop = async () => {};
+  }
+
+  return client;
 }
 
 /**
  * 获取 gramClient
  * 优先使用数据库中保存的 session 进行 connect，没有 session 才 start 并保存
+ * 注意：此客户端用于一次性查询，不监听实时更新
  */
 export async function getGramClient(botToken: string): Promise<TelegramClient> {
   // 从数据库获取 bot 的 session
@@ -30,12 +49,29 @@ export async function getGramClient(botToken: string): Promise<TelegramClient> {
       savedSession ? '有' : '无'
     }`,
   );
-  const client = createTelegramClient(savedSession);
+  // 第二个参数 true 表示禁用更新循环
+  const client = createTelegramClient(savedSession, true);
 
   if (savedSession) {
     // 有 session，直接 connect
-    await client.connect();
-    debug(`[gramClient] 使用已有 session 连接成功`);
+    try {
+      await client.connect();
+      debug(`[gramClient] 使用已有 session 连接成功`);
+    } catch (err: any) {
+      debug(
+        `[gramClient] 使用已有 session 连接失败: ${err.message}，尝试重新认证`,
+      );
+      // session 可能过期，重新 start
+      await client.start({
+        botAuthToken: botToken,
+      });
+      const newSession = client.session.save() as unknown as string;
+      await Bot.updateOne(
+        { token: botToken },
+        { $set: { session: newSession } },
+      );
+      debug(`[gramClient] 重新认证成功，session 已更新`);
+    }
   } else {
     // 没有 session，需要 start 并保存
     await client.start({
