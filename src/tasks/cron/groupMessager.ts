@@ -204,22 +204,27 @@ export async function sendGroupMessages() {
                     return {
                       type: 'photo' as const,
                       media: new InputFile(`tmp/${img}`),
-                      ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
+                      // 第一张图片带上 caption（仅当没有内联菜单时）
+                      ...(idx === 0 && !replyMarkup
+                        ? { caption: nextMessage.content, parse_mode: 'HTML' }
+                        : {}),
                     };
                   },
                 );
 
-                // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
                 await telegramBot.api.sendMediaGroup(group.id, media as any);
 
-                await telegramBot.api.sendMessage(
-                  group.id,
-                  nextMessage.content,
-                  {
-                    parse_mode: 'HTML',
-                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                  },
-                );
+                // 有内联菜单时，单独发送文本消息（因为 sendMediaGroup 不支持 reply_markup）
+                if (replyMarkup) {
+                  await telegramBot.api.sendMessage(
+                    group.id,
+                    nextMessage.content,
+                    {
+                      parse_mode: 'HTML',
+                      reply_markup: replyMarkup,
+                    },
+                  );
+                }
               }
             } else {
               // 发送纯文本消息
