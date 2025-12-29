@@ -231,28 +231,46 @@ export async function sendGroupMessages() {
                     sentMessageId = result.message_id;
                   }
                 } else {
-                  // 多个媒体文件，使用 sendMediaGroup（不带 caption）
-                  const media = nextMessage.medias.map((file: string) => {
-                    const type = getMediaType(file);
-                    return {
-                      type: type as 'photo' | 'video',
-                      media: new InputFile(`tmp/${file}`),
-                    };
-                  });
+                  // 多个媒体文件，使用 sendMediaGroup
+                  // 检查是否有内联菜单
+                  const hasInlineKeyboard = replyMarkup !== undefined;
 
-                  // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
-                  await telegramBot.api.sendMediaGroup(group.id, media as any);
-
-                  // 发送完媒体组后，单独发送 caption 和内联菜单
-                  const result = await telegramBot.api.sendMessage(
-                    group.id,
-                    nextMessage.content,
-                    {
-                      parse_mode: 'HTML',
-                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                  const media = nextMessage.medias.map(
+                    (file: string, index: number) => {
+                      const type = getMediaType(file);
+                      const mediaItem: any = {
+                        type: type as 'photo' | 'video',
+                        media: new InputFile(`tmp/${file}`),
+                      };
+                      // 如果没有内联菜单，把 caption 放在第一个媒体上
+                      if (!hasInlineKeyboard && index === 0) {
+                        mediaItem.caption = nextMessage.content;
+                        mediaItem.parse_mode = 'HTML';
+                      }
+                      return mediaItem;
                     },
                   );
-                  sentMessageId = result.message_id;
+
+                  const mediaGroupMessages =
+                    await telegramBot.api.sendMediaGroup(
+                      group.id,
+                      media as any,
+                    );
+
+                  // 只有在有内联菜单时，才单独发送内容和内联菜单
+                  if (hasInlineKeyboard) {
+                    const result = await telegramBot.api.sendMessage(
+                      group.id,
+                      nextMessage.content,
+                      {
+                        parse_mode: 'HTML',
+                        reply_markup: replyMarkup,
+                      },
+                    );
+                    sentMessageId = result.message_id;
+                  } else {
+                    sentMessageId = mediaGroupMessages[0].message_id;
+                  }
                 }
               } else {
                 // 发送纯文本消息
