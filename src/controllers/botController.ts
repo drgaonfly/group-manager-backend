@@ -224,13 +224,13 @@ export const setWebhook = async (botManager: IBot) => {
   await botManager.save();
 };
 
-// 使用 gramjs 获取机器人信息
+// 使用 gramjs 获取机器人信息和 session
 const getBotInfoWithGramjs = async (token: string) => {
   const gramClient = createTelegramClient('');
   try {
-    await gramClient.connect();
     await gramClient.start({ botAuthToken: token });
     const botInfo = await gramClient.getMe();
+    const session = gramClient.session.save() as unknown as string;
     await gramClient.disconnect();
 
     debug('获取到的机器人信息:', botInfo);
@@ -250,6 +250,7 @@ const getBotInfoWithGramjs = async (token: string) => {
       username: botInfo.username || '',
       firstName: botInfo.firstName || '',
       lastName: botInfo.lastName || '',
+      session,
     };
   } catch (error) {
     debug('使用 gramjs 获取机器人信息失败:', error);
@@ -293,6 +294,7 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
       userName: botInfo.username || '',
       botName: botInfo.firstName || botInfo.username || '',
       id: botInfo.id || '',
+      session: botInfo.session || '',
     }),
   });
 
