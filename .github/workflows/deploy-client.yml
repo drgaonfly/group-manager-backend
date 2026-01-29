@@ -20,7 +20,7 @@ jobs:
       - name: Deploy to client server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 156.238.254.19
+          host: 154.64.232.113
           username: root
           password: ${{ secrets.PASSWORD }}
           port: 22
