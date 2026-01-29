@@ -449,20 +449,12 @@ const deleteMultipleBots = handleAsync(
     }
 
     for (const botManager of bots) {
-      try {
-        const bot = setupBot(botManager.token);
-        const webhookInfo = await printWebhookInfo(bot);
-        if (webhookInfo.url) {
-          await bot.api.deleteWebhook();
-          console.log(
-            `${botManager.userName} Webhook ${botManager.token} 已删除`,
-          );
-        }
-      } catch (error) {
-        // token 无效或已被撤销，跳过 webhook 删除，继续删除数据库记录
+      const bot = setupBot(botManager.token);
+      const webhookInfo = await printWebhookInfo(bot);
+      if (webhookInfo.url) {
+        await bot.api.deleteWebhook();
         console.log(
-          `${botManager.userName} Webhook 删除失败（token 可能无效），跳过:`,
-          error,
+          `${botManager.userName} Webhook ${botManager.token} 已删除`,
         );
       }
     }
@@ -503,30 +495,7 @@ const addOwner = handleAsync(async (req: Request, res: Response) => {
 
   // 一定是字符串的，去掉 req.body.owner 前面的 @（如果有）
   const ownerUsername = req.body.owner.replace(/^@/, '');
-
-  // 检查 session 是否存在
-  if (!botManager.session) {
-    res.status(400);
-    throw new Error(
-      '机器人 session 不存在，请先在 Telegram 中向机器人发送 /start 命令初始化 session',
-    );
-  }
-
-  let user;
-  try {
-    user = await getUserByUsername(botManager.session, ownerUsername);
-  } catch (error: any) {
-    debug('getUserByUsername 失败:', error.message);
-    // 如果是 AUTH_KEY_UNREGISTERED 错误，提示用户重新初始化 session
-    if (error.message?.includes('AUTH_KEY_UNREGISTERED')) {
-      res.status(400);
-      throw new Error(
-        'Session 已失效，请在 Telegram 中向机器人发送 /start 命令重新初始化 session',
-      );
-    }
-    res.status(400);
-    throw new Error(`获取用户信息失败: ${error.message}`);
-  }
+  const user = await getUserByUsername(botManager.session, ownerUsername);
 
   if (user) {
     // 查找或创建 BotUser，并填充 subscriptions 字段
@@ -609,30 +578,7 @@ const addAuthorizer = handleAsync(async (req: Request, res: Response) => {
 
   // 一定是字符串的，去掉 req.body.authorizer 前面的 @（如果有）
   const authorizerUsername = req.body.authorizer.replace(/^@/, '');
-
-  // 检查 session 是否存在
-  if (!botManager.session) {
-    res.status(400);
-    throw new Error(
-      '机器人 session 不存在，请先在 Telegram 中向机器人发送 /start 命令初始化 session',
-    );
-  }
-
-  let user;
-  try {
-    user = await getUserByUsername(botManager.session, authorizerUsername);
-  } catch (error: any) {
-    debug('getUserByUsername 失败:', error.message);
-    // 如果是 AUTH_KEY_UNREGISTERED 错误，提示用户重新初始化 session
-    if (error.message?.includes('AUTH_KEY_UNREGISTERED')) {
-      res.status(400);
-      throw new Error(
-        'Session 已失效，请在 Telegram 中向机器人发送 /start 命令重新初始化 session',
-      );
-    }
-    res.status(400);
-    throw new Error(`获取用户信息失败: ${error.message}`);
-  }
+  const user = await getUserByUsername(botManager.session, authorizerUsername);
 
   if (user) {
     // 查找或创建 BotUser，并填充 subscriptions 字段
