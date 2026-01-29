@@ -28,13 +28,15 @@ export interface IGroupMessage extends Document {
   content: string; // 消息内容
   groups?: mongoose.Schema.Types.ObjectId[] | IGroup[]; // 关联的群（如果是群消息）
   proxy: mongoose.Types.ObjectId | IUser;
-  images: string[]; // 图片
-  intervalTime: number; // 间隔时间
+  medias: string[]; // 媒体文件（图片、视频等）
+  intervalTime: number; // 间隔时间（单位：分钟）
   isRealtime: boolean; // 是否实时
   menus: IMenu[];
   menus_per_row: number; // 每行菜单数
   weight: number; // 权重
   isOnline: boolean;
+  startAt: Date; // 发送时间窗口开始
+  endAt: Date; // 发送时间窗口结束
   createdAt: Date; // 创建时间
   updatedAt: Date; // 更新时间
 }
@@ -51,7 +53,7 @@ const groupMessageSchema = new mongoose.Schema(
       ref: 'User',
       required: false,
     },
-    images: {
+    medias: {
       type: [String],
       required: false,
     },
@@ -83,6 +85,14 @@ const groupMessageSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: true,
+    },
+    startAt: {
+      type: Date,
+      required: false,
+    },
+    endAt: {
+      type: Date,
+      required: false,
     },
   },
   {

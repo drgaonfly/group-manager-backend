@@ -39,6 +39,10 @@ import botUserConfigRoutes from './routes/botUserConfigRoutes';
 import botUserMessageRoutes from './routes/botUserMessageRoutes';
 import promotionLinkRoutes from './routes/promotionLinkRoutes';
 import channelPostRoutes from './routes/channelPostRoutes';
+import replyRuleRoutes from './routes/replyRuleRoutes';
+import channelPostHistoryRoutes from './routes/channelPostHistoryRoutes';
+import groupMessageHistoryRoutes from './routes/groupMessageHistoryRoutes';
+import groupMessageRecordRoutes from './routes/groupMessageRecordRoutes';
 
 dotenv.config();
 
@@ -89,6 +93,10 @@ app.use('/api/bot-user-configs', botUserConfigRoutes);
 app.use('/api/bot-user-messages', botUserMessageRoutes);
 app.use('/api/promotion-links', promotionLinkRoutes);
 app.use('/api/channel-posts', channelPostRoutes);
+app.use('/api/reply-rules', replyRuleRoutes);
+app.use('/api/channel-post-histories', channelPostHistoryRoutes);
+app.use('/api/group-message-histories', groupMessageHistoryRoutes);
+app.use('/api/group-message-records', groupMessageRecordRoutes);
 
 app.use('/api/static', express.static('tmp'));
 

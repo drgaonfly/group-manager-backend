@@ -2,9 +2,12 @@ import User from '../../models/user';
 import GroupMessage, { IGroupMessage } from '../../models/groupMessage';
 import { IGroup } from '../../models/group';
 import GroupMessageHistory from '../../models/groupMessageHistory';
+import GroupMessageRecord from '../../models/groupMessageRecord';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
+import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard, InputFile } from 'grammy';
+import { getMediaType } from '../../utils/mediaUtils';
 
 /**
  * 群发消息任务
@@ -66,6 +69,20 @@ export async function sendGroupMessages() {
           continue;
         }
 
+        // 检查是否在发送时间窗口内
+        if (!isWithinTimeWindow(message.startAt, message.endAt)) {
+          console.log(
+            `[sendGroupMessages] 消息 ${
+              message._id
+            } 不在发送时间窗口内 (${formatTimeWindow(
+              message.startAt,
+              message.endAt,
+            )})，跳过`,
+          );
+          stats.skipped++;
+          continue;
+        }
+
         // 设置机器人
         const telegramBot = setupBot(bot.token);
 
@@ -102,7 +119,7 @@ export async function sendGroupMessages() {
 
             let nextMessage: IGroupMessage;
             let shouldSend = false;
-            const intervalTimeInMs = message.intervalTime * 60 * 60 * 1000;
+            const intervalTimeInMs = message.intervalTime * 60 * 1000; // intervalTime 单位为分钟
 
             if (!history) {
               // 从没发过，发第一条
@@ -132,7 +149,7 @@ export async function sendGroupMessages() {
               );
               console.log(`  经过时间(ms): ${timeSinceLastSent}`);
               console.log(`  需要间隔(ms): ${intervalTimeInMs}`);
-              console.log(`  需要间隔(小时): ${message.intervalTime}`);
+              console.log(`  需要间隔(分钟): ${message.intervalTime}`);
 
               if (timeSinceLastSent >= intervalTimeInMs) {
                 // 下一个要发的消息（循环）
@@ -140,12 +157,12 @@ export async function sendGroupMessages() {
                 nextMessage = botGroupMessages[nextIndex];
                 shouldSend = true;
               } else {
-                const timeSinceLastSentHours = (
+                const timeSinceLastSentMinutes = (
                   timeSinceLastSent /
-                  (60 * 60 * 1000)
+                  (60 * 1000)
                 ).toFixed(2);
                 console.log(
-                  `[跳过] 群 ${group.id} 距离上次消息 ${timeSinceLastSentHours} 小时，不足 ${message.intervalTime} 小时，跳过`,
+                  `[跳过] 群 ${group.id} 距离上次消息 ${timeSinceLastSentMinutes} 分钟，不足 ${message.intervalTime} 分钟，跳过`,
                 );
                 stats.skipped++;
                 continue;
@@ -182,37 +199,82 @@ export async function sendGroupMessages() {
             }
 
             // 如果成功，才发送消息
-            if (
-              Array.isArray(nextMessage.images) &&
-              nextMessage.images.length > 0
-            ) {
-              if (nextMessage.images.length === 1) {
-                // 单张图片，直接 sendPhoto
-                await telegramBot.api.sendPhoto(
-                  group.id,
-                  new InputFile(`tmp/${nextMessage.images[0]}`),
-                  {
-                    caption: nextMessage.content,
-                    parse_mode: 'HTML',
-                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                  },
-                );
+            let sentMessageId: number | undefined;
+            try {
+              if (
+                Array.isArray(nextMessage.medias) &&
+                nextMessage.medias.length > 0
+              ) {
+                if (nextMessage.medias.length === 1) {
+                  const mediaType = getMediaType(nextMessage.medias[0]);
+                  if (mediaType === 'video') {
+                    const result = await telegramBot.api.sendVideo(
+                      group.id,
+                      new InputFile(`tmp/${nextMessage.medias[0]}`),
+                      {
+                        caption: nextMessage.content,
+                        parse_mode: 'HTML',
+                        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                      },
+                    );
+                    sentMessageId = result.message_id;
+                  } else {
+                    const result = await telegramBot.api.sendPhoto(
+                      group.id,
+                      new InputFile(`tmp/${nextMessage.medias[0]}`),
+                      {
+                        caption: nextMessage.content,
+                        parse_mode: 'HTML',
+                        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+                      },
+                    );
+                    sentMessageId = result.message_id;
+                  }
+                } else {
+                  // 多个媒体文件，使用 sendMediaGroup
+                  // 检查是否有内联菜单
+                  const hasInlineKeyboard = replyMarkup !== undefined;
+
+                  const media = nextMessage.medias.map(
+                    (file: string, index: number) => {
+                      const type = getMediaType(file);
+                      const mediaItem: any = {
+                        type: type as 'photo' | 'video',
+                        media: new InputFile(`tmp/${file}`),
+                      };
+                      // 如果没有内联菜单，把 caption 放在第一个媒体上
+                      if (!hasInlineKeyboard && index === 0) {
+                        mediaItem.caption = nextMessage.content;
+                        mediaItem.parse_mode = 'HTML';
+                      }
+                      return mediaItem;
+                    },
+                  );
+
+                  const mediaGroupMessages =
+                    await telegramBot.api.sendMediaGroup(
+                      group.id,
+                      media as any,
+                    );
+
+                  // 只有在有内联菜单时，才单独发送内容和内联菜单
+                  if (hasInlineKeyboard) {
+                    const result = await telegramBot.api.sendMessage(
+                      group.id,
+                      nextMessage.content,
+                      {
+                        parse_mode: 'HTML',
+                        reply_markup: replyMarkup,
+                      },
+                    );
+                    sentMessageId = result.message_id;
+                  } else {
+                    sentMessageId = mediaGroupMessages[0].message_id;
+                  }
+                }
               } else {
-                // 多张图片，使用 sendMediaGroup
-                const media = nextMessage.images.map(
-                  (img: string, idx: number) => {
-                    return {
-                      type: 'photo' as const,
-                      media: new InputFile(`tmp/${img}`),
-                      ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
-                    };
-                  },
-                );
-
-                // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
-                await telegramBot.api.sendMediaGroup(group.id, media as any);
-
-                await telegramBot.api.sendMessage(
+                // 发送纯文本消息
+                const result = await telegramBot.api.sendMessage(
                   group.id,
                   nextMessage.content,
                   {
@@ -220,34 +282,59 @@ export async function sendGroupMessages() {
                     ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
                   },
                 );
+                sentMessageId = result.message_id;
               }
-            } else {
-              // 发送纯文本消息
-              await telegramBot.api.sendMessage(group.id, nextMessage.content, {
-                parse_mode: 'HTML',
-                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-              });
-            }
-            sentCount++;
 
-            await GroupMessageHistory.findOneAndUpdate(
-              { group: group._id },
-              {
-                lastSentMessage: nextMessage._id,
+              // 记录成功发送
+              await GroupMessageRecord.create({
+                groupMessage: nextMessage._id,
+                bot: bot._id,
+                proxy: message.proxy,
+                group: group._id,
+                groupId: group.id,
+                messageId: sentMessageId,
+                content: nextMessage.content,
+                medias: nextMessage.medias || [],
+                status: 'success',
                 sentAt: new Date(),
-              },
-              { upsert: true },
-            );
+              });
 
-            console.log(
-              `[sendGroupMessages] 群 ${group.id} 成功发送消息 ${nextMessage._id}`,
-            );
-            console.log(`[sendGroupMessages] 已向群组 ${group.id} 发送消息`);
+              sentCount++;
+
+              await GroupMessageHistory.findOneAndUpdate(
+                { group: group._id },
+                {
+                  lastSentMessage: nextMessage._id,
+                  sentAt: new Date(),
+                },
+                { upsert: true },
+              );
+
+              console.log(
+                `[sendGroupMessages] 群 ${group.id} 成功发送消息 ${nextMessage._id}`,
+              );
+              console.log(`[sendGroupMessages] 已向群组 ${group.id} 发送消息`);
+            } catch (sendErr: any) {
+              // 记录发送失败
+              await GroupMessageRecord.create({
+                groupMessage: nextMessage._id,
+                bot: bot._id,
+                proxy: message.proxy,
+                group: group._id,
+                groupId: group.id,
+                content: nextMessage.content,
+                medias: nextMessage.medias || [],
+                status: 'failed',
+                errorMessage: sendErr?.message || String(sendErr),
+                sentAt: new Date(),
+              });
+              console.error(
+                `[sendGroupMessages] 向群组 ${group?.id} 发送消息失败:`,
+                sendErr,
+              );
+            }
           } catch (err) {
-            console.error(
-              `[sendGroupMessages] 向群组 ${group?.id} 发送消息失败:`,
-              err,
-            );
+            // 外层错误已在内部处理
             continue;
           }
         }
