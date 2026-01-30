@@ -14,8 +14,10 @@ import { transformDocumentImage } from '../utils/transformUtils';
 import { InlineKeyboard } from 'grammy';
 import BotUserMessage from '../models/botUserMessage';
 import { createTelegramClient } from '../bot/services/gramClient';
-import createDebug from 'debug';
 import { getMediaType } from '../utils/mediaUtils';
+import GroupWelcome from '../models/groupWelcome';
+import GroupVerify from '../models/groupVerify';
+import createDebug from 'debug';
 
 const debug = createDebug('bot:controller');
 
@@ -115,9 +117,6 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     return;
   }
 
-  debug('getBots query:', JSON.stringify(query));
-  debug('getBots user:', req.user._id, 'isProxy:', isProxy(req.user));
-
   const bots = await Bot.find(query)
     .populate('user')
     .populate('botUsers')
@@ -127,6 +126,8 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('clonedFrom')
     .populate('creator')
     .populate('channel_posts')
+    .populate('groupWelcome')
+    .populate('groupVerify')
     .populate({
       path: 'botUserConfigs',
       populate: [
@@ -179,7 +180,7 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const total = await Bot.countDocuments(query).exec();
 
-  debug('getBots result:', { total, botsCount: bots.length, query });
+  console.log('getBots result:', { total, botsCount: bots.length, query });
 
   res.json({
     success: true,
@@ -233,7 +234,7 @@ const getBotInfoWithGramjs = async (token: string) => {
     const session = gramClient.session.save() as unknown as string;
     await gramClient.disconnect();
 
-    debug('获取到的机器人信息:', botInfo);
+    console.log('获取到的机器人信息:', botInfo);
 
     // 处理 id，可能是 BigInt 或对象
     let botId = '';
@@ -253,7 +254,7 @@ const getBotInfoWithGramjs = async (token: string) => {
       session,
     };
   } catch (error) {
-    debug('使用 gramjs 获取机器人信息失败:', error);
+    console.log('使用 gramjs 获取机器人信息失败:', error);
     await gramClient.disconnect().catch(() => {});
     throw error;
   }
@@ -280,9 +281,9 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
   let botInfo = null;
   try {
     botInfo = await getBotInfoWithGramjs(token);
-    debug('成功获取机器人信息:', botInfo);
+    console.log('成功获取机器人信息:', botInfo);
   } catch (error) {
-    debug('获取机器人信息失败，继续创建机器人:', error);
+    console.log('获取机器人信息失败，继续创建机器人:', error);
     // 如果获取信息失败，仍然创建机器人，但不更新用户名等信息
   }
 
@@ -327,7 +328,13 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
 const updateBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { private_key, multi_image, ...otherFields } = req.body;
+  const {
+    private_key,
+    multi_image,
+    groupWelcome,
+    groupVerify,
+    ...otherFields
+  } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -352,10 +359,39 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
     updates.private_key = encrypt(private_key);
   }
 
+  // 处理 groupWelcome
+  if (groupWelcome) {
+    if (botManager.groupWelcome) {
+      // 更新现有的 GroupWelcome
+      await GroupWelcome.findByIdAndUpdate(
+        botManager.groupWelcome,
+        groupWelcome,
+      );
+    } else {
+      // 创建新的 GroupWelcome
+      const newGroupWelcome = await GroupWelcome.create(groupWelcome);
+      updates.groupWelcome = newGroupWelcome._id;
+    }
+  }
+
+  // 处理 groupVerify
+  if (groupVerify) {
+    if (botManager.groupVerify) {
+      // 更新现有的 GroupVerify
+      await GroupVerify.findByIdAndUpdate(botManager.groupVerify, groupVerify);
+    } else {
+      // 创建新的 GroupVerify
+      const newGroupVerify = await GroupVerify.create(groupVerify);
+      updates.groupVerify = newGroupVerify._id;
+    }
+  }
+
   const updatedBot = await Bot.findByIdAndUpdate(id, updates, {
     new: true,
     runValidators: true,
-  });
+  })
+    .populate('groupWelcome')
+    .populate('groupVerify');
 
   if (updatedBot.isOnline !== botManager.isOnline && updatedBot.isOnline) {
     await setWebhook(updatedBot);
@@ -366,9 +402,27 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
     'multi_image',
   ]);
 
+  // 处理 groupWelcome 中的 medias
+  const botObj = processedBot.toObject ? processedBot.toObject() : processedBot;
+  if (
+    botObj.groupWelcome &&
+    botObj.groupWelcome.medias &&
+    Array.isArray(botObj.groupWelcome.medias)
+  ) {
+    const processedMedias = await Promise.all(
+      botObj.groupWelcome.medias.map(async (mediaUrl: string) => {
+        if (mediaUrl) {
+          return await generateSignedUrl(mediaUrl);
+        }
+        return mediaUrl;
+      }),
+    );
+    botObj.groupWelcome.medias = processedMedias;
+  }
+
   res.json({
     success: true,
-    data: processedBot,
+    data: botObj,
   });
 });
 
