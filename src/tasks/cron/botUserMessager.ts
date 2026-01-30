@@ -3,8 +3,9 @@ import Bot from '../../models/bot';
 import { IBotUser } from '../../models/botUser';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
-import { InlineKeyboard, InputFile } from 'grammy';
+import { InlineKeyboard } from 'grammy';
 import BotUserMessageHistory from '../../models/botUserMessageHistory';
+import { sendMediaMessage } from '../../utils/sendMultiMedia';
 
 /**
  * 给机器人用户发送消息任务
@@ -110,32 +111,15 @@ export async function sendBotUserMessages() {
             }
 
             if (nextMessage.images?.length > 0) {
-              if (nextMessage.images.length === 1) {
-                await telegramBot.api.sendPhoto(
-                  botUser.id,
-                  new InputFile(`tmp/${nextMessage.images[0]}`),
-                  {
-                    caption: nextMessage.content,
-                    parse_mode: 'HTML',
-                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                  },
-                );
-              } else {
-                const media = nextMessage.images.map((img, idx) => ({
-                  type: 'photo' as const,
-                  media: new InputFile(`tmp/${img}`),
-                  ...(idx === 0 ? { parse_mode: 'HTML' } : {}),
-                }));
-                await telegramBot.api.sendMediaGroup(botUser.id, media as any);
-                await telegramBot.api.sendMessage(
-                  botUser.id,
-                  nextMessage.content,
-                  {
-                    parse_mode: 'HTML',
-                    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                  },
-                );
-              }
+              await sendMediaMessage(
+                telegramBot.api,
+                botUser.id,
+                nextMessage.images,
+                {
+                  caption: nextMessage.content,
+                  reply_markup: replyMarkup,
+                },
+              );
             } else {
               await telegramBot.api.sendMessage(
                 botUser.id,

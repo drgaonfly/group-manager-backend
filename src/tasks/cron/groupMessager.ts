@@ -6,8 +6,8 @@ import GroupMessageRecord from '../../models/groupMessageRecord';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
-import { InlineKeyboard, InputFile } from 'grammy';
-import { getMediaType } from '../../utils/mediaUtils';
+import { InlineKeyboard } from 'grammy';
+import { sendMediaMessage } from '../../utils/sendMultiMedia';
 
 /**
  * 群发消息任务
@@ -205,73 +205,18 @@ export async function sendGroupMessages() {
                 Array.isArray(nextMessage.medias) &&
                 nextMessage.medias.length > 0
               ) {
-                if (nextMessage.medias.length === 1) {
-                  const mediaType = getMediaType(nextMessage.medias[0]);
-                  if (mediaType === 'video') {
-                    const result = await telegramBot.api.sendVideo(
-                      group.id,
-                      new InputFile(`tmp/${nextMessage.medias[0]}`),
-                      {
-                        caption: nextMessage.content,
-                        parse_mode: 'HTML',
-                        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                      },
-                    );
-                    sentMessageId = result.message_id;
-                  } else {
-                    const result = await telegramBot.api.sendPhoto(
-                      group.id,
-                      new InputFile(`tmp/${nextMessage.medias[0]}`),
-                      {
-                        caption: nextMessage.content,
-                        parse_mode: 'HTML',
-                        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                      },
-                    );
-                    sentMessageId = result.message_id;
-                  }
-                } else {
-                  // 多个媒体文件，使用 sendMediaGroup
-                  // 检查是否有内联菜单
-                  const hasInlineKeyboard = replyMarkup !== undefined;
-
-                  const media = nextMessage.medias.map(
-                    (file: string, index: number) => {
-                      const type = getMediaType(file);
-                      const mediaItem: any = {
-                        type: type as 'photo' | 'video',
-                        media: new InputFile(`tmp/${file}`),
-                      };
-                      // 如果没有内联菜单，把 caption 放在第一个媒体上
-                      if (!hasInlineKeyboard && index === 0) {
-                        mediaItem.caption = nextMessage.content;
-                        mediaItem.parse_mode = 'HTML';
-                      }
-                      return mediaItem;
-                    },
-                  );
-
-                  const mediaGroupMessages =
-                    await telegramBot.api.sendMediaGroup(
-                      group.id,
-                      media as any,
-                    );
-
-                  // 只有在有内联菜单时，才单独发送内容和内联菜单
-                  if (hasInlineKeyboard) {
-                    const result = await telegramBot.api.sendMessage(
-                      group.id,
-                      nextMessage.content,
-                      {
-                        parse_mode: 'HTML',
-                        reply_markup: replyMarkup,
-                      },
-                    );
-                    sentMessageId = result.message_id;
-                  } else {
-                    sentMessageId = mediaGroupMessages[0].message_id;
-                  }
-                }
+                const result = await sendMediaMessage(
+                  telegramBot.api,
+                  group.id,
+                  nextMessage.medias,
+                  {
+                    caption: nextMessage.content,
+                    reply_markup: replyMarkup,
+                  },
+                );
+                sentMessageId =
+                  result.message_id ||
+                  result.media_group_messages?.[0]?.message_id;
               } else {
                 // 发送纯文本消息
                 const result = await telegramBot.api.sendMessage(

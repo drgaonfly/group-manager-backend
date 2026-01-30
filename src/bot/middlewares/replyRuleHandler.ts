@@ -1,9 +1,9 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import ReplyRule from '../../models/replyRule';
-import { InlineKeyboard } from 'grammy';
 import { generateSignedUrl } from '../../utils/generateSignedUrl';
 import { replaceVariables, MemberInfo } from '../../utils/replaceVariables';
+import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:replyRule');
@@ -59,24 +59,6 @@ const scheduleMessageDeletion = (
       debug('Error deleting message:', error);
     }
   }, delaySeconds * 1000);
-};
-
-// 构建内联键盘
-const buildInlineKeyboard = (
-  menus: { menuName: string; url: string }[],
-  menusPerRow: number,
-): InlineKeyboard => {
-  const keyboard = new InlineKeyboard();
-
-  menus.forEach((menu, index) => {
-    keyboard.url(menu.menuName, menu.url);
-    // 每行显示指定数量的按钮
-    if ((index + 1) % menusPerRow === 0 && index < menus.length - 1) {
-      keyboard.row();
-    }
-  });
-
-  return keyboard;
 };
 
 const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
