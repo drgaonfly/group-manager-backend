@@ -2,6 +2,8 @@ import { InlineKeyboard, InputFile } from 'grammy';
 import { MyContext } from '../bot/types';
 import { generateLocalSignedUrl } from '../utils/generateSignedUrl';
 import { getMediaType } from '../utils/mediaUtils';
+import { replaceMessageVariables } from '../utils/telegramHtmlConvert';
+import { formatBeijingDate } from '../utils/formatBeijingDate';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:group-welcome');
@@ -52,19 +54,28 @@ export const sendGroupWelcomeMessage = async (
     });
   }
 
+  // 准备变量替换数据
+  const variables = {
+    username,
+    memberName,
+    userId: ctx.from?.id?.toString() || '',
+    groupTitle: ctx.chat?.title || '本群',
+    currentTime: formatBeijingDate(new Date()),
+  };
+
   // 1. 先发送所有的文本内容，一段一段发送，每个都带键盘
   if (groupWelcome.contents && groupWelcome.contents.length > 0) {
     for (let i = 0; i < groupWelcome.contents.length; i++) {
       const content = groupWelcome.contents[i];
+
       // 替换占位符
-      const processedContent = content
-        .replace(/\{username\}/g, username)
-        .replace(/\{memberName\}/g, memberName);
+      const processedContent = replaceMessageVariables(content, variables);
 
       try {
         // 每个content都添加键盘
         await ctx.reply(processedContent, {
           reply_markup: keyboard,
+          parse_mode: 'HTML',
         });
       } catch (error) {
         debug('Failed to send welcome content:', error);
@@ -82,9 +93,7 @@ export const sendGroupWelcomeMessage = async (
 
         // 处理caption，替换占位符
         const processedCaption = groupWelcome.caption
-          ? groupWelcome.caption
-              .replace(/\{username\}/g, username)
-              .replace(/\{memberName\}/g, memberName)
+          ? replaceMessageVariables(groupWelcome.caption, variables)
           : undefined;
 
         // 判断媒体类型
@@ -111,9 +120,7 @@ export const sendGroupWelcomeMessage = async (
       } else {
         // 处理caption，替换占位符
         const processedCaption = groupWelcome.caption
-          ? groupWelcome.caption
-              .replace(/\{username\}/g, username)
-              .replace(/\{memberName\}/g, memberName)
+          ? replaceMessageVariables(groupWelcome.caption, variables)
           : undefined;
 
         // 多个媒体文件，使用 sendMediaGroup
