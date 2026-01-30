@@ -8,18 +8,15 @@ import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
 import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';
-import { InputFile } from 'grammy';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { transformDocumentImage } from '../utils/transformUtils';
-import { InlineKeyboard } from 'grammy';
 import BotUserMessage from '../models/botUserMessage';
-import { createTelegramClient } from '../bot/services/gramClient';
-import { getMediaType } from '../utils/mediaUtils';
+import { buildInlineKeyboard } from '../utils/buildInlineKeyboard';
+import { sendMediaMessage } from '../utils/sendMultiMedia';
+import { extractChannelTarget } from '../utils/extractChannelTarget';
+import { getBotInfoWithGramjs } from '../utils/getBotInfoWithGramjs';
 import GroupWelcome from '../models/groupWelcome';
 import GroupVerify from '../models/groupVerify';
-import createDebug from 'debug';
-
-const debug = createDebug('bot:controller');
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -226,40 +223,6 @@ export const setWebhook = async (botManager: IBot) => {
   await botManager.save();
 };
 
-const getBotInfoWithGramjs = async (token: string) => {
-  const gramClient = createTelegramClient('');
-  try {
-    await gramClient.start({ botAuthToken: token });
-    const botInfo = await gramClient.getMe();
-    const session = gramClient.session.save() as unknown as string;
-    await gramClient.disconnect();
-
-    console.log('获取到的机器人信息:', botInfo);
-
-    // 处理 id，可能是 BigInt 或对象
-    let botId = '';
-    if (botInfo.id) {
-      if (typeof botInfo.id === 'object' && 'value' in botInfo.id) {
-        botId = String((botInfo.id as any).value);
-      } else {
-        botId = String(botInfo.id);
-      }
-    }
-
-    return {
-      id: botId,
-      username: botInfo.username || '',
-      firstName: botInfo.firstName || '',
-      lastName: botInfo.lastName || '',
-      session,
-    };
-  } catch (error) {
-    console.log('使用 gramjs 获取机器人信息失败:', error);
-    await gramClient.disconnect().catch(() => {});
-    throw error;
-  }
-};
-
 const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
   console.log('WEBHOOK_URL', WEBHOOK_URL);
 
@@ -328,7 +291,13 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
 const updateBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { private_key, multi_image, groupVerify, ...otherFields } = req.body;
+  const {
+    private_key,
+    multi_image,
+    groupWelcome,
+    groupVerify,
+    ...otherFields
+  } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -343,14 +312,27 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
   };
 
   // 显式处理 multi_image 字段
-  // 如果 multi_image 是空字符串或者是一个新的文件路径（不以http开头），则更新它。
-  // 如果是已存在的URL（以http开头），则不更新，因为它已经在数据库中。
   if (multi_image === '' || (multi_image && !multi_image.startsWith('http'))) {
     updates.multi_image = multi_image;
   }
 
   if (private_key) {
     updates.private_key = encrypt(private_key);
+  }
+
+  // 处理 groupWelcome
+  if (groupWelcome) {
+    if (botManager.groupWelcome) {
+      // 更新现有的 GroupWelcome
+      await GroupWelcome.findByIdAndUpdate(
+        botManager.groupWelcome,
+        groupWelcome,
+      );
+    } else {
+      // 创建新的 GroupWelcome
+      const newGroupWelcome = await GroupWelcome.create(groupWelcome);
+      updates.groupWelcome = newGroupWelcome._id;
+    }
   }
 
   // 处理 groupVerify
@@ -699,58 +681,17 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
   const telegramBot = setupBot(botManager.token);
 
   // 构建菜单按钮（InlineKeyboard）
-  let replyMarkup: InlineKeyboard | undefined = undefined;
-  if (Array.isArray(menus) && menus.length > 0) {
-    replyMarkup = new InlineKeyboard();
-
-    for (let i = 0; i < menus.length; i += menus_per_row) {
-      const row = menus.slice(i, i + menus_per_row);
-      const buttons = row
-        .filter((menu: any) => menu.menuName && menu.url)
-        .map((menu: any) => ({
-          text: menu.menuName,
-          url: menu.url,
-        }));
-
-      if (buttons.length > 0) {
-        replyMarkup.add(...buttons).row();
-      }
-    }
-  }
+  const replyMarkup = buildInlineKeyboard(menus, menus_per_row);
 
   const results = await Promise.allSettled(
     botManager.botUsers.map(async (botUser: any) => {
       try {
         // 支持图片发送
         if (images && Array.isArray(images) && images.length > 0) {
-          if (images.length === 1) {
-            // 单张图片，直接 sendPhoto
-            await telegramBot.api.sendPhoto(
-              botUser.id,
-              new InputFile(`tmp/${images[0]}`),
-              {
-                caption: message,
-                parse_mode: 'HTML',
-                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-              },
-            );
-          } else {
-            // 多张图片，使用 sendMediaGroup
-            const media = images.map((img: string, idx: number) => {
-              return {
-                type: 'photo' as const,
-                media: new InputFile(`tmp/${img}`),
-                ...(idx === 0
-                  ? {
-                      caption: message,
-                      parse_mode: 'HTML',
-                      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                    }
-                  : {}),
-              };
-            });
-            await telegramBot.api.sendMediaGroup(botUser.id, media as any);
-          }
+          await sendMediaMessage(telegramBot.api, botUser.id, images, {
+            caption: message,
+            reply_markup: replyMarkup,
+          });
         } else {
           // 纯文本消息
           await telegramBot.api.sendMessage(botUser.id, message, {
@@ -831,27 +772,8 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
 
   const telegramBot = setupBot(botManager.token);
 
-  // 构建菜单 InlineKeyboard, 支持每行多个菜单按钮
-  let replyMarkup: InlineKeyboard | undefined = undefined;
-  if (Array.isArray(menus) && menus.length > 0) {
-    const perRow = menus_per_row || 1; // 默认每行1个按钮
-    replyMarkup = new InlineKeyboard();
-
-    for (let i = 0; i < menus.length; i += perRow) {
-      const rowMenus = menus.slice(i, i + perRow);
-      const buttons = rowMenus
-        .filter((menu: any) => menu.menuName && menu.url)
-        .map((menu: any) => ({
-          text: menu.menuName,
-          url: menu.url,
-        }));
-
-      // 添加这一行按钮
-      if (buttons.length > 0) {
-        replyMarkup.add(...buttons).row();
-      }
-    }
-  }
+  // 构建菜单 InlineKeyboard
+  const replyMarkup = buildInlineKeyboard(menus, menus_per_row);
 
   // 保证catch时跳过，不影响其它的
   await Promise.all(
@@ -863,51 +785,10 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
         }
 
         if (medias && Array.isArray(medias) && medias.length > 0) {
-          // 判断媒体类型
-          const mediaType = getMediaType(medias[0]);
-
-          if (medias.length === 1) {
-            // 单个媒体文件
-            if (mediaType === 'video') {
-              await telegramBot.api.sendVideo(
-                group.id,
-                new InputFile(`tmp/${medias[0]}`),
-                {
-                  caption: content,
-                  parse_mode: 'HTML',
-                  ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                },
-              );
-            } else {
-              await telegramBot.api.sendPhoto(
-                group.id,
-                new InputFile(`tmp/${medias[0]}`),
-                {
-                  caption: content,
-                  parse_mode: 'HTML',
-                  ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                },
-              );
-            }
-          } else {
-            // 多个媒体文件，使用 sendMediaGroup（不带 caption）
-            const media = medias.map((file: string) => {
-              const type = getMediaType(file);
-              return {
-                type: type as 'photo' | 'video',
-                media: new InputFile(`tmp/${file}`),
-              };
-            });
-
-            // sendMediaGroup 不支持 reply_markup（内联菜单），Telegram API 限制
-            await telegramBot.api.sendMediaGroup(group.id, media as any);
-
-            // 发送完媒体组后，单独发送 caption 和内联菜单
-            await telegramBot.api.sendMessage(group.id, content, {
-              parse_mode: 'HTML',
-              ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-            });
-          }
+          await sendMediaMessage(telegramBot.api, group.id, medias, {
+            caption: content,
+            reply_markup: replyMarkup,
+          });
         } else {
           // 发送纯文本消息
           await telegramBot.api.sendMessage(group.id, content, {
@@ -985,25 +866,7 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
   }
 
   // 构建内联键盘
-  let replyMarkup: InlineKeyboard | undefined = undefined;
-  if (Array.isArray(menus) && menus.length > 0) {
-    const perRow = menus_per_row || 1;
-    replyMarkup = new InlineKeyboard();
-
-    for (let i = 0; i < menus.length; i += perRow) {
-      const rowMenus = menus.slice(i, i + perRow);
-      const buttons = rowMenus
-        .filter((menu: any) => menu.name && menu.url)
-        .map((menu: any) => ({
-          text: menu.name,
-          url: menu.url,
-        }));
-
-      if (buttons.length > 0) {
-        replyMarkup.add(...buttons).row();
-      }
-    }
-  }
+  const replyMarkup = buildInlineKeyboard(menus, menus_per_row);
 
   try {
     // 向每个频道发送消息
@@ -1017,51 +880,10 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
       try {
         // 发送消息到频道
         if (medias && Array.isArray(medias) && medias.length > 0) {
-          const mediaType = getMediaType(medias[0]);
-
-          if (medias.length === 1) {
-            // 单个媒体文件
-            if (mediaType === 'video') {
-              await telegramBot.api.sendVideo(
-                channelTarget,
-                new InputFile(`tmp/${medias[0]}`),
-                {
-                  caption: messageContent,
-                  parse_mode: 'HTML',
-                  ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                },
-              );
-            } else {
-              await telegramBot.api.sendPhoto(
-                channelTarget,
-                new InputFile(`tmp/${medias[0]}`),
-                {
-                  caption: messageContent,
-                  parse_mode: 'HTML',
-                  ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-                },
-              );
-            }
-          } else {
-            // 多个媒体文件，使用 sendMediaGroup（不带 caption）
-            const media = medias.map((file: string) => {
-              const type = getMediaType(file);
-              return {
-                type: type as 'photo' | 'video',
-                media: new InputFile(`tmp/${file}`),
-              };
-            });
-
-            await telegramBot.api.sendMediaGroup(channelTarget, media as any);
-
-            // 发送完媒体组后，单独发送 caption 和内联菜单
-            if (messageContent) {
-              await telegramBot.api.sendMessage(channelTarget, messageContent, {
-                parse_mode: 'HTML',
-                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-              });
-            }
-          }
+          await sendMediaMessage(telegramBot.api, channelTarget, medias, {
+            caption: messageContent,
+            reply_markup: replyMarkup,
+          });
         } else {
           // 发送纯文本消息
           await telegramBot.api.sendMessage(channelTarget, messageContent, {
@@ -1108,33 +930,6 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
 });
 
 /**
- * 从频道URL中提取Telegram频道ID或用户名
- */
-function extractChannelTarget(url: string): string | null {
-  if (!url) return null;
-
-  // 处理 t.me/channelname 格式
-  const telegramMatch = url.match(/t\.me\/([a-zA-Z0-9_]+)/);
-  if (telegramMatch) {
-    return `@${telegramMatch[1]}`;
-  }
-
-  // 处理直接的频道ID格式 (如 -1001234567890)
-  const channelIdMatch = url.match(/^-?\d+$/);
-  if (channelIdMatch) {
-    return url;
-  }
-
-  // 处理 @channelname 格式
-  const usernameMatch = url.match(/^@([a-zA-Z0-9_]+)$/);
-  if (usernameMatch) {
-    return url;
-  }
-
-  return null;
-}
-
-/**
  * 更新群欢迎配置
  */
 const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
@@ -1150,6 +945,7 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
 
   if (botManager.groupWelcome) {
     // 更新现有的 GroupWelcome
+
     await GroupWelcome.findByIdAndUpdate(
       botManager.groupWelcome,
       groupWelcomeData,
@@ -1157,7 +953,9 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
     );
   } else {
     // 创建新的 GroupWelcome
+
     const newGroupWelcome = await GroupWelcome.create(groupWelcomeData);
+
     botManager.groupWelcome = newGroupWelcome._id as any;
     await botManager.save();
   }
