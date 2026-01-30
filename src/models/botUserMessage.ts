@@ -4,12 +4,12 @@ import { IBotUser } from './botUser';
 import { IUser } from './user';
 
 export interface IMenu extends Document {
-  menuName: string;
+  name: string;
   url: string;
 }
 
 export const menuSchema = new mongoose.Schema({
-  menuName: { type: String, required: false },
+  name: { type: String, required: false },
   url: {
     type: String,
     required: false,
