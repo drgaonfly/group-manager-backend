@@ -39,6 +39,8 @@ module.exports = {
         NODE_ENV: 'production',
         DEBUG: 'bot*',
       },
+      // 设置为一小时执行一次
+      cron_restart: "0 * * * *",
       // 日志配置
       error_file: './logs/bot-error.log',
       out_file: './logs/bot-out.log',
