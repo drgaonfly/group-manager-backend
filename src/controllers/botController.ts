@@ -328,13 +328,7 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
 const updateBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const {
-    private_key,
-    multi_image,
-    groupWelcome,
-    groupVerify,
-    ...otherFields
-  } = req.body;
+  const { private_key, multi_image, groupVerify, ...otherFields } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -357,21 +351,6 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
 
   if (private_key) {
     updates.private_key = encrypt(private_key);
-  }
-
-  // 处理 groupWelcome
-  if (groupWelcome) {
-    if (botManager.groupWelcome) {
-      // 更新现有的 GroupWelcome
-      await GroupWelcome.findByIdAndUpdate(
-        botManager.groupWelcome,
-        groupWelcome,
-      );
-    } else {
-      // 创建新的 GroupWelcome
-      const newGroupWelcome = await GroupWelcome.create(groupWelcome);
-      updates.groupWelcome = newGroupWelcome._id;
-    }
   }
 
   // 处理 groupVerify
@@ -1155,6 +1134,64 @@ function extractChannelTarget(url: string): string | null {
   return null;
 }
 
+/**
+ * 更新群欢迎配置
+ */
+const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const groupWelcomeData = req.body;
+
+  const botManager = await Bot.findById(id);
+
+  if (!botManager) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  if (botManager.groupWelcome) {
+    // 更新现有的 GroupWelcome
+    await GroupWelcome.findByIdAndUpdate(
+      botManager.groupWelcome,
+      groupWelcomeData,
+      { new: true, runValidators: true },
+    );
+  } else {
+    // 创建新的 GroupWelcome
+    const newGroupWelcome = await GroupWelcome.create(groupWelcomeData);
+    botManager.groupWelcome = newGroupWelcome._id as any;
+    await botManager.save();
+  }
+
+  // 重新查询完整的 bot 数据，包括 populate
+  const updatedBot = await Bot.findById(id)
+    .populate('groupWelcome')
+    .populate('groupVerify');
+
+  // 处理 groupWelcome 中的 medias
+  const botObj = updatedBot!.toObject ? updatedBot!.toObject() : updatedBot;
+  if (
+    botObj.groupWelcome &&
+    botObj.groupWelcome.medias &&
+    Array.isArray(botObj.groupWelcome.medias)
+  ) {
+    const processedMedias = await Promise.all(
+      botObj.groupWelcome.medias.map(async (mediaUrl: string) => {
+        if (mediaUrl) {
+          return await generateSignedUrl(mediaUrl);
+        }
+        return mediaUrl;
+      }),
+    );
+    botObj.groupWelcome.medias = processedMedias;
+  }
+
+  res.json({
+    success: true,
+    data: botObj,
+    message: '群欢迎配置更新成功',
+  });
+});
+
 export {
   getBots,
   addBot,
@@ -1169,4 +1206,5 @@ export {
   sendMessage,
   sendGroupMessage,
   sendChannelPost,
+  updateGroupWelcome,
 };
