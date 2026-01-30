@@ -36,6 +36,7 @@ export interface IUser extends Document {
   channelPost: boolean; // 频道推广
   reportGroupMemberNameUpdated: boolean; // 报道群内用户的名字变更
   replyRule: boolean; // 关键词回复
+  checkinRule: boolean;
 }
 
 const userSchema = new mongoose.Schema(
@@ -94,6 +95,7 @@ const userSchema = new mongoose.Schema(
     channelPost: { type: Boolean, default: false }, // 频道推广
     reportGroupMemberNameUpdated: { type: Boolean, default: false }, // 报道群内用户的名字变更
     replyRule: { type: Boolean, default: false }, // 关键词回复
+    checkinRule: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

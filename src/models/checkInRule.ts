@@ -11,7 +11,7 @@ export interface ICheckinRule extends Document {
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
   type: CheckinRuleType;
-  points: number; // 基础积分数量
+  reward: number; // 基础积分数量
   keywords: string[]; // 触发关键词
   success_content: string; // 签到成功提示
   isOnline: boolean;
@@ -34,7 +34,7 @@ const checkinRuleSchema = new mongoose.Schema(
       enum: ['first', 'daily'],
       required: true,
     },
-    points: { type: Number, default: 10, min: 1 },
+    reward: { type: Number, default: 10, min: 1 },
     success_content: { type: String, default: '' },
     keywords: { type: [String], required: true, default: ['签到'] },
     isOnline: { type: Boolean, default: true },
