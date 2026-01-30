@@ -291,13 +291,7 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
 const updateBot = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const {
-    private_key,
-    multi_image,
-    groupWelcome,
-    groupVerify,
-    ...otherFields
-  } = req.body;
+  const { private_key, multi_image, ...otherFields } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -318,33 +312,6 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
 
   if (private_key) {
     updates.private_key = encrypt(private_key);
-  }
-
-  // 处理 groupWelcome
-  if (groupWelcome) {
-    if (botManager.groupWelcome) {
-      // 更新现有的 GroupWelcome
-      await GroupWelcome.findByIdAndUpdate(
-        botManager.groupWelcome,
-        groupWelcome,
-      );
-    } else {
-      // 创建新的 GroupWelcome
-      const newGroupWelcome = await GroupWelcome.create(groupWelcome);
-      updates.groupWelcome = newGroupWelcome._id;
-    }
-  }
-
-  // 处理 groupVerify
-  if (groupVerify) {
-    if (botManager.groupVerify) {
-      // 更新现有的 GroupVerify
-      await GroupVerify.findByIdAndUpdate(botManager.groupVerify, groupVerify);
-    } else {
-      // 创建新的 GroupVerify
-      const newGroupVerify = await GroupVerify.create(groupVerify);
-      updates.groupVerify = newGroupVerify._id;
-    }
   }
 
   const updatedBot = await Bot.findByIdAndUpdate(id, updates, {
@@ -990,6 +957,49 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
+/**
+ * 更新群验证配置
+ */
+const updateGroupVerify = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const groupVerifyData = req.body;
+
+  const botManager = await Bot.findById(id);
+
+  if (!botManager) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  if (botManager.groupVerify) {
+    // 更新现有的 GroupVerify
+
+    await GroupVerify.findByIdAndUpdate(
+      botManager.groupVerify,
+      groupVerifyData,
+      { new: true, runValidators: true },
+    );
+  } else {
+    // 创建新的 GroupVerify
+
+    const newGroupVerify = await GroupVerify.create(groupVerifyData);
+
+    botManager.groupVerify = newGroupVerify._id as any;
+    await botManager.save();
+  }
+
+  // 重新查询完整的 bot 数据，包括 populate
+  const updatedBot = await Bot.findById(id)
+    .populate('groupWelcome')
+    .populate('groupVerify');
+
+  res.json({
+    success: true,
+    data: updatedBot,
+    message: '群验证配置更新成功',
+  });
+});
+
 export {
   getBots,
   addBot,
@@ -1005,4 +1015,5 @@ export {
   sendGroupMessage,
   sendChannelPost,
   updateGroupWelcome,
+  updateGroupVerify,
 };

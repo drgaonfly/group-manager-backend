@@ -14,6 +14,7 @@ import {
   sendGroupMessage,
   sendChannelPost,
   updateGroupWelcome,
+  updateGroupVerify,
 } from '../controllers/botController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -56,5 +57,9 @@ router
 router
   .route('/:id/group-welcome')
   .put(protect, checkPermission, updateGroupWelcome);
+
+router
+  .route('/:id/group-verify')
+  .put(protect, checkPermission, updateGroupVerify);
 
 export default router;
