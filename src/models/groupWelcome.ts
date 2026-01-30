@@ -9,6 +9,7 @@ export interface IGroupWelcome extends Document {
     name: string;
     url: string;
   }[];
+  deleteAfterSeconds?: number; // 阅后即焚：发送后多少秒自动删除
 }
 
 // 群欢迎 Schema
@@ -40,6 +41,12 @@ const groupWelcomeSchema = new mongoose.Schema(
         },
       },
     ],
+    deleteAfterSeconds: {
+      type: Number,
+      required: false,
+      default: 0, // 0 表示不删除
+      min: 0,
+    },
   },
   {
     timestamps: true,

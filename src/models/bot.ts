@@ -122,59 +122,6 @@ const presetSchema = new mongoose.Schema({
   response: { type: String, required: false },
 });
 
-const groupWelcomeEmbeddedSchema = new mongoose.Schema(
-  {
-    contents: {
-      type: [String],
-      required: false,
-    },
-    caption: {
-      type: String,
-      required: false,
-    },
-    medias: {
-      type: [String],
-      required: false,
-    },
-    menus: [
-      {
-        name: {
-          type: String,
-          required: true,
-        },
-        url: {
-          type: String,
-          required: true,
-        },
-      },
-    ],
-  },
-  { _id: false },
-);
-
-const groupVerifyEmbeddedSchema = new mongoose.Schema(
-  {
-    question: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    asks: [
-      {
-        name: {
-          type: String,
-          required: true,
-        },
-        isCorrect: {
-          type: Boolean,
-          required: true,
-        },
-      },
-    ],
-  },
-  { _id: false },
-);
-
 const botSchema = new mongoose.Schema(
   {
     id: {
@@ -352,7 +299,8 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     groupWelcome: {
-      type: groupWelcomeEmbeddedSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'GroupWelcome',
       required: false,
     },
     canOpenChannelPost: {
@@ -366,7 +314,8 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     groupVerify: {
-      type: groupVerifyEmbeddedSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'GroupVerify',
       required: false,
     },
     canReportMemberNameUpdated: {
