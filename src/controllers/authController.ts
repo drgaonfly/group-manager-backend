@@ -234,6 +234,7 @@ const updateUserProfile = handleAsync(
       replyRule,
       botCount,
       availableBotCount,
+      checkinRule,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -303,6 +304,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof replyRule !== 'undefined') {
         updateData.replyRule = replyRule;
+      }
+      if (typeof checkinRule !== 'undefined') {
+        updateData.checkinRule = checkinRule;
       }
     }
 

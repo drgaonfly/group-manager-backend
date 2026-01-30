@@ -233,6 +233,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     channelPost,
     reportGroupMemberNameUpdated,
     replyRule,
+    checkinRule,
     ...body
   } = req.body;
 
@@ -279,11 +280,10 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       channelPost,
       reportGroupMemberNameUpdated,
       replyRule,
+      checkinRule,
     },
     { new: true },
   );
-
-  console.log('updatedUser.speech_static', updatedUser?.speech_static);
 
   res.json({
     success: true,
