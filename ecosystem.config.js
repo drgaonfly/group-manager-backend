@@ -39,8 +39,8 @@ module.exports = {
         NODE_ENV: 'production',
         DEBUG: 'bot*',
       },
-      // 设置为每 30 分钟执行一次
-      cron_restart: "*/30 * * * *",
+      // 设置为每 5 分钟执行一次
+      cron_restart: "*/5 * * * *",
       // 日志配置
       error_file: './logs/bot-error.log',
       out_file: './logs/bot-out.log',
