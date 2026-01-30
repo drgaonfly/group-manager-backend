@@ -13,6 +13,7 @@ import {
   sendMessage,
   sendGroupMessage,
   sendChannelPost,
+  updateGroupWelcome,
 } from '../controllers/botController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -51,5 +52,9 @@ router
 router
   .route('/:id/send-channel-post')
   .put(protect, checkPermission, sendChannelPost);
+
+router
+  .route('/:id/group-welcome')
+  .put(protect, checkPermission, updateGroupWelcome);
 
 export default router;
