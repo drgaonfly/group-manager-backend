@@ -77,10 +77,13 @@ export interface IBot extends Document {
 
   // 关键词回复
   canReplyRule: boolean;
+
+  // 群签到
+  canCheckIn: boolean;
 }
 
 export interface IMenu extends Document {
-  menuName: string;
+  name: string;
   url: string;
 }
 
@@ -97,7 +100,7 @@ export interface Ipreset extends Document {
 }
 
 const menuSchema = new mongoose.Schema({
-  menuName: { type: String, required: true },
+  name: { type: String, required: true },
   url: {
     type: String,
     required: true,
@@ -324,6 +327,11 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     canReplyRule: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    canCheckIn: {
       type: Boolean,
       required: false,
       default: false,

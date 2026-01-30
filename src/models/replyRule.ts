@@ -3,12 +3,12 @@ import { IBot } from './bot';
 import { IUser } from './user';
 
 export interface IReplyRuleMenu extends Document {
-  menuName: string;
+  name: string;
   url: string;
 }
 
 export const replyRuleMenuSchema = new mongoose.Schema({
-  menuName: { type: String, required: true },
+  name: { type: String, required: true },
   url: {
     type: String,
     required: true,

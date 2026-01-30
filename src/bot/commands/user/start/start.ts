@@ -173,7 +173,7 @@ startCommand.command('start', checkInBot, async (ctx) => {
 
   // 添加原有菜单项
   bot.menus.forEach((item) => {
-    combinedKeyboard.url(item.menuName, item.url).row();
+    combinedKeyboard.url(item.name, item.url).row();
   });
 
   // 根据权限和机器人配置决定是否使用自定义键盘

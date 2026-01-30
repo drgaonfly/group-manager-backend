@@ -185,9 +185,9 @@ export async function sendGroupMessages() {
               for (let i = 0; i < nextMessage.menus.length; i += perRow) {
                 const rowMenus = nextMessage.menus.slice(i, i + perRow);
                 const buttons = rowMenus
-                  .filter((menu) => menu.menuName && menu.url)
+                  .filter((menu) => menu.name && menu.url)
                   .map((menu) => ({
-                    text: menu.menuName,
+                    text: menu.name,
                     url: menu.url,
                   }));
 

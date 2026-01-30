@@ -104,8 +104,8 @@ export async function sendBotUserMessages() {
               for (let i = 0; i < nextMessage.menus.length; i += perRow) {
                 const rowMenus = nextMessage.menus.slice(i, i + perRow);
                 const buttons = rowMenus
-                  .filter((menu) => menu.menuName && menu.url)
-                  .map((menu) => ({ text: menu.menuName, url: menu.url }));
+                  .filter((menu) => menu.name && menu.url)
+                  .map((menu) => ({ text: menu.name, url: menu.url }));
                 if (buttons.length > 0) replyMarkup.add(...buttons).row();
               }
             }
