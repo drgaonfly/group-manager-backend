@@ -56,7 +56,9 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-app.use(express.json());
+// 提高 body 限制，避免更新机器人等大 payload 时出现 PayloadTooLargeError
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.get('/', (req: Request, res: Response) => {
   res.send('API is running...ok');
