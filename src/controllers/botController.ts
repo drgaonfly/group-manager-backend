@@ -890,7 +890,7 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
  */
 const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const groupWelcomeData = req.body;
+  const body = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -899,19 +899,26 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
     throw new Error('机器人不存在');
   }
 
-  if (botManager.groupWelcome) {
-    // 更新现有的 GroupWelcome
+  // 只提取有效字段，避免传入非法数据
+  const groupWelcomeData = {
+    contents: Array.isArray(body.contents) ? body.contents : [],
+    caption: body.caption ?? '',
+    medias: Array.isArray(body.medias) ? body.medias : [],
+    menus: Array.isArray(body.menus) ? body.menus : [],
+    deleteAfterSeconds:
+      typeof body.deleteAfterSeconds === 'number' ? body.deleteAfterSeconds : 0,
+  };
 
+  if (botManager.groupWelcome) {
+    // 更新现有的 GroupWelcome，使用 $set 确保正确更新
     await GroupWelcome.findByIdAndUpdate(
       botManager.groupWelcome,
-      groupWelcomeData,
+      { $set: groupWelcomeData },
       { new: true, runValidators: true },
     );
   } else {
     // 创建新的 GroupWelcome
-
     const newGroupWelcome = await GroupWelcome.create(groupWelcomeData);
-
     botManager.groupWelcome = newGroupWelcome._id as any;
     await botManager.save();
   }
