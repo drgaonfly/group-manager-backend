@@ -32,23 +32,23 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
   debug('Checking checkin rules for message:', messageText);
 
   try {
-    // 查找匹配的签到规则
-    const checkinRules = await CheckinRule.find({
+    // 获取机器人的签到规则（每个机器人只有一个规则）
+    const matchedRule = await CheckinRule.findOne({
       bot: botId,
       isOnline: true,
     }).exec();
 
-    // 查找第一个匹配的规则
-    const matchedRule = checkinRules.find((rule) =>
-      rule.keywords.some((keyword) => {
-        // 支持精确匹配和包含匹配
-        return messageText === keyword || messageText.includes(keyword);
-      }),
-    );
-
-    console.log('matchedRule', matchedRule);
-
     if (!matchedRule) {
+      return next();
+    }
+
+    // 检查关键词是否匹配
+    const isKeywordMatch = matchedRule.keywords.some((keyword) => {
+      // 支持精确匹配和包含匹配
+      return messageText === keyword || messageText.includes(keyword);
+    });
+
+    if (!isKeywordMatch) {
       return next();
     }
 

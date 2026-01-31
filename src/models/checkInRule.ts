@@ -42,8 +42,6 @@ const checkinRuleSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-checkinRuleSchema.index({ proxy: 1 });
-
 const CheckinRule = mongoose.model<ICheckinRule>(
   'CheckinRule',
   checkinRuleSchema,
