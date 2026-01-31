@@ -7,6 +7,7 @@ import { IBotUserConfig } from '../models/botUserConfig';
 import { type FileFlavor } from '@grammyjs/files';
 import { SessionData } from './sessions';
 import { ConversationFlavor } from '@grammyjs/conversations';
+import { IUser } from '../models/user';
 
 export interface CustomContext
   extends GrammyContext,
@@ -20,6 +21,9 @@ type BaseContext = CustomContext &
     currentGroup?: IGroup;
     currentBotSession?: string;
     currentBotUserConfig?: IBotUserConfig;
+    currentProxyUser?: IUser;
+    currentProxyBotUser?: IBotUser;
+    currentProxyBotUserConfig?: IBotUserConfig;
   };
 
 // 最终上下文类型
