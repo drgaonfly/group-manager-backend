@@ -8,13 +8,14 @@ import groupResolver from './middlewares/groupResolver';
 import replyRuleHandler from './middlewares/replyRuleHandler';
 import { privateCommandsList, groupCommandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import createDebug from 'debug';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
+import proxyResolver from './middlewares/proxyResolver';
 import { MyContext } from './types'; // 引入你的 MyContext 类型
 import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
 import { redis } from '../utils/redis';
 import { conversations } from '@grammyjs/conversations';
+import createDebug from 'debug';
 
 const log = createDebug('bot:setup');
 
@@ -73,6 +74,7 @@ export const setupBot = (token: string) => {
   bot.use(botUserResolver);
   bot.use(botUserConfigResolver);
   bot.use(groupResolver);
+  bot.use(proxyResolver);
   bot.use(errorHandler);
   bot.use(logger);
   bot.use(replyRuleHandler);
