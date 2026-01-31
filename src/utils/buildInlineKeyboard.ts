@@ -2,7 +2,6 @@ import { InlineKeyboard } from 'grammy';
 
 interface MenuItem {
   name?: string; // sendMessage 和 sendGroupMessage 使用
-  name?: string; // sendChannelPost 使用
   url: string;
 }
 
@@ -28,7 +27,7 @@ export const buildInlineKeyboard = (
         return menuText && menu.url;
       })
       .map((menu: MenuItem) => ({
-        text: menu.name || menu.name!,
+        text: menu.name!,
         url: menu.url,
       }));
 
