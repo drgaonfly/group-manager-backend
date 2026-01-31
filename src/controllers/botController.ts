@@ -430,17 +430,6 @@ const deleteMultipleBots = handleAsync(
       throw new Error('机器人数量不足，无法删除');
     }
 
-    for (const botManager of bots) {
-      const bot = setupBot(botManager.token);
-      const webhookInfo = await printWebhookInfo(bot);
-      if (webhookInfo.url) {
-        await bot.api.deleteWebhook();
-        console.log(
-          `${botManager.userName} Webhook ${botManager.token} 已删除`,
-        );
-      }
-    }
-
     // 4. 删除机器人
     const botIds = bots.map((bot) => bot._id);
     await Bot.deleteMany({

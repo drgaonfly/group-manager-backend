@@ -63,9 +63,10 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
     if (groupByTitle) {
       debug(`🔄 检测到群组升级: ${groupByTitle.id} -> ${chatId}`);
-      // 更新群组 ID 和类型
+      // 更新群组 ID、类型和用户名（有则填上）
       groupByTitle.id = chatId;
       groupByTitle.type = 'supergroup';
+      groupByTitle.username = ctx.chat.username ?? '';
       await groupByTitle.save();
       currentGroup = groupByTitle;
       debug(`✅ 已更新群组 ID 和类型`);
@@ -96,6 +97,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       const newGroup = new Group({
         id: chatId,
         title: ctx.chat.title,
+        username: ctx.chat.username ?? '',
         type: ctx.chat.type,
         bot: ctx.currentBot._id,
         creator: ctx.currentBotUser?._id,
@@ -122,14 +124,14 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       if (oldChatId && newChatId) {
         debug(`🔄 检测到群组升级事件: ${oldChatId} -> ${newChatId}`);
 
+        const updatePayload = {
+          id: newChatId,
+          type: ctx.message?.chat.type || 'supergroup',
+          username: ctx.message?.chat.username ?? '',
+        };
         const updatedGroup = await Group.findOneAndUpdate(
           { id: oldChatId },
-          {
-            $set: {
-              id: newChatId,
-              type: ctx.message?.chat.type || 'supergroup',
-            },
-          },
+          { $set: updatePayload },
           { new: true },
         );
 
@@ -144,13 +146,17 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     }
   } else {
     // 更新群组信息
-    // 只在群组标题或类型发生变化时才更新
+    // 只在群组标题、类型或用户名发生变化时才更新
+    const chatUsername = ctx.chat.username ?? '';
+    const groupUsername = currentGroup.username ?? '';
     if (
       currentGroup.title !== ctx.chat.title ||
-      currentGroup.type !== ctx.chat.type
+      currentGroup.type !== ctx.chat.type ||
+      groupUsername !== chatUsername
     ) {
       currentGroup.title = ctx.chat.title;
       currentGroup.type = ctx.chat.type;
+      currentGroup.username = chatUsername;
       await currentGroup.save();
     }
 

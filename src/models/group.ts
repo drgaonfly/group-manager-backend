@@ -7,6 +7,7 @@ import { IUser } from './user';
 export interface IGroup extends Document {
   id: number;
   title: string;
+  username?: string; // 群组/频道的用户名（如 @groupname 中的 groupname）
   type: string;
   proxy: mongoose.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
@@ -40,6 +41,13 @@ const groupSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    // 群组/频道用户名（公开链接用，如 @groupname）
+    username: {
+      type: String,
+      required: false,
+      trim: true,
+      default: '',
     },
     // 群组类型，不用显示在后台
     type: {
