@@ -261,7 +261,7 @@ const botSchema = new mongoose.Schema(
     }, // 新增：抽奖描述
     presets: {
       type: [presetSchema],
-      default: false,
+      default: [],
     },
     intervalTime: {
       type: Number,

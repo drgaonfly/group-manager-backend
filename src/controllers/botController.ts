@@ -899,12 +899,21 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
     throw new Error('机器人不存在');
   }
 
-  // 只提取有效字段，避免传入非法数据
+  // 只提取有效字段，避免传入非法数据；过滤掉 name/url 为空的 menu 项
+  const rawMenus = Array.isArray(body.menus) ? body.menus : [];
+  const validMenus = rawMenus.filter(
+    (m: any) =>
+      m &&
+      typeof m.name === 'string' &&
+      typeof m.url === 'string' &&
+      m.name.trim() &&
+      m.url.trim(),
+  );
   const groupWelcomeData = {
     contents: Array.isArray(body.contents) ? body.contents : [],
     caption: body.caption ?? '',
     medias: Array.isArray(body.medias) ? body.medias : [],
-    menus: Array.isArray(body.menus) ? body.menus : [],
+    menus: validMenus,
     deleteAfterSeconds:
       typeof body.deleteAfterSeconds === 'number' ? body.deleteAfterSeconds : 0,
   };
@@ -919,8 +928,10 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
   } else {
     // 创建新的 GroupWelcome
     const newGroupWelcome = await GroupWelcome.create(groupWelcomeData);
-    botManager.groupWelcome = newGroupWelcome._id as any;
-    await botManager.save();
+    // 使用 findByIdAndUpdate 避免 save() 触发完整文档验证导致的 options 未定义错误
+    await Bot.findByIdAndUpdate(id, {
+      $set: { groupWelcome: newGroupWelcome._id },
+    });
   }
 
   // 重新查询完整的 bot 数据，包括 populate
@@ -977,11 +988,11 @@ const updateGroupVerify = handleAsync(async (req: Request, res: Response) => {
     );
   } else {
     // 创建新的 GroupVerify
-
     const newGroupVerify = await GroupVerify.create(groupVerifyData);
-
-    botManager.groupVerify = newGroupVerify._id as any;
-    await botManager.save();
+    // 使用 findByIdAndUpdate 避免 save() 触发完整文档验证导致的 options 未定义错误
+    await Bot.findByIdAndUpdate(id, {
+      $set: { groupVerify: newGroupVerify._id },
+    });
   }
 
   // 重新查询完整的 bot 数据，包括 populate
