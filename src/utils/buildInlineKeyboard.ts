@@ -1,8 +1,9 @@
 import { InlineKeyboard } from 'grammy';
 
 interface MenuItem {
-  name?: string; // sendMessage 和 sendGroupMessage 使用
+  name?: string;
   url: string;
+  row?: number;
 }
 
 export const buildInlineKeyboard = (
@@ -16,24 +17,57 @@ export const buildInlineKeyboard = (
 
   const keyboard = new InlineKeyboard();
 
-  // 按行分组构建菜单
-  for (let i = 0; i < menus.length; i += menusPerRow) {
-    const rowMenus = menus.slice(i, i + menusPerRow);
+  // 检查是否所有菜单都有 row 字段
+  const hasRowField = menus.every((menu) => menu.row !== undefined);
 
-    // 过滤并构建有效按钮（支持 name 和 name 字段）
-    const buttons = rowMenus
-      .filter((menu: MenuItem) => {
-        const menuText = menu.name || menu.name;
-        return menuText && menu.url;
-      })
-      .map((menu: MenuItem) => ({
-        text: menu.name!,
-        url: menu.url,
-      }));
+  if (hasRowField) {
+    // 使用 row 字段分组
+    // 按 row 分组
+    const groupedByRow = menus.reduce(
+      (acc, menu) => {
+        const row = menu.row || 0;
+        if (!acc[row]) {
+          acc[row] = [];
+        }
+        acc[row].push(menu);
+        return acc;
+      },
+      {} as Record<number, MenuItem[]>,
+    );
 
-    // 添加这一行按钮
-    if (buttons.length > 0) {
-      keyboard.add(...buttons).row();
+    // 按行号排序并构建键盘
+    const sortedRows = Object.keys(groupedByRow)
+      .map(Number)
+      .sort((a, b) => a - b);
+
+    sortedRows.forEach((rowNum) => {
+      const rowMenus = groupedByRow[rowNum];
+      const buttons = rowMenus
+        .filter((menu) => menu.name && menu.url)
+        .map((menu) => ({
+          text: menu.name!,
+          url: menu.url,
+        }));
+
+      if (buttons.length > 0) {
+        keyboard.add(...buttons).row();
+      }
+    });
+  } else {
+    // 使用 menusPerRow 分组（兼容旧逻辑）
+    for (let i = 0; i < menus.length; i += menusPerRow) {
+      const rowMenus = menus.slice(i, i + menusPerRow);
+
+      const buttons = rowMenus
+        .filter((menu: MenuItem) => menu.name && menu.url)
+        .map((menu: MenuItem) => ({
+          text: menu.name!,
+          url: menu.url,
+        }));
+
+      if (buttons.length > 0) {
+        keyboard.add(...buttons).row();
+      }
     }
   }
 

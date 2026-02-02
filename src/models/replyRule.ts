@@ -5,6 +5,7 @@ import { IUser } from './user';
 export interface IReplyRuleMenu extends Document {
   name: string;
   url: string;
+  row: number;
 }
 
 export const replyRuleMenuSchema = new mongoose.Schema({
@@ -19,6 +20,7 @@ export const replyRuleMenuSchema = new mongoose.Schema({
       message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
     },
   },
+  row: { type: Number, required: false, default: 1 },
 });
 
 // ReplyRule 关键词回复
@@ -64,11 +66,6 @@ const replyRuleSchema = new mongoose.Schema(
       required: false,
     },
     menus: [replyRuleMenuSchema],
-    menus_per_row: {
-      type: Number,
-      required: false,
-      default: 1,
-    },
     replyToMessage: {
       type: Boolean,
       required: false,
