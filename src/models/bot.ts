@@ -44,7 +44,7 @@ export interface IBot extends Document {
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
 
-  balanceClearedAt: Date; // botUserConfig 积分余额清零时间
+  balanceClearedAt: number; // 每月清零日期（1-31）
 
   // 多功能配置
 

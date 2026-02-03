@@ -21,9 +21,9 @@ const task = async () => {
   // 创建队列，同一时间只执行一个任务，防止任务重叠
   const queue = new PQueue({ concurrency: 1 });
 
-  // 使用 node-cron 每小时执行一次（0 0 * * * *）
+  // 使用 node-cron 每天凌晨1点执行一次（0 1 * * *）
   cron.schedule(
-    '0 0 * * * *',
+    '0 1 * * *',
     () => {
       queue.add(async () => {
         try {
@@ -40,7 +40,9 @@ const task = async () => {
     },
   );
 
-  console.log('余额清零定时任务已启动，每小时执行一次（使用队列防止任务重叠）');
+  console.log(
+    '余额清零定时任务已启动，每天凌晨1点执行一次（使用队列防止任务重叠）',
+  );
 
   // 优雅退出处理
   process.on('SIGINT', async () => {
