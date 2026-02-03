@@ -195,13 +195,21 @@ export const setWebhook = async (botManager: IBot) => {
   console.log('删除 webhook');
   await bot.api.deleteWebhook();
 
+  const allowedUpdates = [
+    'message',
+    'edited_message',
+    'channel_post',
+    'edited_channel_post',
+    'callback_query',
+    'inline_query',
+    'chosen_inline_result',
+    'chat_member', // 群组成员变化（加入/离开）
+    'my_chat_member', // bot 自己的成员状态变化
+    'chat_join_request', // 加群请求
+  ] as const;
+
   await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`, {
-    allowed_updates: [
-      'message',
-      'chat_member',
-      'callback_query',
-      'channel_post',
-    ],
+    allowed_updates: allowedUpdates,
   });
 
   console.log(

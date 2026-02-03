@@ -17,6 +17,19 @@ export const startWebHookBot = async () => {
 
       console.log('Bot 正在运行于生产模式');
 
+      const allowedUpdates = [
+        'message',
+        'edited_message',
+        'channel_post',
+        'edited_channel_post',
+        'callback_query',
+        'inline_query',
+        'chosen_inline_result',
+        'chat_member', // 群组成员变化（加入/离开）
+        'my_chat_member', // bot 自己的成员状态变化
+        'chat_join_request', // 加群请求
+      ] as const;
+
       // 检查是否已设置 webhook
       const webhookInfo = await bot.api.getWebhookInfo();
       if (!webhookInfo.url) {
@@ -25,12 +38,7 @@ export const startWebHookBot = async () => {
         await bot.api.setWebhook(
           `${WEBHOOK_URL}/bot-webhooks/${activeBot._id}`,
           {
-            allowed_updates: [
-              'message',
-              'chat_member',
-              'callback_query',
-              'channel_post',
-            ],
+            allowed_updates: allowedUpdates,
           },
         );
       } else {

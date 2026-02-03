@@ -22,13 +22,21 @@ const development = async () => {
     await bot.api.deleteWebhook();
     debug(`${botInfo.username} starting polling`);
 
+    const allowedUpdates = [
+      'message',
+      'edited_message',
+      'channel_post',
+      'edited_channel_post',
+      'callback_query',
+      'inline_query',
+      'chosen_inline_result',
+      'chat_member', // 群组成员变化（加入/离开）
+      'my_chat_member', // bot 自己的成员状态变化
+      'chat_join_request', // 加群请求
+    ] as const;
+
     await bot.start({
-      allowed_updates: [
-        'message',
-        'chat_member',
-        'callback_query',
-        'channel_post',
-      ],
+      allowed_updates: allowedUpdates,
     });
   }
 };
