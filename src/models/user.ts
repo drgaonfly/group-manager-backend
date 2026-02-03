@@ -37,6 +37,7 @@ export interface IUser extends Document {
   reportGroupMemberNameUpdated: boolean; // 报道群内用户的名字变更
   replyRule: boolean; // 关键词回复
   checkinRule: boolean;
+  lotteryRule: boolean;
 }
 
 const userSchema = new mongoose.Schema(
@@ -96,6 +97,7 @@ const userSchema = new mongoose.Schema(
     reportGroupMemberNameUpdated: { type: Boolean, default: false }, // 报道群内用户的名字变更
     replyRule: { type: Boolean, default: false }, // 关键词回复
     checkinRule: { type: Boolean, default: false },
+    lotteryRule: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

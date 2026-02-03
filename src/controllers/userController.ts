@@ -234,6 +234,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     reportGroupMemberNameUpdated,
     replyRule,
     checkinRule,
+    lotteryRule,
     ...body
   } = req.body;
 
@@ -281,6 +282,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       reportGroupMemberNameUpdated,
       replyRule,
       checkinRule,
+      lotteryRule,
     },
     { new: true },
   );

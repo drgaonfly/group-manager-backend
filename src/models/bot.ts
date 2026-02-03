@@ -82,6 +82,9 @@ export interface IBot extends Document {
 
   // 群签到
   canCheckIn: boolean;
+
+  // 群抽奖
+  canLotteryRule: boolean;
 }
 
 export interface IMenu extends Document {
@@ -339,6 +342,11 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     canCheckIn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    canLotteryRule: {
       type: Boolean,
       required: false,
       default: false,
