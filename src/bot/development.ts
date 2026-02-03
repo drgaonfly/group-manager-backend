@@ -25,15 +25,9 @@ const development = async () => {
     await bot.start({
       allowed_updates: [
         'message',
-        'edited_message',
-        'channel_post',
-        'edited_channel_post',
-        'callback_query',
-        'inline_query',
-        'chosen_inline_result',
         'chat_member',
-        'my_chat_member',
-        'chat_join_request',
+        'callback_query',
+        'channel_post',
       ],
     });
   }
