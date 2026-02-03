@@ -44,6 +44,8 @@ export interface IBot extends Document {
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
 
+  balanceClearedAt: Date; // botUserConfig 积分余额清零时间
+
   // 多功能配置
 
   // 群内统计
@@ -280,6 +282,11 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    balanceClearedAt: {
+      type: Date,
+      required: false,
+    },
+
     // 功能开关
     canSpeechStatic: {
       type: Boolean,
