@@ -16,6 +16,7 @@ export interface MemberInfo {
  * - {userName} - @username 或昵称
  * - {username} - 兼容旧格式，同 {userName}
  * - {memberName} - 兼容旧格式，同 {nickname}
+ * - {userBalance} - 用户积分余额
  * - {groupTitle} - 群组名称
  * - {currentTime} - 北京时间
  */
@@ -23,6 +24,7 @@ export const replaceVariables = (
   content: string,
   member?: MemberInfo | null,
   groupTitle?: string,
+  userBalance?: number,
 ): string => {
   if (!content) return content;
 
@@ -60,7 +62,8 @@ export const replaceVariables = (
       .replace(/\{nickname\}/g, nickname)
       .replace(/\{userName\}/g, userName)
       .replace(/\{username\}/g, userName) // 兼容旧格式
-      .replace(/\{memberName\}/g, nickname); // 兼容旧格式
+      .replace(/\{memberName\}/g, nickname) // 兼容旧格式
+      .replace(/\{userBalance\}/g, userBalance.toString());
   }
 
   return result;

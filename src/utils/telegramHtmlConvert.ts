@@ -6,6 +6,7 @@ export interface MessageVariables {
   username?: string; // 用户名（@格式）
   memberName?: string; // 用户真实姓名
   userId?: string; // 用户ID
+  userBalance?: string; // 用户积分余额
   groupTitle?: string; // 群组标题
   currentTime?: string; // 当前时间
 }
@@ -16,6 +17,7 @@ export interface MessageVariables {
  * - {username} / {userName}
  * - {memberName} / {member} / {nickname}
  * - {userId}
+ * - {userBalance}
  * - {groupTitle}
  * - {currentTime}
  */
@@ -45,6 +47,11 @@ export function replaceMessageVariables(
   // 替换用户ID
   if (variables.userId) {
     result = result.replace(/\{userId\}/gi, variables.userId);
+  }
+
+  // 替换用户余额
+  if (variables.userBalance) {
+    result = result.replace(/\{userBalance\}/gi, variables.userBalance);
   }
 
   // 替换群组标题

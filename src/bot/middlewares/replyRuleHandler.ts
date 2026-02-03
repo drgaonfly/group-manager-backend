@@ -123,6 +123,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       matchedRule.content,
       memberInfo,
       groupTitle,
+      ctx.currentBotUserConfig?.usdt_balance,
     );
 
     // 构建回复选项
