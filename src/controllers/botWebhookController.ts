@@ -3,6 +3,9 @@ import { Request, Response } from 'express';
 import { default as BotManager } from '../models/bot';
 import { setupBot } from '../bot/botSetup';
 
+// Cache for bot instances to avoid recreating them
+const botCache = new Map<string, ReturnType<typeof setupBot>>();
+
 export const handleBotWebhook = handleAsync(
   async (req: Request, res: Response) => {
     // Handle the webhook
@@ -13,26 +16,25 @@ export const handleBotWebhook = handleAsync(
     const botManager = await BotManager.findOne({ isOnline: true, _id: botId });
 
     if (!botManager) {
-      res.status(404);
-      throw new Error('bot not found');
+      res.status(404).json({ error: 'bot not found' });
+      return;
     }
 
-    const bot = setupBot(botManager.token);
+    // Get or create bot instance
+    let bot = botCache.get(botId);
+    if (!bot) {
+      bot = setupBot(botManager.token);
+      botCache.set(botId, bot);
+      console.log(`Created new bot instance for bot ${botId}`);
+    }
 
-    await bot.start({
-      allowed_updates: [
-        'message',
-        'edited_message',
-        'channel_post',
-        'edited_channel_post',
-        'callback_query',
-        'inline_query',
-        'chosen_inline_result',
-        'chat_member',
-        'my_chat_member',
-        'chat_join_request',
-      ],
-    });
-    await bot.handleUpdate(req.body);
+    // Handle the update directly without starting the bot
+    try {
+      await bot.handleUpdate(req.body);
+      res.status(200).json({ status: 'ok' });
+    } catch (error) {
+      console.error('Error handling webhook update:', error);
+      res.status(500).json({ error: 'Failed to process update' });
+    }
   },
 );
