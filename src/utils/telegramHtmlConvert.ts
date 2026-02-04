@@ -29,14 +29,18 @@ export function replaceMessageVariables(
 
   let result = text;
 
-  // 替换用户名
-  if (variables.username) {
-    result = result
-      .replace(/\{username\}/gi, variables.username)
-      .replace(/\{userName\}/gi, variables.username);
-  }
+  // 显示名：优先昵称（memberName），没有再用用户名（username）
+  const displayName =
+    (variables.memberName && variables.memberName.trim()) ||
+    variables.username ||
+    '';
 
-  // 替换成员名称
+  // 替换用户名/昵称（{userName}、{username} 均优先显示昵称）
+  result = result
+    .replace(/\{userName\}/gi, displayName)
+    .replace(/\{username\}/gi, displayName);
+
+  // 替换成员名称（与上面一致，保证 {memberName}/{member}/{nickname} 为昵称）
   if (variables.memberName) {
     result = result
       .replace(/\{memberName\}/gi, variables.memberName)
@@ -49,9 +53,9 @@ export function replaceMessageVariables(
     result = result.replace(/\{userId\}/gi, variables.userId);
   }
 
-  // 替换用户余额
-  if (variables.userBalance) {
-    result = result.replace(/\{userBalance\}/gi, variables.userBalance);
+  // 替换用户余额（支持 0，仅未传入时不替换）
+  if (variables.userBalance !== undefined && variables.userBalance !== null) {
+    result = result.replace(/\{userBalance\}/gi, String(variables.userBalance));
   }
 
   // 替换群组标题

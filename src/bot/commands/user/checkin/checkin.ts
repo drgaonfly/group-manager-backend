@@ -123,12 +123,15 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       successMessage = lines.join('\n');
     }
 
-    // 替换消息中的变量
+    // 替换消息中的变量（昵称优先于用户名；userBalance 为签到后的当前积分）
     const variables = {
-      username: `@${ctx.currentBotUser.userName}`,
-      memberName: ctx.currentBotUser.displayName,
-      userId: ctx.currentBotUser.id,
-      groupTitle: ctx.currentGroup.title,
+      username: ctx.currentBotUser.userName
+        ? `@${ctx.currentBotUser.userName}`
+        : '',
+      memberName: ctx.currentBotUser.displayName || '',
+      userId: String(ctx.currentBotUser.id),
+      userBalance: String(botUserConfig.usdt_balance ?? 0),
+      groupTitle: ctx.currentGroup.title || '',
       currentTime: formatBeijingDate(new Date()),
     };
 
