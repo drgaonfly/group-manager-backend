@@ -147,16 +147,14 @@ export async function checkAndDrawLotteries() {
           participant.isFixed = true; // 标记为内定
           await participant.save();
 
-          // 如果是积分奖励，给用户加积分
-          if (prize.type === 'points') {
-            const botUserConfig = await BotUserConfig.findOne({
-              botUser: participant.botUser,
-            });
-            if (botUserConfig) {
-              botUserConfig.usdt_balance =
-                (botUserConfig.usdt_balance || 0) + Number(prize.value);
-              await botUserConfig.save();
-            }
+          // 给中奖用户加积分
+          const botUserConfig = await BotUserConfig.findOne({
+            botUser: participant.botUser,
+          });
+          if (botUserConfig) {
+            botUserConfig.usdt_balance =
+              (botUserConfig.usdt_balance || 0) + Number(prize.value);
+            await botUserConfig.save();
           }
 
           winners.push({
@@ -185,16 +183,14 @@ export async function checkAndDrawLotteries() {
           winner.prizeValue = prize.value;
           await winner.save();
 
-          // 如果是积分奖励，给用户加积分
-          if (prize.type === 'points') {
-            const botUserConfig = await BotUserConfig.findOne({
-              botUser: winner.botUser,
-            });
-            if (botUserConfig) {
-              botUserConfig.usdt_balance =
-                (botUserConfig.usdt_balance || 0) + Number(winner.prizeValue);
-              await botUserConfig.save();
-            }
+          // 给中奖用户加积分
+          const botUserConfig = await BotUserConfig.findOne({
+            botUser: winner.botUser,
+          });
+          if (botUserConfig) {
+            botUserConfig.usdt_balance =
+              (botUserConfig.usdt_balance || 0) + Number(winner.prizeValue);
+            await botUserConfig.save();
           }
 
           winners.push({
@@ -215,10 +211,7 @@ export async function checkAndDrawLotteries() {
     const winnerList = winners
       .map((w) => {
         const name = w.firstName || w.username || `用户${w.telegramId}`;
-        const prizeText =
-          w.prize.type === 'points'
-            ? `${w.prize.value}积分`
-            : String(w.prize.value);
+        const prizeText = `${w.prize.value}积分`;
         return `🎁 <a href="tg://user?id=${w.telegramId}">${name}</a> - ${w.prize.name}(${prizeText})`;
       })
       .join('\n');

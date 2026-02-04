@@ -58,7 +58,7 @@ export const handleJoinLottery = async (
   // 构建奖品列表
   const prizeList = lottery.prizes
     .map((p) => {
-      const valueText = p.type === 'points' ? `${p.value}积分` : p.value;
+      const valueText = `${p.value}积分`;
       return `${p.name} x${p.quantity} (${valueText})`;
     })
     .join('\n');

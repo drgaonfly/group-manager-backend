@@ -4,8 +4,7 @@ import { IBotUser } from './botUser';
 
 export interface ILotteryPrize {
   name: string;
-  type: 'points' | 'custom';
-  value: number | string; // points数量或自定义文本
+  value: number; // 积分数量
   quantity: number;
 }
 
@@ -56,14 +55,10 @@ const lotteryPrizeSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    type: {
-      type: String,
-      enum: ['points', 'custom'],
-      required: true,
-    },
     value: {
-      type: mongoose.Schema.Types.Mixed, // number for points, string for custom
+      type: Number,
       required: true,
+      min: 0,
     },
     quantity: {
       type: Number,
