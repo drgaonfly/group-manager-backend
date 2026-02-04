@@ -2,48 +2,12 @@ import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import Lottery from '../../../../models/lottery';
 import LotteryParticipant from '../../../../models/lotteryParticipant';
-// import GroupChatMessage from '../../../../models/groupChatMessage';
-// import Group from '../../../../models/group';
 import BotUserConfig from '../../../../models/botUserConfig';
 import { convertToTelegramHtml } from '../../../../bot/utils/telegramHtml';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
+import { checkGroup } from '../../../middlewares/checkGroup';
 
 export const lotteryCommand = new Composer<MyContext>();
-
-// 检查用户是否加入了指定的群/频道
-export async function checkUserInChannels(
-  ctx: MyContext,
-  userId: number,
-  requiredChannels: { chatId: string; title: string }[],
-): Promise<{ passed: boolean; missingChannels: string[] }> {
-  if (!requiredChannels || requiredChannels.length === 0) {
-    return { passed: true, missingChannels: [] };
-  }
-
-  const missingChannels: string[] = [];
-
-  for (const channel of requiredChannels) {
-    try {
-      const member = await ctx.api.getChatMember(channel.chatId, userId);
-      // 检查用户状态，必须是 member、administrator、creator 才算加入
-      if (!['member', 'administrator', 'creator'].includes(member.status)) {
-        missingChannels.push(channel.title || channel.chatId);
-      }
-    } catch (error: any) {
-      // 如果获取失败（可能是bot不在该群/频道，或者用户未加入），视为未加入
-      console.error(
-        `检查用户 ${userId} 是否在 ${channel.chatId} 失败:`,
-        error.message,
-      );
-      missingChannels.push(channel.title || channel.chatId);
-    }
-  }
-
-  return {
-    passed: missingChannels.length === 0,
-    missingChannels,
-  };
-}
 
 // 检查并执行开奖
 async function checkAndDraw(ctx: MyContext, lottery: any, joinNum: number) {
@@ -225,7 +189,7 @@ async function executeDraw(ctx: MyContext, lottery: any) {
 }
 
 // 关键词触发抽奖（只在群组中工作）
-lotteryCommand.on('message:text', async (ctx, next) => {
+lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
   // 如果是命令（以 / 开头），跳过关键词处理，让命令处理器处理
   if (ctx.message.text.startsWith('/')) {
     return next();
@@ -238,12 +202,6 @@ lotteryCommand.on('message:text', async (ctx, next) => {
 
   // 检查群组是否属于当前机器人
   const currentBot = ctx.currentBot;
-  if (
-    !currentBot ||
-    currentGroup.bot.toString() !== currentBot._id.toString()
-  ) {
-    return next();
-  }
 
   // 检查机器人是否启用抽奖功能
   if (!currentBot.canLotteryRule) {

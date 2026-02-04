@@ -59,6 +59,8 @@ export const getLottery = async (req: Request, res: Response) => {
 export const createLottery = async (req: RequestCustom, res: Response) => {
   const { bot: botId, ...data } = req.body;
 
+  console.log('创建抽奖 - 接收到的数据:', JSON.stringify(data, null, 2));
+
   const bot = await Bot.findById(botId);
   if (!bot) {
     res.status(404).json({ message: '机器人不存在' });
@@ -67,10 +69,25 @@ export const createLottery = async (req: RequestCustom, res: Response) => {
 
   const code = generateCode();
 
+  const { proxyUser } = await findBotProxy(bot);
+
+  // 确保 media 字段是字符串
+  if (data.media && typeof data.media === 'object') {
+    console.error('Media 字段是对象而不是字符串:', data.media);
+    data.media = ''; // 重置为空字符串
+  }
+
+  // 清理不需要的字段
+  const cleanedData = { ...data };
+  if (cleanedData.media === '') {
+    delete cleanedData.media;
+    delete cleanedData.mediaType;
+  }
+
   const lottery = await Lottery.create({
-    ...data,
+    ...cleanedData,
     bot: botId,
-    proxy: req.user._id,
+    proxy: proxyUser._id,
     code,
   });
 
