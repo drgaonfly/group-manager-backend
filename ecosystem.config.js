@@ -137,6 +137,25 @@ module.exports = {
       retain: 7,
       compress: true,
     },
+    {
+      name: 'manager-lottery',
+      script: 'dist/tasks/lottery.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true, // 常驻进程，PM2 保障自动重启
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      // 日志配置
+      error_file: './logs/lottery-error.log',
+      out_file: './logs/lottery-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      // 日志切割配置（保留7天）
+      max_size: '10M',
+    }
   ],
 };
 

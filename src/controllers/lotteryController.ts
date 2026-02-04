@@ -113,12 +113,11 @@ export const deleteLottery = async (req: Request, res: Response) => {
 
 // 获取抽奖参与者列表
 export const getLotteryParticipants = async (req: Request, res: Response) => {
-  const { lotteryId, current = 1, pageSize = 10 } = req.query;
+  const { current = 1, pageSize = 10 } = req.query;
   const query: any = {};
 
-  if (lotteryId) {
-    query.lottery = lotteryId;
-  }
+  // 从路径参数获取 lottery ID
+  query.lottery = req.params.id;
 
   const total = await LotteryParticipant.countDocuments(query);
   const data = await LotteryParticipant.find(query)

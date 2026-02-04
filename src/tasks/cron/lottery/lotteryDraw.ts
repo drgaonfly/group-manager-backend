@@ -14,9 +14,7 @@ export async function checkAndDrawLotteries() {
   // 查找需要开奖的抽奖活动（关联机器人并检查机器人是否启用抽奖）
   const lotteries = await Lottery.find({
     status: { $in: ['pending', 'ongoing'] },
-  })
-    .populate('bot')
-    .populate('groups');
+  }).populate('bot');
 
   // 过滤出机器人启用了抽奖功能的活动
   const activeLotteries = lotteries.filter((lottery) => {
