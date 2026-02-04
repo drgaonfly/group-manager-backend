@@ -5,6 +5,7 @@ import LotteryParticipant from '../../../../models/lotteryParticipant';
 import BotUserConfig from '../../../../models/botUserConfig';
 import { convertToTelegramHtml } from '../../../../bot/utils/telegramHtml';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
+import { replaceLotteryVariables } from '../../../../utils/replaceVariables';
 import { checkGroup } from '../../../middlewares/checkGroup';
 
 export const lotteryCommand = new Composer<MyContext>();
@@ -270,14 +271,6 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
       lottery: lottery._id,
     });
 
-    // 构建奖品列表
-    const goodsList = lottery.prizes
-      .map((p, i) => {
-        const valueText = `${p.value}`;
-        return `${i + 1}. ${p.name} - ${valueText} x${p.quantity}份`;
-      })
-      .join('\n');
-
     // 构建开奖条件
     const openConditions: string[] = [];
     if (lottery.drawMethod.includes('fullParticipants')) {
@@ -289,19 +282,12 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
     ) {
       openConditions.push(`${formatBeijingDate(lottery.scheduledDrawTime)}`);
     }
-    const openCondition =
-      openConditions.length > 1
-        ? openConditions.join('\n')
-        : openConditions[0] || '手动开奖';
 
     // 替换变量的辅助函数
     const replaceVariables = (content: string) => {
-      return content
-        .replace(/{lotteryTitle}/g, lottery.title)
-        .replace(/{goodsList}/g, goodsList)
-        .replace(/{joinCondition}/g, '加入机器人关联群组')
-        .replace(/{openCondition}/g, openCondition)
-        .replace(/{joinNum}/g, String(joinNum));
+      return replaceLotteryVariables(content, lottery, {
+        joinNum,
+      });
     };
 
     // 创建参与记录

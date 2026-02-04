@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { buildInlineKeyboard } from '../bot/utils/buildInlineKeyboard';
 import { sendLotteryMessage } from '../bot/utils/sendLotteryMessage';
 import { findBotProxy } from '../bot/services/findBotProxy';
+import { replaceLotteryVariables } from '../utils/replaceVariables';
 import { RequestCustom } from 'user';
 
 // 生成短唯一码
@@ -212,14 +213,6 @@ const sendLotteryNotifications = async (
   const telegramBot = setupBot(bot.token);
   const joinUrl = `https://t.me/${bot.userName}?start=join-${lottery.code}`;
 
-  // 构建奖品列表
-  const prizeList = lottery.prizes
-    .map((p: any) => {
-      const valueText = p.type === 'points' ? `${p.value}积分` : p.value;
-      return `${p.name} x${p.quantity} (${valueText})`;
-    })
-    .join('\n');
-
   // 构建开奖条件
   const conditions: string[] = [];
   if (lottery.drawMethod.includes('fullParticipants')) {
@@ -235,14 +228,9 @@ const sendLotteryNotifications = async (
 
   // 用户配置的通知内容模板，替换变量
   let messageContent = lottery.notifyContent || '';
-  messageContent = messageContent
-    .replace(/{lotteryTitle}/g, lottery.title)
-    .replace(/{goodsList}/g, prizeList)
-    .replace(/{openCondition}/g, conditions.join('\n'))
-    .replace(
-      /{joinNum}/g,
-      participantCount !== undefined ? String(participantCount) : '0',
-    );
+  messageContent = replaceLotteryVariables(messageContent, lottery, {
+    joinNum: participantCount !== undefined ? participantCount : 0,
+  });
 
   // 添加参与链接
   const joinLinkText = `\n\n👉 <a href="${joinUrl}">点击参与抽奖</a>`;

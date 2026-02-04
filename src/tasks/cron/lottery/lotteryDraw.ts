@@ -7,6 +7,7 @@ import { formatBeijingDate } from '../../../utils/formatBeijingDate';
 import { convertToTelegramHtml } from '../../../bot/utils/telegramHtml';
 import { buildInlineKeyboard } from '../../../bot/utils/buildInlineKeyboard';
 import { sendLotteryMessage } from '../../../bot/utils/sendLotteryMessage';
+import { replaceLotteryVariables } from '../../../utils/replaceVariables';
 
 export async function checkAndDrawLotteries() {
   const now = new Date();
@@ -218,11 +219,15 @@ export async function checkAndDrawLotteries() {
 
     // 发送开奖通知
     const openTime = formatBeijingDate(new Date());
-    const drawResultContent = lottery.drawResultContent
-      .replace(/{lotteryTitle}/g, lottery.title)
-      .replace(/{winnerList}/g, winnerList)
-      .replace(/{joinNum}/g, String(participants.length))
-      .replace(/{openTime}/g, openTime);
+    const drawResultContent = replaceLotteryVariables(
+      lottery.drawResultContent,
+      lottery,
+      {
+        joinNum: participants.length,
+        winnerList,
+        openTime,
+      },
+    );
 
     const message =
       convertToTelegramHtml(drawResultContent) ||

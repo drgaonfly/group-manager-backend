@@ -3,6 +3,7 @@ import Lottery from '../../../../models/lottery';
 import LotteryParticipant from '../../../../models/lotteryParticipant';
 import { buildInlineKeyboard } from '../../../utils/buildInlineKeyboard';
 import { convertToTelegramHtml } from '../../../utils/telegramHtml';
+import { replaceLotteryVariables } from '../../../../utils/replaceVariables';
 
 // 处理抽奖参与
 export const handleJoinLottery = async (
@@ -82,12 +83,9 @@ export const handleJoinLottery = async (
   // 使用 joinSuccessContent 字段，替换变量
   let message = lottery.joinSuccessContent || '';
   if (message) {
-    message = message
-      .replace(/{lotteryTitle}/g, lottery.title)
-      .replace(/{goodsList}/g, prizeList)
-      .replace(/{joinCondition}/g, '加入机器人关联群组')
-      .replace(/{openCondition}/g, conditions.join('\n'))
-      .replace(/{joinNum}/g, String(participantCount));
+    message = replaceLotteryVariables(message, lottery, {
+      joinNum: participantCount,
+    });
   }
 
   // 如果没有配置通知内容，使用默认格式

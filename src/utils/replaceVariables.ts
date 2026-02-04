@@ -68,3 +68,80 @@ export const replaceVariables = (
 
   return result;
 };
+
+/**
+ * 替换抽奖内容中的变量
+ * 支持的变量：
+ * - {lotteryTitle} - 抽奖标题
+ * - {goodsList} - 奖品内容
+ * - {joinCondition} - 参与条件
+ * - {openCondition} - 开奖条件
+ * - {joinNum} - 已参与人数
+ * - {winnerList} - 中奖名单（仅开奖通知）
+ * - {openTime} - 开奖时间（仅开奖通知）
+ */
+export const replaceLotteryVariables = (
+  content: string,
+  lottery: {
+    title: string;
+    prizes: Array<{ name: string; value: number; quantity: number }>;
+    drawMethod: string[];
+    fullParticipantsCount?: number;
+    scheduledDrawTime?: Date;
+  },
+  additionalData?: {
+    joinNum?: number;
+    winnerList?: string;
+    openTime?: string;
+  },
+): string => {
+  if (!content) return content;
+
+  let result = content;
+
+  // 基础变量替换
+  result = result.replace(/\{lotteryTitle\}/g, lottery.title);
+
+  // 构建奖品列表
+  const goodsList = lottery.prizes
+    .map((p) => `${p.name} x${p.quantity} (${p.value}积分)`)
+    .join('\n');
+  result = result.replace(/\{goodsList\}/g, goodsList);
+
+  // 构建参与条件
+  const joinCondition = '加入机器人关联群组';
+  result = result.replace(/\{joinCondition\}/g, joinCondition);
+
+  // 构建开奖条件
+  const conditions: string[] = [];
+  if (
+    lottery.drawMethod.includes('fullParticipants') &&
+    lottery.fullParticipantsCount
+  ) {
+    conditions.push(`满${lottery.fullParticipantsCount}人开奖`);
+  }
+  if (
+    lottery.drawMethod.includes('scheduledTime') &&
+    lottery.scheduledDrawTime
+  ) {
+    const timeStr = formatBeijingDate(lottery.scheduledDrawTime);
+    conditions.push(`定时开奖 (${timeStr})`);
+  }
+  const openCondition = conditions.join(' 或 ');
+  result = result.replace(/\{openCondition\}/g, openCondition);
+
+  // 额外数据（开奖相关）
+  if (additionalData) {
+    if (additionalData.joinNum !== undefined) {
+      result = result.replace(/\{joinNum\}/g, String(additionalData.joinNum));
+    }
+    if (additionalData.winnerList !== undefined) {
+      result = result.replace(/\{winnerList\}/g, additionalData.winnerList);
+    }
+    if (additionalData.openTime !== undefined) {
+      result = result.replace(/\{openTime\}/g, additionalData.openTime);
+    }
+  }
+
+  return result;
+};
