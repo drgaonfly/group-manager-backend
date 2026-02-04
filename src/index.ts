@@ -44,6 +44,7 @@ import checkinRuleRoutes from './routes/checkinRuleRoutes';
 import channelPostHistoryRoutes from './routes/channelPostHistoryRoutes';
 import groupMessageHistoryRoutes from './routes/groupMessageHistoryRoutes';
 import groupMessageRecordRoutes from './routes/groupMessageRecordRoutes';
+import lotteryRoutes from './routes/lotteryRoutes';
 
 dotenv.config();
 
@@ -101,6 +102,7 @@ app.use('/api/checkin-rules', checkinRuleRoutes);
 app.use('/api/channel-post-histories', channelPostHistoryRoutes);
 app.use('/api/group-message-histories', groupMessageHistoryRoutes);
 app.use('/api/group-message-records', groupMessageRecordRoutes);
+app.use('/api/lotteries', lotteryRoutes);
 
 app.use('/api/static', express.static('tmp'));
 

@@ -384,6 +384,13 @@ botSchema.virtual('botUserConfigs', {
   foreignField: 'bot',
 });
 
+// 虚拟字段：关联的抽奖活动
+botSchema.virtual('lotteries', {
+  ref: 'Lottery',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
 const Bot = mongoose.model<IBot>('Bot', botSchema);
 
 export default Bot;

@@ -21,3 +21,15 @@ export function extractChannelTarget(url: string): string | null {
 
   return null;
 }
+
+export const extractChatUsername = (input: string): string | null => {
+  const patterns = [/^@(\w+)$/, /(?:https?:\/\/)?t\.me\/(\w+)/, /^(\w+)$/];
+
+  for (const pattern of patterns) {
+    const match = input.trim().match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+  return null;
+};

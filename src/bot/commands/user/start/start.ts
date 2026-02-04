@@ -11,6 +11,7 @@ import createDebug from 'debug';
 import PromotionLink from '../../../../models/promotionLink';
 import BotUser from '../../../../models/botUser';
 import { setupBot } from '../../../botSetup';
+import { handleJoinLottery } from './handleLottery';
 
 const startCommand = new Composer<MyContext>();
 
@@ -52,6 +53,15 @@ startCommand.command('start', checkInBot, async (ctx) => {
   // 处理推广链接关联
   // 获取 start 命令的参数（例如：/start JXCAZEAX）
   const startParam = ctx.match as string;
+
+  // 处理抽奖参与
+  if (startParam?.startsWith('join-')) {
+    const code = startParam.replace('join-', '');
+    if (code) {
+      await handleJoinLottery(ctx, code);
+      return;
+    }
+  }
 
   if (startParam && ctx.currentBotUserConfig) {
     const code = startParam.trim();

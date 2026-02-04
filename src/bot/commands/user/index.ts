@@ -14,6 +14,7 @@ import startingComposer from './starting';
 // import exchangeComposer from './exchange';
 import veryfiyComposer from './verify';
 import checkinComposer from './checkin';
+import lotteryComposer from './lottery';
 import conversationsComposer from './conversations';
 
 // import spreadComposer from './spread';
@@ -34,6 +35,7 @@ userComposer.use(speechStaticComposer.middleware());
 userComposer.use(profileComposer.middleware());
 userComposer.use(startingComposer.middleware());
 userComposer.use(contactComposer.middleware());
+userComposer.use(lotteryComposer.middleware());
 userComposer.use(checkinComposer.middleware());
 // userComposer.use(subscriptionComposer.middleware());
 // userComposer.use(cloneComposer.middleware());

@@ -2,14 +2,21 @@ import { setupRedis } from '../utils/redis';
 import setupDB, { closeDB } from '../utils/db';
 
 import { sendGroupMessages } from './cron/groupMessager';
+import { checkAndDrawLotteries } from './cron/lottery/lotteryDraw';
 import cron from 'node-cron';
 import PQueue from 'p-queue';
 
 const task = async () => {
   console.log('当前时间:', new Date().toLocaleString());
-  console.log('开始执行群发消息任务...');
+  console.log('开始执行定时任务...');
 
+  // 执行群发消息任务
+  console.log('开始执行群发消息任务...');
   await sendGroupMessages();
+
+  // 执行抽奖开奖任务
+  console.log('开始执行抽奖开奖任务...');
+  await checkAndDrawLotteries();
 };
 
 // 初始化数据库和 Redis
