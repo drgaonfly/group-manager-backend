@@ -7,11 +7,10 @@ import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkInBot } from '../../../middlewares/checkInBot';
 import { findBotProxy } from '../../../services/findBotProxy';
 import { PermissionChecker } from '../../../utils/permissionChecker';
-import createDebug from 'debug';
-import PromotionLink from '../../../../models/promotionLink';
-import BotUser from '../../../../models/botUser';
 import { setupBot } from '../../../botSetup';
 import { handleJoinLottery } from './handleLottery';
+import { handlePromotion } from './handlePromotion';
+import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();
 
@@ -63,84 +62,9 @@ startCommand.command('start', checkInBot, async (ctx) => {
     }
   }
 
-  if (startParam && ctx.currentBotUserConfig) {
-    const code = startParam.trim();
-    debug('start command code:', code);
-
-    try {
-      // 查找对应的推广链接
-      const promotionLink = await PromotionLink.findOne({ code, bot: bot._id });
-
-      if (promotionLink && !ctx.currentBotUserConfig.promotionLink) {
-        // 关联推广链接到 BotUserConfig（只有在没有关联时才更新）
-        ctx.currentBotUserConfig.promotionLink = promotionLink._id;
-        await ctx.currentBotUserConfig.save();
-
-        debug('Promotion link associated:', promotionLink.title);
-
-        // 如果双向功能可用，通知拥有者
-        if (PermissionChecker.canUseBidirectional(proxyUser, bot)) {
-          try {
-            // 获取所有拥有者
-            const owners = await BotUser.find({
-              _id: { $in: bot.owners || [] },
-            });
-
-            if (owners.length > 0) {
-              const botInstance = setupBot(bot.token);
-
-              // 构建通知消息
-              const customerName =
-                ctx.currentBotUser.firstName && ctx.currentBotUser.lastName
-                  ? `${ctx.currentBotUser.firstName} ${ctx.currentBotUser.lastName}`.trim()
-                  : ctx.currentBotUser.userName
-                    ? `@${ctx.currentBotUser.userName}`
-                    : `ID: ${ctx.currentBotUser.id}`;
-
-              const notificationMessage =
-                `🔗 新用户通过推广链接启动\n\n` +
-                `用户: ${customerName}\n` +
-                `推广链接标题: <b>${promotionLink.title}</b>\n` +
-                (promotionLink.link
-                  ? `\n推广链接:\n${promotionLink.link}`
-                  : '');
-
-              // 给所有拥有者发送通知
-              for (const owner of owners) {
-                if (owner?.id) {
-                  try {
-                    await botInstance.api.sendMessage(
-                      owner.id,
-                      notificationMessage,
-                      { parse_mode: 'HTML' },
-                    );
-                    debug(`✅ 已发送推广链接通知给拥有者: ${owner.id}`);
-                  } catch (sendErr: any) {
-                    console.error(
-                      `发送推广链接通知给拥有者 ${owner.id} 失败:`,
-                      sendErr.message || sendErr.description,
-                    );
-                  }
-                }
-              }
-            }
-          } catch (notifyErr) {
-            console.error('发送推广链接通知失败:', notifyErr);
-            // 不影响主流程继续执行
-          }
-        }
-      } else if (promotionLink && ctx.currentBotUserConfig.promotionLink) {
-        debug(
-          'BotUserConfig already has promotion link:',
-          ctx.currentBotUserConfig.promotionLink,
-        );
-      } else {
-        debug('No promotion link found for code:', code);
-      }
-    } catch (error) {
-      debug('Error associating promotion link:', error);
-      // 不阻止后续流程继续执行
-    }
+  // 处理推广链接
+  if (startParam) {
+    await handlePromotion(ctx, startParam);
   }
 
   const botSession = bot.session;
@@ -186,16 +110,10 @@ startCommand.command('start', checkInBot, async (ctx) => {
     combinedKeyboard.url(item.name, item.url).row();
   });
 
-  // 根据权限和机器人配置决定是否使用自定义键盘
-  const replyOptions: any = {};
-  if (
-    PermissionChecker.canUseFreeKeyboard(proxyUser, bot) &&
-    bot.keyboards &&
-    bot.keyboards.length > 0
-  ) {
-    // 自由键盘功能可用且配置了键盘，使用自定义键盘
-    replyOptions.reply_markup = await createMainKeyboard(ctx);
-  }
+  // 总是显示自定义键盘（权限判断在 createMainKeyboard 内部）
+  const replyOptions: any = {
+    reply_markup: await createMainKeyboard(ctx),
+  };
 
   // 发送消息和键盘
   await ctx.reply(bot.message || '欢迎使用机器人', replyOptions);

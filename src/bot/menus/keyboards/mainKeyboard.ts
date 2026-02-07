@@ -1,11 +1,20 @@
 import { Keyboard } from 'grammy';
-import type { MyContext } from '../../types'; // 替换为你自己的 ctx 类型
+import type { MyContext } from '../../types';
+import { findBotProxy } from '../../services/findBotProxy';
+import { PermissionChecker } from '../../utils/permissionChecker';
 
 async function createMainKeyboard(ctx: MyContext) {
   const keyboard = new Keyboard();
 
-  // Add custom keyboard buttons from bot configuration
-  if (ctx.currentBot?.keyboards && ctx.currentBot.keyboards.length > 0) {
+  // 获取代理用户权限
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
+  // 如果有权限且配置了自定义键盘，显示自定义键盘按钮
+  if (
+    PermissionChecker.canUseFreeKeyboard(proxyUser, ctx.currentBot) &&
+    ctx.currentBot?.keyboards &&
+    ctx.currentBot.keyboards.length > 0
+  ) {
     keyboard.row();
 
     // 按 row 字段排序并分组
