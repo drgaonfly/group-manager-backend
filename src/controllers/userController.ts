@@ -164,6 +164,9 @@ export const addUser = handleAsync(
       clientIP === '::1' || clientIP === ':::1' ? '127.0.0.1' : clientIP;
 
     const { botCount, ...userBody } = req.body; // botCount 不存储，从数据库查询
+
+    console.log('botCount', botCount);
+
     const newUser = new User({
       ...userBody,
       password: hashPassword,
