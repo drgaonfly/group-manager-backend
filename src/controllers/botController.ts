@@ -233,7 +233,7 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
     throw new Error('您已达到最大机器人数量');
   }
 
-  const { token, isOnline } = req.body;
+  const { token, isOnline, proxy } = req.body;
 
   const botExists = await Bot.findOne({ token });
 
@@ -254,7 +254,7 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const botManager = new Bot({
     ...req.body,
-    user: req.user._id,
+    user: proxy || req.user._id,
     // 如果成功获取到机器人信息，更新相关字段
     ...(botInfo && {
       userName: botInfo.username || '',
