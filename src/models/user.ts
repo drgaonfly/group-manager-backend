@@ -26,6 +26,8 @@ export interface IUser extends Document {
 
   availableBotCount: number; // 可用机器人数量（配额）
 
+  function_disabledAt: Date; // 功能禁用时间，给代理角色的
+
   bidirectional: boolean; // 双向
   groupMessage: boolean; // 群发
   keyboardConfig: boolean; // 菜单配置
@@ -84,6 +86,8 @@ const userSchema = new mongoose.Schema(
     lastOnline: { type: Date },
 
     availableBotCount: { type: Number, default: 1 }, // 可用机器人数量（配额）
+
+    function_disabledAt: { type: Date, default: null }, // 功能禁用时间
 
     bidirectional: { type: Boolean, default: false }, // 双向
     groupMessage: { type: Boolean, default: false }, // 群发
