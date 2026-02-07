@@ -15,17 +15,23 @@ import {
   resendLotteryPublic,
   setFixedWinnerPublic,
 } from '../controllers/lotteryController';
+import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // 需要认证的路由
-router.get('/', getLotteries);
-router.get('/:id', getLottery);
-router.post('/', createLottery);
-router.put('/:id', updateLottery);
-router.delete('/:id', deleteLottery);
-router.get('/:id/participants', getLotteryParticipants);
-router.post('/:id/draw', drawLottery);
+router.get('/', protect, checkPermission, getLotteries);
+router.get('/:id', protect, checkPermission, getLottery);
+router.post('/', protect, checkPermission, createLottery);
+router.put('/:id', protect, checkPermission, updateLottery);
+router.delete('/:id', protect, checkPermission, deleteLottery);
+router.get(
+  '/:id/participants',
+  protect,
+  checkPermission,
+  getLotteryParticipants,
+);
+router.post('/:id/draw', protect, checkPermission, drawLottery);
 
 // 公开路由（无需登录）
 router.post('/public', createLotteryPublic);
