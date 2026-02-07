@@ -3,7 +3,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy'; // 新增speakeasy
 import QRCode from 'qrcode'; // 新增qrcode
-import User from '../models/user'; // 假设你的用户模型位于 /models/User.ts
+import User from '../models/user';
+import Bot from '../models/bot';
 import { generateToken, generateRefreshToken } from '../utils/generateToken';
 import handleAsync from '../utils/handleAsync';
 import { exclude } from '../utils/handleData';
@@ -203,10 +204,14 @@ const refreshToken = handleAsync(async (req: Request, res: Response) => {
 
 const getUserProfile = handleAsync(
   async (req: RequestCustom, res: Response) => {
+    // 当前机器人数量从数据库动态查询
+    const botCount = await Bot.countDocuments({ user: req.user._id });
+
     res.json({
       success: true,
       data: {
         ...exclude(req.user.toObject(), 'password'),
+        botCount, // 从数据库查询的当前机器人数量
         avatar:
           'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png',
       },
@@ -232,7 +237,6 @@ const updateUserProfile = handleAsync(
       channelPost,
       reportGroupMemberNameUpdated,
       replyRule,
-      botCount,
       availableBotCount,
       checkinRule,
       lotteryRule,
@@ -273,7 +277,6 @@ const updateUserProfile = handleAsync(
       email: email || user.email,
       password: hashPassword,
       serviceLink,
-      botCount,
       availableBotCount,
     };
 

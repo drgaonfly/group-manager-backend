@@ -1,6 +1,7 @@
 // controllers/userController.ts
 import { Request, Response } from 'express';
 import User from '../models/user';
+import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import bcrypt from 'bcrypt';
 import { exclude } from '../utils/handleData';
@@ -100,9 +101,25 @@ export const getUsers = handleAsync(
 
     const total = await User.countDocuments(query);
 
+    // 当前机器人数量从数据库动态查询，不存储
+    const userIds = users.map((u) => u._id);
+    const botCounts = await Bot.aggregate([
+      { $match: { user: { $in: userIds } } },
+      { $group: { _id: '$user', count: { $sum: 1 } } },
+    ]);
+    const botCountMap = Object.fromEntries(
+      botCounts.map((b) => [b._id.toString(), b.count]),
+    );
+
     res.json({
       success: true,
-      data: users.map((user) => exclude(user.toObject(), 'password')),
+      data: users.map((user) => {
+        const obj = exclude(user.toObject(), 'password');
+        return {
+          ...obj,
+          botCount: botCountMap[user._id.toString()] ?? 0, // 从数据库查询的当前机器人数量
+        };
+      }),
       total,
       current: +current,
       pageSize: +pageSize,
@@ -146,8 +163,9 @@ export const addUser = handleAsync(
     const normalizedIP =
       clientIP === '::1' || clientIP === ':::1' ? '127.0.0.1' : clientIP;
 
+    const { botCount, ...userBody } = req.body; // botCount 不存储，从数据库查询
     const newUser = new User({
-      ...req.body,
+      ...userBody,
       password: hashPassword,
       inviteCode,
       proxy,
@@ -201,10 +219,14 @@ export const getUserById = handleAsync(async (req: Request, res: Response) => {
     }).populate('employee');
   }
 
+  // 当前机器人数量从数据库动态查询
+  const botCount = await Bot.countDocuments({ user: user._id });
+
   res.json({
     success: true,
     data: {
       ...user.toObject(),
+      botCount, // 从数据库查询的当前机器人数量
       employees,
       proxies,
       customers,
@@ -225,7 +247,6 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     bidirectional,
     groupMessage,
     keyboardConfig,
-    botCount,
     availableBotCount,
     speech_static,
     groupWelcome,
@@ -273,8 +294,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       bidirectional, // 双向
       groupMessage, // 群发
       keyboardConfig, // 菜单配置
-      botCount, // 当前机器人数量
-      availableBotCount, // 可用机器人数量
+      availableBotCount, // 可用机器人数量（配额）
       speech_static,
       groupWelcome,
       groupVerify,

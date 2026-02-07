@@ -60,15 +60,13 @@ botUserSchema.virtual('subscriptions', {
   foreignField: 'botUser',
 });
 
-// 新增 displayName 虚拟属性
+// 新增 displayName 虚拟属性：优先昵称（firstName + lastName），没有再用用户名（@userName）
 botUserSchema.virtual('displayName').get(function (this: any) {
-  // 优先 userName，其次 firstName + lastName
-  if (this.userName) {
-    return this.userName;
-  }
   const first = this.firstName || '';
   const last = this.lastName || '';
-  return `${first} ${last}`.trim();
+  const nickname = `${first} ${last}`.trim();
+  if (nickname) return nickname;
+  return this.userName ? `@${this.userName}` : '';
 });
 
 const BotUser = mongoose.model<IBotUser>('BotUser', botUserSchema);

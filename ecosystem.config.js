@@ -26,7 +26,7 @@ module.exports = {
       retain: 7,
       compress: true,
     },
-    // Bot 应用 - 部署时执行一次（设置 Webhook）
+    // Bot 应用 - 每小时第30分钟执行一次（设置 Webhook）
     {
       name: 'manager-bot',
       script: 'dist/bot/index.js',
@@ -35,6 +35,7 @@ module.exports = {
       watch: false,
       exec_mode: 'fork',
       max_memory_restart: '1G',
+      cron_restart: '30 * * * *', // 每小时第30分钟执行一次
       env: {
         NODE_ENV: 'production',
         DEBUG: 'bot*',

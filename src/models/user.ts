@@ -24,8 +24,7 @@ export interface IUser extends Document {
   isOnline: boolean;
   lastOnline: Date; // 最后在线时间
 
-  botCount: number; // 当前机器人数量
-  availableBotCount: number; // 可用机器人数量
+  availableBotCount: number; // 可用机器人数量（配额）
 
   bidirectional: boolean; // 双向
   groupMessage: boolean; // 群发
@@ -84,8 +83,7 @@ const userSchema = new mongoose.Schema(
 
     lastOnline: { type: Date },
 
-    botCount: { type: Number, default: 0 }, // 当前机器人数量
-    availableBotCount: { type: Number, default: 1 }, // 可用机器人数量
+    availableBotCount: { type: Number, default: 1 }, // 可用机器人数量（配额）
 
     bidirectional: { type: Boolean, default: false }, // 双向
     groupMessage: { type: Boolean, default: false }, // 群发
