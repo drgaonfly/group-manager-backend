@@ -5,9 +5,9 @@ import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkInBot } from '../../../middlewares/checkInBot';
-import { findBotProxy } from '../../../services/findBotProxy';
-import { PermissionChecker } from '../../../utils/permissionChecker';
-import { setupBot } from '../../../botSetup';
+// import { findBotProxy } from '../../../services/findBotProxy';
+// import { PermissionChecker } from '../../../utils/permissionChecker';
+// import { setupBot } from '../../../botSetup';
 import { handleJoinLottery } from './handleLottery';
 import { handlePromotion } from './handlePromotion';
 import createDebug from 'debug';
@@ -47,7 +47,7 @@ startCommand.command('start', checkInBot, async (ctx) => {
   const bot = ctx.currentBot;
 
   // 获取代理用户权限（提前获取，后续可以复用）
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  // const { proxyUser } = await findBotProxy(ctx.currentBot);
 
   // 处理推广链接关联
   // 获取 start 命令的参数（例如：/start JXCAZEAX）
