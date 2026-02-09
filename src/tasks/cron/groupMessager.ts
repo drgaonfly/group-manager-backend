@@ -8,6 +8,7 @@ import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard } from 'grammy';
 import { sendMediaMessage } from '../../utils/sendMultiMedia';
+import { replaceMessageVariables } from '../../utils/telegramHtmlConvert';
 
 /**
  * 群发消息任务
@@ -231,6 +232,18 @@ export async function sendGroupMessages() {
             // 发送消息
             let sentMessageId: number | undefined;
             try {
+              // 准备变量替换数据
+              const variables = {
+                groupTitle: String(group.title || group.id),
+                currentTime: formatBeijingDate(new Date()),
+              };
+
+              // 替换消息内容中的变量
+              const processedContent = replaceMessageVariables(
+                nextMessage.content,
+                variables,
+              );
+
               if (
                 Array.isArray(nextMessage.medias) &&
                 nextMessage.medias.length > 0
@@ -240,7 +253,7 @@ export async function sendGroupMessages() {
                   group.id,
                   nextMessage.medias,
                   {
-                    caption: nextMessage.content,
+                    caption: processedContent,
                     reply_markup: replyMarkup,
                   },
                 );
@@ -250,7 +263,7 @@ export async function sendGroupMessages() {
               } else {
                 const result = await telegramBot.api.sendMessage(
                   group.id,
-                  nextMessage.content,
+                  processedContent,
                   {
                     parse_mode: 'HTML',
                     ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
