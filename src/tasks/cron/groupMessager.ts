@@ -35,6 +35,21 @@ export async function sendGroupMessages() {
       `[sendGroupMessages] 查询到 ${groupMessages.length} 条群发消息`,
     );
 
+    // 按机器人分组，避免重复处理
+    const botGroupMap = new Map<string, IGroupMessage[]>();
+    for (const message of groupMessages) {
+      const bot = message.bot as any;
+      if (!bot) continue;
+
+      const botId = bot._id.toString();
+      if (!botGroupMap.has(botId)) {
+        botGroupMap.set(botId, []);
+      }
+      botGroupMap.get(botId)!.push(message);
+    }
+
+    console.log(`[sendGroupMessages] 共 ${botGroupMap.size} 个机器人需要处理`);
+
     const stats = {
       processed: 0,
       sent: 0,
@@ -43,73 +58,89 @@ export async function sendGroupMessages() {
       errors: 0,
     };
 
-    for (const message of groupMessages) {
+    // 按机器人处理，每个机器人只处理一次
+    for (const [botId, botMessages] of botGroupMap.entries()) {
       try {
-        stats.processed++;
+        const firstMessage = botMessages[0];
+        const bot = firstMessage.bot as any;
 
-        console.log('message', message);
-
-        const bot = message.bot as any;
-        if (!bot) {
-          console.warn(
-            `[sendGroupMessages] 消息 ${message._id} 没有关联的机器人，跳过`,
-          );
-          stats.skipped++;
-          continue;
-        }
+        console.log(
+          `[处理机器人] ${bot.botName} (${botId}), 共 ${botMessages.length} 条消息`,
+        );
 
         // 检查机器人所属用户的群发权限
-        const proxyUer = await User.findById(message.proxy);
+        const proxyUser = await User.findById(firstMessage.proxy);
 
-        if (!proxyUer.groupMessage) {
+        if (!proxyUser?.groupMessage) {
           console.warn(
-            `[sendGroupMessages] 消息 ${message._id} 关联的代理用户没有配置群发功能`,
+            `[sendGroupMessages] 机器人 ${bot.botName} 关联的代理用户没有配置群发功能`,
           );
-          stats.skipped++;
-          continue;
-        }
-
-        // 检查是否在发送时间窗口内
-        if (!isWithinTimeWindow(message.startAt, message.endAt)) {
-          console.log(
-            `[sendGroupMessages] 消息 ${
-              message._id
-            } 不在发送时间窗口内 (${formatTimeWindow(
-              message.startAt,
-              message.endAt,
-            )})，跳过`,
-          );
-          stats.skipped++;
+          stats.noPermission++;
           continue;
         }
 
         // 设置机器人
         const telegramBot = setupBot(bot.token);
 
-        // 获取关联的群组
-        const groups = message.groups as IGroup[];
+        // 收集所有需要发送的群组（去重）
+        const allGroups = new Set<string>();
+        for (const msg of botMessages) {
+          const groups = msg.groups as IGroup[];
+          if (groups && groups.length > 0) {
+            groups.forEach((g) => g && allGroups.add(g._id.toString()));
+          }
+        }
 
-        if (!groups || groups.length === 0) {
+        if (allGroups.size === 0) {
           console.warn(
-            `[sendGroupMessages] 消息 ${message._id} 没有关联的群组，跳过`,
+            `[sendGroupMessages] 机器人 ${bot.botName} 没有关联的群组，跳过`,
           );
           stats.skipped++;
           continue;
         }
 
-        // 获取该机器人的所有群发消息（用于轮播逻辑）
-        const botGroupMessages = await GroupMessage.find({
-          bot: bot._id,
-          isOnline: true,
-        }).sort({ weight: 1 });
+        console.log(
+          `[sendGroupMessages] 机器人 ${bot.botName} 需要发送到 ${allGroups.size} 个群组`,
+        );
 
         let sentCount = 0;
 
         // 向每个群组发送消息
-        for (const group of groups) {
+        for (const groupIdStr of allGroups) {
           try {
+            // 找到包含这个群组的消息
+            const messageForGroup = botMessages.find((msg) => {
+              const groups = msg.groups as IGroup[];
+              return groups?.some((g) => g._id.toString() === groupIdStr);
+            });
+
+            if (!messageForGroup) continue;
+
+            const group = (messageForGroup.groups as IGroup[]).find(
+              (g) => g._id.toString() === groupIdStr,
+            );
+
             if (!group) {
-              console.log(`[sendGroupMessage] 群组不存在: ${group}`);
+              console.log(`[sendGroupMessage] 群组不存在: ${groupIdStr}`);
+              continue;
+            }
+
+            // 检查是否在发送时间窗口内
+            if (
+              !isWithinTimeWindow(
+                messageForGroup.startAt,
+                messageForGroup.endAt,
+              )
+            ) {
+              console.log(
+                `[sendGroupMessages] 群 ${
+                  group.id
+                } 不在发送时间窗口内 (${formatTimeWindow(
+                  messageForGroup.startAt,
+                  messageForGroup.endAt,
+                )})，跳过`,
+              );
+              stats.skipped++;
               continue;
             }
 
@@ -119,17 +150,17 @@ export async function sendGroupMessages() {
 
             let nextMessage: IGroupMessage;
             let shouldSend = false;
-            const intervalTimeInMs = message.intervalTime * 60 * 1000; // intervalTime 单位为分钟
+            const intervalTimeInMs = messageForGroup.intervalTime * 60 * 1000;
 
             if (!history) {
               // 从没发过，发第一条
               console.log(
                 `[首次发送] 群 ${group.id} 从未发送过消息，准备发送第一条`,
               );
-              nextMessage = botGroupMessages[0];
+              nextMessage = botMessages[0];
               shouldSend = true;
             } else {
-              const lastSentIndex = botGroupMessages.findIndex(
+              const lastSentIndex = botMessages.findIndex(
                 (msg) =>
                   msg._id.toString() === history.lastSentMessage.toString(),
               );
@@ -149,12 +180,12 @@ export async function sendGroupMessages() {
               );
               console.log(`  经过时间(ms): ${timeSinceLastSent}`);
               console.log(`  需要间隔(ms): ${intervalTimeInMs}`);
-              console.log(`  需要间隔(分钟): ${message.intervalTime}`);
+              console.log(`  需要间隔(分钟): ${messageForGroup.intervalTime}`);
 
               if (timeSinceLastSent >= intervalTimeInMs) {
                 // 下一个要发的消息（循环）
-                const nextIndex = (lastSentIndex + 1) % botGroupMessages.length;
-                nextMessage = botGroupMessages[nextIndex];
+                const nextIndex = (lastSentIndex + 1) % botMessages.length;
+                nextMessage = botMessages[nextIndex];
                 shouldSend = true;
               } else {
                 const timeSinceLastSentMinutes = (
@@ -162,7 +193,7 @@ export async function sendGroupMessages() {
                   (60 * 1000)
                 ).toFixed(2);
                 console.log(
-                  `[跳过] 群 ${group.id} 距离上次消息 ${timeSinceLastSentMinutes} 分钟，不足 ${message.intervalTime} 分钟，跳过`,
+                  `[跳过] 群 ${group.id} 距离上次消息 ${timeSinceLastSentMinutes} 分钟，不足 ${messageForGroup.intervalTime} 分钟，跳过`,
                 );
                 stats.skipped++;
                 continue;
@@ -171,15 +202,15 @@ export async function sendGroupMessages() {
 
             if (!shouldSend) continue;
 
-            // ✅ 满足条件，可以发送该条消息
+            stats.processed++;
 
-            // 构建菜单 InlineKeyboard, 支持每行多个菜单按钮
+            // 构建菜单 InlineKeyboard
             let replyMarkup: InlineKeyboard | undefined = undefined;
             if (
               Array.isArray(nextMessage.menus) &&
               nextMessage.menus.length > 0
             ) {
-              const perRow = nextMessage.menus_per_row || 1; // 默认每行1个按钮
+              const perRow = nextMessage.menus_per_row || 1;
               replyMarkup = new InlineKeyboard();
 
               for (let i = 0; i < nextMessage.menus.length; i += perRow) {
@@ -191,14 +222,13 @@ export async function sendGroupMessages() {
                     url: menu.url,
                   }));
 
-                // 添加这一行按钮
                 if (buttons.length > 0) {
                   replyMarkup.add(...buttons).row();
                 }
               }
             }
 
-            // 如果成功，才发送消息
+            // 发送消息
             let sentMessageId: number | undefined;
             try {
               if (
@@ -218,7 +248,6 @@ export async function sendGroupMessages() {
                   result.message_id ||
                   result.media_group_messages?.[0]?.message_id;
               } else {
-                // 发送纯文本消息
                 const result = await telegramBot.api.sendMessage(
                   group.id,
                   nextMessage.content,
@@ -234,7 +263,7 @@ export async function sendGroupMessages() {
               await GroupMessageRecord.create({
                 groupMessage: nextMessage._id,
                 bot: bot._id,
-                proxy: message.proxy,
+                proxy: messageForGroup.proxy,
                 group: group._id,
                 groupId: group.id,
                 messageId: sentMessageId,
@@ -258,13 +287,12 @@ export async function sendGroupMessages() {
               console.log(
                 `[sendGroupMessages] 群 ${group.id} 成功发送消息 ${nextMessage._id}`,
               );
-              console.log(`[sendGroupMessages] 已向群组 ${group.id} 发送消息`);
             } catch (sendErr: any) {
               // 记录发送失败
               await GroupMessageRecord.create({
                 groupMessage: nextMessage._id,
                 bot: bot._id,
-                proxy: message.proxy,
+                proxy: messageForGroup.proxy,
                 group: group._id,
                 groupId: group.id,
                 content: nextMessage.content,
@@ -277,30 +305,24 @@ export async function sendGroupMessages() {
                 `[sendGroupMessages] 向群组 ${group?.id} 发送消息失败:`,
                 sendErr,
               );
+              stats.errors++;
             }
           } catch (err) {
-            // 外层错误已在内部处理
+            console.error(`[sendGroupMessages] 处理群组时出错:`, err);
+            stats.errors++;
             continue;
           }
         }
 
-        // 只有当消息至少发送到一个群组时才更新发送时间
         if (sentCount > 0) {
-          await GroupMessage.findByIdAndUpdate(message, {
-            updatedAt: currentTime,
-          });
           stats.sent++;
           console.log(
-            `[sendGroupMessages] 消息 ${message._id} 已成功发送到 ${sentCount}/${groups.length} 个群组`,
-          );
-        } else {
-          console.log(
-            `[sendGroupMessages] 消息 ${message._id} 没有成功发送到任何群组`,
+            `[sendGroupMessages] 机器人 ${bot.botName} 已成功发送到 ${sentCount} 个群组`,
           );
         }
       } catch (error) {
         console.error(
-          `[sendGroupMessages] 处理消息 ${message._id} 时发生错误:`,
+          `[sendGroupMessages] 处理机器人 ${botId} 时发生错误:`,
           error,
         );
         stats.errors++;
@@ -313,11 +335,11 @@ export async function sendGroupMessages() {
     const taskDuration = (endTime.getTime() - currentTime.getTime()) / 1000;
 
     console.log('\n========== 群发消息任务统计 ==========');
-    console.log(`[统计信息] 总消息数: ${stats.processed}`);
-    console.log(`[统计信息] 发送消息数: ${stats.sent}`);
+    console.log(`[统计信息] 处理的群组数: ${stats.processed}`);
+    console.log(`[统计信息] 发送成功的机器人数: ${stats.sent}`);
     console.log(`[统计信息] 无权限跳过: ${stats.noPermission}`);
     console.log(`[统计信息] 其他跳过: ${stats.skipped}`);
-    console.log(`[统计信息] 错误消息数: ${stats.errors}`);
+    console.log(`[统计信息] 错误数: ${stats.errors}`);
     console.log(`[统计信息] 任务总耗时: ${taskDuration.toFixed(2)}秒`);
     console.log('========== 群发消息任务完成 ==========');
   } catch (error) {
