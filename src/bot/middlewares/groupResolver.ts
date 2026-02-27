@@ -361,6 +361,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     for (const member of newMembers) {
       // 跳过机器人自己
       if (member.is_bot && member.id === ctx.me.id) {
+        debug('Skipping bot itself');
         continue;
       }
 
@@ -368,8 +369,21 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         member.first_name + (member.last_name ? ` ${member.last_name}` : '');
       const username = member.username ? `@${member.username}` : memberName;
 
+      debug(`Processing member: ${username} (ID: ${member.id})`);
+      debug('Bot groupVerify:', ctx.currentBot.groupVerify);
+      debug('Bot groupWelcome:', ctx.currentBot.groupWelcome);
+      debug(
+        'canUseGroupVerify:',
+        PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot),
+      );
+      debug(
+        'canUseGroupWelcome:',
+        PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot),
+      );
+
       // 处理群组验证（验证通过后会自动发送欢迎消息）
       if (PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot)) {
+        debug('Attempting to send verification message...');
         try {
           // 发送验证消息，使用新成员的 ID 来生成回调数据
           await sendGroupVerifyMessage(
@@ -378,14 +392,15 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
             ctx.currentBot.groupVerify,
             member.id, // 传递新成员的 ID
           );
-          debug(`Verification message sent for new member: ${username}`);
+          debug(`✅ Verification message sent for new member: ${username}`);
         } catch (error) {
-          debug('Failed to send verification message:', error);
+          debug('❌ Failed to send verification message:', error);
         }
       } else if (
         PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)
       ) {
         // 没有开启验证时，直接发送欢迎消息
+        debug('Attempting to send welcome message...');
         try {
           await sendGroupWelcomeMessage(
             ctx,
@@ -393,10 +408,12 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
             memberName,
             ctx.currentBot.groupWelcome,
           );
-          debug(`Welcome message sent for new member: ${username}`);
+          debug(`✅ Welcome message sent for new member: ${username}`);
         } catch (error) {
-          debug('Failed to send welcome message:', error);
+          debug('❌ Failed to send welcome message:', error);
         }
+      } else {
+        debug('⚠️ No welcome or verify permission, skipping message');
       }
     }
 
