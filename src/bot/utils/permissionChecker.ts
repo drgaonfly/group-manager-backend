@@ -10,13 +10,13 @@ export class PermissionChecker {
    * @param proxyUser 代理用户
    * @returns 是否被禁用
    */
-  private static isFunctionDisabled(proxyUser: IUser | null): boolean {
-    if (!proxyUser || !proxyUser.function_disabledAt) {
-      return false;
-    }
-    // 检查是否到期（当前时间小于禁用时间表示还在禁用期内）
-    return new Date() < new Date(proxyUser.function_disabledAt);
-  }
+  // private static isFunctionDisabled(proxyUser: IUser | null): boolean {
+  //   if (!proxyUser || !proxyUser.function_disabledAt) {
+  //     return false;
+  //   }
+  //   // 检查是否到期（当前时间小于禁用时间表示还在禁用期内）
+  //   return new Date() < new Date(proxyUser.function_disabledAt);
+  // }
 
   /**
    * 检查群内统计功能是否可用
@@ -25,9 +25,6 @@ export class PermissionChecker {
    * @returns 是否可用
    */
   static canUseSpeechStatic(proxyUser: IUser | null, bot: IBot): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     return !!(proxyUser?.speech_static && bot?.canSpeechStatic);
   }
 
@@ -38,9 +35,6 @@ export class PermissionChecker {
    * @returns 是否可用
    */
   static canUseFreeKeyboard(proxyUser: IUser | null, bot: IBot): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     return !!(proxyUser?.keyboardConfig && bot?.canFreeKeyboard);
   }
 
@@ -51,9 +45,6 @@ export class PermissionChecker {
    * @returns 是否可用
    */
   static canUseGroupMessaging(proxyUser: IUser | null, bot: IBot): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     return !!(proxyUser?.groupMessage && bot?.canGroupMessaging);
   }
 
@@ -64,30 +55,18 @@ export class PermissionChecker {
    * @returns 是否可用
    */
   static canUseBidirectional(proxyUser: IUser | null, bot: IBot): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     return !!(proxyUser?.bidirectional && bot?.canBidirectional);
   }
 
   static canUseGroupWelcome(proxyUser: IUser | null, bot: IBot): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     return !!(proxyUser?.groupWelcome && bot?.canGroupWelcome);
   }
 
   static canUseChannelPost(proxyUser: IUser | null, bot: IBot): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     return !!(proxyUser?.channelPost && bot?.canOpenChannelPost);
   }
 
   static canUseGroupVerify(proxyUser: IUser | null, bot: IBot): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     // 检查权限开启 + 配置完整（有问题和答案选项）
     const config = bot?.groupVerify;
     const hasValidConfig = !!(
@@ -102,9 +81,6 @@ export class PermissionChecker {
     proxyUser: IUser | null,
     bot: IBot,
   ): boolean {
-    if (this.isFunctionDisabled(proxyUser)) {
-      return false;
-    }
     return !!(
       proxyUser?.reportGroupMemberNameUpdated && bot?.canReportMemberNameUpdated
     );
