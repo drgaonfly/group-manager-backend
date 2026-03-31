@@ -21,7 +21,6 @@ findTeacherCommand.hears(/找老师\s*(.*)/, checkInBot, async (ctx) => {
 
   // 先在 BotUser 中模糊搜索
   const botUsers = await BotUser.find({
-    bot: ctx.currentBot!._id,
     $or: [
       { userName: { $regex: query, $options: 'i' } },
       { firstName: { $regex: query, $options: 'i' } },
