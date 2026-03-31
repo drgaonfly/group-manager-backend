@@ -4,7 +4,8 @@ import { MyContext } from '../../../types';
 import { checkInBot } from '../../../middlewares/checkInBot';
 import { checkTeaching } from '../../../middlewares/checkTeaching';
 import Teacher from '../../../../models/teacher';
-import BotUser from '../../../../models/botUser';
+import { IBot } from '../../../../models/bot';
+import BotUser, { IBotUser } from '../../../../models/botUser';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:teaching:writeReview');
@@ -24,8 +25,8 @@ async function writeRiviewOtherTeacherConversation(
     bot,
     botUser,
   }: {
-    bot: any;
-    botUser: any;
+    bot: IBot;
+    botUser: IBotUser;
   },
 ) {
   await ctx.reply(
@@ -87,7 +88,7 @@ async function writeRiviewOtherTeacherConversation(
   const botUserIds = candidatesBotUsers.map((u) => u._id);
 
   const teachers = await Teacher.find({
-    bot: ctx.currentBot!._id,
+    bot: bot!._id,
     botUser: { $in: botUserIds },
     status: 'approved',
   })
