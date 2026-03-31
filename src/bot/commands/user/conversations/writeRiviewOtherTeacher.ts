@@ -72,8 +72,6 @@ async function writeRiviewOtherTeacherConversation(
   const safe = escapeRegExp(teacherKey);
   const regex = new RegExp(safe, 'i');
 
-  const reviewerUsername = botUser?.userName;
-
   const candidatesBotUsers = await BotUser.find({
     $or: [{ userName: regex }, { firstName: regex }, { lastName: regex }],
   })
