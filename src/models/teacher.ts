@@ -13,6 +13,11 @@ export interface ITeacher extends Document {
   isAvailable: boolean; // 建议将 isClass (是否上课) 改为 isAvailable (是否营业/接单中) 更符合语义
   reviews: string[];
 
+  images: string[];
+  videos: string[];
+
+  brief: string;
+
   status: string;
   remark: string;
 }
@@ -38,6 +43,9 @@ const teacherSchema = new mongoose.Schema(
     contactLink: { type: String, required: true }, // 修正拼写
     isAvailable: { type: Boolean, required: true, default: false }, // 原 isClass
     reviews: { type: [String], required: true, default: [] },
+    images: { type: [String], required: true, default: [] },
+    videos: { type: [String], required: true, default: [] },
+    brief: { type: String, default: '' },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],

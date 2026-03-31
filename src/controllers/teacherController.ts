@@ -1,3 +1,4 @@
+import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { Request, Response } from 'express';
 import Teacher from '../models/teacher';
 import handleAsync from '../utils/handleAsync';
@@ -23,11 +24,32 @@ export const getTeachers = handleAsync(
       .limit(+pageSize)
       .exec();
 
+    const teachersWithUrls = await Promise.all(
+      teachers.map(async (teacher) => {
+        const teacherObj = teacher.toObject();
+
+        // 转换图片路径
+        if (teacherObj.images && teacherObj.images.length > 0) {
+          teacherObj.images = await Promise.all(
+            teacherObj.images.map((path: string) => generateSignedUrl(path)),
+          );
+        }
+
+        // 转换视频路径
+        if (teacherObj.videos && teacherObj.videos.length > 0) {
+          teacherObj.videos = await Promise.all(
+            teacherObj.videos.map((path: string) => generateSignedUrl(path)),
+          );
+        }
+        return teacherObj;
+      }),
+    );
+
     const total = await Teacher.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: teachers,
+      data: teachersWithUrls,
       total,
       current: +current,
       pageSize: +pageSize,
