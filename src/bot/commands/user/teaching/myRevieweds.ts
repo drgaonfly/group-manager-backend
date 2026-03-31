@@ -1,13 +1,14 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import { checkInBot } from '../../../middlewares/checkInBot';
+import { checkTeaching } from '../../../middlewares/checkTeaching';
 import Teacher from '../../../../models/teacher';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:teaching:myRevieweds');
 const myReviewedsCommand = new Composer<MyContext>();
 
-myReviewedsCommand.hears(/我的车评/, checkInBot, async (ctx) => {
+myReviewedsCommand.hears(/我的车评/, checkInBot, checkTeaching, async (ctx) => {
   debug('my reviews');
 
   const teacher = await Teacher.findOne({

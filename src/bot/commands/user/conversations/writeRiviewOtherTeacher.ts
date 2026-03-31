@@ -2,6 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { createConversation, Conversation } from '@grammyjs/conversations';
 import { MyContext } from '../../../types';
 import { checkInBot } from '../../../middlewares/checkInBot';
+import { checkTeaching } from '../../../middlewares/checkTeaching';
 import Teacher from '../../../../models/teacher';
 import BotUser from '../../../../models/botUser';
 import createDebug from 'debug';
@@ -177,8 +178,9 @@ writeReviewComposer.use(
   createConversation(writeRiviewOtherTeacherConversation),
 );
 
-writeReviewComposer.hears(/写车评/, checkInBot, async (ctx) => {
+writeReviewComposer.hears(/写车评/, checkInBot, checkTeaching, async (ctx) => {
   await ctx.conversation.exitAll();
+
   await ctx.conversation.enter('writeRiviewOtherTeacherConversation', {
     bot: ctx.currentBot,
     botUser: ctx.currentBotUser,

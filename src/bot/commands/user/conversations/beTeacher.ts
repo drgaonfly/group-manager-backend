@@ -2,6 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { createConversation, Conversation } from '@grammyjs/conversations';
 import { MyContext } from '../../../types';
 import { checkInBot } from '../../../middlewares/checkInBot';
+import { checkTeaching } from '../../../middlewares/checkTeaching';
 import Teacher from '../../../../models/teacher';
 import createDebug from 'debug';
 
@@ -88,13 +89,8 @@ async function beTeacherConversation(
 
 beTeacherComposer.use(createConversation(beTeacherConversation));
 
-beTeacherComposer.hears(/注册老师/, checkInBot, async (ctx) => {
+beTeacherComposer.hears(/注册老师/, checkInBot, checkTeaching, async (ctx) => {
   await ctx.conversation.exitAll();
-
-  if (!ctx.currentProxyUser?.teaching && !ctx.currentBot.canTeaching) {
-    debug('用户不是老师且机器人不允许老师注册');
-    return;
-  }
 
   const teacher = await Teacher.findOne({
     bot: ctx.currentBot._id,
