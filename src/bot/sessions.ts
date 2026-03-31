@@ -17,6 +17,7 @@ export interface SessionData {
   admin?: {
     targetUserId?: number;
   };
+  lastTeacherMenuId?: number;
 }
 
 // 定义初始会话状态
