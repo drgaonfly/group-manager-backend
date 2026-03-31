@@ -6,8 +6,6 @@ import { checkTeaching } from '../../../middlewares/checkTeaching';
 import Teacher from '../../../../models/teacher';
 import { downloadTelegramFile } from '../../../services/dowlnloader';
 import createDebug from 'debug';
-import path from 'path';
-import fs from 'fs';
 
 const debug = createDebug('bot:teaching:beTeacher');
 const beTeacherComposer = new Composer<MyContext>();
@@ -18,8 +16,6 @@ const finishKeyboard = new InlineKeyboard()
   .text('✅ 完成上传', 'finish_media')
   .row()
   .text('❌ 取消', 'close');
-
-const UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'teachers');
 
 function normalizeContactLink(input: string) {
   const text = input.trim();
@@ -184,7 +180,7 @@ async function beTeacherConversation(
         await ctx.reply('请至少上传一张图片或一段视频');
         continue;
       }
-      break;
+      continue;
     }
 
     const botToken = ctx.api.token;
@@ -192,11 +188,7 @@ async function beTeacherConversation(
     if (mediaResult.message?.photo) {
       const photo = mediaResult.message.photo.pop();
       if (photo) {
-        const fileName = await downloadTelegramFile(
-          botToken,
-          photo.file_id,
-          UPLOADS_DIR,
-        );
+        const fileName = await downloadTelegramFile(botToken, photo.file_id);
         if (fileName) {
           images.push(fileName);
           await ctx.reply(`已收到图片 (${images.length})`, {
@@ -206,11 +198,7 @@ async function beTeacherConversation(
       }
     } else if (mediaResult.message?.video) {
       const video = mediaResult.message.video;
-      const fileName = await downloadTelegramFile(
-        botToken,
-        video.file_id,
-        UPLOADS_DIR,
-      );
+      const fileName = await downloadTelegramFile(botToken, video.file_id);
       if (fileName) {
         videos.push(fileName);
         await ctx.reply(`已收到视频 (${videos.length})`, {
