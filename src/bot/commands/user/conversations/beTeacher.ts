@@ -90,6 +90,23 @@ beTeacherComposer.use(createConversation(beTeacherConversation));
 
 beTeacherComposer.hears(/注册老师/, checkInBot, async (ctx) => {
   await ctx.conversation.exitAll();
+
+  if (!ctx.currentProxyUser?.teaching && !ctx.currentBot.canTeaching) {
+    debug('用户不是老师且机器人不允许老师注册');
+    return;
+  }
+
+  const teacher = await Teacher.findOne({
+    bot: ctx.currentBot._id,
+    botUser: ctx.currentBotUser._id,
+  });
+
+  if (teacher) {
+    debug('用户已经是老师');
+    await ctx.reply('你已经是老师了，无需重复注册');
+    return;
+  }
+
   await ctx.conversation.enter('beTeacherConversation', {
     bot: ctx.currentBot,
     botUser: ctx.currentBotUser,
