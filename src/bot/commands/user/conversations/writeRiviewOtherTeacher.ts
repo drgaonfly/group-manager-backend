@@ -42,11 +42,11 @@ async function writeRiviewOtherTeacherConversation(
     },
   );
 
-  // if (result.callbackQuery?.data === 'close') {
-  //   await ctx.deleteMessage();
-  //   await ctx.reply('❌ 已取消操作');
-  //   return;
-  // }
+  if (result.callbackQuery?.data === 'close') {
+    await ctx.deleteMessage();
+    await ctx.reply('❌ 已取消操作');
+    return;
+  }
 
   const text = result.message?.text?.trim() || '';
   const parts = text.split(/\s+/);
@@ -153,10 +153,6 @@ async function writeRiviewOtherTeacherConversation(
   });
 
   const data = pick.callbackQuery?.data;
-  if (!data || data === 'close') {
-    await ctx.reply('❌ 已取消操作');
-    return;
-  }
 
   const m = data.match(/^teach_review_select:(.+)$/);
   if (!m) {

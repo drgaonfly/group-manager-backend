@@ -44,11 +44,11 @@ async function beTeacherConversation(
     },
   );
 
-  // if (result.callbackQuery?.data === 'close') {
-  //   await ctx.deleteMessage();
-  //   await ctx.reply('❌ 已取消操作');
-  //   return;
-  // }
+  if (result.callbackQuery?.data === 'close') {
+    await ctx.deleteMessage();
+    await ctx.reply('❌ 已取消操作');
+    return;
+  }
 
   const contactLinkRaw = result.message?.text;
   const contactLink = contactLinkRaw
