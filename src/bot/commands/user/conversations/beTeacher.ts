@@ -161,7 +161,8 @@ async function beTeacherConversation(
   const images: string[] = [];
   const videos: string[] = [];
 
-  while (true) {
+  let isUploading = true;
+  while (isUploading) {
     const mediaResult = await conversation.waitFor(
       ['message:photo', 'message:video', 'callback_query:data'],
       {
@@ -180,6 +181,7 @@ async function beTeacherConversation(
         await ctx.reply('请至少上传一张图片或一段视频');
         continue;
       }
+      isUploading = false;
       continue;
     }
 
