@@ -42,11 +42,11 @@ async function writeRiviewOtherTeacherConversation(
     },
   );
 
-  if (result.callbackQuery?.data === 'close') {
-    await ctx.deleteMessage();
-    await ctx.reply('❌ 已取消操作');
-    return;
-  }
+  // if (result.callbackQuery?.data === 'close') {
+  //   await ctx.deleteMessage();
+  //   await ctx.reply('❌ 已取消操作');
+  //   return;
+  // }
 
   const text = result.message?.text?.trim() || '';
   const parts = text.split(/\s+/);
