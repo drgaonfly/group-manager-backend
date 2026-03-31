@@ -85,6 +85,7 @@ export interface IBot extends Document {
 
   // 群抽奖
   canLotteryRule: boolean;
+  canTeaching: boolean;
 }
 
 export interface IMenu extends Document {
@@ -351,6 +352,11 @@ const botSchema = new mongoose.Schema(
       required: false,
       default: false,
     },
+    canTeaching: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -387,6 +393,13 @@ botSchema.virtual('botUserConfigs', {
 // 虚拟字段：关联的抽奖活动
 botSchema.virtual('lotteries', {
   ref: 'Lottery',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
+// 虚拟字段：关联的老师
+botSchema.virtual('teachers', {
+  ref: 'Teacher',
   localField: '_id',
   foreignField: 'bot',
 });

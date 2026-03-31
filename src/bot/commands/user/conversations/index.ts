@@ -1,18 +1,11 @@
 import { Composer } from 'grammy';
-import cloneConversation from './clone';
-import addAddressConversation from './addWallte';
-import setWalletConversation from './setWallet';
-import usdtToTrxExchangeConversation from './usdt2trx';
-import trxToUsdtExchangeConversation from './trx2usdt';
-import transferExchangeConversation from './transfer';
+
+import beTeacherConversation from './beTeacher';
+import writeRiviewOtherTeacherConversation from './writeRiviewOtherTeacher';
 
 const conversationsComposer = new Composer();
 
-conversationsComposer.use(cloneConversation.middleware());
-conversationsComposer.use(addAddressConversation.middleware());
-conversationsComposer.use(setWalletConversation.middleware());
-conversationsComposer.use(usdtToTrxExchangeConversation.middleware());
-conversationsComposer.use(trxToUsdtExchangeConversation.middleware());
-conversationsComposer.use(transferExchangeConversation.middleware());
+conversationsComposer.use(beTeacherConversation.middleware());
+conversationsComposer.use(writeRiviewOtherTeacherConversation.middleware());
 
 export default conversationsComposer;

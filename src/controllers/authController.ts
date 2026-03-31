@@ -240,6 +240,7 @@ const updateUserProfile = handleAsync(
       availableBotCount,
       checkinRule,
       lotteryRule,
+      teaching,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -314,6 +315,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof lotteryRule !== 'undefined') {
         updateData.lotteryRule = lotteryRule;
+      }
+      if (typeof teaching !== 'undefined') {
+        updateData.teaching = teaching;
       }
     }
 

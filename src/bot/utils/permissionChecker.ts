@@ -66,6 +66,10 @@ export class PermissionChecker {
     return !!(proxyUser?.channelPost && bot?.canOpenChannelPost);
   }
 
+  static canUseTeaching(proxyUser: IUser | null, bot: IBot): boolean {
+    return !!(proxyUser?.teaching && bot?.canTeaching);
+  }
+
   static canUseGroupVerify(proxyUser: IUser | null, bot: IBot): boolean {
     // 检查权限开启 + 配置完整（有问题和答案选项）
     const config = bot?.groupVerify;
@@ -101,6 +105,7 @@ export class PermissionChecker {
       groupWelcome: this.canUseGroupWelcome(proxyUser, bot),
       channelPost: this.canUseChannelPost(proxyUser, bot),
       groupVerify: this.canUseGroupVerify(proxyUser, bot),
+      teaching: this.canUseTeaching(proxyUser, bot),
     };
   }
 }

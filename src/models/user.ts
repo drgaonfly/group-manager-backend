@@ -39,6 +39,7 @@ export interface IUser extends Document {
   replyRule: boolean; // 关键词回复
   checkinRule: boolean;
   lotteryRule: boolean;
+  teaching: boolean;
 }
 
 const userSchema = new mongoose.Schema(
@@ -100,6 +101,7 @@ const userSchema = new mongoose.Schema(
     replyRule: { type: Boolean, default: false }, // 关键词回复
     checkinRule: { type: Boolean, default: false },
     lotteryRule: { type: Boolean, default: false },
+    teaching: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

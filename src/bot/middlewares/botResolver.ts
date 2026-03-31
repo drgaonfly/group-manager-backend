@@ -1,5 +1,7 @@
 import { Middleware } from 'grammy';
 import Bot from '../../models/bot';
+import '../../models/groupWelcome';
+import '../../models/groupVerify';
 import { MyContext } from '../types';
 import createDebug from 'debug';
 // import { startClientAndGetSession } from '../services/gramClient';

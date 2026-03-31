@@ -9,6 +9,7 @@ import contactComposer from './contact';
 import profileComposer from './profile';
 import speechStaticComposer from './speechStatic';
 import startingComposer from './starting';
+import teachingComposer from './teaching';
 // import cloneComposer from './clone';
 // import walletComposer from './wallet';
 // import exchangeComposer from './exchange';
@@ -31,6 +32,8 @@ const userComposer = new Composer();
 // 在机器人使用的
 
 userComposer.use(startComposer.middleware());
+userComposer.use(teachingComposer);
+userComposer.use(conversationsComposer.middleware());
 userComposer.use(speechStaticComposer.middleware());
 userComposer.use(profileComposer.middleware());
 userComposer.use(startingComposer.middleware());
@@ -42,7 +45,6 @@ userComposer.use(checkinComposer.middleware());
 // userComposer.use(walletComposer.middleware());
 // userComposer.use(exchangeComposer.middleware());
 userComposer.use(veryfiyComposer.middleware());
-userComposer.use(conversationsComposer.middleware());
 // userComposer.use(spreadComposer.middleware());
 // userComposer.use(linkComposer.middleware());
 // userComposer.use(orderComposer.middleware());

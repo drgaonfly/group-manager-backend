@@ -126,6 +126,13 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('groupWelcome')
     .populate('groupVerify')
     .populate({
+      path: 'teachers',
+      populate: {
+        path: 'botUser',
+        select: 'id userName firstName lastName',
+      },
+    })
+    .populate({
       path: 'botUserConfigs',
       populate: [
         {
