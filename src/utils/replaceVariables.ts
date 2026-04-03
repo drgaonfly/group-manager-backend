@@ -28,6 +28,7 @@ export const replaceVariables = (
   userBalance?: number,
   botName?: string,
   userBalanceRanking?: number,
+  userBalanceRankingList?: string,
 ): string => {
   if (!content) return content;
 
@@ -51,6 +52,12 @@ export const replaceVariables = (
     userBalanceRanking !== undefined && userBalanceRanking !== null
       ? String(userBalanceRanking)
       : '',
+  );
+
+  // 替换榜单变量
+  result = result.replace(
+    /\{userBalanceRankingList\}/g,
+    userBalanceRankingList || '',
   );
 
   // 如果有成员信息，替换成员相关变量
@@ -109,6 +116,7 @@ export const replaceLotteryVariables = (
     userId?: number;
     userName?: string;
     userBalanceRanking?: number;
+    userBalanceRankingList?: string;
   } = {},
 ): string => {
   if (!content) return content;
@@ -158,6 +166,10 @@ export const replaceLotteryVariables = (
         options.userBalanceRanking !== null
         ? String(options.userBalanceRanking)
         : '',
+    )
+    .replace(
+      /\{userBalanceRankingList\}/g,
+      options.userBalanceRankingList || '',
     );
 
   return result;

@@ -6,6 +6,7 @@ import botResolver from './middlewares/botResolver';
 import botUserResolver from './middlewares/botUserResolver';
 import groupResolver from './middlewares/groupResolver';
 import replyRuleHandler from './middlewares/replyRuleHandler';
+import { rankingPaginationHandler } from './middlewares/rankingPaginationHandler';
 import { privateCommandsList, groupCommandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
@@ -80,6 +81,7 @@ export const setupBot = (token: string) => {
   bot.use(proxyResolver);
   bot.use(errorHandler);
   bot.use(logger);
+  bot.use(rankingPaginationHandler);
   bot.use(replyRuleHandler);
   bot.use(userComposer.middleware());
   // bot.use(adminComposer.middleware());

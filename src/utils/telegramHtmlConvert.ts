@@ -11,6 +11,7 @@ export interface MessageVariables {
   currentTime?: string; // 当前时间
   currentBot?: string; // 当前机器人昵称
   userBalanceRanking?: string; // 用户积分排名
+  userBalanceRankingList?: string; // 用户积分榜单
 }
 
 /**
@@ -80,6 +81,14 @@ export function replaceMessageVariables(
     result = result.replace(
       /\{userBalanceRanking\}/gi,
       variables.userBalanceRanking,
+    );
+  }
+
+  // 替换用户积分榜单
+  if (variables.userBalanceRankingList) {
+    result = result.replace(
+      /\{userBalanceRankingList\}/gi,
+      variables.userBalanceRankingList,
     );
   }
 

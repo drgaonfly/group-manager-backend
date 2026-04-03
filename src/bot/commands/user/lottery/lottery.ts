@@ -7,7 +7,10 @@ import { convertToTelegramHtml } from '../../../../bot/utils/telegramHtml';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import { replaceLotteryVariables } from '../../../../utils/replaceVariables';
 import { checkGroup } from '../../../middlewares/checkGroup';
-import { getGroupUserRanking } from '../../../../services/rankingService';
+import {
+  getGroupUserRanking,
+  getGroupUserRankingList,
+} from '../../../../services/rankingService';
 
 export const lotteryCommand = new Composer<MyContext>();
 
@@ -292,6 +295,11 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
         ctx.currentGroup?.botUsers as any,
       );
 
+      const userBalanceRankingList = await getGroupUserRankingList(
+        ctx.currentBot._id,
+        ctx.currentGroup?.botUsers as any,
+      );
+
       return replaceLotteryVariables(content, lottery, {
         joinNum,
         currentBot: `@${ctx.currentBot.userName}`,
@@ -301,6 +309,7 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
         userId: ctx.from?.id,
         userName: ctx.from?.username ? `@${ctx.from.username}` : '',
         userBalanceRanking,
+        userBalanceRankingList,
       } as any);
     };
 

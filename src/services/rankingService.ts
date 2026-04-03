@@ -25,3 +25,57 @@ export const getGroupUserRanking = async (
 
   return rank + 1;
 };
+
+/**
+ * 获取特定群组内的积分榜单
+ * @param botId 机器人 ID
+ * @param groupBotUserIds 群组内的所有成员 ID 列表
+ * @param page 页码（从 1 开始）
+ * @param limit 每页数量
+ * @returns 格式化后的榜单字符串和是否有下一页
+ */
+export const getGroupUserRankingList = async (
+  botId: string | Types.ObjectId,
+  groupBotUserIds?: (string | Types.ObjectId)[],
+  page: number = 1,
+  limit: number = 10,
+): Promise<{ text: string; hasNext: boolean; total: number }> => {
+  if (!groupBotUserIds || groupBotUserIds.length === 0) {
+    return { text: '暂无榜单数据', hasNext: false, total: 0 };
+  }
+
+  const total = await BotUserConfig.countDocuments({
+    bot: botId,
+    botUser: { $in: groupBotUserIds },
+  });
+
+  const skip = (page - 1) * limit;
+
+  const configs = await BotUserConfig.find({
+    bot: botId,
+    botUser: { $in: groupBotUserIds },
+  })
+    .sort({ usdt_balance: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate('botUser');
+
+  if (configs.length === 0) {
+    return { text: '暂无榜单数据', hasNext: false, total };
+  }
+
+  const list = configs
+    .map((config: any, index: number) => {
+      const botUser = config.botUser;
+      const nickname = botUser?.displayName || `用户${botUser?.id || ''}`;
+      const balance = config.usdt_balance || 0;
+      return `${skip + index + 1}、${nickname} ${balance}`;
+    })
+    .join('\n');
+
+  return {
+    text: `本群积分榜如下：\n${list}`,
+    hasNext: skip + configs.length < total,
+    total,
+  };
+};

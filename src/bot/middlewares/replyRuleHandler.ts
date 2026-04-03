@@ -4,7 +4,10 @@ import ReplyRule from '../../models/replyRule';
 import { generateSignedUrl } from '../../utils/generateSignedUrl';
 import { replaceVariables, MemberInfo } from '../../utils/replaceVariables';
 import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
-import { getGroupUserRanking } from '../../services/rankingService';
+import {
+  getGroupUserRanking,
+  getGroupUserRankingList,
+} from '../../services/rankingService';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:replyRule');
@@ -126,6 +129,13 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       ctx.currentGroup?.botUsers as any,
     );
 
+    // 获取用户积分榜单
+    const rankingListData = await getGroupUserRankingList(
+      botId,
+      ctx.currentGroup?.botUsers as any,
+    );
+    const userBalanceRankingList = rankingListData.text;
+
     // 替换变量
     const content = replaceVariables(
       matchedRule.content,
@@ -134,7 +144,32 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       ctx.currentBotUserConfig?.usdt_balance,
       `@${ctx.currentBot?.userName}`,
       userBalanceRanking,
+      userBalanceRankingList,
     );
+
+    // 构建内联键盘
+    const inlineButtons: any[] = [];
+
+    // 如果有分页，添加分页按钮
+    if (rankingListData.hasNext || rankingListData.total > 10) {
+      const currentPage = 1;
+      const buttons = [];
+      if (currentPage > 1) {
+        buttons.push({
+          text: '⬅️ 上一页',
+          callback_data: `rank_page_${currentPage - 1}`,
+        });
+      }
+      if (rankingListData.hasNext) {
+        buttons.push({
+          text: '下一页 ➡️',
+          callback_data: `rank_page_${currentPage + 1}`,
+        });
+      }
+      if (buttons.length > 0) {
+        inlineButtons.push(buttons);
+      }
+    }
 
     // 构建回复选项
     const replyOptions: any = {
@@ -146,12 +181,19 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       replyOptions.reply_to_message_id = ctx.message.message_id;
     }
 
-    // 构建内联键盘
+    // 合并自定义菜单
     if (matchedRule.menus && matchedRule.menus.length > 0) {
-      replyOptions.reply_markup = buildInlineKeyboard(
+      const customKeyboard = buildInlineKeyboard(
         matchedRule.menus,
         matchedRule.menus_per_row || 1,
       );
+      if (customKeyboard && customKeyboard.inline_keyboard) {
+        inlineButtons.push(...customKeyboard.inline_keyboard);
+      }
+    }
+
+    if (inlineButtons.length > 0) {
+      replyOptions.reply_markup = { inline_keyboard: inlineButtons };
     }
 
     // 发送回复

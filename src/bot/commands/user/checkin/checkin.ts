@@ -7,7 +7,10 @@ import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import { hasCheckedInToday, isFirstTimeCheckin } from './handleCheckin';
 import { replaceMessageVariables } from '../../../../utils/telegramHtmlConvert';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
-import { getGroupUserRanking } from '../../../../services/rankingService';
+import {
+  getGroupUserRanking,
+  getGroupUserRankingList,
+} from '../../../../services/rankingService';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:checkin');
@@ -132,6 +135,12 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     );
     const userBalanceRanking = rankingNum ? String(rankingNum) : undefined;
 
+    const rankingListData = await getGroupUserRankingList(
+      botId,
+      ctx.currentGroup?.botUsers as any,
+    );
+    const userBalanceRankingList = rankingListData.text;
+
     const variables = {
       username: ctx.currentBotUser.userName
         ? `@${ctx.currentBotUser.userName}`
@@ -140,6 +149,7 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       userId: String(ctx.currentBotUser.id),
       userBalance: String(botUserConfig.usdt_balance ?? 0),
       userBalanceRanking,
+      userBalanceRankingList,
       groupTitle: ctx.currentGroup.title || '',
       currentTime: formatBeijingDate(new Date()),
       currentBot: `@${ctx.currentBot.userName}`,
