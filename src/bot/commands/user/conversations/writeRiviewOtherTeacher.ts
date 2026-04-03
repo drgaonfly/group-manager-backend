@@ -231,7 +231,8 @@ async function writeRiviewOtherTeacherConversation(
     reply_markup: getMenuKeyboard(),
   });
 
-  while (true) {
+  let isRunning = true;
+  while (isRunning) {
     const interaction = await conversation.waitFor(
       ['callback_query:data', 'message:text', 'message:photo', 'message:video'],
       {
@@ -249,6 +250,7 @@ async function writeRiviewOtherTeacherConversation(
 
       if (data === 'close') {
         await ctx.reply('❌ 已取消');
+        isRunning = false;
         break;
       }
 
@@ -273,7 +275,9 @@ async function writeRiviewOtherTeacherConversation(
           const val = parseInt(input.message.text);
           try {
             await ctx.api.deleteMessage(ctx.chat!.id, input.message.message_id);
-          } catch (e) {}
+          } catch (e) {
+            debug('Delete input message failed:', e);
+          }
           if (!isNaN(val) && val >= 0 && val <= 10) {
             ratings[key] = val / 2;
           } else {
@@ -284,7 +288,7 @@ async function writeRiviewOtherTeacherConversation(
               () =>
                 ctx.api
                   .deleteMessage(ctx.chat!.id, errorMsg.message_id)
-                  .catch(() => {}),
+                  .catch((err) => debug('Delete error msg failed', err)),
               3000,
             );
           }
@@ -306,7 +310,9 @@ async function writeRiviewOtherTeacherConversation(
           process_desc = input.message.text;
           try {
             await ctx.api.deleteMessage(ctx.chat!.id, input.message.message_id);
-          } catch (e) {}
+          } catch (e) {
+            debug('Delete desc input failed:', e);
+          }
         }
       } else if (data === 'upload_media') {
         await ctx.api.editMessageText(
@@ -321,12 +327,14 @@ async function writeRiviewOtherTeacherConversation(
           },
         );
 
-        while (true) {
+        let isUploading = true;
+        while (isUploading) {
           const media = await conversation.waitFor(
             ['message:photo', 'message:video', 'callback_query:data'],
             { maxMilliseconds: 300000 },
           );
           if (media.callbackQuery?.data === 'done_media') {
+            isUploading = false;
             break;
           }
 
@@ -344,7 +352,9 @@ async function writeRiviewOtherTeacherConversation(
                   ctx.chat!.id,
                   media.message.message_id,
                 );
-              } catch (e) {}
+              } catch (e) {
+                debug('Delete photo failed:', e);
+              }
               await ctx.reply(`已收到图片 (${proof_media.length})`, {
                 reply_markup: new InlineKeyboard().text(
                   '✅ 完成上传',
@@ -365,7 +375,9 @@ async function writeRiviewOtherTeacherConversation(
                   ctx.chat!.id,
                   media.message.message_id,
                 );
-              } catch (e) {}
+              } catch (e) {
+                debug('Delete video failed:', e);
+              }
               await ctx.reply(`已收到视频 (${proof_media.length})`, {
                 reply_markup: new InlineKeyboard().text(
                   '✅ 完成上传',
@@ -387,7 +399,7 @@ async function writeRiviewOtherTeacherConversation(
             () =>
               ctx.api
                 .deleteMessage(ctx.chat!.id, errorMsg.message_id)
-                .catch(() => {}),
+                .catch((err) => debug('Delete error msg failed', err)),
             3000,
           );
           continue;
@@ -409,6 +421,7 @@ async function writeRiviewOtherTeacherConversation(
           menuMsg.message_id,
           '✅ 评价已提交，请等待管理员审核。',
         );
+        isRunning = false;
         break;
       }
 
