@@ -32,8 +32,8 @@ const getTeacherMenu = async (ctx: MyContext, page: number) => {
     `以下为所有老师：`,
     `状态说明： 🟢可约  🔴休息中`,
     ``,
-    `发送：**老师 名字** 可以跳出老师描述和榜单`,
-    `发送：**老师 飞机号** 可以查看老师名下所有车评`,
+    `发送：**<b>老师</b> 名字** 可以跳出老师描述和榜单`,
+    `发送：**<b>老师飞机号</b>** 可以查看老师名下所有车评`,
   ].join('\n');
 
   // 3. 构建内联键盘 (一行三个)
@@ -85,7 +85,7 @@ menuingTeacherCommand.hears('老师', checkGroup, checkTeaching, async (ctx) => 
   const { text, keyboard } = await getTeacherMenu(ctx, 1);
   const sentMessage = await ctx.reply(text, {
     reply_markup: keyboard || undefined,
-    parse_mode: 'Markdown',
+    parse_mode: 'HTML',
   });
 
   // 保存新的 message_id 到 session
@@ -99,7 +99,7 @@ menuingTeacherCommand.callbackQuery(/^teachers_page:(\d+)$/, async (ctx) => {
   try {
     await ctx.editMessageText(text, {
       reply_markup: keyboard || undefined,
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
     });
   } catch (error) {
     debug('Error editing message:', error);
