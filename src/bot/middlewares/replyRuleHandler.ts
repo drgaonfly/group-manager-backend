@@ -8,6 +8,7 @@ import {
   getGroupUserRanking,
   getGroupUserRankingList,
 } from '../../services/rankingService';
+import { ITEMS_PER_PAGE } from '../../constants';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:replyRule');
@@ -131,8 +132,11 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     // 获取用户积分榜单
     const rankingListData = await getGroupUserRankingList(
+      ctx,
       botId,
       ctx.currentGroup?.botUsers as any,
+      1,
+      ITEMS_PER_PAGE,
     );
     const userBalanceRankingList = rankingListData.text;
 
@@ -151,7 +155,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
     const inlineButtons: any[] = [];
 
     // 如果有分页，添加分页按钮
-    if (rankingListData.hasNext || rankingListData.total > 10) {
+    if (rankingListData.hasNext || rankingListData.total > ITEMS_PER_PAGE) {
       const currentPage = 1;
       const buttons = [];
       if (currentPage > 1) {

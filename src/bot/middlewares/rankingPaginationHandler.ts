@@ -1,6 +1,7 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import { getGroupUserRankingList } from '../../services/rankingService';
+import { ITEMS_PER_PAGE } from '../../constants';
 // import BotUserConfig from '../../models/botUserConfig';
 import createDebug from 'debug';
 
@@ -24,9 +25,11 @@ export const rankingPaginationHandler: Middleware<MyContext> = async (
 
   try {
     const rankingListData = await getGroupUserRankingList(
+      ctx,
       botId,
       ctx.currentGroup?.botUsers as any,
       page,
+      ITEMS_PER_PAGE,
     );
 
     const inlineButtons: any[] = [];

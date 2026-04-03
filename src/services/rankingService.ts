@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 import BotUserConfig from '../models/botUserConfig';
+import { ITEMS_PER_PAGE } from '../constants';
+import { MyContext } from '../bot/types';
 
 /**
  * 获取用户在特定群组内的积分排名
@@ -35,10 +37,11 @@ export const getGroupUserRanking = async (
  * @returns 格式化后的榜单字符串和是否有下一页
  */
 export const getGroupUserRankingList = async (
+  ctx: MyContext,
   botId: string | Types.ObjectId,
   groupBotUserIds?: (string | Types.ObjectId)[],
   page: number = 1,
-  limit: number = 10,
+  limit: number = ITEMS_PER_PAGE,
 ): Promise<{ text: string; hasNext: boolean; total: number }> => {
   if (!groupBotUserIds || groupBotUserIds.length === 0) {
     return { text: '暂无榜单数据', hasNext: false, total: 0 };
@@ -73,8 +76,24 @@ export const getGroupUserRankingList = async (
     })
     .join('\n');
 
+  const usdtBalance = ctx.currentBotUserConfig.usdt_balance;
+
+  const ranking = await getGroupUserRanking(
+    botId,
+    usdtBalance,
+    groupBotUserIds,
+  );
+
+  const message = [
+    `您当前的积分为: ${usdtBalance}，在本群的排名为：${ranking}`,
+    '',
+    '本群积分榜如下：',
+    '',
+    list,
+  ].join('\n');
+
   return {
-    text: `本群积分榜如下：\n${list}`,
+    text: message,
     hasNext: skip + configs.length < total,
     total,
   };
