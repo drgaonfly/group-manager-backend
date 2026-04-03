@@ -27,6 +27,7 @@ export const replaceVariables = (
   groupTitle?: string,
   userBalance?: number,
   botName?: string,
+  userBalanceRanking?: number,
 ): string => {
   if (!content) return content;
 
@@ -43,6 +44,14 @@ export const replaceVariables = (
     .replace(/\{currentTime\}/g, beijingTime)
     .replace(/\{groupTitle\}/g, groupTitle || '')
     .replace(/\{currentBot\}/g, botName || '');
+
+  // 替换排名变量
+  result = result.replace(
+    /\{userBalanceRanking\}/g,
+    userBalanceRanking !== undefined && userBalanceRanking !== null
+      ? String(userBalanceRanking)
+      : '',
+  );
 
   // 如果有成员信息，替换成员相关变量
   if (member) {
@@ -96,6 +105,10 @@ export const replaceLotteryVariables = (
     currentBot?: string;
     winnerList?: string;
     openTime?: string;
+    nickname?: string;
+    userId?: number;
+    userName?: string;
+    userBalanceRanking?: number;
   } = {},
 ): string => {
   if (!content) return content;
@@ -135,7 +148,17 @@ export const replaceLotteryVariables = (
     .replace(/\{currentTime\}/g, beijingTime)
     .replace(/\{currentBot\}/g, options.currentBot || '')
     .replace(/\{winnerList\}/g, options.winnerList || '')
-    .replace(/\{openTime\}/g, options.openTime || '');
+    .replace(/\{openTime\}/g, options.openTime || '')
+    .replace(/\{nickname\}/g, options.nickname || '')
+    .replace(/\{userId\}/g, String(options.userId || ''))
+    .replace(/\{userName\}/g, options.userName || '')
+    .replace(
+      /\{userBalanceRanking\}/g,
+      options.userBalanceRanking !== undefined &&
+        options.userBalanceRanking !== null
+        ? String(options.userBalanceRanking)
+        : '',
+    );
 
   return result;
 };

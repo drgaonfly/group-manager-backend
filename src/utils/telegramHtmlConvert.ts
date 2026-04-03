@@ -10,6 +10,7 @@ export interface MessageVariables {
   groupTitle?: string; // 群组标题
   currentTime?: string; // 当前时间
   currentBot?: string; // 当前机器人昵称
+  userBalanceRanking?: string; // 用户积分排名
 }
 
 /**
@@ -72,6 +73,14 @@ export function replaceMessageVariables(
   // 替换当前机器人昵称
   if (variables.currentBot) {
     result = result.replace(/\{currentBot\}/gi, variables.currentBot);
+  }
+
+  // 替换用户积分排名
+  if (variables.userBalanceRanking) {
+    result = result.replace(
+      /\{userBalanceRanking\}/gi,
+      variables.userBalanceRanking,
+    );
   }
 
   return result;

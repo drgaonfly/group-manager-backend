@@ -4,6 +4,7 @@ import ReplyRule from '../../models/replyRule';
 import { generateSignedUrl } from '../../utils/generateSignedUrl';
 import { replaceVariables, MemberInfo } from '../../utils/replaceVariables';
 import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
+import { getGroupUserRanking } from '../../services/rankingService';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:replyRule');
@@ -118,6 +119,13 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
     const groupTitle =
       ctx.chat?.type !== 'private' ? (ctx.chat as any)?.title || '' : '';
 
+    // 获取用户积分排名
+    const userBalanceRanking = await getGroupUserRanking(
+      botId,
+      ctx.currentBotUserConfig?.usdt_balance || 0,
+      ctx.currentGroup?.botUsers as any,
+    );
+
     // 替换变量
     const content = replaceVariables(
       matchedRule.content,
@@ -125,6 +133,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       groupTitle,
       ctx.currentBotUserConfig?.usdt_balance,
       `@${ctx.currentBot?.userName}`,
+      userBalanceRanking,
     );
 
     // 构建回复选项

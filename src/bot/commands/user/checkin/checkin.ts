@@ -7,6 +7,7 @@ import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import { hasCheckedInToday, isFirstTimeCheckin } from './handleCheckin';
 import { replaceMessageVariables } from '../../../../utils/telegramHtmlConvert';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
+import { getGroupUserRanking } from '../../../../services/rankingService';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:checkin');
@@ -124,6 +125,13 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     }
 
     // 替换消息中的变量（昵称优先于用户名；userBalance 为签到后的当前积分）
+    const rankingNum = await getGroupUserRanking(
+      botId,
+      botUserConfig.usdt_balance || 0,
+      ctx.currentGroup?.botUsers as any,
+    );
+    const userBalanceRanking = rankingNum ? String(rankingNum) : undefined;
+
     const variables = {
       username: ctx.currentBotUser.userName
         ? `@${ctx.currentBotUser.userName}`
@@ -131,6 +139,7 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       memberName: ctx.currentBotUser.displayName || '',
       userId: String(ctx.currentBotUser.id),
       userBalance: String(botUserConfig.usdt_balance ?? 0),
+      userBalanceRanking,
       groupTitle: ctx.currentGroup.title || '',
       currentTime: formatBeijingDate(new Date()),
       currentBot: `@${ctx.currentBot.userName}`,

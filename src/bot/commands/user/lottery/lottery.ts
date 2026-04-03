@@ -7,6 +7,7 @@ import { convertToTelegramHtml } from '../../../../bot/utils/telegramHtml';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import { replaceLotteryVariables } from '../../../../utils/replaceVariables';
 import { checkGroup } from '../../../middlewares/checkGroup';
+import { getGroupUserRanking } from '../../../../services/rankingService';
 
 export const lotteryCommand = new Composer<MyContext>();
 
@@ -284,11 +285,23 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
     }
 
     // 替换变量的辅助函数
-    const replaceVariables = (content: string) => {
+    const replaceVariables = async (content: string) => {
+      const userBalanceRanking = await getGroupUserRanking(
+        ctx.currentBot._id,
+        ctx.currentBotUserConfig?.usdt_balance || 0,
+        ctx.currentGroup?.botUsers as any,
+      );
+
       return replaceLotteryVariables(content, lottery, {
         joinNum,
         currentBot: `@${ctx.currentBot.userName}`,
-      });
+        nickname: [ctx.from?.first_name, ctx.from?.last_name]
+          .filter(Boolean)
+          .join(' '),
+        userId: ctx.from?.id,
+        userName: ctx.from?.username ? `@${ctx.from.username}` : '',
+        userBalanceRanking,
+      } as any);
     };
 
     // 创建参与记录
@@ -303,7 +316,9 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
     });
 
     // 发送成功参与通知
-    const joinSuccessContent = replaceVariables(lottery.joinSuccessContent);
+    const joinSuccessContent = await replaceVariables(
+      lottery.joinSuccessContent,
+    );
     const joinSuccessMsg = await ctx.reply(
       convertToTelegramHtml(joinSuccessContent) || '🎉 恭喜您成功参与抽奖！',
       { parse_mode: 'HTML' },
