@@ -136,6 +136,7 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     const userBalanceRanking = rankingNum ? String(rankingNum) : undefined;
 
     const rankingListData = await getGroupUserRankingList(
+      ctx,
       botId,
       ctx.currentGroup?.botUsers as any,
     );
@@ -158,7 +159,10 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     successMessage = replaceMessageVariables(successMessage, variables);
 
     debug('About to send success message:', successMessage);
-    await ctx.reply(successMessage, { parse_mode: 'HTML' });
+    await ctx.reply(successMessage, {
+      parse_mode: 'HTML',
+      link_preview_options: { is_disabled: true },
+    });
     debug('Success message sent successfully');
 
     debug(

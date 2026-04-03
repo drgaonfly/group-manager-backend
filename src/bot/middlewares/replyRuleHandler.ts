@@ -178,6 +178,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
     // 构建回复选项
     const replyOptions: any = {
       parse_mode: 'HTML' as const,
+      link_preview_options: { is_disabled: true },
     };
 
     // 是否引用用户消息

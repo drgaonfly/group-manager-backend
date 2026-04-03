@@ -72,13 +72,14 @@ export const getGroupUserRankingList = async (
       const botUser = config.botUser;
       const nickname = botUser?.displayName || `用户${botUser?.id || ''}`;
       const balance = config.usdt_balance || 0;
-      return `${
-        skip + index + 1
-      }、 <a href="https://t.me/${botUser?.userName}">${nickname}</a>  ${balance}`;
+      const nicknameText = botUser?.userName
+        ? `<a href="https://t.me/${botUser.userName}">${nickname}</a>`
+        : nickname;
+      return `${skip + index + 1}、 ${nicknameText}  ${balance}`;
     })
     .join('\n');
 
-  const usdtBalance = ctx.currentBotUserConfig.usdt_balance;
+  const usdtBalance = ctx.currentBotUserConfig?.usdt_balance ?? 0;
 
   const ranking = await getGroupUserRanking(
     botId,
@@ -87,7 +88,7 @@ export const getGroupUserRankingList = async (
   );
 
   const message = [
-    `您当前的积分为: ${usdtBalance}，在本群的排名为：${ranking}`,
+    `您当前的积分为: ${usdtBalance}，在本群的排名为：${ranking || ''}`,
     '',
     '本群积分榜如下：',
     '',

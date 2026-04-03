@@ -295,10 +295,12 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
         ctx.currentGroup?.botUsers as any,
       );
 
-      const userBalanceRankingList = await getGroupUserRankingList(
+      const rankingListData = await getGroupUserRankingList(
+        ctx,
         ctx.currentBot._id,
         ctx.currentGroup?.botUsers as any,
       );
+      const userBalanceRankingList = rankingListData.text;
 
       return replaceLotteryVariables(content, lottery, {
         joinNum,
@@ -330,7 +332,7 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
     );
     const joinSuccessMsg = await ctx.reply(
       convertToTelegramHtml(joinSuccessContent) || '🎉 恭喜您成功参与抽奖！',
-      { parse_mode: 'HTML' },
+      { parse_mode: 'HTML', link_preview_options: { is_disabled: true } },
     );
 
     // 置顶消息

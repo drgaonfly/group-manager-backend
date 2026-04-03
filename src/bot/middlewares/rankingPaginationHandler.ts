@@ -65,6 +65,7 @@ export const rankingPaginationHandler: Middleware<MyContext> = async (
     await ctx.editMessageText(rankingListData.text, {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: inlineButtons },
+      link_preview_options: { is_disabled: true },
     });
 
     await ctx.answerCallbackQuery();
