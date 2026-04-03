@@ -7,7 +7,6 @@ import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
-import Evaluation from '../../models/evaluation';
 import {
   searchTeachers,
   getTeacherEvaluationsText,
