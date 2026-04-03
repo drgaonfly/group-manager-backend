@@ -72,21 +72,18 @@ async function writeRiviewOtherTeacherConversation(
   const safe = escapeRegExp(teacherKey);
   const regex = new RegExp(safe, 'i');
 
+  // 同时搜索 BotUser 和 Teacher 的 display_name
   const candidatesBotUsers = await BotUser.find({
     $or: [{ userName: regex }, { firstName: regex }, { lastName: regex }],
   })
     .select('_id userName firstName lastName')
     .limit(20);
 
-  if (candidatesBotUsers.length === 0) {
-    await ctx.reply('未找到匹配的用户，请换一个名字或 username 再试');
-    return;
-  }
-
   const botUserIds = candidatesBotUsers.map((u) => u._id);
+
   const teachers = await Teacher.find({
     bot: bot!._id,
-    botUser: { $in: botUserIds },
+    $or: [{ botUser: { $in: botUserIds } }, { display_name: regex }],
     status: 'approved',
   })
     .populate('botUser')
@@ -113,9 +110,11 @@ async function writeRiviewOtherTeacherConversation(
     const keyboard = new InlineKeyboard();
     const listLines = selectable.map((t: any, i: number) => {
       const u = t.botUser;
-      const name = u?.userName
-        ? `@${u.userName}`
-        : `${u?.firstName || ''} ${u?.lastName || ''}`.trim() || '未知用户';
+      const name =
+        t.display_name ||
+        (u?.userName
+          ? `@${u.userName}`
+          : `${u?.firstName || ''} ${u?.lastName || ''}`.trim() || '未知用户');
       keyboard.text(`${i + 1}`, `teach_review_select:${t._id.toString()}`);
       if ((i + 1) % 5 === 0) keyboard.row();
       return `${i + 1}. ${name} \n${t.contactLink}`;

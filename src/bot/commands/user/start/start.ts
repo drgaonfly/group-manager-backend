@@ -10,6 +10,7 @@ import { checkInBot } from '../../../middlewares/checkInBot';
 // import { setupBot } from '../../../botSetup';
 import { handleJoinLottery } from './handleLottery';
 import { handlePromotion } from './handlePromotion';
+import { handleEvaluation } from './handleEvaluation';
 import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();
@@ -62,8 +63,13 @@ startCommand.command('start', checkInBot, async (ctx) => {
     }
   }
 
-  // 处理推广链接
+  // 处理评价链接
   if (startParam) {
+    if (startParam.startsWith('eval_')) {
+      const evalId = startParam.replace('eval_', '');
+      await handleEvaluation(ctx, evalId);
+      return;
+    }
     await handlePromotion(ctx, startParam);
   }
 

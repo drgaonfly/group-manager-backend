@@ -1,6 +1,8 @@
 import Teacher from '../models/teacher';
 import BotUser from '../models/botUser';
+import Evaluation from '../models/evaluation';
 import { Types } from 'mongoose';
+import dayjs from 'dayjs';
 
 export interface TeacherSearchResult {
   teachers: any[];
@@ -94,4 +96,43 @@ export const searchTeachers = async (
     teachers,
     message: messageRows.join('\n\n'),
   };
+};
+
+/**
+ * 获取老师的评价报告列表文本（带深链接）
+ */
+export const getTeacherEvaluationsText = async (
+  teacherId: string | Types.ObjectId,
+  botUserName: string,
+): Promise<string | null> => {
+  const evaluations = await Evaluation.find({
+    teacher: teacherId,
+    status: 'approved',
+  })
+    .sort({ createdAt: -1 })
+    .limit(5);
+
+  if (evaluations.length === 0) return null;
+
+  const teacher = await Teacher.findById(teacherId).populate('botUser');
+  if (!teacher) return null;
+
+  const name =
+    teacher.display_name || (teacher.botUser as any)?.userName || '老师';
+
+  const rows = [`查询到${name}相关的评价报告${evaluations.length}份：`];
+
+  rows.push('');
+
+  evaluations.forEach((evalDoc, idx) => {
+    const dateStr = dayjs(evalDoc.createdAt).format('YYYY-MM-DD');
+    // 构建深链接: https://t.me/botname?start=eval_ID
+    const deepLink = `https://t.me/${botUserName}?start=eval_${evalDoc._id}`;
+    rows.push(`[评价报告${idx + 1}：${dateStr}](${deepLink})`);
+  });
+
+  rows.push('');
+  rows.push('第1/1页');
+
+  return rows.join('\n');
 };

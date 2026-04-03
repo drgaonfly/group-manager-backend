@@ -1,5 +1,6 @@
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { Request, Response } from 'express';
+import Evaluation from '../models/evaluation';
 import Teacher from '../models/teacher';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
@@ -130,9 +131,12 @@ export const deleteTeacher = handleAsync(
       throw new Error('老师不存在');
     }
 
+    // 同时删除该老师关联的所有评价
+    await Evaluation.deleteMany({ teacher: req.params.id });
+
     res.status(200).json({
       success: true,
-      data: { message: '老师删除成功' },
+      data: { message: '老师及关联评价删除成功' },
     });
   },
 );
@@ -141,7 +145,7 @@ export const deleteTeacher = handleAsync(
  * 批量删除老师
  */
 export const deleteMultipleTeachers = handleAsync(
-  async (req: Request, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { ids } = req.body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -151,9 +155,12 @@ export const deleteMultipleTeachers = handleAsync(
 
     await Teacher.deleteMany({ _id: { $in: ids } });
 
+    // 同时删除这些老师关联的所有评价
+    await Evaluation.deleteMany({ teacher: { $in: ids } });
+
     res.status(200).json({
       success: true,
-      message: `成功删除 ${ids.length} 个老师`,
+      message: `成功删除 ${ids.length} 个老师及其关联评价`,
     });
   },
 );

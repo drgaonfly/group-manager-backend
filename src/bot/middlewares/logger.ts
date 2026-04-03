@@ -7,7 +7,11 @@ import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
-import { searchTeachers } from '../../services/teacherService';
+import Evaluation from '../../models/evaluation';
+import {
+  searchTeachers,
+  getTeacherEvaluationsText,
+} from '../../services/teacherService';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:replaceMentions');
@@ -18,7 +22,11 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   const message = ctx.message;
 
   // 如果有活跃的对话（比如正在写评价），跳过 logger 的自动回复逻辑
-  if (ctx.conversation?.active) {
+  // 检查当前会话是否真的有活跃的对话运行
+  const activeConversations = await ctx.conversation.active();
+  const hasActiveConversation = Object.keys(activeConversations).length > 0;
+
+  if (hasActiveConversation) {
     debug('Active conversation detected, skipping logger logic');
     await next();
     return;
@@ -485,8 +493,34 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     const text = message.text.trim();
     // 简单正则判断是否可能是老师姓名（这里可以根据需求调整逻辑）
     // 比如：如果消息长度适中且不包含特殊指令前缀
-    if (text.length >= 2 && text.length <= 20 && !text.startsWith('/')) {
+    if (text.length >= 2 && text.length <= 30 && !text.startsWith('/')) {
       try {
+        // 1. 如果是 @username 格式，先尝试直接匹配老师并显示其评价
+        if (text.startsWith('@')) {
+          const userName = text.slice(1);
+          const { teachers } = await searchTeachers(
+            userName,
+            ctx.currentBot._id,
+          );
+          if (teachers.length > 0) {
+            const teacher = teachers[0];
+            const evalText = await getTeacherEvaluationsText(
+              teacher._id,
+              ctx.currentBot.userName,
+            );
+            if (evalText) {
+              await ctx.reply(evalText, {
+                parse_mode: 'Markdown',
+                reply_to_message_id: message.message_id,
+                link_preview_options: { is_disabled: true },
+              });
+              await next();
+              return;
+            }
+          }
+        }
+
+        // 2. 普通搜索逻辑
         const { teachers, message: teacherMsg } = await searchTeachers(
           text,
           ctx.currentBot._id,
