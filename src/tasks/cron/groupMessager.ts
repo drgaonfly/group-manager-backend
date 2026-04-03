@@ -236,6 +236,7 @@ export async function sendGroupMessages() {
               const variables = {
                 groupTitle: String(group.title || group.id),
                 currentTime: formatBeijingDate(new Date()),
+                currentBot: `@${bot.userName}`,
               };
 
               // 替换消息内容中的变量

@@ -4,15 +4,16 @@ import LotteryParticipant from '../../../../models/lotteryParticipant';
 import { buildInlineKeyboard } from '../../../utils/buildInlineKeyboard';
 import { convertToTelegramHtml } from '../../../utils/telegramHtml';
 import { replaceLotteryVariables } from '../../../../utils/replaceVariables';
+import Bot from '../../../../models/bot';
 
 // 处理抽奖参与
 export const handleJoinLottery = async (
   ctx: MyContext,
   code: string,
 ): Promise<boolean> => {
-  const lottery = await Lottery.findOne({ code, status: 'ongoing' })
-    .populate('bot', 'botName userName')
-    .exec();
+  const lottery = await Lottery.findOne({ code, status: 'ongoing' }).exec();
+
+  const bot = await Bot.findById(lottery.bot);
 
   if (!lottery) {
     await ctx.reply('❌ 抽奖活动不存在或已结束');
@@ -85,6 +86,7 @@ export const handleJoinLottery = async (
   if (message) {
     message = replaceLotteryVariables(message, lottery, {
       joinNum: participantCount,
+      currentBot: `@${bot?.userName}`,
     });
   }
 

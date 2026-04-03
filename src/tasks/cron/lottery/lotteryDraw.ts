@@ -226,6 +226,7 @@ export async function checkAndDrawLotteries() {
         joinNum: participants.length,
         winnerList,
         openTime,
+        currentBot: `@${bot.userName}`,
       },
     );
 

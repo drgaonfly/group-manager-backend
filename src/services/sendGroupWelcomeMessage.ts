@@ -52,6 +52,7 @@ export const sendGroupWelcomeMessage = async (
     userId: ctx.from?.id?.toString() || '',
     groupTitle: ctx.chat?.title || '本群',
     currentTime: formatBeijingDate(new Date()),
+    currentBot: `@${ctx.currentBot?.userName}`,
   };
 
   // 收集所有发送的消息ID，用于阅后即焚

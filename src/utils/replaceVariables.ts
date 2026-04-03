@@ -19,12 +19,14 @@ export interface MemberInfo {
  * - {userBalance} - 用户积分余额
  * - {groupTitle} - 群组名称
  * - {currentTime} - 北京时间
+ * - {currentBot} - 当前机器人昵称
  */
 export const replaceVariables = (
   content: string,
   member?: MemberInfo | null,
   groupTitle?: string,
   userBalance?: number,
+  botName?: string,
 ): string => {
   if (!content) return content;
 
@@ -39,7 +41,8 @@ export const replaceVariables = (
   // 替换时间和群组相关变量（始终可用）
   result = result
     .replace(/\{currentTime\}/g, beijingTime)
-    .replace(/\{groupTitle\}/g, groupTitle || '');
+    .replace(/\{groupTitle\}/g, groupTitle || '')
+    .replace(/\{currentBot\}/g, botName || '');
 
   // 如果有成员信息，替换成员相关变量
   if (member) {
@@ -87,66 +90,52 @@ export const replaceVariables = (
  */
 export const replaceLotteryVariables = (
   content: string,
-  lottery: {
-    title: string;
-    prizes: Array<{ name: string; value: number; quantity: number }>;
-    drawMethod: string[];
-    fullParticipantsCount?: number;
-    scheduledDrawTime?: Date;
-  },
-  additionalData?: {
+  lottery: any,
+  options: {
     joinNum?: number;
+    currentBot?: string;
     winnerList?: string;
     openTime?: string;
-  },
+  } = {},
 ): string => {
   if (!content) return content;
 
   let result = content;
 
-  // 基础变量替换
-  result = result.replace(/\{lotteryTitle\}/g, lottery.title);
+  // 基础变量
+  const now = new Date();
+  const beijingTime = formatBeijingDate(now);
 
-  // 构建奖品列表
+  // 奖品列表格式化
   const goodsList = lottery.prizes
-    .map((p) => `${p.name} x${p.quantity} (${p.value}积分)`)
+    .map((p: any, i: number) => {
+      const valueText = `${p.value}`;
+      return `${i + 1}. ${p.name} - ${valueText} x${p.quantity}份`;
+    })
     .join('\n');
-  result = result.replace(/\{goodsList\}/g, goodsList);
 
-  // 构建参与条件
-  const joinCondition = '加入机器人关联群组';
-  result = result.replace(/\{joinCondition\}/g, joinCondition);
-
-  // 构建开奖条件
-  const conditions: string[] = [];
-  if (
-    lottery.drawMethod.includes('fullParticipants') &&
-    lottery.fullParticipantsCount
-  ) {
-    conditions.push(`满${lottery.fullParticipantsCount}人开奖`);
+  // 开奖条件格式化
+  const openConditions: string[] = [];
+  if (lottery.drawMethod.includes('fullParticipants')) {
+    openConditions.push(`满${lottery.fullParticipantsCount}人开奖`);
   }
   if (
     lottery.drawMethod.includes('scheduledTime') &&
     lottery.scheduledDrawTime
   ) {
-    const timeStr = formatBeijingDate(lottery.scheduledDrawTime);
-    conditions.push(`定时开奖 (${timeStr})`);
+    openConditions.push(`${formatBeijingDate(lottery.scheduledDrawTime)}`);
   }
-  const openCondition = conditions.join(' 或 ');
-  result = result.replace(/\{openCondition\}/g, openCondition);
 
-  // 额外数据（开奖相关）
-  if (additionalData) {
-    if (additionalData.joinNum !== undefined) {
-      result = result.replace(/\{joinNum\}/g, String(additionalData.joinNum));
-    }
-    if (additionalData.winnerList !== undefined) {
-      result = result.replace(/\{winnerList\}/g, additionalData.winnerList);
-    }
-    if (additionalData.openTime !== undefined) {
-      result = result.replace(/\{openTime\}/g, additionalData.openTime);
-    }
-  }
+  result = result
+    .replace(/\{lotteryTitle\}/g, lottery.title || '')
+    .replace(/\{goodsList\}/g, goodsList)
+    .replace(/\{joinCondition\}/g, '无') // 机器人本位架构下简化了
+    .replace(/\{openCondition\}/g, openConditions.join(' 或 '))
+    .replace(/\{joinNum\}/g, String(options.joinNum || 0))
+    .replace(/\{currentTime\}/g, beijingTime)
+    .replace(/\{currentBot\}/g, options.currentBot || '')
+    .replace(/\{winnerList\}/g, options.winnerList || '')
+    .replace(/\{openTime\}/g, options.openTime || '');
 
   return result;
 };

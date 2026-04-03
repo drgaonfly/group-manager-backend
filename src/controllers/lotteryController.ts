@@ -230,6 +230,7 @@ const sendLotteryNotifications = async (
   let messageContent = lottery.notifyContent || '';
   messageContent = replaceLotteryVariables(messageContent, lottery, {
     joinNum: participantCount !== undefined ? participantCount : 0,
+    currentBot: `@${bot.userName}`,
   });
 
   // 添加参与链接

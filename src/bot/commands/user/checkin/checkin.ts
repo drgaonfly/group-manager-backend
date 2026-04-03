@@ -133,6 +133,7 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       userBalance: String(botUserConfig.usdt_balance ?? 0),
       groupTitle: ctx.currentGroup.title || '',
       currentTime: formatBeijingDate(new Date()),
+      currentBot: `@${ctx.currentBot.userName}`,
     };
 
     successMessage = replaceMessageVariables(successMessage, variables);

@@ -124,6 +124,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       memberInfo,
       groupTitle,
       ctx.currentBotUserConfig?.usdt_balance,
+      `@${ctx.currentBot?.userName}`,
     );
 
     // 构建回复选项

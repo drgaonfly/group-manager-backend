@@ -287,6 +287,7 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
     const replaceVariables = (content: string) => {
       return replaceLotteryVariables(content, lottery, {
         joinNum,
+        currentBot: `@${ctx.currentBot.userName}`,
       });
     };
 
