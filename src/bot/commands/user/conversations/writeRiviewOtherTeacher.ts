@@ -161,7 +161,7 @@ async function writeRiviewOtherTeacherConversation(
     circumstance_rating: 0,
   };
   let process_desc = '';
-  let proof_media: string[] = [];
+  const proof_media: string[] = [];
   let isReportedAnoymously = false;
 
   const getMenuKeyboard = () => {
@@ -203,10 +203,6 @@ async function writeRiviewOtherTeacherConversation(
   };
 
   const getMenuText = () => {
-    const teacherName =
-      selectedTeacher.botUser?.userName ||
-      selectedTeacher.botUser?.firstName ||
-      '老师';
     let text = `请选择下面的按钮进行评价，也可以复制以下模板补充内容发送发送给我，请不要改动括号里面的内容：\n\n`;
     text += `【人照评分】：${
       ratings.avatar_rating ? ratings.avatar_rating * 2 : ''
@@ -330,7 +326,9 @@ async function writeRiviewOtherTeacherConversation(
             ['message:photo', 'message:video', 'callback_query:data'],
             { maxMilliseconds: 300000 },
           );
-          if (media.callbackQuery?.data === 'done_media') break;
+          if (media.callbackQuery?.data === 'done_media') {
+            break;
+          }
 
           const botToken = ctx.api.token;
           if (media.message?.photo) {
@@ -441,7 +439,9 @@ async function writeRiviewOtherTeacherConversation(
             ctx.chat!.id,
             interaction.message.message_id,
           );
-        } catch (e) {}
+        } catch (e) {
+          debug('Delete template message failed:', e);
+        }
         const getVal = (label: string) => {
           const regex = new RegExp(`【${label}】：\\s*(\\d+)`);
           const m = text.match(regex);
