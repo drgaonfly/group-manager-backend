@@ -1,4 +1,4 @@
-export const ITEMS_PER_PAGE = 2;
+export const ITEMS_PER_PAGE = 20;
 
 export const ROLES = {
   SuperAdmin: 'SUPER_ADMIN',
