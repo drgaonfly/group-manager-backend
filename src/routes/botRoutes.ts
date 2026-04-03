@@ -15,8 +15,13 @@ import {
   sendChannelPost,
   updateGroupWelcome,
   updateGroupVerify,
+  copyBotFeatureConfig,
 } from '../controllers/botController';
-import { protect, checkPermission } from '../middlewares/authMiddleware';
+import {
+  protect,
+  checkPermission,
+  isAdmin,
+} from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
 
@@ -25,6 +30,10 @@ router
   .get(protect, checkPermission, getBots)
   .post(protect, checkPermission, addBot)
   .delete(protect, checkPermission, deleteMultipleBots);
+
+router
+  .route('/copy-feature-config')
+  .post(protect, isAdmin, copyBotFeatureConfig);
 
 router
   .route('/:id')

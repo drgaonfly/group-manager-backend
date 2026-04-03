@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
+import { randomBytes } from 'crypto';
 import Bot, { IBot } from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
@@ -11,6 +13,16 @@ import { encrypt } from '../services/encrypt';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { transformDocumentImage } from '../utils/transformUtils';
 import BotUserMessage from '../models/botUserMessage';
+import GroupMessage from '../models/groupMessage';
+import ChannelPost from '../models/channelPost';
+import ReplyRule from '../models/replyRule';
+import CheckinRule from '../models/checkInRule';
+import Lottery from '../models/lottery';
+import Teacher from '../models/teacher';
+import Evaluation from '../models/evaluation';
+import GroupMessageRecord from '../models/groupMessageRecord';
+import ChannelPostHistory from '../models/channelPostHistory';
+import LotteryParticipant from '../models/lotteryParticipant';
 import { buildInlineKeyboard } from '../utils/buildInlineKeyboard';
 import { sendMediaMessage } from '../utils/sendMultiMedia';
 import { extractChannelTarget } from '../utils/extractChannelTarget';
@@ -988,6 +1000,277 @@ const updateGroupVerify = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
+const BOT_FEATURE_FIELD_KEYS: string[] = [
+  'message',
+  'menus',
+  'keyboards',
+  'presets',
+  'intervalTime',
+  'minSpeechLength',
+  'allowPureNumberSpeech',
+  'balanceClearedAt',
+  'canSpeechStatic',
+  'canFreeKeyboard',
+  'canGroupMessaging',
+  'canBidirectional',
+  'canGroupWelcome',
+  'canOpenChannelPost',
+  'canGroupVerify',
+  'canReportMemberNameUpdated',
+  'canReplyRule',
+  'canCheckIn',
+  'canLotteryRule',
+  'canTeaching',
+  'multi_image',
+  'multi_content',
+  'fee',
+  'auto_exchange_address',
+  'exchange_rate',
+];
+
+function omitDocMeta<T extends Record<string, unknown>>(doc: T) {
+  const { _id, __v, createdAt, updatedAt, ...rest } = doc as T & {
+    _id?: unknown;
+    __v?: unknown;
+    createdAt?: unknown;
+    updatedAt?: unknown;
+  };
+  return rest;
+}
+
+async function cloneGroupWelcomeDoc(
+  refId: mongoose.Types.ObjectId | string | undefined | null,
+): Promise<mongoose.Types.ObjectId | null> {
+  if (!refId) return null;
+  const doc = await GroupWelcome.findById(refId).lean();
+  if (!doc) return null;
+  const [created] = await GroupWelcome.create([
+    omitDocMeta(doc as Record<string, unknown>),
+  ]);
+  return created._id;
+}
+
+async function cloneGroupVerifyDoc(
+  refId: mongoose.Types.ObjectId | string | undefined | null,
+): Promise<mongoose.Types.ObjectId | null> {
+  if (!refId) return null;
+  const doc = await GroupVerify.findById(refId).lean();
+  if (!doc) return null;
+  const [created] = await GroupVerify.create([
+    omitDocMeta(doc as Record<string, unknown>),
+  ]);
+  return created._id;
+}
+
+async function newLotteryCode(): Promise<string> {
+  for (let i = 0; i < 24; i++) {
+    const code = randomBytes(8).toString('hex');
+    const dup = await Lottery.findOne({ code }).select('_id').lean();
+    if (!dup) return code;
+  }
+  throw new Error('无法生成唯一抽奖码');
+}
+
+/**
+ * 超级管理员：将源机器人的功能配置复制到目标机器人（覆盖目标侧同类配置）。
+ * 群发/频道推广中的群组、频道绑定会清空，需在目标机器人上重新选择。
+ * 不使用 MongoDB 事务，以便在单机（非副本集）环境下可用；副本集部署下亦为顺序执行。
+ */
+const copyBotFeatureConfig = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { sourceBotId, targetBotId } = req.body as {
+      sourceBotId?: string;
+      targetBotId?: string;
+    };
+
+    if (!sourceBotId || !targetBotId) {
+      res.status(400);
+      throw new Error('请提供 sourceBotId 与 targetBotId');
+    }
+
+    if (String(sourceBotId) === String(targetBotId)) {
+      res.status(400);
+      throw new Error('源机器人与目标机器人不能相同');
+    }
+
+    const sourceBot = await Bot.findById(sourceBotId).lean();
+    const targetBot = await Bot.findById(targetBotId).lean();
+
+    if (!sourceBot || !targetBot) {
+      res.status(404);
+      throw new Error('机器人不存在');
+    }
+
+    const oldTargetGw = targetBot.groupWelcome;
+    const oldTargetGv = targetBot.groupVerify;
+
+    const newGroupWelcomeId = await cloneGroupWelcomeDoc(
+      sourceBot.groupWelcome as unknown as
+        | mongoose.Types.ObjectId
+        | string
+        | undefined,
+    );
+    const newGroupVerifyId = await cloneGroupVerifyDoc(
+      sourceBot.groupVerify as unknown as
+        | mongoose.Types.ObjectId
+        | string
+        | undefined,
+    );
+
+    const featureUpdate: Record<string, unknown> = {
+      groupWelcome: newGroupWelcomeId,
+      groupVerify: newGroupVerifyId,
+    };
+
+    for (const key of BOT_FEATURE_FIELD_KEYS) {
+      const v = (sourceBot as Record<string, unknown>)[key as string];
+      if (v !== undefined) {
+        featureUpdate[key as string] = v;
+      }
+    }
+
+    const targetLotteryIds = (
+      await Lottery.find({ bot: targetBotId }).select('_id').lean()
+    ).map((l) => l._id);
+    if (targetLotteryIds.length > 0) {
+      await LotteryParticipant.deleteMany({
+        lottery: { $in: targetLotteryIds },
+      });
+    }
+    await Lottery.deleteMany({ bot: targetBotId });
+
+    await GroupMessageRecord.deleteMany({ bot: targetBotId });
+    await GroupMessage.deleteMany({ bot: targetBotId });
+
+    await ChannelPostHistory.deleteMany({ bot: targetBotId });
+    await ChannelPost.deleteMany({ bot: targetBotId });
+
+    await ReplyRule.deleteMany({ bot: targetBotId });
+    await CheckinRule.deleteMany({ bot: targetBotId });
+    await BotUserMessage.deleteMany({ bot: targetBotId });
+
+    await Evaluation.deleteMany({ bot: targetBotId });
+    await Teacher.deleteMany({ bot: targetBotId });
+
+    const proxyId = targetBot.user;
+
+    const groupMessages = await GroupMessage.find({ bot: sourceBotId }).lean();
+    if (groupMessages.length > 0) {
+      await GroupMessage.insertMany(
+        groupMessages.map((row) => ({
+          ...omitDocMeta(row as Record<string, unknown>),
+          bot: targetBotId,
+          proxy: proxyId,
+          groups: [],
+        })),
+      );
+    }
+
+    const channelPosts = await ChannelPost.find({ bot: sourceBotId }).lean();
+    if (channelPosts.length > 0) {
+      await ChannelPost.insertMany(
+        channelPosts.map((row) => ({
+          ...omitDocMeta(row as Record<string, unknown>),
+          bot: targetBotId,
+          proxy: proxyId,
+          channel: undefined,
+          channels: [],
+          lastPostTime: undefined,
+          lastPostMessageId: undefined,
+        })),
+      );
+    }
+
+    const replyRules = await ReplyRule.find({ bot: sourceBotId }).lean();
+    if (replyRules.length > 0) {
+      await ReplyRule.insertMany(
+        replyRules.map((row) => ({
+          ...omitDocMeta(row as Record<string, unknown>),
+          bot: targetBotId,
+          proxy: proxyId,
+        })),
+      );
+    }
+
+    const checkinRules = await CheckinRule.find({ bot: sourceBotId }).lean();
+    if (checkinRules.length > 0) {
+      await CheckinRule.insertMany(
+        checkinRules.map((row) => ({
+          ...omitDocMeta(row as Record<string, unknown>),
+          bot: targetBotId,
+          proxy: proxyId,
+        })),
+      );
+    }
+
+    const lotteries = await Lottery.find({ bot: sourceBotId }).lean();
+    for (const row of lotteries) {
+      const code = await newLotteryCode();
+      const body = omitDocMeta(row as Record<string, unknown>);
+      await Lottery.create([
+        {
+          ...body,
+          bot: targetBotId,
+          proxy: proxyId,
+          code,
+          status: 'pending',
+          drawnAt: undefined,
+        },
+      ]);
+    }
+
+    const botUserMessages = await BotUserMessage.find({
+      bot: sourceBotId,
+    }).lean();
+    if (botUserMessages.length > 0) {
+      await BotUserMessage.insertMany(
+        botUserMessages.map((row) => ({
+          ...omitDocMeta(row as Record<string, unknown>),
+          bot: targetBotId,
+          proxy: proxyId,
+        })),
+      );
+    }
+
+    const teachers = await Teacher.find({ bot: sourceBotId }).lean();
+    if (teachers.length > 0) {
+      await Teacher.insertMany(
+        teachers.map((row) => ({
+          ...omitDocMeta(row as Record<string, unknown>),
+          bot: targetBotId,
+          proxy: proxyId,
+        })),
+      );
+    }
+
+    await Bot.findByIdAndUpdate(targetBotId, { $set: featureUpdate });
+
+    if (oldTargetGw && String(oldTargetGw) !== String(newGroupWelcomeId)) {
+      await GroupWelcome.deleteOne({ _id: oldTargetGw });
+    }
+    if (oldTargetGv && String(oldTargetGv) !== String(newGroupVerifyId)) {
+      await GroupVerify.deleteOne({ _id: oldTargetGv });
+    }
+
+    const updatedBot = await Bot.findById(targetBotId)
+      .populate('groupWelcome')
+      .populate('groupVerify');
+
+    const processedBot = await transformDocumentImage(updatedBot!, [
+      'multi_image',
+    ]);
+    const botObj = processedBot.toObject
+      ? processedBot.toObject()
+      : processedBot;
+
+    res.json({
+      success: true,
+      data: botObj,
+      message: '功能配置已复制到目标机器人',
+    });
+  },
+);
+
 export {
   getBots,
   addBot,
@@ -1004,4 +1287,5 @@ export {
   sendChannelPost,
   updateGroupWelcome,
   updateGroupVerify,
+  copyBotFeatureConfig,
 };
