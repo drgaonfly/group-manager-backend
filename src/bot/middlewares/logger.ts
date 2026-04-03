@@ -17,6 +17,13 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   debug('logger');
   const message = ctx.message;
 
+  // 如果有活跃的对话（比如正在写评价），跳过 logger 的自动回复逻辑
+  if (ctx.conversation?.active) {
+    debug('Active conversation detected, skipping logger logic');
+    await next();
+    return;
+  }
+
   debug(message);
 
   // 检查消息类型的配置

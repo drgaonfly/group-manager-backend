@@ -46,6 +46,7 @@ import groupMessageHistoryRoutes from './routes/groupMessageHistoryRoutes';
 import groupMessageRecordRoutes from './routes/groupMessageRecordRoutes';
 import lotteryRoutes from './routes/lotteryRoutes';
 import teacherRoutes from './routes/teacherRoutes';
+import evaluationRoutes from './routes/evaluationRoutes';
 
 dotenv.config();
 
@@ -105,6 +106,7 @@ app.use('/api/group-message-histories', groupMessageHistoryRoutes);
 app.use('/api/group-message-records', groupMessageRecordRoutes);
 app.use('/api/lotteries', lotteryRoutes);
 app.use('/api/teachers', teacherRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 
 app.use('/api/static', express.static('tmp'));
 
