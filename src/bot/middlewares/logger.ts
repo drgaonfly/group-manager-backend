@@ -3,9 +3,11 @@ import { Middleware } from 'grammy';
 import BotUser from '../../models/botUser';
 import BotMessage from '../../models/botMessage';
 import { findBotProxy } from '../services/findBotProxy';
+import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
+import { searchTeachers } from '../../services/teacherService';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:replaceMentions');
@@ -461,13 +463,39 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     }
   }
 
-  const timestamp = new Date().toLocaleString('zh-CN');
-
   debug(
-    `用户 ${
-      ctx.from?.username || ctx.from?.id
-    } 在 ${timestamp} 发来了 ${messageType} 类型消息: ${messageContent}`,
+    `用户 ${ctx.from?.username || ctx.from?.id} 在 ${formatBeijingDate(
+      new Date(),
+    )} 发来了 ${messageType} 类型消息: ${messageContent}`,
   );
+
+  // 如果消息是文本，尝试查找老师
+  if (
+    message?.text &&
+    !isOwner &&
+    PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)
+  ) {
+    const text = message.text.trim();
+    // 简单正则判断是否可能是老师姓名（这里可以根据需求调整逻辑）
+    // 比如：如果消息长度适中且不包含特殊指令前缀
+    if (text.length >= 2 && text.length <= 20 && !text.startsWith('/')) {
+      try {
+        const { teachers, message: teacherMsg } = await searchTeachers(
+          text,
+          ctx.currentBot._id,
+        );
+        if (teachers.length > 0) {
+          await ctx.reply(`💡 发现匹配的老师信息：\n\n${teacherMsg}`, {
+            parse_mode: 'Markdown',
+            reply_to_message_id: message.message_id,
+          });
+        }
+      } catch (err) {
+        console.error('Logger teacher lookup failed:', err);
+      }
+    }
+  }
+
   await next();
 };
 
