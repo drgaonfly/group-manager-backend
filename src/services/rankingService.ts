@@ -72,7 +72,9 @@ export const getGroupUserRankingList = async (
       const botUser = config.botUser;
       const nickname = botUser?.displayName || `用户${botUser?.id || ''}`;
       const balance = config.usdt_balance || 0;
-      return `${skip + index + 1}、${nickname} ${balance}`;
+      return `${
+        skip + index + 1
+      }、 <a href="https://t.me/${botUser?.userName}">${nickname}</a>  ${balance}`;
     })
     .join('\n');
 
