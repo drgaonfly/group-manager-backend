@@ -85,7 +85,7 @@ export const searchTeachers = async (
         `*${idx + 1}. ${name}*`,
         `状态：${status}`,
         `联系方式：${t.contactLink || '未设置'}`,
-        `简介：\n${t.brief || '无'}`,
+        `详细信息：\n${t.brief || '无'}`,
       ].join('\n');
     }),
   ];

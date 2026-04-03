@@ -127,7 +127,7 @@ async function beTeacherConversation(
   }
   const description = descResult.message?.text || '无';
 
-  const brief = `1️⃣名字：${nickName}\n2️⃣价位：${price}\n3️⃣联系方式：${contactLink}\n4️⃣描述：${description}\n5️⃣补习位置：${location}`;
+  const brief = `1️⃣名字：${nickName}\n2️⃣价位：${price}\n3️⃣描述：${description}\n4️⃣补习位置：${location}`;
 
   const doc = await Teacher.findOneAndUpdate(
     {
