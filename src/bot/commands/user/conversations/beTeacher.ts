@@ -136,6 +136,7 @@ async function beTeacherConversation(
     },
     {
       $set: {
+        display_name: nickName,
         proxy: proxyUser?._id,
         contactLink,
         brief,

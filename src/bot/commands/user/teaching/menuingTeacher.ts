@@ -41,11 +41,7 @@ const getTeacherMenu = async (ctx: MyContext, page: number) => {
 
   paginatedTeachers.forEach((teacher: any, index) => {
     const botUser = teacher.botUser;
-    const name = botUser?.userName
-      ? botUser.userName
-      : `${botUser?.firstName || ''} ${botUser?.lastName || ''}`.trim() ||
-        '老师';
-
+    const name = teacher.display_name || botUser.userName;
     const statusIcon = teacher.isAvailable ? '🟢' : '🔴';
     const buttonText = `${statusIcon} ${name}`;
 

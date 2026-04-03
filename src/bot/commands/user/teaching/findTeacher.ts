@@ -36,12 +36,22 @@ findTeacherCommand.hears(
       ],
     }).select('_id');
 
-    if (botUsers.length === 0) {
-      await ctx.reply('未找到匹配的用户');
+    // 同时在 Teacher 的 display_name 字段中搜索
+    const displayNameTeachers = await Teacher.find({
+      bot: ctx.currentBot!._id,
+      status: 'approved',
+      display_name: { $regex: query, $options: 'i' },
+    }).select('botUser');
+
+    const teacherBotUserIds = displayNameTeachers.map((t) => t.botUser);
+    const botUserIds = [
+      ...new Set([...botUsers.map((u) => u._id), ...teacherBotUserIds]),
+    ];
+
+    if (botUserIds.length === 0) {
+      await ctx.reply('未找到匹配的用户或老师信息');
       return;
     }
-
-    const botUserIds = botUsers.map((u) => u._id);
 
     // 在 Teacher 中查找，只找已审核通过的
     const teachers = await Teacher.find({
@@ -62,11 +72,14 @@ findTeacherCommand.hears(
       `🔍 搜索结果：`,
       '',
       ...teachers.map((t: any, idx) => {
-        const botUser = t.botUser;
-        const name = botUser?.userName
-          ? `@${botUser.userName}`
-          : `${botUser?.firstName || ''} ${botUser?.lastName || ''}`.trim() ||
-            '未知用户';
+        const name =
+          t.display_name ||
+          (t.botUser?.userName
+            ? `@${t.botUser.userName}`
+            : `${t.botUser?.firstName || ''} ${
+                t.botUser?.lastName || ''
+              }`.trim()) ||
+          '未知用户';
 
         const status = t.isAvailable ? '✅ 可接单' : '❌ 忙碌中';
         return [
