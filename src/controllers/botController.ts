@@ -27,6 +27,8 @@ import { buildInlineKeyboard } from '../utils/buildInlineKeyboard';
 import { sendMediaMessage } from '../utils/sendMultiMedia';
 import { extractChannelTarget } from '../utils/extractChannelTarget';
 import { getBotInfoWithGramjs } from '../utils/getBotInfoWithGramjs';
+import { getBotInfoByToken } from '../utils/getBotInfo';
+import { startClientAndGetSession } from '../bot/services/gramClient';
 import GroupWelcome from '../models/groupWelcome';
 import GroupVerify from '../models/groupVerify';
 
@@ -310,9 +312,9 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-const updateBot = handleAsync(async (req: Request, res: Response) => {
+const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
-  const { private_key, multi_image, ...otherFields } = req.body;
+  const { private_key, multi_image, token, ...updateData } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -321,37 +323,82 @@ const updateBot = handleAsync(async (req: Request, res: Response) => {
     throw new Error('机器人不存在');
   }
 
-  // 处理 multi_image 字段
-  const updates: any = {
-    ...otherFields,
-  };
+  const isSuperAdmin = req.user?.isAdmin;
 
-  // 显式处理 multi_image 字段
-  if (multi_image === '' || (multi_image && !multi_image.startsWith('http'))) {
-    updates.multi_image = multi_image;
+  if (!isSuperAdmin) {
+    delete (updateData as Record<string, unknown>).token;
+  }
+
+  const isTokenChanged = Boolean(
+    isSuperAdmin && token !== undefined && token !== botManager.token,
+  );
+
+  if (isTokenChanged) {
+    const botExists = await Bot.findOne({ token, _id: { $ne: id } });
+    if (botExists) {
+      res.status(400);
+      throw new Error('该 Bot Token 已被其他机器人使用，请使用其他 Token');
+    }
+
+    try {
+      const botInfo = await getBotInfoByToken(token);
+      (updateData as Record<string, unknown>).id = botInfo.id;
+      (updateData as Record<string, unknown>).botName =
+        botInfo.botName || botManager.botName;
+      (updateData as Record<string, unknown>).userName =
+        botInfo.userName || botManager.userName;
+      (updateData as Record<string, unknown>).token = token;
+    } catch (error) {
+      console.error('获取机器人信息失败:', error);
+      res.status(400);
+      throw new Error('token 无效或无法获取机器人信息');
+    }
+
+    try {
+      const session = await startClientAndGetSession(token);
+      (updateData as Record<string, unknown>).session = session as unknown;
+    } catch (error) {
+      console.error('获取 session 失败:', error);
+    }
   }
 
   if (private_key) {
-    updates.private_key = encrypt(private_key);
+    (updateData as Record<string, unknown>).private_key = encrypt(private_key);
   }
 
-  const updatedBot = await Bot.findByIdAndUpdate(id, updates, {
+  if (multi_image === '' || (multi_image && !multi_image.startsWith('http'))) {
+    (updateData as Record<string, unknown>).multi_image = multi_image;
+  }
+
+  const updatedBot = await Bot.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
   })
     .populate('groupWelcome')
     .populate('groupVerify');
 
-  if (updatedBot.isOnline !== botManager.isOnline && updatedBot.isOnline) {
+  if (!updatedBot) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  if (isTokenChanged && updatedBot.isOnline) {
+    try {
+      await setWebhook(updatedBot);
+    } catch (e) {
+      console.log('设置 webhook 失败:', e);
+    }
+  } else if (
+    updatedBot.isOnline !== botManager.isOnline &&
+    updatedBot.isOnline
+  ) {
     await setWebhook(updatedBot);
   }
 
-  // 处理 multi_image 路径
   const processedBot = await transformDocumentImage(updatedBot, [
     'multi_image',
   ]);
 
-  // 处理 groupWelcome 中的 medias
   const botObj = processedBot.toObject ? processedBot.toObject() : processedBot;
   if (
     botObj.groupWelcome &&
