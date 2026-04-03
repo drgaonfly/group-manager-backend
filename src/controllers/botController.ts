@@ -1029,13 +1029,12 @@ const BOT_FEATURE_FIELD_KEYS: string[] = [
 ];
 
 function omitDocMeta<T extends Record<string, unknown>>(doc: T) {
-  const { _id, __v, createdAt, updatedAt, ...rest } = doc as T & {
-    _id?: unknown;
-    __v?: unknown;
-    createdAt?: unknown;
-    updatedAt?: unknown;
-  };
-  return rest;
+  const rest = { ...(doc as Record<string, unknown>) };
+  delete rest._id;
+  delete rest.__v;
+  delete rest.createdAt;
+  delete rest.updatedAt;
+  return rest as Omit<T, '_id' | '__v' | 'createdAt' | 'updatedAt'>;
 }
 
 async function cloneGroupWelcomeDoc(
