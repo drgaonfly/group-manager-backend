@@ -519,7 +519,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
           }
         }
 
-        // 2. 普通搜索逻辑
+        // 2. 普通搜索逻辑 -- 按名索骥
         const { teachers, message: teacherMsg } = await searchTeachers(
           text,
           ctx.currentBot._id,

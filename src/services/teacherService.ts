@@ -38,14 +38,17 @@ export const searchTeachers = async (
     ],
   }).select('_id');
 
-  // 2. 同时在 Teacher 的 display_name 字段中搜索
-  const displayNameTeachers = await Teacher.find({
+  // 2. 同时在 Teacher 的 display_name 和 address 字段中搜索
+  const matchingTeachers = await Teacher.find({
     bot: botId,
     status: 'approved',
-    display_name: { $regex: query, $options: 'i' },
+    $or: [
+      { display_name: { $regex: query, $options: 'i' } },
+      { address: { $regex: query, $options: 'i' } },
+    ],
   }).select('botUser');
 
-  const teacherBotUserIds = displayNameTeachers.map((t) => t.botUser);
+  const teacherBotUserIds = matchingTeachers.map((t) => t.botUser);
   const botUserIds = [
     ...new Set([...botUsers.map((u) => u._id), ...teacherBotUserIds]),
   ];
@@ -86,6 +89,7 @@ export const searchTeachers = async (
       return [
         `*${idx + 1}. ${name}*`,
         `状态：${status}`,
+        `地点：${t.address || '未设置'}`,
         `联系方式：${t.contactLink || '未设置'}`,
         `详细信息：\n${t.brief || '无'}`,
       ].join('\n');

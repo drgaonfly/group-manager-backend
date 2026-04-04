@@ -10,8 +10,9 @@ export interface ITeacher extends Document {
   botUser: mongoose.Types.ObjectId | IBotUser;
 
   display_name: string;
-
   contactLink: string; // 修正拼写: contact_link
+  address: string;
+
   isAvailable: boolean; // 建议将 isClass (是否上课) 改为 isAvailable (是否营业/接单中) 更符合语义
   reviews: string[];
 
@@ -43,6 +44,7 @@ const teacherSchema = new mongoose.Schema(
       required: true,
     },
     contactLink: { type: String, required: true }, // 修正拼写
+    address: { type: String, required: true },
     isAvailable: { type: Boolean, required: true, default: false }, // 原 isClass
     reviews: { type: [String], required: true, default: [] },
     images: { type: [String], required: true, default: [] },
