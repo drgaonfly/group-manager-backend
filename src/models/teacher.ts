@@ -2,7 +2,6 @@ import mongoose, { Document } from 'mongoose';
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { IUser } from './user';
-import BotUser from './botUser';
 
 // Teacher（原 Bot和User的关系表）接口定义
 export interface ITeacher extends Document {
