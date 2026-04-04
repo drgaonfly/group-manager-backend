@@ -85,6 +85,8 @@ export interface IBot extends Document {
 
   // 群抽奖
   canLotteryRule: boolean;
+
+  // 教学模块
   canTeaching: boolean;
 }
 

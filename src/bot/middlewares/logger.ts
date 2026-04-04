@@ -494,6 +494,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     // 比如：如果消息长度适中且不包含特殊指令前缀
     if (text.length >= 2 && text.length <= 30 && !text.startsWith('/')) {
       try {
+        let sentMsg: any = null;
         // 1. 如果是 @username 格式，则专门处理评价查询
         if (text.startsWith('@')) {
           const userName = text.slice(1);
@@ -509,14 +510,14 @@ const logger: Middleware = async (ctx: MyContext, next) => {
               ctx.currentBot.userName,
             );
             if (evalText) {
-              await ctx.reply(evalText, {
+              sentMsg = await ctx.reply(evalText, {
                 parse_mode: 'Markdown',
                 reply_to_message_id: message.message_id,
                 link_preview_options: { is_disabled: true },
               });
             } else {
               // 找到老师但没有评价，直接提示，不转普通搜索
-              await ctx.reply(
+              sentMsg = await ctx.reply(
                 `🔍 找到老师 @${userName}，但目前暂无评价报告。`,
                 {
                   reply_to_message_id: message.message_id,
@@ -525,24 +526,39 @@ const logger: Middleware = async (ctx: MyContext, next) => {
             }
           } else {
             // 未找到该用户名的老师
-            await ctx.reply(`❌ 未找到用户名为 @${userName} 的认证老师。`, {
-              reply_to_message_id: message.message_id,
-            });
+            sentMsg = await ctx.reply(
+              `❌ 未找到用户名为 @${userName} 的认证老师。`,
+              {
+                reply_to_message_id: message.message_id,
+              },
+            );
           }
-          await next();
-          return;
+        } else {
+          // 2. 普通搜索逻辑 -- 按名或地址索骥
+          const { teachers, message: teacherMsg } = await searchTeachers(
+            text,
+            ctx.currentBot._id,
+          );
+          if (teachers.length > 0) {
+            sentMsg = await ctx.reply(
+              `💡 发现匹配的老师信息：\n\n${teacherMsg}`,
+              {
+                parse_mode: 'Markdown',
+                reply_to_message_id: message.message_id,
+              },
+            );
+          }
         }
 
-        // 2. 普通搜索逻辑 -- 按名或地址索骥
-        const { teachers, message: teacherMsg } = await searchTeachers(
-          text,
-          ctx.currentBot._id,
-        );
-        if (teachers.length > 0) {
-          await ctx.reply(`💡 发现匹配的老师信息：\n\n${teacherMsg}`, {
-            parse_mode: 'Markdown',
-            reply_to_message_id: message.message_id,
-          });
+        // 统一焚烧逻辑
+        if (sentMsg) {
+          setTimeout(async () => {
+            try {
+              await ctx.api.deleteMessage(ctx.chat.id, sentMsg.message_id);
+            } catch (e) {
+              console.error('Failed to delete message:', e);
+            }
+          }, 25000);
         }
       } catch (err) {
         console.error('Logger teacher lookup failed:', err);
