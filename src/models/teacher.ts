@@ -2,6 +2,7 @@ import mongoose, { Document } from 'mongoose';
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { IUser } from './user';
+import BotUser from './botUser';
 
 // Teacher（原 Bot和User的关系表）接口定义
 export interface ITeacher extends Document {
@@ -41,7 +42,7 @@ const teacherSchema = new mongoose.Schema(
     botUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
-      required: true,
+      required: false,
     },
     contactLink: { type: String, required: true }, // 修正拼写
     address: { type: String, required: true },

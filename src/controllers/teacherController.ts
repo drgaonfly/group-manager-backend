@@ -1,9 +1,12 @@
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { Request, Response } from 'express';
 import Evaluation from '../models/evaluation';
+import BotUser from '../models/botUser';
 import Teacher from '../models/teacher';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
+import { getUserByUsername } from '../utils/getBotUserByUsername';
+import Bot from '../models/bot';
 
 /**
  * 获取所有老师（支持分页和机器人过滤）
@@ -84,11 +87,40 @@ export const getTeacherById = handleAsync(
  */
 export const addTeacher = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const teacher = new Teacher({
-      ...req.body,
+    const { username, ...rest } = req.body;
+    const data = {
+      ...rest,
       proxy: req.user._id,
-    });
+      status: 'approved', // 后台添加直接审核通过
+    };
 
+    if (username && !data.botUser) {
+      const bot = await Bot.findById(data.bot);
+      if (!bot) throw new Error('机器人不存在');
+
+      console.log('bot.session', bot.session);
+
+      const botUser_data = await getUserByUsername(
+        bot.session,
+        username.replace('@', ''),
+      );
+
+      // 查找或创建 BotUser
+      let botUserDoc = await BotUser.findOne({
+        id: botUser_data.id.toString(),
+      });
+      if (!botUserDoc) {
+        botUserDoc = await BotUser.create({
+          id: botUser_data.id.toString(),
+          userName: botUser_data.username,
+          firstName: botUser_data.first_name,
+          lastName: botUser_data.last_name,
+        });
+      }
+      data.botUser = botUserDoc._id;
+    }
+
+    const teacher = new Teacher(data);
     const savedTeacher = await teacher.save();
     res.status(201).json({
       success: true,
