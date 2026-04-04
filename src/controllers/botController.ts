@@ -105,7 +105,8 @@ const buildQuery = async (
     }
   }
 
-  if (isProxy(req.user)) {
+  // 与 userController 代理列表一致：超级管理员（isAdmin）可看全部机器人，不受单一「代理」角色限制
+  if (isProxy(req.user) && !req.user.isAdmin) {
     query.user = req.user._id;
   }
 
