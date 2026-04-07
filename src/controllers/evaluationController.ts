@@ -1,10 +1,12 @@
 import { Response } from 'express';
 import Evaluation from '../models/evaluation';
-// import Teacher from '../models/teacher';
+import BotUser from '../models/botUser';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { setupBot } from '../bot/botSetup';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
+import { getUserByUsername } from '../utils/getBotUserByUsername';
+import Bot from '../models/bot';
 
 /**
  * 获取评价列表
@@ -47,6 +49,36 @@ export const getEvaluations = handleAsync(
       total,
       current: +current,
       pageSize: +pageSize,
+    });
+  },
+);
+
+/**
+ * 添加评价
+ */
+export const addEvaluation = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { teacherId, botId, ...rest } = req.body;
+    const data = {
+      ...rest,
+      bot: botId,
+      teacher: teacherId,
+      status: 'approved', // 后台添加直接审核通过
+    };
+
+    // 如果没有指定评价人，默认使用当前管理员或系统用户
+    if (!data.reviewer) {
+      // 这里可以根据业务逻辑设置一个默认的 reviewer，或者要求前端传一个 reviewerId
+      // 目前模型中 reviewer 是必填的，所以如果前端没传，我们可能需要一个默认系统用户 ID
+      // 或者在模型中将 reviewer 设为可选（但这会影响展示）
+      // 暂且假设前端会传一个默认的 reviewerId 或者我们在后端处理
+    }
+
+    const evaluation = new Evaluation(data);
+    const savedEvaluation = await evaluation.save();
+    res.status(201).json({
+      success: true,
+      data: savedEvaluation,
     });
   },
 );

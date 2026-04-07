@@ -4,12 +4,16 @@ import {
   approveEvaluation,
   rejectEvaluation,
   deleteEvaluation,
+  addEvaluation,
 } from '../controllers/evaluationController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
 
-router.route('/').get(protect, checkPermission, getEvaluations);
+router
+  .route('/')
+  .get(protect, checkPermission, getEvaluations)
+  .post(protect, checkPermission, addEvaluation);
 
 router.route('/:id/approve').put(protect, checkPermission, approveEvaluation);
 

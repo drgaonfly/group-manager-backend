@@ -33,7 +33,7 @@ const evaluationSchema = new mongoose.Schema(
     reviewer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
-      required: true,
+      required: false,
     },
     teacher: {
       type: mongoose.Schema.Types.ObjectId,
