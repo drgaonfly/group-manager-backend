@@ -1,12 +1,12 @@
 import { Response } from 'express';
 import Evaluation from '../models/evaluation';
-import BotUser from '../models/botUser';
+// import BotUser from '../models/botUser';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { setupBot } from '../bot/botSetup';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
-import { getUserByUsername } from '../utils/getBotUserByUsername';
-import Bot from '../models/bot';
+// import { getUserByUsername } from '../utils/getBotUserByUsername';
+// import Bot from '../models/bot';
 
 /**
  * 获取评价列表
