@@ -43,8 +43,8 @@ const teacherSchema = new mongoose.Schema(
       ref: 'BotUser',
       required: false,
     },
-    contactLink: { type: String, required: true }, // 修正拼写
-    address: { type: String, required: true },
+    contactLink: { type: String, required: false }, // 修正拼写
+    address: { type: String, required: false },
     isAvailable: { type: Boolean, required: true, default: false }, // 原 isClass
     reviews: { type: [String], required: true, default: [] },
     images: { type: [String], required: true, default: [] },
