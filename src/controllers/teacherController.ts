@@ -101,7 +101,7 @@ export const addTeacher = handleAsync(
       console.log('bot.session', bot.session);
 
       const botUser_data = await getUserByUsername(
-        bot.session,
+        bot.token,
         username.replace('@', ''),
       );
 

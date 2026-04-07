@@ -1,16 +1,15 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../bot/types';
-import { createTelegramClient } from '../bot/services/gramClient';
+import { getGramClient } from '../bot/services/gramClient';
 import { Api } from 'telegram';
 
 export const addOperatorCommand = new Composer<MyContext>();
 
 // 通过 username 获取用户信息
-export async function getUserByUsername(session: any, username: string) {
+export async function getUserByUsername(botToken: string, username: string) {
   console.log('username', username);
-  const gramClient = createTelegramClient(session);
+  const gramClient = await getGramClient(botToken);
   try {
-    await gramClient.connect();
     const user = await gramClient.invoke(
       new Api.contacts.ResolveUsername({ username }),
     );
