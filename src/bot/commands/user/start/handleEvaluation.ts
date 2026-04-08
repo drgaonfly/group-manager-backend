@@ -1,9 +1,8 @@
 import { InlineKeyboard } from 'grammy';
-import fs from 'fs/promises';
-import path from 'path';
 import { InputFile } from 'grammy';
 import { MyContext } from '../../../types';
 import Evaluation from '../../../../models/evaluation';
+import Teacher from '../../../../models/teacher';
 import { ITEMS_PER_PAGE } from '../../../../constants';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import createDebug from 'debug';
@@ -71,31 +70,17 @@ export async function handleEvaluation(ctx: MyContext, evalId: string) {
 
     const msg = getEvaluationDetail(evaluation);
 
-    const keyboard = new InlineKeyboard().text(
+    const keyboard = new InlineKeyboard();
+
+    // 如果有媒体文件，增加查看照片按钮
+    if (evaluation.proof_media && evaluation.proof_media.length > 0) {
+      keyboard.text('🖼 查看照片', `show_eval_media_${evaluation._id}`).row();
+    }
+
+    keyboard.text(
       '⬅️ 返回列表',
       `eval_list_${(evaluation.teacher as any)?._id}`,
     );
-
-    if (evaluation.proof_media && evaluation.proof_media.length > 0) {
-      // 如果有媒体，发送第一张图片作为预览
-      const firstMedia = evaluation.proof_media[0];
-      const isImage = firstMedia.match(/\.(jpg|jpeg|png|webp)$/i);
-
-      if (isImage) {
-        const imagePath = path.join(process.cwd(), 'tmp', firstMedia);
-        try {
-          await fs.access(imagePath);
-          await ctx.replyWithPhoto(new InputFile(imagePath), {
-            caption: msg,
-            parse_mode: 'Markdown',
-            reply_markup: keyboard,
-          });
-          return;
-        } catch (e) {
-          debug('Media file not found:', imagePath);
-        }
-      }
-    }
 
     await ctx.reply(msg, {
       parse_mode: 'Markdown',
@@ -136,8 +121,8 @@ export async function handleEvaluationList(
       return;
     }
 
-    const teacher = await Evaluation.db.model('Teacher').findById(teacherId);
-    const teacherName = teacher?.display_name || '老师';
+    const teacherDoc = await Teacher.findById(teacherId);
+    const teacherName = teacherDoc?.display_name || '老师';
 
     const msg = `查询到 ${teacherName} 相关的评价报告 (第 ${page}/${totalPages} 页)：`;
     const keyboard = new InlineKeyboard();
