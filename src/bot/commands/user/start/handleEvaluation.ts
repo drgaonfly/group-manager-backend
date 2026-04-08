@@ -1,5 +1,4 @@
 import { InlineKeyboard } from 'grammy';
-import { InputFile } from 'grammy';
 import { MyContext } from '../../../types';
 import Evaluation from '../../../../models/evaluation';
 import Teacher from '../../../../models/teacher';
