@@ -7,10 +7,7 @@ import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
-import {
-  searchTeachers,
-  getTeacherEvaluationsText,
-} from '../../services/teacherService';
+import { searchTeachers } from '../../services/teacherService';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:replaceMentions');
