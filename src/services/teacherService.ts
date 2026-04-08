@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 export interface TeacherSearchResult {
   teachers: any[];
   message: string;
+  botUserName?: string;
 }
 
 /**
@@ -64,12 +65,15 @@ export const searchTeachers = async (
     status: 'approved',
   })
     .populate('botUser')
+    .populate('bot', 'userName')
     .sort({ updatedAt: -1 })
     .limit(10);
 
   if (teachers.length === 0) {
     return { teachers: [], message: '未找到相关的认证老师' };
   }
+
+  const botUserName = (teachers[0].bot as any)?.userName;
 
   // 4. 格式化消息内容
   const messageRows = [
@@ -86,19 +90,22 @@ export const searchTeachers = async (
         '未知用户';
 
       const status = t.isAvailable ? '✅ 可接单' : '❌ 忙碌中';
-      return [
+      const rows = [
         `*${idx + 1}. ${name}*`,
         `状态：${status}`,
         `地点：${t.address || '未设置'}`,
         `联系方式：${t.contactLink || '未设置'}`,
         `详细信息：\n${t.brief || '无'}`,
-      ].join('\n');
+      ];
+
+      return rows.join('\n');
     }),
   ];
 
   return {
     teachers,
     message: messageRows.join('\n\n'),
+    botUserName,
   };
 };
 

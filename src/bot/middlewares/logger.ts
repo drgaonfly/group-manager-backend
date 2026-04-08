@@ -1,5 +1,5 @@
 // src/middlewares/logger.ts
-import { Middleware } from 'grammy';
+import { Middleware, InlineKeyboard } from 'grammy';
 import BotUser from '../../models/botUser';
 import BotMessage from '../../models/botMessage';
 import { findBotProxy } from '../services/findBotProxy';
@@ -495,59 +495,31 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     if (text.length >= 2 && text.length <= 30 && !text.startsWith('/')) {
       try {
         let sentMsg: any = null;
-        // 1. 如果是 @username 格式，则专门处理评价查询
-        if (text.startsWith('@')) {
-          const userName = text.slice(1);
-          const { teachers } = await searchTeachers(
-            userName,
-            ctx.currentBot._id,
-          );
+        // 普通搜索逻辑 -- 按名或地址索骥 (已包含 @username 模糊搜索)
+        const {
+          teachers,
+          message: teacherMsg,
+          botUserName,
+        } = await searchTeachers(text, ctx.currentBot._id);
 
-          if (teachers.length > 0) {
-            const teacher = teachers[0];
-            const evalText = await getTeacherEvaluationsText(
-              teacher._id,
-              ctx.currentBot.userName,
-            );
-            if (evalText) {
-              sentMsg = await ctx.reply(evalText, {
-                parse_mode: 'Markdown',
-                reply_to_message_id: message.message_id,
-                link_preview_options: { is_disabled: true },
-              });
-            } else {
-              // 找到老师但没有评价，直接提示，不转普通搜索
-              sentMsg = await ctx.reply(
-                `🔍 找到老师 @${userName}，但目前暂无评价报告。`,
-                {
-                  reply_to_message_id: message.message_id,
-                },
-              );
+        if (teachers.length > 0) {
+          const keyboard = new InlineKeyboard();
+          teachers.forEach((t, idx) => {
+            if (botUserName) {
+              const url = `https://t.me/${botUserName}?start=eval_list_${t._id}`;
+              keyboard.url(`查看 ${t.display_name || '老师'} 的评价`, url);
+              if ((idx + 1) % 1 === 0) keyboard.row();
             }
-          } else {
-            // 未找到该用户名的老师
-            sentMsg = await ctx.reply(
-              `❌ 未找到用户名为 @${userName} 的认证老师。`,
-              {
-                reply_to_message_id: message.message_id,
-              },
-            );
-          }
-        } else {
-          // 2. 普通搜索逻辑 -- 按名或地址索骥
-          const { teachers, message: teacherMsg } = await searchTeachers(
-            text,
-            ctx.currentBot._id,
+          });
+
+          sentMsg = await ctx.reply(
+            `💡 发现匹配的老师信息：\n\n${teacherMsg}`,
+            {
+              parse_mode: 'Markdown',
+              reply_to_message_id: message.message_id,
+              reply_markup: keyboard,
+            },
           );
-          if (teachers.length > 0) {
-            sentMsg = await ctx.reply(
-              `💡 发现匹配的老师信息：\n\n${teacherMsg}`,
-              {
-                parse_mode: 'Markdown',
-                reply_to_message_id: message.message_id,
-              },
-            );
-          }
         }
 
         // 统一焚烧逻辑

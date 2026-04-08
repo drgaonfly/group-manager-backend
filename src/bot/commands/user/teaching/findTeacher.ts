@@ -1,4 +1,4 @@
-import { Composer } from 'grammy';
+import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import { checkInBot } from '../../../middlewares/checkInBot';
 import { checkTeaching } from '../../../middlewares/checkTeaching';
@@ -23,10 +23,26 @@ findTeacherCommand.hears(
       return;
     }
 
-    const { message } = await searchTeachers(query, ctx.currentBot!._id);
+    const { message, teachers, botUserName } = await searchTeachers(
+      query,
+      ctx.currentBot!._id,
+    );
+
+    const keyboard = new InlineKeyboard();
+    if (teachers.length > 0 && botUserName) {
+      teachers.forEach((t) => {
+        keyboard
+          .url(
+            `查看 ${t.display_name || '老师'} 的评价`,
+            `https://t.me/${botUserName}?start=eval_list_${t._id}`,
+          )
+          .row();
+      });
+    }
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
+      reply_markup: keyboard,
     });
   },
 );
