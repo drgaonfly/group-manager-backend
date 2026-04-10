@@ -8,6 +8,16 @@ import createDebug from 'debug';
 
 const debug = createDebug('bot:start:evaluation');
 
+const escapeHtml = (input: unknown): string => {
+  const str = String(input ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 /**
  * 获取评价报告详情文本
  */
@@ -26,17 +36,7 @@ export function getEvaluationDetail(evaluation: any) {
 
   const dateStr = evaluation.createdAt.toISOString().split('T')[0];
 
-  let msg = `炮兵团专属车评\n`;
-  msg += `【时间】：${dateStr}\n`;
-  msg += `【老师】：${teacherName}\n`;
-  msg += `【留名】：${reviewerName}\n`;
-  msg += `【人照】：${evaluation.avatar_rating * 2}\n`;
-  msg += `【颜值】：${evaluation.appearance_rating * 2}\n`;
-  msg += `【身材】：${evaluation.body_rating * 2}\n`;
-  msg += `【服务】：${evaluation.service_rating * 2}\n`;
-  msg += `【态度】：${evaluation.attitude_rating * 2}\n`;
-  msg += `【环境】：${evaluation.circumstance_rating * 2}\n`;
-  msg += `【综合】：${Math.round(
+  const totalScore = Math.round(
     (evaluation.avatar_rating +
       evaluation.appearance_rating +
       evaluation.body_rating +
@@ -44,9 +44,30 @@ export function getEvaluationDetail(evaluation: any) {
       evaluation.attitude_rating +
       evaluation.circumstance_rating) /
       3,
-  )}\n`;
-  msg += `【过程】：${evaluation.process_desc}`;
-  return msg;
+  );
+
+  return [
+    `<b>${escapeHtml('炮兵团专属车评')}</b>`,
+    `<b>${escapeHtml('时间')}：</b>${escapeHtml(dateStr)}`,
+    `<b>${escapeHtml('老师')}：</b>${escapeHtml(teacherName)}`,
+    `<b>${escapeHtml('留名')}：</b>${escapeHtml(reviewerName)}`,
+    `<b>${escapeHtml('人照')}：</b>${escapeHtml(evaluation.avatar_rating * 2)}`,
+    `<b>${escapeHtml('颜值')}：</b>${escapeHtml(
+      evaluation.appearance_rating * 2,
+    )}`,
+    `<b>${escapeHtml('身材')}：</b>${escapeHtml(evaluation.body_rating * 2)}`,
+    `<b>${escapeHtml('服务')}：</b>${escapeHtml(
+      evaluation.service_rating * 2,
+    )}`,
+    `<b>${escapeHtml('态度')}：</b>${escapeHtml(
+      evaluation.attitude_rating * 2,
+    )}`,
+    `<b>${escapeHtml('环境')}：</b>${escapeHtml(
+      evaluation.circumstance_rating * 2,
+    )}`,
+    `<b>${escapeHtml('综合')}：</b>${escapeHtml(totalScore)}`,
+    `<b>${escapeHtml('过程')}：</b>${escapeHtml(evaluation.process_desc)}`,
+  ].join('\n');
 }
 
 /**
@@ -82,7 +103,7 @@ export async function handleEvaluation(ctx: MyContext, evalId: string) {
     );
 
     await ctx.reply(msg, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: keyboard,
     });
   } catch (err) {
