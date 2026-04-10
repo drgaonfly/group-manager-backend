@@ -11,7 +11,7 @@ const buildQuery = async (
   const query: any = {};
 
   // 代理用户只能查看自己的记录
-  if (isProxy(req.user)) {
+  if (isProxy(req.user) && !req.user.isAdmin) {
     query.proxy = req.user._id;
   }
 

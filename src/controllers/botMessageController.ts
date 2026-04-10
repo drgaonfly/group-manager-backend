@@ -63,7 +63,7 @@ const buildQuery = async (queryParams: any, req?: RequestCustom) => {
   }
 
   // 如果是代理角色，只显示自己的消息
-  if (req?.user && isProxy(req.user)) {
+  if (req?.user && isProxy(req.user) && !req.user.isAdmin) {
     query.proxyUser = req.user._id;
   }
 
@@ -115,7 +115,7 @@ const getBotMessageById = handleAsync(
     }
 
     // 如果是代理角色，检查是否是自己的消息
-    if (req.user && isProxy(req.user)) {
+    if (req.user && isProxy(req.user) && !req.user.isAdmin) {
       if (message.proxyUser?.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error('Access denied');
