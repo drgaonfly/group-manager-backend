@@ -1,16 +1,18 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { Composer, InlineKeyboard, InputFile } from 'grammy';
 import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkInBot } from '../../../middlewares/checkInBot';
-// import { findBotProxy } from '../../../services/findBotProxy';
-// import { PermissionChecker } from '../../../utils/permissionChecker';
-// import { setupBot } from '../../../botSetup';
 import { handleJoinLottery } from './handleLottery';
 import { handlePromotion } from './handlePromotion';
-import { handleEvaluation } from './handleEvaluation';
+import {
+  handleEvaluation,
+  handleEvaluationList,
+  getEvaluationDetail,
+} from './handleEvaluation';
+import Evaluation from '../../../../models/evaluation';
+import path from 'path';
+import fs from 'fs/promises';
 import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();
@@ -65,6 +67,11 @@ startCommand.command('start', checkInBot, async (ctx) => {
 
   // 处理评价链接
   if (startParam) {
+    if (startParam.startsWith('eval_list_')) {
+      const teacherId = startParam.replace('eval_list_', '');
+      await handleEvaluationList(ctx, teacherId);
+      return;
+    }
     if (startParam.startsWith('eval_')) {
       const evalId = startParam.replace('eval_', '');
       await handleEvaluation(ctx, evalId);
@@ -123,6 +130,110 @@ startCommand.command('start', checkInBot, async (ctx) => {
 
   // 发送消息和键盘
   await ctx.reply(bot.message || '欢迎使用机器人', replyOptions);
+});
+
+// 处理评价列表回调
+startCommand.callbackQuery(/^eval_list_(.+?)(?:_(\d+))?$/, async (ctx) => {
+  const teacherId = ctx.match[1];
+  const page = ctx.match[2] ? parseInt(ctx.match[2]) : 1;
+  await handleEvaluationList(ctx, teacherId, true, page);
+  await ctx.answerCallbackQuery();
+});
+
+// 处理具体评价详情回调
+startCommand.callbackQuery(/^show_eval_([a-f\d]{24})$/i, async (ctx) => {
+  const evalId = ctx.match[1];
+  try {
+    const evaluation = await Evaluation.findById(evalId)
+      .populate('reviewer', 'userName firstName lastName')
+      .populate({
+        path: 'teacher',
+        populate: { path: 'botUser' },
+      });
+
+    if (!evaluation) {
+      await ctx.answerCallbackQuery('❌ 评价不存在');
+      return;
+    }
+
+    const msg = getEvaluationDetail(evaluation);
+    const keyboard = new InlineKeyboard();
+
+    if (evaluation.proof_media && evaluation.proof_media.length > 0) {
+      keyboard.text('🖼 查看照片', `show_eval_media_${evaluation._id}`).row();
+    }
+
+    keyboard.text(
+      '⬅️ 返回列表',
+      `eval_list_${(evaluation.teacher as any)?._id}`,
+    );
+
+    await ctx.editMessageText(msg, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard,
+    });
+    await ctx.answerCallbackQuery();
+  } catch (err) {
+    console.error('Show evaluation detail failed:', err);
+    await ctx.answerCallbackQuery('❌ 加载失败');
+  }
+});
+
+// 处理查看评价照片回调
+startCommand.callbackQuery(/^show_eval_media_([a-f\d]{24})$/i, async (ctx) => {
+  const evalId = ctx.match[1];
+  try {
+    const evaluation = await Evaluation.findById(evalId);
+
+    if (
+      !evaluation ||
+      !evaluation.proof_media ||
+      evaluation.proof_media.length === 0
+    ) {
+      await ctx.answerCallbackQuery('❌ 暂无照片');
+      return;
+    }
+
+    const mediaGroup = await Promise.all(
+      evaluation.proof_media.map(async (file: string) => {
+        const filePath = path.join(process.cwd(), 'tmp', file);
+        try {
+          await fs.access(filePath);
+          const isVideo = file.match(/\.(mp4|mov|avi)$/i);
+          if (isVideo) {
+            return {
+              type: 'video' as const,
+              media: new InputFile(filePath),
+            };
+          }
+          return {
+            type: 'photo' as const,
+            media: new InputFile(filePath),
+          };
+        } catch (e) {
+          return null;
+        }
+      }),
+    );
+
+    const validMedia = mediaGroup.filter((m) => m !== null) as any[];
+
+    if (validMedia.length === 0) {
+      await ctx.answerCallbackQuery('❌ 照片文件不存在');
+      return;
+    }
+
+    // 分批发送，每组最多 10 个
+    for (let i = 0; i < validMedia.length; i += 10) {
+      const chunk = validMedia.slice(i, i + 10);
+      await ctx.replyWithMediaGroup(chunk);
+    }
+
+    await ctx.answerCallbackQuery();
+  } catch (err) {
+    console.error('Show evaluation media failed:', err);
+    await ctx.answerCallbackQuery('❌ 加载失败');
+  }
 });
 
 export default startCommand;

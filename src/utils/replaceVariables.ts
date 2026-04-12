@@ -1,5 +1,15 @@
 import { formatBeijingDate } from './formatBeijingDate';
 
+const escapeHtml = (input: unknown): string => {
+  const str = String(input ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 export interface MemberInfo {
   id: number;
   username?: string;
@@ -42,30 +52,32 @@ export const replaceVariables = (
 
   // 替换时间和群组相关变量（始终可用）
   result = result
-    .replace(/\{currentTime\}/g, beijingTime)
-    .replace(/\{groupTitle\}/g, groupTitle || '')
-    .replace(/\{currentBot\}/g, botName || '');
+    .replace(/\{currentTime\}/g, escapeHtml(beijingTime))
+    .replace(/\{groupTitle\}/g, escapeHtml(groupTitle || ''))
+    .replace(/\{currentBot\}/g, escapeHtml(botName || ''));
 
   // 替换排名变量
   result = result.replace(
     /\{userBalanceRanking\}/g,
     userBalanceRanking !== undefined && userBalanceRanking !== null
-      ? String(userBalanceRanking)
+      ? escapeHtml(String(userBalanceRanking))
       : '',
   );
 
   // 替换榜单变量
   result = result.replace(
     /\{userBalanceRankingList\}/g,
-    userBalanceRankingList || '',
+    escapeHtml(userBalanceRankingList || ''),
   );
 
   // 如果有成员信息，替换成员相关变量
   if (member) {
     // 构建带链接的成员名
     const memberLink = member.username
-      ? `<a href="https://t.me/${member.username}">${member.firstName}</a>`
-      : member.firstName;
+      ? `<a href="https://t.me/${member.username}">${escapeHtml(
+          member.firstName,
+        )}</a>`
+      : escapeHtml(member.firstName);
 
     // 用户昵称
     const nickname = [member.firstName, member.lastName]
@@ -77,15 +89,15 @@ export const replaceVariables = (
 
     result = result
       .replace(/\{member\}/g, memberLink)
-      .replace(/\{userId\}/g, String(member.id))
-      .replace(/\{nickname\}/g, nickname)
-      .replace(/\{userName\}/g, userName)
-      .replace(/\{username\}/g, userName) // 兼容旧格式
-      .replace(/\{memberName\}/g, nickname) // 兼容旧格式
+      .replace(/\{userId\}/g, escapeHtml(String(member.id)))
+      .replace(/\{nickname\}/g, escapeHtml(nickname))
+      .replace(/\{userName\}/g, escapeHtml(userName))
+      .replace(/\{username\}/g, escapeHtml(userName)) // 兼容旧格式
+      .replace(/\{memberName\}/g, escapeHtml(nickname)) // 兼容旧格式
       .replace(
         /\{userBalance\}/g,
         userBalance !== undefined && userBalance !== null
-          ? String(userBalance)
+          ? escapeHtml(String(userBalance))
           : '',
       );
   }
@@ -148,28 +160,28 @@ export const replaceLotteryVariables = (
   }
 
   result = result
-    .replace(/\{lotteryTitle\}/g, lottery.title || '')
-    .replace(/\{goodsList\}/g, goodsList)
-    .replace(/\{joinCondition\}/g, '无') // 机器人本位架构下简化了
-    .replace(/\{openCondition\}/g, openConditions.join(' 或 '))
-    .replace(/\{joinNum\}/g, String(options.joinNum || 0))
-    .replace(/\{currentTime\}/g, beijingTime)
-    .replace(/\{currentBot\}/g, options.currentBot || '')
-    .replace(/\{winnerList\}/g, options.winnerList || '')
-    .replace(/\{openTime\}/g, options.openTime || '')
-    .replace(/\{nickname\}/g, options.nickname || '')
-    .replace(/\{userId\}/g, String(options.userId || ''))
-    .replace(/\{userName\}/g, options.userName || '')
+    .replace(/\{lotteryTitle\}/g, escapeHtml(lottery.title || ''))
+    .replace(/\{goodsList\}/g, escapeHtml(goodsList))
+    .replace(/\{joinCondition\}/g, escapeHtml('无')) // 机器人本位架构下简化了
+    .replace(/\{openCondition\}/g, escapeHtml(openConditions.join(' 或 ')))
+    .replace(/\{joinNum\}/g, escapeHtml(String(options.joinNum || 0)))
+    .replace(/\{currentTime\}/g, escapeHtml(beijingTime))
+    .replace(/\{currentBot\}/g, escapeHtml(options.currentBot || ''))
+    .replace(/\{winnerList\}/g, escapeHtml(options.winnerList || ''))
+    .replace(/\{openTime\}/g, escapeHtml(options.openTime || ''))
+    .replace(/\{nickname\}/g, escapeHtml(options.nickname || ''))
+    .replace(/\{userId\}/g, escapeHtml(String(options.userId || '')))
+    .replace(/\{userName\}/g, escapeHtml(options.userName || ''))
     .replace(
       /\{userBalanceRanking\}/g,
       options.userBalanceRanking !== undefined &&
         options.userBalanceRanking !== null
-        ? String(options.userBalanceRanking)
+        ? escapeHtml(String(options.userBalanceRanking))
         : '',
     )
     .replace(
       /\{userBalanceRankingList\}/g,
-      options.userBalanceRankingList || '',
+      escapeHtml(options.userBalanceRankingList || ''),
     );
 
   return result;

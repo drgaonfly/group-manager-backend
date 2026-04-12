@@ -54,7 +54,8 @@ const buildQuery = async (
     query.address = { $regex: queryParams.address, $options: 'i' };
   }
 
-  if (isProxy(req.user)) {
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
     const employees = await User.find({ proxy: req.user._id });
     const employeeIds = employees.map((employee) => employee._id);
     query.employee = { $in: [...employeeIds, req.user._id] };

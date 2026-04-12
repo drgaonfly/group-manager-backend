@@ -1,5 +1,5 @@
 // src/middlewares/logger.ts
-import { Middleware } from 'grammy';
+import { Middleware, InlineKeyboard } from 'grammy';
 import BotUser from '../../models/botUser';
 import BotMessage from '../../models/botMessage';
 import { findBotProxy } from '../services/findBotProxy';
@@ -7,10 +7,7 @@ import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
-import {
-  searchTeachers,
-  getTeacherEvaluationsText,
-} from '../../services/teacherService';
+import { searchTeachers } from '../../services/teacherService';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:replaceMentions');
@@ -94,6 +91,13 @@ const logger: Middleware = async (ctx: MyContext, next) => {
 
   // 获取代理用户权限
   const { proxyUser } = await findBotProxy(ctx.currentBot);
+
+  console.log(
+    `[Logger] Checking bidirectional for user ${ctx.currentBotUser.id}, isOwner: ${isOwner}`,
+  );
+  console.log(
+    `[Logger] proxyUser bidirectional: ${proxyUser?.bidirectional}, bot canBidirectional: ${ctx.currentBot.canBidirectional}`,
+  );
 
   // 如果是拥有者回复消息，且双向功能可用，则转发给原始用户，同时也发送给其他拥有者
   if (
@@ -385,8 +389,21 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       const mediaType = Object.entries(mediaTypes).find(([_, id]) => id)?.[0];
       const fileId = mediaType ? mediaTypes[mediaType] : null;
 
-      // 群发功能可用，给所有 owner 发送通知
-      if (PermissionChecker.canUseGroupMessaging(proxyUser, ctx.currentBot)) {
+      const canUseBidirectional = PermissionChecker.canUseBidirectional(
+        proxyUser,
+        ctx.currentBot,
+      );
+      const canUseGroupMessaging = PermissionChecker.canUseGroupMessaging(
+        proxyUser,
+        ctx.currentBot,
+      );
+
+      console.log(
+        `[Logger] User Message - canUseBidirectional: ${canUseBidirectional}, canUseGroupMessaging: ${canUseGroupMessaging}`,
+      );
+
+      // 双向功能或群发功能可用，给所有 owner 发送通知
+      if (canUseBidirectional || canUseGroupMessaging) {
         // 创建消息记录
         await BotMessage.create({
           bot: ctx.currentBot._id,
@@ -495,59 +512,31 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     if (text.length >= 2 && text.length <= 30 && !text.startsWith('/')) {
       try {
         let sentMsg: any = null;
-        // 1. 如果是 @username 格式，则专门处理评价查询
-        if (text.startsWith('@')) {
-          const userName = text.slice(1);
-          const { teachers } = await searchTeachers(
-            userName,
-            ctx.currentBot._id,
-          );
+        // 普通搜索逻辑 -- 按名或地址索骥 (已包含 @username 模糊搜索)
+        const {
+          teachers,
+          message: teacherMsg,
+          botUserName,
+        } = await searchTeachers(text, ctx.currentBot._id);
 
-          if (teachers.length > 0) {
-            const teacher = teachers[0];
-            const evalText = await getTeacherEvaluationsText(
-              teacher._id,
-              ctx.currentBot.userName,
-            );
-            if (evalText) {
-              sentMsg = await ctx.reply(evalText, {
-                parse_mode: 'Markdown',
-                reply_to_message_id: message.message_id,
-                link_preview_options: { is_disabled: true },
-              });
-            } else {
-              // 找到老师但没有评价，直接提示，不转普通搜索
-              sentMsg = await ctx.reply(
-                `🔍 找到老师 @${userName}，但目前暂无评价报告。`,
-                {
-                  reply_to_message_id: message.message_id,
-                },
-              );
+        if (teachers.length > 0) {
+          const keyboard = new InlineKeyboard();
+          teachers.forEach((t, idx) => {
+            if (botUserName) {
+              const url = `https://t.me/${botUserName}?start=eval_list_${t._id}`;
+              keyboard.url(`查看 ${t.display_name || '老师'} 的评价`, url);
+              if ((idx + 1) % 1 === 0) keyboard.row();
             }
-          } else {
-            // 未找到该用户名的老师
-            sentMsg = await ctx.reply(
-              `❌ 未找到用户名为 @${userName} 的认证老师。`,
-              {
-                reply_to_message_id: message.message_id,
-              },
-            );
-          }
-        } else {
-          // 2. 普通搜索逻辑 -- 按名或地址索骥
-          const { teachers, message: teacherMsg } = await searchTeachers(
-            text,
-            ctx.currentBot._id,
+          });
+
+          sentMsg = await ctx.reply(
+            `💡 发现匹配的老师信息：\n\n${teacherMsg}`,
+            {
+              parse_mode: 'Markdown',
+              reply_to_message_id: message.message_id,
+              reply_markup: keyboard,
+            },
           );
-          if (teachers.length > 0) {
-            sentMsg = await ctx.reply(
-              `💡 发现匹配的老师信息：\n\n${teacherMsg}`,
-              {
-                parse_mode: 'Markdown',
-                reply_to_message_id: message.message_id,
-              },
-            );
-          }
         }
 
         // 统一焚烧逻辑

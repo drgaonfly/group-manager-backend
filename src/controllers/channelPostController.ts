@@ -68,7 +68,12 @@ const buildQuery = async (
     }
   }
 
-  if (isProxy(req.user)) {
+  if (queryParams.isOnline !== '' && queryParams.isOnline !== undefined) {
+    query.isOnline = queryParams.isOnline === 'true';
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
     query.proxy = req.user._id;
   }
 
