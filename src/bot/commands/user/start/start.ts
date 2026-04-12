@@ -2,7 +2,7 @@ import { Composer, InlineKeyboard, InputFile } from 'grammy';
 import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
-import { checkInBot } from '../../../middlewares/checkInBot';
+import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
 import { handlePromotion } from './handlePromotion';
 import {
@@ -43,11 +43,13 @@ export async function handleStart(ctx: MyContext) {
   // 如果没有 multi_image 或 multi_content，什么都不做
 }
 
-// 开始命令处理
-startCommand.command('start', checkInBot, async (ctx) => {
+// 开始命令处理（私聊与群/超级群均可，群内可拉取自由键盘）
+startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   debug('start');
   // const chatId = ctx.chat.id; // 获取群组 ID
   const bot = ctx.currentBot;
+  const isGroupChat =
+    ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
 
   // 获取代理用户权限（提前获取，后续可以复用）
   // const { proxyUser } = await findBotProxy(ctx.currentBot);
@@ -108,28 +110,23 @@ startCommand.command('start', checkInBot, async (ctx) => {
   //   return;
   // }
 
-  await handleStart(ctx);
+  // 群内不发送 multi 推广图，避免刷屏；私聊保持原样
+  if (!isGroupChat) {
+    await handleStart(ctx);
+  }
 
-  // 合并原有菜单和添加到群组按钮
-  const combinedKeyboard = new InlineKeyboard();
-
-  // 添加群组按钮
-  combinedKeyboard
-    .url('➕ 添加到群聊', `https://t.me/${ctx.me.username}?startgroup=true`)
-    .row();
-
-  // 添加原有菜单项
-  bot.menus.forEach((item) => {
-    combinedKeyboard.url(item.name, item.url).row();
-  });
-
-  // 总是显示自定义键盘（权限判断在 createMainKeyboard 内部）
+  // 自由键盘等（权限判断在 createMainKeyboard 内部）
   const replyOptions: any = {
     reply_markup: await createMainKeyboard(ctx),
   };
 
-  // 发送消息和键盘
-  await ctx.reply(bot.message || '欢迎使用机器人', replyOptions);
+  let welcomeText = bot.message || '欢迎使用机器人';
+  if (isGroupChat) {
+    welcomeText +=
+      '\n\n提示：在群内点击自定义按钮后，若机器人无反应，请到 @BotFather 对本机器人发送 /setprivacy 并选择 Disable（关闭隐私模式），否则机器人收不到普通文字消息。';
+  }
+
+  await ctx.reply(welcomeText, replyOptions);
 });
 
 // 处理评价列表回调
