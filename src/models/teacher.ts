@@ -63,9 +63,6 @@ const teacherSchema = new mongoose.Schema(
   },
 );
 
-// 保持索引逻辑：确保同一个 Bot 下的同一个 BotUser 唯一
-teacherSchema.index({ bot: 1, botUser: 1 }, { unique: true });
-
 const Teacher = mongoose.model<ITeacher>('Teacher', teacherSchema);
 
 export default Teacher;
