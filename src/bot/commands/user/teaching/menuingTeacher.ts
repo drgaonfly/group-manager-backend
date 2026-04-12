@@ -90,6 +90,19 @@ menuingTeacherCommand.hears('老师', checkGroup, checkTeaching, async (ctx) => 
 
   // 保存新的 message_id 到 session
   ctx.session.lastTeacherMenuId = sentMessage.message_id;
+
+  const rawBurn = ctx.currentBot?.teacherMenuDeleteAfterSeconds;
+  const burnSeconds = rawBurn == null ? 30 : rawBurn;
+  if (burnSeconds > 0 && ctx.chat) {
+    const chatId = ctx.chat.id;
+    const messageId = sentMessage.message_id;
+    const api = ctx.api;
+    setTimeout(() => {
+      api.deleteMessage(chatId, messageId).catch((err) => {
+        debug('teacher menu auto-delete failed:', err);
+      });
+    }, burnSeconds * 1000);
+  }
 });
 
 menuingTeacherCommand.callbackQuery(/^teachers_page:(\d+)$/, async (ctx) => {
