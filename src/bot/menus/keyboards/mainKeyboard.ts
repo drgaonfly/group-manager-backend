@@ -9,20 +9,21 @@ async function createMainKeyboard(ctx: MyContext) {
   // 获取代理用户权限
   const { proxyUser } = await findBotProxy(ctx.currentBot);
 
-  // 如果有权限且配置了自定义键盘，显示自定义键盘按钮
+  const isGroupChat =
+    ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
+
+  // 1. 自由键盘配置（在群组和私聊中都显示）
   if (
     PermissionChecker.canUseFreeKeyboard(proxyUser, ctx.currentBot) &&
     ctx.currentBot?.keyboards &&
     ctx.currentBot.keyboards.length > 0
   ) {
     keyboard.row();
-
-    // 按 row 字段排序并分组
+    // ... 排序和分组逻辑 ...
     const sortedKeyboards = [...ctx.currentBot.keyboards].sort(
       (a, b) => (a.row || 1) - (b.row || 1),
     );
 
-    // 按行号分组
     const groupedByRow: { [key: number]: typeof sortedKeyboards } = {};
     sortedKeyboards.forEach((item) => {
       const rowNum = item.row || 1;
@@ -32,24 +33,25 @@ async function createMainKeyboard(ctx: MyContext) {
       groupedByRow[rowNum].push(item);
     });
 
-    // 渲染每一行的按钮
     Object.keys(groupedByRow)
       .sort((a, b) => Number(a) - Number(b))
       .forEach((rowKey) => {
         const rowButtons = groupedByRow[Number(rowKey)];
         rowButtons.forEach((item) => {
-          // 使用 label 作为按钮显示文本，如果没有 label 则使用 command（向后兼容）
           keyboard.text(item.label || item.command);
         });
-        keyboard.row(); // 每行结束后换行
+        keyboard.row();
       });
   }
 
-  // 教学模块按钮
-  if (PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)) {
-    keyboard.row();
-    keyboard.text('注册老师').text('找老师').row();
-    keyboard.text('写车评').text('我的车评').row();
+  // 2. 其它功能模块（仅在私聊中显示）
+  if (!isGroupChat) {
+    // 教学模块按钮
+    if (PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)) {
+      keyboard.row();
+      keyboard.text('注册老师').text('找老师').row();
+      keyboard.text('写车评').text('我的车评').row();
+    }
   }
 
   return keyboard.resized();
