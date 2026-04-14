@@ -5,4 +5,6 @@ export const privateCommandsList = [
   { command: 'mylottery', description: '我的抽奖' },
 ];
 
-export const groupCommandsList: any[] = [];
+export const groupCommandsList = [
+  { command: 'start', description: '开始使用' },
+];
