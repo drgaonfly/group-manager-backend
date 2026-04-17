@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import BotUserConfig from '../models/botUserConfig';
 import { ITEMS_PER_PAGE } from '../constants';
 import { MyContext } from '../bot/types';
+import { escapeHtml } from '../utils/escapeHtml';
 
 /**
  * 获取用户在特定群组内的积分排名
@@ -72,9 +73,13 @@ export const getGroupUserRankingList = async (
       const botUser = config.botUser;
       const nickname = botUser?.displayName || `用户${botUser?.id || ''}`;
       const balance = config.usdt_balance || 0;
-      const nicknameText = botUser?.userName
-        ? `<a href="https://t.me/${botUser.userName}">${nickname}</a>`
-        : nickname;
+      const safeNickname = escapeHtml(nickname);
+      const safeUsername = botUser?.userName
+        ? escapeHtml(botUser.userName)
+        : '';
+      const nicknameText = safeUsername
+        ? `<a href="https://t.me/${safeUsername}">${safeNickname}</a>`
+        : safeNickname;
       return `${skip + index + 1}、 ${nicknameText}  ${balance}`;
     })
     .join('\n');

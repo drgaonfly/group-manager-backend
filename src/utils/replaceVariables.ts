@@ -1,14 +1,5 @@
 import { formatBeijingDate } from './formatBeijingDate';
-
-const escapeHtml = (input: unknown): string => {
-  const str = String(input ?? '');
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-};
+import { escapeHtml } from './escapeHtml';
 
 export interface MemberInfo {
   id: number;
@@ -67,7 +58,7 @@ export const replaceVariables = (
   // 替换榜单变量
   result = result.replace(
     /\{userBalanceRankingList\}/g,
-    escapeHtml(userBalanceRankingList || ''),
+    userBalanceRankingList || '',
   );
 
   // 如果有成员信息，替换成员相关变量
@@ -181,7 +172,7 @@ export const replaceLotteryVariables = (
     )
     .replace(
       /\{userBalanceRankingList\}/g,
-      escapeHtml(options.userBalanceRankingList || ''),
+      options.userBalanceRankingList || '',
     );
 
   return result;

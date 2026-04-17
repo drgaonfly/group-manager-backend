@@ -4,19 +4,10 @@ import Evaluation from '../../../../models/evaluation';
 import Teacher from '../../../../models/teacher';
 import { ITEMS_PER_PAGE } from '../../../../constants';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
+import { escapeHtml } from '../../../../utils/escapeHtml';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:start:evaluation');
-
-const escapeHtml = (input: unknown): string => {
-  const str = String(input ?? '');
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-};
 
 /**
  * 获取评价报告详情文本
