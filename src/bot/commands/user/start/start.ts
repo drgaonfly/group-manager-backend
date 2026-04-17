@@ -120,7 +120,7 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     reply_markup: await createMainKeyboard(ctx),
   };
 
-  let welcomeText = bot.message || '欢迎使用机器人';
+  const welcomeText = bot.message || '欢迎使用机器人';
 
   await ctx.reply(welcomeText, replyOptions);
 });
