@@ -74,11 +74,15 @@ export const getGroupUserRankingList = async (
       const nickname = botUser?.displayName || `用户${botUser?.id || ''}`;
       const balance = config.usdt_balance || 0;
       const safeNickname = escapeHtml(nickname);
-      const safeUsername = botUser?.userName
-        ? escapeHtml(botUser.userName)
-        : '';
-      const nicknameText = safeUsername
-        ? `<a href="https://t.me/${safeUsername}">${safeNickname}</a>`
+
+      const href = botUser?.id
+        ? `tg://user?id=${encodeURIComponent(String(botUser.id))}`
+        : botUser?.userName
+          ? `https://t.me/${encodeURIComponent(String(botUser.userName))}`
+          : '';
+
+      const nicknameText = href
+        ? `<a href="${href}">${safeNickname}</a>`
         : safeNickname;
       return `${skip + index + 1}、 ${nicknameText}  ${balance}`;
     })

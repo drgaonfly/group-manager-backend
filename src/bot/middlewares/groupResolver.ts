@@ -11,8 +11,11 @@ import createDebug from 'debug';
 const debug = createDebug('bot:group');
 
 const groupResolver: Middleware<MyContext> = async (ctx, next) => {
+  // 获取 chat 信息（支持 my_chat_member 和 chat_member 事件）
+  const chat = ctx.chat || ctx.myChatMember?.chat || ctx.chatMember?.chat;
+
   // 检查是否在群组或频道中
-  if (!ctx.chat || ctx.chat.type === 'private') {
+  if (!chat || chat.type === 'private') {
     debug('请在群组或频道中使用此命令');
     ctx.currentGroup = null;
     return await next();
@@ -31,6 +34,14 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       myChatMemberUpdate.new_chat_member.status,
     );
 
+  // 检查是否是机器人被移除出群组/频道
+  const isBotRemovedFromChat =
+    myChatMemberUpdate &&
+    ['member', 'administrator', 'creator'].includes(
+      myChatMemberUpdate.old_chat_member.status,
+    ) &&
+    ['left', 'kicked'].includes(myChatMemberUpdate.new_chat_member.status);
+
   // 检查是否有新成员加入群组
   // 在 supergroup 中，新成员事件通过 chat_member update 传递
   const chatMemberUpdate = ctx.chatMember;
@@ -46,19 +57,60 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     isNewMemberFromChatMember ||
     (ctx.message?.new_chat_members && ctx.message.new_chat_members.length > 0);
 
-  const chatId = ctx.chat.id;
+  const chatId = chat.id;
+  const chatTitle = (chat as any).title;
+  const chatType = chat.type;
+
+  const { proxyUser } = await findBotProxy(ctx.currentBot);
+
+  // 处理机器人被移除出群组/频道
+  if (isBotRemovedFromChat) {
+    debug('Bot removed from chat:', chatId);
+
+    const group = await Group.findOne({
+      id: chatId,
+      proxy: proxyUser._id,
+    });
+
+    if (group) {
+      await ctx.currentBot.updateOne({
+        $pull: {
+          groups: group._id,
+        },
+      });
+      debug('Bot removed from group/channel:', group.id);
+    }
+
+    ctx.currentGroup = null;
+    return await next();
+  }
 
   // 查询数据库中的群组信息
   let currentGroup = await Group.findOne({
     id: chatId,
+    proxy: proxyUser._id,
   }).populate(['bot', 'creator', 'operators']);
 
+  // 兼容历史数据：如果以前没有保存 proxy，这里补一下
+  if (!currentGroup) {
+    const groupWithoutProxy = await Group.findOne({
+      id: chatId,
+    }).populate(['bot', 'creator', 'operators']);
+
+    if (groupWithoutProxy && !groupWithoutProxy.proxy) {
+      groupWithoutProxy.proxy = proxyUser._id;
+      await groupWithoutProxy.save();
+      currentGroup = groupWithoutProxy;
+    }
+  }
+
   // 如果找不到，尝试用 title 和 bot 匹配（处理群组升级后 ID 变化的情况）
-  if (!currentGroup && ctx.chat.type === 'supergroup') {
+  if (!currentGroup && chatType === 'supergroup') {
     const groupByTitle = await Group.findOne({
-      title: ctx.chat.title,
+      title: chatTitle,
       bot: ctx.currentBot._id,
       type: 'group', // 找升级前的普通群组
+      proxy: proxyUser._id,
     }).populate(['bot', 'creator', 'operators']);
 
     if (groupByTitle) {
@@ -66,7 +118,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       // 更新群组 ID、类型和用户名（有则填上）
       groupByTitle.id = chatId;
       groupByTitle.type = 'supergroup';
-      groupByTitle.username = ctx.chat.username ?? '';
+      groupByTitle.username = (chat as any).username ?? '';
       await groupByTitle.save();
       currentGroup = groupByTitle;
       debug(`✅ 已更新群组 ID 和类型`);
@@ -75,12 +127,10 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
   // 打印群组信息
   debug('Group info:', {
-    id: ctx.chat.id,
-    title: ctx.chat.title,
-    type: ctx.chat.type,
+    id: chatId,
+    title: chatTitle,
+    type: chatType,
   });
-
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
 
   if (!currentGroup) {
     // 判断是否应该创建新群组记录
@@ -90,15 +140,15 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     const shouldCreateGroup =
       ctx.message?.group_chat_created ||
       ctx.message?.new_chat_members ||
-      (isBotAddedToChat && ctx.chat.type === 'channel');
+      isBotAddedToChat;
 
     if (shouldCreateGroup) {
       // 如果群组不存在且为群组创建事件，创建新群组记录
       const newGroup = new Group({
         id: chatId,
-        title: ctx.chat.title,
-        username: ctx.chat.username ?? '',
-        type: ctx.chat.type,
+        title: chatTitle,
+        username: (chat as any).username ?? '',
+        type: chatType,
         bot: ctx.currentBot._id,
         creator: ctx.currentBotUser?._id,
         exchange_rate: 1,
@@ -110,8 +160,8 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       ctx.currentGroup = newGroup;
 
       // 频道和群组使用不同的欢迎消息
-      if (ctx.chat.type === 'channel') {
-        debug(`✅ 已创建频道记录: ${ctx.chat.title} (${chatId})`);
+      if (chatType === 'channel') {
+        debug(`✅ 已创建频道记录: ${chatTitle} (${chatId})`);
         // 频道中不发送欢迎消息，因为机器人通常没有发送权限
       } else {
         await ctx.reply('感谢您把我添加到贵群!');
@@ -147,15 +197,15 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   } else {
     // 更新群组信息
     // 只在群组标题、类型或用户名发生变化时才更新
-    const chatUsername = ctx.chat.username ?? '';
+    const chatUsername = (chat as any).username ?? '';
     const groupUsername = currentGroup.username ?? '';
     if (
-      currentGroup.title !== ctx.chat.title ||
-      currentGroup.type !== ctx.chat.type ||
+      currentGroup.title !== chatTitle ||
+      currentGroup.type !== chatType ||
       groupUsername !== chatUsername
     ) {
-      currentGroup.title = ctx.chat.title;
-      currentGroup.type = ctx.chat.type;
+      currentGroup.title = chatTitle;
+      currentGroup.type = chatType;
       currentGroup.username = chatUsername;
       await currentGroup.save();
     }
@@ -189,7 +239,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   debug('Added user to group botUsers:', ctx.currentBotUser?.userName);
 
   // 处理频道订阅/取消订阅事件
-  if (ctx.chat.type === 'channel' && chatMemberUpdate) {
+  if (chatType === 'channel' && chatMemberUpdate) {
     const oldStatus = chatMemberUpdate.old_chat_member.status;
     const newStatus = chatMemberUpdate.new_chat_member.status;
     const user = chatMemberUpdate.new_chat_member.user;
@@ -209,7 +259,10 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
       try {
         // 查找或创建 BotUser
-        let botUser = await BotUser.findOne({ id: user.id.toString() });
+        let botUser = await BotUser.findOne({
+          id: user.id.toString(),
+          proxy: proxyUser._id,
+        });
 
         if (!botUser) {
           botUser = new BotUser({
@@ -218,6 +271,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
             firstName: user.first_name,
             lastName: user.last_name || '',
             bot: ctx.currentBot._id,
+            proxy: proxyUser._id,
           });
           await botUser.save();
           debug(`✅ 创建新 BotUser: ${user.id}`);
@@ -244,7 +298,10 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       debug(`📢 用户取消订阅频道: ${user.id} (${user.first_name})`);
 
       try {
-        const botUser = await BotUser.findOne({ id: user.id.toString() });
+        const botUser = await BotUser.findOne({
+          id: user.id.toString(),
+          proxy: proxyUser._id,
+        });
 
         if (botUser) {
           await Group.updateOne(
@@ -275,7 +332,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       chatMemberUpdate.new_chat_member.status === 'left') ||
     ctx.message?.left_chat_member;
 
-  if (isMemberLeft && ctx.chat.type !== 'channel') {
+  if (isMemberLeft && chatType !== 'channel') {
     // 获取离开成员的 ID
     const leftMemberId =
       chatMemberUpdate?.new_chat_member.user.id ||
@@ -287,6 +344,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       try {
         const botUser = await BotUser.findOne({
           id: leftMemberId.toString(),
+          proxy: proxyUser._id,
         });
 
         if (botUser) {
@@ -309,6 +367,41 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     }
   }
 
+  if (chatMemberUpdate && ctx.currentGroup && !isMemberLeft) {
+    const oldStatus = chatMemberUpdate.old_chat_member.status;
+    const newStatus = chatMemberUpdate.new_chat_member.status;
+    const memberUser = chatMemberUpdate.new_chat_member.user;
+    const memberId = memberUser.id;
+
+    const shouldRemoveMember =
+      ['member', 'administrator', 'creator'].includes(oldStatus) &&
+      ['kicked', 'restricted'].includes(newStatus);
+
+    if (shouldRemoveMember) {
+      try {
+        const botUser = await BotUser.findOne({
+          id: memberId.toString(),
+          proxy: proxyUser._id,
+        });
+
+        if (botUser) {
+          await Group.updateOne(
+            { _id: ctx.currentGroup._id },
+            {
+              $pull: {
+                botUsers: botUser._id,
+                operators: botUser._id,
+              },
+            },
+          );
+          debug(`Removed member ${memberId} from group botUsers`);
+        }
+      } catch (error) {
+        debug('Error processing member update:', error);
+      }
+    }
+  }
+
   // 处理新成员加入群组的欢迎消息和验证
   debug('isNewMemberJoined:', isNewMemberJoined);
   debug('isNewMemberFromChatMember:', isNewMemberFromChatMember);
@@ -316,7 +409,6 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   debug('chatMemberUpdate:', chatMemberUpdate);
 
   if (isNewMemberJoined) {
-    const { proxyUser } = await findBotProxy(ctx.currentBot);
     debug('Processing new members, proxyUser:', proxyUser?.name);
 
     // 构建新成员列表，支持两种来源
