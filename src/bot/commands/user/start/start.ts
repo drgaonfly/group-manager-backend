@@ -162,7 +162,7 @@ startCommand.callbackQuery(/^show_eval_([a-f\d]{24})$/i, async (ctx) => {
     );
 
     await ctx.editMessageText(msg, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: keyboard,
     });
     await ctx.answerCallbackQuery();
