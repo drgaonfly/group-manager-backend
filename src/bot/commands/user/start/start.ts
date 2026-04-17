@@ -121,10 +121,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   };
 
   let welcomeText = bot.message || '欢迎使用机器人';
-  if (isGroupChat) {
-    welcomeText +=
-      '\n\n提示：在群内点击自定义按钮后，若机器人无反应，请到 @BotFather 对本机器人发送 /setprivacy 并选择 Disable（关闭隐私模式），否则机器人收不到普通文字消息。';
-  }
 
   await ctx.reply(welcomeText, replyOptions);
 });
