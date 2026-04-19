@@ -507,12 +507,12 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)
   ) {
     const text = message.text.trim();
-    // 简单正则判断是否可能是老师姓名（这里可以根据需求调整逻辑）
+    // 简单正则判断是否可能是老师花名（这里可以根据需求调整逻辑）
     // 比如：如果消息长度适中且不包含特殊指令前缀
     if (text.length >= 2 && text.length <= 30 && !text.startsWith('/')) {
       try {
         let sentMsg: any = null;
-        // 普通搜索逻辑 -- 按名或地址索骥 (已包含 @username 模糊搜索)
+        // 群内文本触发：仅按老师 display_name（花名）匹配，不按 Telegram 用户反查
         const {
           teachers,
           message: teacherMsg,

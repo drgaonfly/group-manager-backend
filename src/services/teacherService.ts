@@ -1,5 +1,4 @@
 import Teacher from '../models/teacher';
-import BotUser from '../models/botUser';
 import Evaluation from '../models/evaluation';
 import { Types } from 'mongoose';
 import dayjs from 'dayjs';
@@ -10,9 +9,12 @@ export interface TeacherSearchResult {
   botUserName?: string;
 }
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
- * 抽象出的老师搜索逻辑
- * @param query 搜索关键词
+ * 抽象出的老师搜索逻辑（仅按老师花名 display_name 匹配，不按 Telegram 用户或地址反查，
+ * 避免多名老师共用同一经纪人/注册账号时被一次全部搜出。）
+ * @param query 搜索关键词（花名，可含 @ 前缀，会忽略 @ 仅比对花名字符串）
  * @param botId 当前机器人ID
  * @returns 搜索结果和格式化消息
  */
@@ -23,46 +25,23 @@ export const searchTeachers = async (
   if (!query) {
     return {
       teachers: [],
-      message: '请输入要搜索的老师用户名或姓名',
+      message: '请输入要搜索的老师花名',
     };
   }
 
-  // 处理用户名搜索，去掉开头的 @ 符号
-  const searchName = query.startsWith('@') ? query.slice(1) : query;
-
-  // 1. 在 BotUser 中模糊搜索
-  const botUsers = await BotUser.find({
-    $or: [
-      { userName: { $regex: searchName, $options: 'i' } },
-      { firstName: { $regex: query, $options: 'i' } },
-      { lastName: { $regex: query, $options: 'i' } },
-    ],
-  }).select('_id');
-
-  // 2. 同时在 Teacher 的 display_name 和 address 字段中搜索
-  const matchingTeachers = await Teacher.find({
-    bot: botId,
-    status: 'approved',
-    $or: [
-      { display_name: { $regex: query, $options: 'i' } },
-      { address: { $regex: query, $options: 'i' } },
-    ],
-  }).select('botUser');
-
-  const teacherBotUserIds = matchingTeachers.map((t) => t.botUser);
-  const botUserIds = [
-    ...new Set([...botUsers.map((u) => u._id), ...teacherBotUserIds]),
-  ];
-
-  if (botUserIds.length === 0) {
-    return { teachers: [], message: '未找到匹配的用户或老师信息' };
+  const nameQuery = query.startsWith('@')
+    ? query.slice(1).trim()
+    : query.trim();
+  if (!nameQuery) {
+    return { teachers: [], message: '请输入要搜索的老师花名' };
   }
 
-  // 3. 在 Teacher 中查找，只找已审核通过的
+  const namePattern = new RegExp(escapeRegExp(nameQuery), 'i');
+
   const teachers = await Teacher.find({
     bot: botId,
-    botUser: { $in: botUserIds },
     status: 'approved',
+    display_name: namePattern,
   })
     .populate('botUser')
     .populate('bot', 'userName')
@@ -70,7 +49,7 @@ export const searchTeachers = async (
     .limit(10);
 
   if (teachers.length === 0) {
-    return { teachers: [], message: '未找到相关的认证老师' };
+    return { teachers: [], message: '未找到花名匹配的认证老师' };
   }
 
   const botUserName = (teachers[0].bot as any)?.userName;

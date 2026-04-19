@@ -17,9 +17,7 @@ findTeacherCommand.hears(
     debug('find teacher query:', query);
 
     if (!query) {
-      await ctx.reply(
-        '请输入要搜索的老师用户名或姓名，例如：\n`找老师 @username` 或 `找老师 姓名`',
-      );
+      await ctx.reply('请输入要搜索的老师花名，例如：\n`找老师 张老师`');
       return;
     }
 
