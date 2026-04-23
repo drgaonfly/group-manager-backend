@@ -41,7 +41,7 @@ export const searchTeachers = async (
   const teachers = await Teacher.find({
     bot: botId,
     status: 'approved',
-    display_name: namePattern,
+    $or: [{ display_name: namePattern }, { address: namePattern }],
   })
     .populate('botUser')
     .populate('bot', 'userName')
