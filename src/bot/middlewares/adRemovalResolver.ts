@@ -58,10 +58,23 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
 
       if (isHit) {
         debug('Ad detected by rule:', config.name, 'Action: block');
-        await ctx.api.deleteMessage(chatId, messageId).catch((err) => {
+        try {
+          await ctx.api.deleteMessage(chatId, messageId);
+        } catch (err: any) {
           debug('Failed to delete ad message:', err.message);
-        });
-        return; // 命中即删除并中止
+          // 如果是因为权限不足（403: Forbidden 或 400: Bad Request 且提示权限相关）
+          if (
+            err.description?.includes("can't delete") ||
+            err.description?.includes('admin privileges')
+          ) {
+            await ctx
+              .reply(
+                `🛡️ **去除广告通知**\n检测到违规广告，但机器人目前**权限不足**，无法自动清理。\n请确保已授予机器人“**删除消息**”的管理员权限。`,
+              )
+              .catch(() => {});
+          }
+        }
+        return; // 命中即中止后续
       }
     }
 
