@@ -243,3 +243,27 @@ export const rejectTeacher = handleAsync(
     });
   },
 );
+
+/**
+ * 批量更新老师的阅后即焚时间
+ */
+export const batchUpdateBurnSeconds = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { botId, menuDeleteAfterSeconds } = req.body;
+
+    if (!botId) {
+      res.status(400);
+      throw new Error('机器人 ID 不能为空');
+    }
+
+    await Teacher.updateMany(
+      { bot: botId },
+      { $set: { menuDeleteAfterSeconds: menuDeleteAfterSeconds ?? 30 } },
+    );
+
+    res.status(200).json({
+      success: true,
+      message: '批量更新阅后即焚时间成功',
+    });
+  },
+);

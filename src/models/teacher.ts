@@ -23,6 +23,9 @@ export interface ITeacher extends Document {
 
   status: string;
   remark: string;
+
+  /** 群内发送「老师」列表消息后，多少秒自动删除（阅后即焚）；默认 30；0 表示不删除 */
+  menuDeleteAfterSeconds?: number;
 }
 
 // Teacher Schema
@@ -57,6 +60,7 @@ const teacherSchema = new mongoose.Schema(
       default: 'pending',
     },
     remark: { type: String, default: '' },
+    menuDeleteAfterSeconds: { type: Number, default: 30 },
   },
   {
     timestamps: true,

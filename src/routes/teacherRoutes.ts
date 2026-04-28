@@ -11,6 +11,10 @@ router
   .delete(protect, checkPermission, teacherController.deleteMultipleTeachers);
 
 router
+  .route('/batch-update-burn-seconds')
+  .put(protect, checkPermission, teacherController.batchUpdateBurnSeconds);
+
+router
   .route('/:id')
   .get(protect, checkPermission, teacherController.getTeacherById)
   .put(protect, checkPermission, teacherController.updateTeacher)

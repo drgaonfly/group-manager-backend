@@ -1069,7 +1069,6 @@ const BOT_FEATURE_FIELD_KEYS: string[] = [
   'canCheckIn',
   'canLotteryRule',
   'canTeaching',
-  'teacherMenuDeleteAfterSeconds',
   'multi_image',
   'multi_content',
   'fee',

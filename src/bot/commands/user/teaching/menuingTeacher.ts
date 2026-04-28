@@ -91,8 +91,13 @@ menuingTeacherCommand.hears('老师', checkGroup, checkTeaching, async (ctx) => 
   // 保存新的 message_id 到 session
   ctx.session.lastTeacherMenuId = sentMessage.message_id;
 
-  const rawBurn = ctx.currentBot?.teacherMenuDeleteAfterSeconds;
-  const burnSeconds = rawBurn == null ? 30 : rawBurn;
+  // 获取该机器人下任意一个老师的阅后即焚时间（因为所有老师共用同一个值）
+  const firstTeacher = await Teacher.findOne({
+    bot: ctx.currentBot!._id,
+    status: 'approved',
+  });
+  const burnSeconds = firstTeacher?.menuDeleteAfterSeconds ?? 30;
+
   if (burnSeconds > 0 && ctx.chat) {
     const chatId = ctx.chat.id;
     const messageId = sentMessage.message_id;

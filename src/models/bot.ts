@@ -88,8 +88,6 @@ export interface IBot extends Document {
 
   // 教学模块
   canTeaching: boolean;
-  /** 群内发送「老师」列表消息后，多少秒自动删除（阅后即焚）；默认 30；0 表示不删除 */
-  teacherMenuDeleteAfterSeconds?: number;
 }
 
 export interface IMenu extends Document {
@@ -360,11 +358,6 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: false,
-    },
-    teacherMenuDeleteAfterSeconds: {
-      type: Number,
-      default: 30,
-      min: 0,
     },
   },
   {
