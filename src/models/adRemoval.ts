@@ -17,6 +17,7 @@ export interface IAdRemoval extends Document {
 
   keywords: IKeyword[];
   isOnline: boolean;
+  ignoreAdmin: boolean;
 
   mode: 'any' | 'all';
 }
@@ -73,6 +74,11 @@ const adRemovalSchema = new Schema<IAdRemoval>(
       type: Boolean,
       default: true,
       index: true,
+    },
+
+    ignoreAdmin: {
+      type: Boolean,
+      default: true,
     },
 
     mode: {

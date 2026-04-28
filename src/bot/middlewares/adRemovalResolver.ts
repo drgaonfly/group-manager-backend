@@ -40,7 +40,28 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
     if (!chatId || !messageId) return await next();
 
     for (const config of configs) {
-      const { keywords, mode } = config;
+      const { keywords, mode, ignoreAdmin } = config;
+
+      // 检查管理员豁免
+      if (ignoreAdmin) {
+        try {
+          const member = await ctx.getChatMember(ctx.from?.id || 0);
+          if (
+            member.status === 'administrator' ||
+            member.status === 'creator'
+          ) {
+            debug(
+              'Admin exempted by rule:',
+              config.name,
+              ctx.from?.username || ctx.from?.id,
+            );
+            continue; // 跳过此规则，继续检查下一个规则
+          }
+        } catch (error) {
+          debug('Failed to get chat member status for exemption:', error);
+        }
+      }
+
       if (!keywords || keywords.length === 0) continue;
 
       let isHit = false;
