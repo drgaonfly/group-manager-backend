@@ -6,7 +6,6 @@ import { IGroupMessage } from './groupMessage';
 import { IBotUserMessage } from './botUserMessage';
 import { IGroupWelcome } from './groupWelcome';
 import { IGroupVerify } from './groupVerify';
-import { IAdRemoval } from './adRemoval';
 
 export interface IBot extends Document {
   token: string;
