@@ -241,6 +241,7 @@ const updateUserProfile = handleAsync(
       checkinRule,
       lotteryRule,
       teaching,
+      adRemoval,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -318,6 +319,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof teaching !== 'undefined') {
         updateData.teaching = teaching;
+      }
+      if (typeof adRemoval !== 'undefined') {
+        updateData.adRemoval = adRemoval;
       }
     }
 

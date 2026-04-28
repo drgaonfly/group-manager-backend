@@ -260,6 +260,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     checkinRule,
     lotteryRule,
     teaching,
+    adRemoval,
     ...body
   } = req.body;
 
@@ -308,6 +309,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       checkinRule,
       lotteryRule,
       teaching,
+      adRemoval,
     },
     { new: true },
   );

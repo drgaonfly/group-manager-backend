@@ -6,6 +6,7 @@ import { IGroupMessage } from './groupMessage';
 import { IBotUserMessage } from './botUserMessage';
 import { IGroupWelcome } from './groupWelcome';
 import { IGroupVerify } from './groupVerify';
+import { IAdRemoval } from './adRemoval';
 
 export interface IBot extends Document {
   token: string;
@@ -88,6 +89,9 @@ export interface IBot extends Document {
 
   // 教学模块
   canTeaching: boolean;
+
+  // 处理广告功能模块
+  canRemoveAd: boolean;
 }
 
 export interface IMenu extends Document {
@@ -359,6 +363,11 @@ const botSchema = new mongoose.Schema(
       required: false,
       default: false,
     },
+    canRemoveAd: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -402,6 +411,13 @@ botSchema.virtual('lotteries', {
 // 虚拟字段：关联的老师
 botSchema.virtual('teachers', {
   ref: 'Teacher',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
+// 虚拟字段：关联的广告拦截规则详情
+botSchema.virtual('adRemovals', {
+  ref: 'AdRemoval',
   localField: '_id',
   foreignField: 'bot',
 });

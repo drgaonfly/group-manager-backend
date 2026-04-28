@@ -160,6 +160,7 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
         },
       ],
     })
+    .populate('adRemovals')
     .sort('-createdAt')
     .select('-private_key')
     .skip((+current - 1) * +pageSize)
@@ -1069,6 +1070,7 @@ const BOT_FEATURE_FIELD_KEYS: string[] = [
   'canCheckIn',
   'canLotteryRule',
   'canTeaching',
+  'canRemoveAd',
   'multi_image',
   'multi_content',
   'fee',

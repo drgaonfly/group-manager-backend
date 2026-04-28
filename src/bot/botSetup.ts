@@ -11,6 +11,7 @@ import { privateCommandsList, groupCommandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import proxyResolver from './middlewares/proxyResolver';
+import { adRemovalResolver } from './middlewares/adRemovalResolver';
 import { MyContext } from './types'; // 引入你的 MyContext 类型
 import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
@@ -80,6 +81,10 @@ export const setupBot = (token: string) => {
   bot.use(groupResolver);
   bot.use(proxyResolver);
   bot.use(errorHandler);
+
+  // 处理广告的优先级高于一般消息处理
+  bot.use(adRemovalResolver);
+
   bot.use(logger);
   bot.use(rankingPaginationHandler);
   bot.use(replyRuleHandler);
