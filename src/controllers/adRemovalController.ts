@@ -4,7 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 
 /**
- * 获取所有广告拦截规则（支持分页和过滤）
+ * 获取所有去除广告规则（支持分页和过滤）
  */
 export const getAdRemovals = handleAsync(
   async (req: RequestCustom, res: Response) => {
@@ -45,7 +45,7 @@ export const getAdRemovals = handleAsync(
 );
 
 /**
- * 获取单个广告拦截规则详情
+ * 获取单个去除广告规则详情
  */
 export const getAdRemovalById = handleAsync(
   async (req: Request, res: Response) => {
@@ -64,7 +64,7 @@ export const getAdRemovalById = handleAsync(
 );
 
 /**
- * 添加广告拦截规则
+ * 添加去除广告规则
  */
 export const addAdRemoval = handleAsync(
   async (req: RequestCustom, res: Response) => {
@@ -87,7 +87,7 @@ export const addAdRemoval = handleAsync(
 );
 
 /**
- * 更新广告拦截规则
+ * 更新去除广告规则
  */
 export const updateAdRemoval = handleAsync(
   async (req: Request, res: Response) => {
@@ -113,7 +113,7 @@ export const updateAdRemoval = handleAsync(
 );
 
 /**
- * 删除广告拦截规则
+ * 删除去除广告规则
  */
 export const deleteAdRemoval = handleAsync(
   async (req: Request, res: Response) => {
@@ -132,7 +132,7 @@ export const deleteAdRemoval = handleAsync(
 );
 
 /**
- * 批量删除广告拦截规则
+ * 批量删除去除广告规则
  */
 export const deleteMultipleAdRemovals = handleAsync(
   async (req: RequestCustom, res: Response) => {

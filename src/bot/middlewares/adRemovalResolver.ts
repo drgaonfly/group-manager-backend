@@ -7,7 +7,7 @@ import createDebug from 'debug';
 const debug = createDebug('bot:adRemovalResolver');
 
 /**
- * 广告拦截核心处理中间件
+ * 去除广告核心处理中间件
  */
 export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
   // 仅处理文本消息或带说明的媒体消息

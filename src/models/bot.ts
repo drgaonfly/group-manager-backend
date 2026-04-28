@@ -414,7 +414,7 @@ botSchema.virtual('teachers', {
   foreignField: 'bot',
 });
 
-// 虚拟字段：关联的广告拦截规则详情
+// 虚拟字段：关联的去除广告规则详情
 botSchema.virtual('adRemovals', {
   ref: 'AdRemoval',
   localField: '_id',
