@@ -55,8 +55,9 @@ export const sendGroupWelcomeMessage = async (
     currentBot: `@${ctx.currentBot?.userName}`,
   };
 
-  // 收集所有发送的消息ID，用于阅后即焚
+  // 收集所有发送的消息ID，用于阅后即焚和置顶
   const sentMessageIds: number[] = [];
+  let pinMessageId: number | null = null; // 用于置顶的消息ID
 
   // 判断是否有文本内容和媒体
   const hasContents = groupWelcome.contents && groupWelcome.contents.length > 0;
@@ -73,6 +74,10 @@ export const sendGroupWelcomeMessage = async (
           parse_mode: 'HTML',
         });
         sentMessageIds.push(sentMsg.message_id);
+        // 如果开启了置顶新成员，使用第一条消息作为置顶消息
+        if (groupWelcome.pinNewMember && !pinMessageId) {
+          pinMessageId = sentMsg.message_id;
+        }
       } catch (error) {
         debug('Failed to send welcome content:', error);
       }
@@ -102,6 +107,10 @@ export const sendGroupWelcomeMessage = async (
             },
           );
           sentMessageIds.push(sentMsg.message_id);
+          // 如果开启了置顶新成员，使用这条消息作为置顶消息
+          if (groupWelcome.pinNewMember && !pinMessageId) {
+            pinMessageId = sentMsg.message_id;
+          }
         } else {
           const sentMsg = await ctx.replyWithPhoto(
             new InputFile({ url: processedMediaUrl }),
@@ -112,6 +121,10 @@ export const sendGroupWelcomeMessage = async (
             },
           );
           sentMessageIds.push(sentMsg.message_id);
+          // 如果开启了置顶新成员，使用这条消息作为置顶消息
+          if (groupWelcome.pinNewMember && !pinMessageId) {
+            pinMessageId = sentMsg.message_id;
+          }
         }
       } else {
         // 多个媒体文件，使用 sendMediaGroup
@@ -167,9 +180,37 @@ export const sendGroupWelcomeMessage = async (
     const defaultMessage = `欢迎 ${username} 加入群组！👋`;
     const sentMsg = await ctx.reply(defaultMessage, { reply_markup: keyboard });
     sentMessageIds.push(sentMsg.message_id);
+    // 如果开启了置顶新成员，使用这条消息作为置顶消息
+    if (groupWelcome.pinNewMember && !pinMessageId) {
+      pinMessageId = sentMsg.message_id;
+    }
   }
 
-  // 4. 阅后即焚：如果设置了删除时间，则在指定秒数后删除所有发送的消息
+  // 4. 置顶新成员消息：如果开启了置顶功能且有消息可以置顶
+  if (groupWelcome.pinNewMember && pinMessageId) {
+    try {
+      // 检查机器人是否有置顶权限
+      const botMember = await ctx.api.getChatMember(ctx.chat!.id, ctx.me.id);
+      const canPin =
+        botMember.status === 'administrator' &&
+        botMember.can_pin_messages === true;
+
+      if (canPin) {
+        await ctx.api.pinChatMessage(ctx.chat!.id, pinMessageId, {
+          disable_notification: true, // 静默置顶，不发送通知
+        });
+        debug(
+          `✅ Pinned welcome message ${pinMessageId} for new member: ${username}`,
+        );
+      } else {
+        debug('⚠️ Bot does not have permission to pin messages in this group');
+      }
+    } catch (error) {
+      debug('❌ Failed to pin welcome message:', error);
+    }
+  }
+
+  // 5. 阅后即焚：如果设置了删除时间，则在指定秒数后删除所有发送的消息
   if (
     groupWelcome.deleteAfterSeconds &&
     groupWelcome.deleteAfterSeconds > 0 &&

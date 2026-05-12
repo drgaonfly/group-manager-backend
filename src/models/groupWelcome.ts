@@ -10,6 +10,7 @@ export interface IGroupWelcome extends Document {
     url: string;
   }[];
   deleteAfterSeconds?: number; // 阅后即焚：发送后多少秒自动删除
+  pinNewMember?: boolean; // 是否置顶新成员
 }
 
 // 群欢迎 Schema
@@ -46,6 +47,11 @@ const groupWelcomeSchema = new mongoose.Schema(
       required: false,
       default: 0, // 0 表示不删除
       min: 0,
+    },
+    pinNewMember: {
+      type: Boolean,
+      required: false,
+      default: false, // 默认不置顶
     },
   },
   {
