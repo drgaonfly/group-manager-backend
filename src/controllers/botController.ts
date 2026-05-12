@@ -958,6 +958,8 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
     menus: validMenus,
     deleteAfterSeconds:
       typeof body.deleteAfterSeconds === 'number' ? body.deleteAfterSeconds : 0,
+    pinNewMember:
+      typeof body.pinNewMember === 'boolean' ? body.pinNewMember : false,
   };
 
   if (botManager.groupWelcome) {

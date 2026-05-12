@@ -55,9 +55,8 @@ export const sendGroupWelcomeMessage = async (
     currentBot: `@${ctx.currentBot?.userName}`,
   };
 
-  // 收集所有发送的消息ID，用于阅后即焚和置顶
+  // 收集所有发送的消息ID，用于阅后即焚
   const sentMessageIds: number[] = [];
-  let pinMessageId: number | null = null; // 用于置顶的消息ID
 
   // 判断是否有文本内容和媒体
   const hasContents = groupWelcome.contents && groupWelcome.contents.length > 0;
@@ -74,10 +73,6 @@ export const sendGroupWelcomeMessage = async (
           parse_mode: 'HTML',
         });
         sentMessageIds.push(sentMsg.message_id);
-        // 如果开启了置顶新成员，使用第一条消息作为置顶消息
-        if (groupWelcome.pinNewMember && !pinMessageId) {
-          pinMessageId = sentMsg.message_id;
-        }
       } catch (error) {
         debug('Failed to send welcome content:', error);
       }
@@ -107,10 +102,6 @@ export const sendGroupWelcomeMessage = async (
             },
           );
           sentMessageIds.push(sentMsg.message_id);
-          // 如果开启了置顶新成员，使用这条消息作为置顶消息
-          if (groupWelcome.pinNewMember && !pinMessageId) {
-            pinMessageId = sentMsg.message_id;
-          }
         } else {
           const sentMsg = await ctx.replyWithPhoto(
             new InputFile({ url: processedMediaUrl }),
@@ -121,10 +112,6 @@ export const sendGroupWelcomeMessage = async (
             },
           );
           sentMessageIds.push(sentMsg.message_id);
-          // 如果开启了置顶新成员，使用这条消息作为置顶消息
-          if (groupWelcome.pinNewMember && !pinMessageId) {
-            pinMessageId = sentMsg.message_id;
-          }
         }
       } else {
         // 多个媒体文件，使用 sendMediaGroup
@@ -180,14 +167,10 @@ export const sendGroupWelcomeMessage = async (
     const defaultMessage = `欢迎 ${username} 加入群组！👋`;
     const sentMsg = await ctx.reply(defaultMessage, { reply_markup: keyboard });
     sentMessageIds.push(sentMsg.message_id);
-    // 如果开启了置顶新成员，使用这条消息作为置顶消息
-    if (groupWelcome.pinNewMember && !pinMessageId) {
-      pinMessageId = sentMsg.message_id;
-    }
   }
 
-  // 4. 置顶新成员消息：如果开启了置顶功能且有消息可以置顶
-  if (groupWelcome.pinNewMember && pinMessageId) {
+  // 4. 置顶新成员：如果开启了置顶功能，发送专门的置顶消息
+  if (groupWelcome.pinNewMember) {
     try {
       // 检查机器人是否有置顶权限
       const botMember = await ctx.api.getChatMember(ctx.chat!.id, ctx.me.id);
@@ -196,17 +179,39 @@ export const sendGroupWelcomeMessage = async (
         botMember.can_pin_messages === true;
 
       if (canPin) {
-        await ctx.api.pinChatMessage(ctx.chat!.id, pinMessageId, {
+        // 发送专门用于置顶的消息
+        const pinMessage = await ctx.reply(`📌 新成员 ${username} 已加入群组`);
+
+        // 置顶这条消息
+        await ctx.api.pinChatMessage(ctx.chat!.id, pinMessage.message_id, {
           disable_notification: true, // 静默置顶，不发送通知
         });
-        debug(
-          `✅ Pinned welcome message ${pinMessageId} for new member: ${username}`,
-        );
+
+        debug(`✅ Pinned new member message for: ${username}`);
+
+        // 5分钟后自动取消置顶并删除消息
+        setTimeout(
+          async () => {
+            try {
+              await ctx.api.unpinChatMessage(
+                ctx.chat!.id,
+                pinMessage.message_id,
+              );
+              await ctx.api.deleteMessage(ctx.chat!.id, pinMessage.message_id);
+              debug(
+                `✅ Auto-unpinned and deleted pin message for: ${username}`,
+              );
+            } catch (error) {
+              debug('❌ Failed to auto-unpin message:', error);
+            }
+          },
+          5 * 60 * 1000,
+        ); // 5分钟后自动取消置顶并删除消息
       } else {
         debug('⚠️ Bot does not have permission to pin messages in this group');
       }
     } catch (error) {
-      debug('❌ Failed to pin welcome message:', error);
+      debug('❌ Failed to pin new member message:', error);
     }
   }
 
