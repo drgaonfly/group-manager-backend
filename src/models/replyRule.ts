@@ -6,6 +6,7 @@ export interface IReplyRuleMenu extends Document {
   name: string;
   url: string;
   row: number;
+  style: 'primary' | 'success' | 'danger';
 }
 
 export const replyRuleMenuSchema = new mongoose.Schema({
@@ -21,6 +22,11 @@ export const replyRuleMenuSchema = new mongoose.Schema({
     },
   },
   row: { type: Number, required: false, default: 1 },
+  style: {
+    type: String,
+    enum: ['primary', 'success', 'danger'],
+    default: 'primary',
+  },
 });
 
 // ReplyRule 关键词回复

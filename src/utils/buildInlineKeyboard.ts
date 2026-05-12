@@ -4,6 +4,7 @@ interface MenuItem {
   name?: string;
   url: string;
   row?: number;
+  style?: 'primary' | 'success' | 'danger';
 }
 
 export const buildInlineKeyboard = (
@@ -44,10 +45,19 @@ export const buildInlineKeyboard = (
       const rowMenus = groupedByRow[rowNum];
       const buttons = rowMenus
         .filter((menu) => menu.name && menu.url)
-        .map((menu) => ({
-          text: menu.name!,
-          url: menu.url,
-        }));
+        .map((menu) => {
+          const buttonConfig: any = {
+            text: menu.name!,
+            url: menu.url,
+          };
+
+          // 添加样式支持 (Bot API 9.4+)
+          if (menu.style) {
+            buttonConfig.style = menu.style;
+          }
+
+          return buttonConfig;
+        });
 
       if (buttons.length > 0) {
         keyboard.add(...buttons).row();
@@ -60,10 +70,19 @@ export const buildInlineKeyboard = (
 
       const buttons = rowMenus
         .filter((menu: MenuItem) => menu.name && menu.url)
-        .map((menu: MenuItem) => ({
-          text: menu.name!,
-          url: menu.url,
-        }));
+        .map((menu: MenuItem) => {
+          const buttonConfig: any = {
+            text: menu.name!,
+            url: menu.url,
+          };
+
+          // 添加样式支持 (Bot API 9.4+)
+          if (menu.style) {
+            buttonConfig.style = menu.style;
+          }
+
+          return buttonConfig;
+        });
 
       if (buttons.length > 0) {
         keyboard.add(...buttons).row();
