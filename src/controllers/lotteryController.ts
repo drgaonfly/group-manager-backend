@@ -1,3 +1,4 @@
+import { InlineKeyboard } from 'grammy';
 import { Request, Response } from 'express';
 import Lottery from '../models/lottery';
 import LotteryParticipant from '../models/lotteryParticipant';
@@ -298,7 +299,7 @@ const sendLotteryNotifications = async (
   const messageForGroups = messageContent + joinLinkText;
 
   // 构建按钮键盘
-  const { InlineKeyboard } = require('grammy');
+
   let keyboard = buildInlineKeyboard(lottery.notifyButtons || []);
 
   if (!keyboard) {

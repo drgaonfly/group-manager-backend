@@ -17,6 +17,7 @@ import rechargeComposer from './recharge';
 import veryfiyComposer from './verify';
 import checkinComposer from './checkin';
 import lotteryComposer from './lottery';
+import auctionComposer from './auction';
 import conversationsComposer from './conversations';
 
 // import spreadComposer from './spread';
@@ -41,6 +42,7 @@ userComposer.use(profileComposer.middleware());
 userComposer.use(startingComposer.middleware());
 userComposer.use(contactComposer.middleware());
 userComposer.use(lotteryComposer.middleware());
+userComposer.use(auctionComposer.middleware());
 userComposer.use(checkinComposer.middleware());
 // userComposer.use(subscriptionComposer.middleware());
 // userComposer.use(cloneComposer.middleware());

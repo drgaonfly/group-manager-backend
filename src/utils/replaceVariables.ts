@@ -177,3 +177,105 @@ export const replaceLotteryVariables = (
 
   return result;
 };
+
+/**
+ * 替换竞拍内容中的变量
+ * 支持的变量：
+ * - {auctionTitle} - 竞拍标题
+ * - {startingPrice} - 起拍价
+ * - {bidIncrement} - 加价幅度
+ * - {endTime} - 结束时间
+ * - {currentHighestBid} - 当前最高出价
+ * - {bidCount} - 出价次数
+ * - {currentBot} - 当前机器人昵称
+ */
+export const replaceAuctionVariables = (
+  content: string,
+  auction: any,
+  options: {
+    currentBot?: string;
+    endTime?: string;
+    currentHighestBid?: number;
+    bidCount?: number;
+  } = {},
+): string => {
+  if (!content) return content;
+
+  let result = content;
+
+  // 基础变量
+  const now = new Date();
+  const beijingTime = formatBeijingDate(now);
+
+  result = result
+    .replace(/\{auctionTitle\}/g, escapeHtml(auction.title || ''))
+    .replace(
+      /\{startingPrice\}/g,
+      escapeHtml(String(auction.startingPrice || 0)),
+    )
+    .replace(
+      /\{minBidIncrement\}/g,
+      escapeHtml(String(auction.minBidIncrement || 0)),
+    )
+    .replace(
+      /\{maxBidIncrement\}/g,
+      escapeHtml(String(auction.maxBidIncrement || 0)),
+    )
+    .replace(/\{endTime\}/g, escapeHtml(options.endTime || ''))
+    .replace(
+      /\{currentHighestBid\}/g,
+      escapeHtml(
+        String(options.currentHighestBid || auction.startingPrice || 0),
+      ),
+    )
+    .replace(/\{bidCount\}/g, escapeHtml(String(options.bidCount || 0)))
+    .replace(/\{currentTime\}/g, escapeHtml(beijingTime))
+    .replace(/\{currentBot\}/g, escapeHtml(options.currentBot || ''));
+
+  return result;
+};
+/**
+ * 替换竞拍结束通知变量
+ * - {auctionTitle} - 竞拍标题
+ * - {winnerName} - 获胜者姓名
+ * - {winningBid} - 获胜出价
+ * - {totalBids} - 总出价次数
+ * - {participantCount} - 参与人数
+ * - {endTime} - 结束时间
+ * - {currentBot} - 当前机器人昵称
+ */
+export const replaceAuctionEndVariables = (
+  content: string,
+  auction: any,
+  options: {
+    winnerName?: string;
+    winningBid?: number;
+    totalBids?: number;
+    participantCount?: number;
+    endTime?: string;
+    currentBot?: string;
+  } = {},
+): string => {
+  if (!content) return content;
+
+  let result = content;
+
+  // 基础变量
+  const now = new Date();
+  const beijingTime = formatBeijingDate(now);
+
+  result = result
+    .replace(/\{auctionTitle\}/g, escapeHtml(auction.title || ''))
+    .replace(/\{winnerName\}/g, escapeHtml(options.winnerName || '未知用户'))
+    .replace(/\{winningBid\}/g, escapeHtml(String(options.winningBid || 0)))
+    .replace(/\{totalBids\}/g, escapeHtml(String(options.totalBids || 0)))
+    .replace(
+      /\{participantCount\}/g,
+      escapeHtml(String(options.participantCount || 0)),
+    )
+    .replace(/\{endTime\}/g, escapeHtml(options.endTime || ''))
+    .replace(/\{currentTime\}/g, escapeHtml(beijingTime))
+    .replace(/\{currentBot\}/g, escapeHtml(options.currentBot || ''));
+
+  return result;
+};

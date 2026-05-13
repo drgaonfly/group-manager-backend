@@ -86,6 +86,9 @@ export interface IBot extends Document {
   // 群抽奖
   canLotteryRule: boolean;
 
+  // 群竞拍
+  canAuctionRule: boolean;
+
   // 教学模块
   canTeaching: boolean;
 
@@ -357,6 +360,11 @@ const botSchema = new mongoose.Schema(
       required: false,
       default: false,
     },
+    canAuctionRule: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     canTeaching: {
       type: Boolean,
       required: false,
@@ -403,6 +411,13 @@ botSchema.virtual('botUserConfigs', {
 // 虚拟字段：关联的抽奖活动
 botSchema.virtual('lotteries', {
   ref: 'Lottery',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
+// 虚拟字段：关联的竞拍活动
+botSchema.virtual('auctions', {
+  ref: 'Auction',
   localField: '_id',
   foreignField: 'bot',
 });

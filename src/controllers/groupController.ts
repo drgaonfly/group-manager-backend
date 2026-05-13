@@ -248,9 +248,35 @@ const verifyRequiredChannel = handleAsync(
   },
 );
 
+// 获取指定机器人的群组列表
+const getGroupsByBotId = handleAsync(async (req: Request, res: Response) => {
+  const { botId } = req.query;
+
+  if (!botId) {
+    res.status(400);
+    throw new Error('缺少机器人ID参数');
+  }
+
+  console.log('botId', botId);
+
+  try {
+    // 返回机器人关联的群组
+    const groups = await Group.find({ bot: botId });
+
+    res.json({
+      success: true,
+      data: groups,
+    });
+  } catch (error: any) {
+    res.status(500);
+    throw new Error(error.message || '获取群组列表失败');
+  }
+});
+
 export {
   getGroups,
   getGroupById,
+  getGroupsByBotId,
   addGroup,
   updateGroup,
   deleteGroup,

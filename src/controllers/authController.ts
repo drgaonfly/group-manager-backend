@@ -240,6 +240,7 @@ const updateUserProfile = handleAsync(
       availableBotCount,
       checkinRule,
       lotteryRule,
+      auctionRule,
       teaching,
       adRemoval,
     } = req.body;
@@ -322,6 +323,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof adRemoval !== 'undefined') {
         updateData.adRemoval = adRemoval;
+      }
+      if (typeof auctionRule !== 'undefined') {
+        updateData.auctionRule = auctionRule;
       }
     }
 

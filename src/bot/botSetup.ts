@@ -1,4 +1,6 @@
 import { Bot, GrammyError, HttpError, session } from 'grammy';
+import Lottery from '../models/lottery';
+import Auction from '../models/auction';
 import logger from './middlewares/logger';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
@@ -110,6 +112,82 @@ export const setupBot = (token: string) => {
     const data = ctx.callbackQuery?.data;
     log(`用户点击了按钮: ${data}`);
 
+    // 处理竞拍参与按钮
+    if (data?.startsWith('auction_join_')) {
+      const auctionId = data.replace('auction_join_', '');
+      log(`用户点击了竞拍参与按钮，竞拍ID: ${auctionId}`);
+
+      try {
+        // 导入必要的模块
+
+        // 查找竞拍活动
+        const auction = await Auction.findById(auctionId);
+        if (!auction) {
+          await ctx.answerCallbackQuery({
+            text: '❌ 竞拍活动不存在',
+            show_alert: true,
+          });
+          return;
+        }
+
+        if (auction.status !== 'ongoing') {
+          await ctx.answerCallbackQuery({
+            text: '❌ 竞拍活动已结束',
+            show_alert: true,
+          });
+          return;
+        }
+
+        // 检查是否已过期
+        if (new Date() >= new Date(auction.endTime)) {
+          await ctx.answerCallbackQuery({
+            text: '❌ 竞拍活动已过期',
+            show_alert: true,
+          });
+          return;
+        }
+
+        // 获取当前最高出价
+        let currentHighest = auction.startingPrice;
+        let minimumBid = auction.startingPrice + auction.minBidIncrement;
+
+        if (auction.bids && auction.bids.length > 0) {
+          currentHighest = Math.max(
+            ...auction.bids.map((b: any) => b.bidAmount),
+          );
+          minimumBid = currentHighest + auction.minBidIncrement;
+        }
+
+        // 构建参与提示消息
+        const keywords = auction.keywords.join(' 或 ');
+        const endTime = new Date(auction.endTime).toLocaleString('zh-CN');
+
+        const participateMessage =
+          `🏆 竞拍参与方法：\n\n` +
+          `📝 在群组中发送关键词：\n` +
+          `💬 ${keywords}\n\n` +
+          `💰 当前最高价：${currentHighest}积分\n` +
+          `📈 最低出价：${minimumBid}积分\n` +
+          `📊 加价区间：${auction.minBidIncrement}-${auction.maxBidIncrement}积分\n` +
+          `⏰ 结束时间：${endTime}\n\n` +
+          `💡 出价方式：\n` +
+          `1. 先发送关键词参与\n` +
+          `2. 回复机器人消息并输入出价金额`;
+
+        await ctx.answerCallbackQuery({
+          text: participateMessage,
+          show_alert: true,
+        });
+      } catch (error) {
+        log('处理竞拍参与按钮失败:', error);
+        await ctx.answerCallbackQuery({
+          text: '❌ 处理失败，请稍后重试',
+          show_alert: true,
+        });
+      }
+      return;
+    }
+
     // 处理抽奖参与按钮
     if (data?.startsWith('lottery_join_')) {
       const lotteryId = data.replace('lottery_join_', '');
@@ -117,7 +195,6 @@ export const setupBot = (token: string) => {
 
       try {
         // 导入必要的模块
-        const Lottery = require('../models/lottery').default;
 
         // 查找抽奖活动
         const lottery = await Lottery.findById(lotteryId);
