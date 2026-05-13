@@ -156,7 +156,28 @@ module.exports = {
       merge_logs: true,
       // 日志切割配置（保留7天）
       max_size: '10M',
-    }
+    },
+    {
+      name: 'manager-recharge',
+      script: 'dist/tasks/recharge.js',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true, // 常驻进程，PM2 保障自动重启
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      // 日志配置
+      error_file: './logs/recharge-error.log',
+      out_file: './logs/recharge-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      // 日志切割配置（保留7天）
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
   ],
 };
 

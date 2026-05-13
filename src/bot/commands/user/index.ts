@@ -10,6 +10,7 @@ import profileComposer from './profile';
 import speechStaticComposer from './speechStatic';
 import startingComposer from './starting';
 import teachingComposer from './teaching';
+import rechargeComposer from './recharge';
 // import cloneComposer from './clone';
 // import walletComposer from './wallet';
 // import exchangeComposer from './exchange';
@@ -32,6 +33,7 @@ const userComposer = new Composer();
 // 在机器人使用的
 
 userComposer.use(startComposer.middleware());
+userComposer.use(rechargeComposer.middleware());
 userComposer.use(teachingComposer);
 userComposer.use(conversationsComposer.middleware());
 userComposer.use(speechStaticComposer.middleware());

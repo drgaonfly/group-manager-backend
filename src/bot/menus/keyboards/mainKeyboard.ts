@@ -44,7 +44,10 @@ async function createMainKeyboard(ctx: MyContext) {
       });
   }
 
-  // 2. 其它功能模块（仅在私聊中显示）
+  // 2. 充值余额
+  keyboard.text('充值余额');
+
+  // 3. 其它功能模块（仅在私聊中显示）
   if (!isGroupChat) {
     // 教学模块按钮
     if (PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)) {

@@ -42,19 +42,37 @@ async function fetchTrxTransactions(address: string) {
   return response.data;
 }
 
-async function fetchTrc20Transactions(address: string) {
-  const url = `https://api.trongrid.io/v1/accounts/${address}/transactions/trc20`;
+async function fetchTrc20Transactions(address: string, minutes = 1) {
+  const start_time = Math.floor(
+    (new Date().getTime() - minutes * 60 * 1000) / 1000,
+  );
+
+  const end_time = Math.floor(new Date().getTime() / 1000);
+
+  // 官方 USDT TRC20 合约地址（主网固定）
+  const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+
+  // 添加 contract_address 参数，只拉取 USDT 转账
+  const url = `https://api.trongrid.io/v1/accounts/${address}/transactions/trc20?start=${start_time}&end=${end_time}&contract_address=${USDT_CONTRACT}`;
+
+  // 可选：添加 limit=200（默认20，最大200），避免数据过多
+  // const url = `...&limit=200`;
 
   const key = getNextApiKey();
 
-  const response = await axios.get(url, {
-    headers: {
-      Accept: 'application/json',
-      'TRON-PRO-API-KEY': key,
-    },
-  });
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        Accept: 'application/json',
+        'TRON-PRO-API-KEY': key,
+      },
+    });
 
-  return response.data.data;
+    return response.data.data || [];
+  } catch (error) {
+    console.error('fetchTrc20Transactions error:', error);
+    return [];
+  }
 }
 
 const getAccountBalances = async (accountId: string) => {
