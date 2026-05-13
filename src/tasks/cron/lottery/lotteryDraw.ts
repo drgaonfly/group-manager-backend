@@ -248,26 +248,15 @@ export async function checkAndDrawLotteries() {
     // 发送到所有关联的群组
     for (const group of targetGroups) {
       try {
-        const sentMsg = await sendLotteryMessage(
+        await sendLotteryMessage(
           telegramBot,
           group.id,
           message,
           keyboard,
           lottery.media,
           lottery.mediaType,
+          lottery.drawResultPin,
         );
-
-        // 置顶消息
-        if (lottery.drawResultPin && sentMsg.message_id) {
-          try {
-            await telegramBot.api.pinChatMessage(group.id, sentMsg.message_id);
-          } catch (e) {
-            console.error(
-              `抽奖 ${lottery._id} 置顶开奖通知到群组 ${group.title} 失败:`,
-              e,
-            );
-          }
-        }
       } catch (error) {
         console.error(
           `抽奖 ${lottery._id} 发送开奖通知到群组 ${group.title} 失败:`,

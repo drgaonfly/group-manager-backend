@@ -1,6 +1,5 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
-import { checkGroup } from '../../../middlewares/checkGroup';
 import { checkTeaching } from '../../../middlewares/checkTeaching';
 import Teacher from '../../../../models/teacher';
 import Evaluation from '../../../../models/evaluation';

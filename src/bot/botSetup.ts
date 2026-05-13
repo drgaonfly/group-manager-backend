@@ -109,6 +109,74 @@ export const setupBot = (token: string) => {
     log('callback_query:data');
     const data = ctx.callbackQuery?.data;
     log(`用户点击了按钮: ${data}`);
+
+    // 处理抽奖参与按钮
+    if (data?.startsWith('lottery_join_')) {
+      const lotteryId = data.replace('lottery_join_', '');
+      log(`用户点击了抽奖参与按钮，抽奖ID: ${lotteryId}`);
+
+      try {
+        // 导入必要的模块
+        const Lottery = require('../models/lottery').default;
+
+        // 查找抽奖活动
+        const lottery = await Lottery.findById(lotteryId);
+        if (!lottery) {
+          await ctx.answerCallbackQuery({
+            text: '❌ 抽奖活动不存在',
+            show_alert: true,
+          });
+          return;
+        }
+
+        if (lottery.status !== 'ongoing') {
+          await ctx.answerCallbackQuery({
+            text: '❌ 抽奖活动已结束',
+            show_alert: true,
+          });
+          return;
+        }
+
+        // 构建参与提示消息
+        const keywords = lottery.keywords.join(' 或 ');
+        const participateMessage =
+          `🎯 参与抽奖方法：\n\n` +
+          `📝 在群组中发送以下关键词之一：\n` +
+          `💬 ${keywords}\n\n` +
+          `🎁 奖品：\n${lottery.prizes
+            .map(
+              (p: any, i: number) =>
+                `${i + 1}. ${p.name} - ${p.value}积分 x${p.quantity}份`,
+            )
+            .join('\n')}\n\n` +
+          `⏰ 开奖条件：\n${
+            lottery.drawMethod.includes('fullParticipants')
+              ? `满${lottery.fullParticipantsCount}人开奖`
+              : ''
+          }${
+            lottery.drawMethod.includes('scheduledTime') &&
+            lottery.scheduledDrawTime
+              ? `\n定时开奖: ${new Date(
+                  lottery.scheduledDrawTime,
+                ).toLocaleString('zh-CN')}`
+              : ''
+          }`;
+
+        await ctx.answerCallbackQuery({
+          text: participateMessage,
+          show_alert: true,
+        });
+      } catch (error) {
+        log('处理抽奖参与按钮失败:', error);
+        await ctx.answerCallbackQuery({
+          text: '❌ 处理失败，请稍后重试',
+          show_alert: true,
+        });
+      }
+      return;
+    }
+
+    // 默认处理
     await ctx.answerCallbackQuery(`您点击了按钮: ${data}`);
   });
 

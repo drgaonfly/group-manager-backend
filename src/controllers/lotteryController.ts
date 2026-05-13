@@ -60,39 +60,81 @@ export const getLottery = async (req: Request, res: Response) => {
 export const createLottery = async (req: RequestCustom, res: Response) => {
   const { bot: botId, ...data } = req.body;
 
-  console.log('创建抽奖 - 接收到的数据:', JSON.stringify(data, null, 2));
-
-  const bot = await Bot.findById(botId);
-  if (!bot) {
-    res.status(404).json({ message: '机器人不存在' });
-    return;
-  }
-
-  const code = generateCode();
-
-  const { proxyUser } = await findBotProxy(bot);
-
-  // 确保 media 字段是字符串
-  if (data.media && typeof data.media === 'object') {
-    console.error('Media 字段是对象而不是字符串:', data.media);
-    data.media = ''; // 重置为空字符串
-  }
-
-  // 清理不需要的字段
-  const cleanedData = { ...data };
-  if (cleanedData.media === '') {
-    delete cleanedData.media;
-    delete cleanedData.mediaType;
-  }
-
-  const lottery = await Lottery.create({
-    ...cleanedData,
-    bot: botId,
-    proxy: proxyUser._id,
-    code,
+  console.log('=== 🎰 后台创建抽奖活动 ===');
+  console.log('📥 接收到的数据:', {
+    botId,
+    title: data.title,
+    notifyPin: data.notifyPin,
+    notifyPinType: typeof data.notifyPin,
+    joinSuccessPin: data.joinSuccessPin,
+    drawResultPin: data.drawResultPin,
+    media: data.media,
+    mediaType: data.mediaType,
+    dataKeys: Object.keys(data),
   });
 
-  res.status(201).json(lottery);
+  try {
+    const bot = await Bot.findById(botId);
+    if (!bot) {
+      res.status(404).json({ message: '机器人不存在' });
+      return;
+    }
+
+    const code = generateCode();
+    const { proxyUser } = await findBotProxy(bot);
+
+    // 确保 media 字段是字符串
+    if (data.media && typeof data.media === 'object') {
+      console.error('Media 字段是对象而不是字符串:', data.media);
+      data.media = ''; // 重置为空字符串
+    }
+
+    // 清理不需要的字段
+    const cleanedData = { ...data };
+    if (cleanedData.media === '') {
+      delete cleanedData.media;
+      delete cleanedData.mediaType;
+    }
+
+    console.log('💾 后台创建抽奖 - 保存的数据:', {
+      title: cleanedData.title,
+      notifyPin: cleanedData.notifyPin,
+      joinSuccessPin: cleanedData.joinSuccessPin,
+      drawResultPin: cleanedData.drawResultPin,
+      media: cleanedData.media,
+      mediaType: cleanedData.mediaType,
+      hasMedia: !!(cleanedData.media && cleanedData.mediaType),
+      code: code,
+    });
+
+    const lottery = await Lottery.create({
+      ...cleanedData,
+      bot: botId,
+      proxy: proxyUser._id,
+      code,
+    });
+
+    console.log('✅ 后台抽奖活动已保存到数据库:', {
+      id: lottery._id,
+      notifyPin: lottery.notifyPin,
+      joinSuccessPin: lottery.joinSuccessPin,
+      drawResultPin: lottery.drawResultPin,
+    });
+
+    // 获取机器人关联的所有群组并发送通知
+    const groups = await Group.find({ _id: { $in: bot.groups } });
+    if (groups.length > 0) {
+      console.log('📢 开始发送抽奖通知到群组...');
+      await sendLotteryNotifications(lottery, bot, groups);
+    } else {
+      console.log('⚠️ 机器人未关联任何群组，跳过发送通知');
+    }
+
+    res.status(201).json(lottery);
+  } catch (error: any) {
+    console.error('❌ 后台创建抽奖失败:', error);
+    res.status(500).json({ message: error.message || '创建失败' });
+  }
 };
 
 // 更新抽奖
@@ -210,6 +252,23 @@ const sendLotteryNotifications = async (
   groups: any[],
   participantCount?: number,
 ) => {
+  console.log('=== 🎲 sendLotteryNotifications 调试信息 ===');
+  console.log('📋 抽奖信息:', {
+    lotteryId: lottery._id,
+    title: lottery.title,
+    notifyPin: lottery.notifyPin,
+    notifyPinType: typeof lottery.notifyPin,
+    notifyPinValue:
+      lottery.notifyPin === true
+        ? '✅ 需要置顶'
+        : lottery.notifyPin === false
+          ? '❌ 不置顶'
+          : '⚠️ 未定义',
+    botName: bot.botName,
+    botUserName: bot.userName,
+    groupCount: groups.length,
+  });
+
   const telegramBot = setupBot(bot.token);
   const joinUrl = `https://t.me/${bot.userName}?start=join-${lottery.code}`;
 
@@ -239,32 +298,47 @@ const sendLotteryNotifications = async (
   const messageForGroups = messageContent + joinLinkText;
 
   // 构建按钮键盘
-  const keyboard = buildInlineKeyboard(lottery.notifyButtons || []);
+  const { InlineKeyboard } = require('grammy');
+  let keyboard = buildInlineKeyboard(lottery.notifyButtons || []);
+
+  if (!keyboard) {
+    // 如果没有其他按钮，创建新的键盘
+    keyboard = new InlineKeyboard();
+  }
+
+  // 添加参与抽奖按钮（新起一行）
+  keyboard.text('🎯 参与抽奖', `lottery_join_${lottery._id}`);
+
+  console.log('📤 发送参数:', {
+    messageLength: messageForGroups.length,
+    hasKeyboard: !!keyboard,
+    hasDefaultJoinButton: true,
+    media: lottery.media,
+    mediaType: lottery.mediaType,
+    notifyPin: lottery.notifyPin,
+    groupsToSend: groups.map((g) => ({ id: g.id, title: g.title })),
+  });
 
   // 发送到机器人关联的所有群组
   for (const group of groups) {
     try {
-      const sentMsg = await sendLotteryMessage(
+      console.log(`📨 发送到群组: ${group.title} (${group.id})`);
+      await sendLotteryMessage(
         telegramBot,
         group.id,
         messageForGroups,
         keyboard,
         lottery.media,
         lottery.mediaType,
+        lottery.notifyPin,
       );
-
-      // 置顶消息
-      if (lottery.notifyPin && sentMsg.message_id) {
-        try {
-          await telegramBot.api.pinChatMessage(group.id, sentMsg.message_id);
-        } catch (err) {
-          console.error(`置顶抽奖通知到群组 ${group.title} 失败:`, err);
-        }
-      }
+      console.log(`✅ 成功发送到群组: ${group.title}`);
     } catch (err) {
-      console.error(`发送抽奖通知到群组 ${group.title} 失败:`, err);
+      console.error(`❌ 发送抽奖通知到群组 ${group.title} 失败:`, err);
     }
   }
+
+  console.log('=== 🎲 sendLotteryNotifications 结束 ===\n');
 };
 
 // 公开接口：创建抽奖（无需登录，供群管理员使用）
@@ -274,8 +348,14 @@ export const createLotteryPublic = async (
 ) => {
   const { botId, botUserId, ...data } = req.body;
 
-  console.log('createLotteryPublic - 接收到的数据:', {
+  console.log('=== 🎰 创建抽奖活动 ===');
+  console.log('📥 接收到的数据:', {
     botId,
+    title: data.title,
+    notifyPin: data.notifyPin,
+    notifyPinType: typeof data.notifyPin,
+    joinSuccessPin: data.joinSuccessPin,
+    drawResultPin: data.drawResultPin,
     media: data.media,
     mediaType: data.mediaType,
     dataKeys: Object.keys(data),
@@ -328,15 +408,28 @@ export const createLotteryPublic = async (
       status: 'ongoing',
     };
 
-    console.log('创建抽奖 - 保存的数据:', {
+    console.log('💾 创建抽奖 - 保存的数据:', {
+      title: lotteryData.title,
+      notifyPin: lotteryData.notifyPin,
+      joinSuccessPin: lotteryData.joinSuccessPin,
+      drawResultPin: lotteryData.drawResultPin,
       media: lotteryData.media,
       mediaType: lotteryData.mediaType,
       hasMedia: !!(lotteryData.media && lotteryData.mediaType),
+      code: lotteryData.code,
     });
 
     const lottery = await Lottery.create(lotteryData);
 
+    console.log('✅ 抽奖活动已保存到数据库:', {
+      id: lottery._id,
+      notifyPin: lottery.notifyPin,
+      joinSuccessPin: lottery.joinSuccessPin,
+      drawResultPin: lottery.drawResultPin,
+    });
+
     // 发送抽奖通知到所有关联的群组
+    console.log('📢 开始发送抽奖通知...');
     await sendLotteryNotifications(lottery, bot, groups);
 
     res.status(201).json({
