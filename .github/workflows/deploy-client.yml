@@ -20,14 +20,14 @@ jobs:
       - name: Deploy to client server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 154.64.232.113
+          host: 82.180.137.15
           username: root
           password: ${{ secrets.PASSWORD }}
           port: 22
           script: |
             cd /www/wwwroot/manager-backend.2040fc.xyz/manager-backend-remote &&
             git pull --rebase origin ${GITHUB_REF##*/} &&
-            /www/server/nodejs/v22.21.1/bin/pnpm install &&
+            /www/server/nodejs/v20.16.0/bin/pnpm install &&
             git checkout -f . &&
             npm run build &&
             npm run copy-to-remote
