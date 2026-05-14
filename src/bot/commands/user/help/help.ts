@@ -1,28 +1,17 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
-import path from 'path';
-import ejs from 'ejs';
 
 // 发送帮助信息的函数
 export async function sendHelpMessage(ctx: MyContext) {
-  const templatePath = path.join(__dirname, '../../../../templates/help.ejs');
-  const helpText = await ejs.renderFile(templatePath);
+  const help = await ctx.currentBot.help;
 
-  const inlineKeyboard = {
-    inline_keyboard: [
-      [
-        {
-          text: '💰 开始记账',
-          url: `https://t.me/${ctx.me.username}?startgroup=true`,
-        },
-      ],
-    ],
-  };
-
-  await ctx.reply(helpText, {
-    parse_mode: 'HTML',
-    reply_markup: inlineKeyboard,
-  });
+  if (help) {
+    await ctx.reply(help, {
+      parse_mode: 'HTML',
+    });
+  } else {
+    await ctx.reply('机器人未设置help');
+  }
 }
 
 const helpCommand = new Composer<MyContext>();

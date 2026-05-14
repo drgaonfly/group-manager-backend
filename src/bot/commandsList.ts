@@ -7,4 +7,5 @@ export const privateCommandsList = [
 
 export const groupCommandsList = [
   { command: 'start', description: '开始使用' },
+  { command: 'help', description: '帮助' },
 ];

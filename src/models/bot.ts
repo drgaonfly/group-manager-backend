@@ -19,6 +19,7 @@ export interface IBot extends Document {
   botUsers: mongoose.Schema.Types.ObjectId[] | IBotUser[];
   session?: string;
   contact?: string;
+  help?: string;
   trx20_address?: string;
   customer_service_link?: string;
   owners?: mongoose.Schema.Types.ObjectId[] | IBotUser[]; // 拥有者，存 BotUser _id 关联
@@ -186,6 +187,10 @@ const botSchema = new mongoose.Schema(
       trim: true,
     },
     contact: {
+      type: String,
+      trim: true,
+    },
+    help: {
       type: String,
       trim: true,
     },
