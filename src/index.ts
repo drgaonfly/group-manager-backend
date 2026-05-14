@@ -49,6 +49,7 @@ import auctionRoutes from './routes/auctionRoutes';
 import teacherRoutes from './routes/teacherRoutes';
 import evaluationRoutes from './routes/evaluationRoutes';
 import adRemovalRoutes from './routes/adRemovalRoutes';
+import rechargeRoutes from './routes/rechargeRoutes';
 
 dotenv.config();
 
@@ -111,6 +112,7 @@ app.use('/api/auctions', auctionRoutes);
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/ad-removals', adRemovalRoutes);
+app.use('/api/recharges', rechargeRoutes);
 
 app.use('/api/static', express.static('tmp'));
 
