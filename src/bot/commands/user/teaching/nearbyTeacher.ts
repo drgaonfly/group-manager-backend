@@ -1,6 +1,5 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
-import { checkGroup } from '../../../middlewares/checkGroup';
 import { checkTeaching } from '../../../middlewares/checkTeaching';
 import BotUserConfig from '../../../../models/botUserConfig';
 import Teacher from '../../../../models/teacher';
@@ -145,7 +144,7 @@ async function getNearbyTeachersPage(
 }
 
 // ── 群里发「附近」触发 ────────────────────────────────────────────────────────
-nearbyTeacherComposer.hears('附近', checkGroup, checkTeaching, async (ctx) => {
+nearbyTeacherComposer.hears('附近', checkTeaching, async (ctx) => {
   const botUser = ctx.currentBotUser;
   console.log(
     `[nearby] triggered by botUser: ${botUser?._id}, telegramId: ${botUser?.id}`,
