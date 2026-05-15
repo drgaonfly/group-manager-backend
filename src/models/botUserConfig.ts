@@ -103,9 +103,11 @@ const botUserConfigSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ['Point'],
+        required: false,
       },
       coordinates: {
-        type: [Number], // [lng, lat]
+        type: [Number],
+        required: false,
       },
     },
   },
@@ -117,6 +119,43 @@ const botUserConfigSchema = new mongoose.Schema(
 botUserConfigSchema.index({ bot: 1, botUser: 1 }, { unique: true });
 // sparse: 没有 location 的文档不参与索引，不报错
 botUserConfigSchema.index({ location: '2dsphere' }, { sparse: true });
+
+/**
+ * 清理无效的 location 字段（coordinates 为空数组时视为无效，直接 unset）
+ * 防止 2dsphere 索引因空坐标报 Location16755 错误
+ */
+function stripInvalidLocation(doc: any) {
+  if (
+    doc.location &&
+    Array.isArray(doc.location.coordinates) &&
+    doc.location.coordinates.length !== 2
+  ) {
+    doc.location = undefined;
+  }
+}
+
+botUserConfigSchema.pre('save', function (next) {
+  stripInvalidLocation(this);
+  next();
+});
+
+// findOneAndUpdate / updateOne / updateMany 等走这里
+botUserConfigSchema.pre(
+  ['findOneAndUpdate', 'updateOne', 'updateMany'],
+  function (next) {
+    const update = this.getUpdate() as any;
+    if (update?.$setOnInsert?.location) {
+      stripInvalidLocation(update.$setOnInsert);
+    }
+    if (update?.$set?.location) {
+      stripInvalidLocation(update.$set);
+    }
+    if (update?.location) {
+      stripInvalidLocation(update);
+    }
+    next();
+  },
+);
 
 const BotUserConfig = mongoose.model<IBotUserConfig>(
   'BotUserConfig',
