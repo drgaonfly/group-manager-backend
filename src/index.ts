@@ -50,6 +50,7 @@ import teacherRoutes from './routes/teacherRoutes';
 import evaluationRoutes from './routes/evaluationRoutes';
 import adRemovalRoutes from './routes/adRemovalRoutes';
 import rechargeRoutes from './routes/rechargeRoutes';
+import badgeRoutes from './routes/badgeRoutes';
 
 dotenv.config();
 
@@ -113,6 +114,7 @@ app.use('/api/teachers', teacherRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/ad-removals', adRemovalRoutes);
 app.use('/api/recharges', rechargeRoutes);
+app.use('/api/badges', badgeRoutes);
 
 app.use('/api/static', express.static('tmp'));
 

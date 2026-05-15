@@ -262,6 +262,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     auctionRule,
     teaching,
     adRemoval,
+    rankConferral,
     ...body
   } = req.body;
 
@@ -312,6 +313,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       auctionRule,
       teaching,
       adRemoval,
+      rankConferral,
     },
     { new: true },
   );

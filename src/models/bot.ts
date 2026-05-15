@@ -95,6 +95,9 @@ export interface IBot extends Document {
 
   // 处理广告功能模块
   canRemoveAd: boolean;
+
+  // 授衔功能
+  canRankConferral: boolean;
 }
 
 export interface IMenu extends Document {
@@ -376,6 +379,11 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     canRemoveAd: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    canRankConferral: {
       type: Boolean,
       required: false,
       default: false,

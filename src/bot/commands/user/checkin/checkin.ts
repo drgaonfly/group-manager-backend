@@ -10,6 +10,7 @@ import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import {
   getGroupUserRanking,
   getGroupUserRankingList,
+  getUserCurrentRank,
 } from '../../../../services/rankingService';
 import createDebug from 'debug';
 
@@ -142,6 +143,11 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     );
     const userBalanceRankingList = rankingListData.text;
 
+    const currentRank = await getUserCurrentRank(
+      botId,
+      botUserConfig.usdt_balance ?? 0,
+    );
+
     const variables = {
       username: ctx.currentBotUser.userName
         ? `@${ctx.currentBotUser.userName}`
@@ -154,6 +160,7 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       groupTitle: ctx.currentGroup.title || '',
       currentTime: formatBeijingDate(new Date()),
       currentBot: `@${ctx.currentBot.userName}`,
+      currentRank,
     };
 
     successMessage = replaceMessageVariables(successMessage, variables);

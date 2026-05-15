@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import BotUserConfig from '../models/botUserConfig';
+import Badge from '../models/badge';
 import { ITEMS_PER_PAGE } from '../constants';
 import { MyContext } from '../bot/types';
 import { escapeHtml } from '../utils/escapeHtml';
@@ -109,4 +110,26 @@ export const getGroupUserRankingList = async (
     hasNext: skip + configs.length < total,
     total,
   };
+};
+
+/**
+ * 根据用户当前积分，查询该 bot 下匹配的最高称号
+ * 规则：找出所有 threshold <= balance 的称号，取 threshold 最大的那个
+ * @param botId 机器人 ID
+ * @param balance 用户当前积分
+ * @returns 称号名称字符串，未匹配时返回空字符串
+ */
+export const getUserCurrentRank = async (
+  botId: string | Types.ObjectId,
+  balance: number,
+): Promise<string> => {
+  const badge = await Badge.findOne({
+    bot: botId,
+    threshold: { $lte: balance },
+  })
+    .sort({ threshold: -1 }) // 取门槛最高的（最高等级）
+    .select('title')
+    .lean();
+
+  return badge?.title ?? '';
 };

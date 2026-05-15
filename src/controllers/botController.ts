@@ -1074,6 +1074,7 @@ const BOT_FEATURE_FIELD_KEYS: string[] = [
   'canAuctionRule',
   'canTeaching',
   'canRemoveAd',
+  'canRankConferral',
   'multi_image',
   'multi_content',
   'fee',

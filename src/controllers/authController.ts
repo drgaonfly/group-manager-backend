@@ -12,6 +12,10 @@ import { RequestCustom } from 'user';
 import { redis } from '../utils/redis';
 import { v4 as uuidv4 } from 'uuid';
 
+interface DecodedToken {
+  sub: string;
+}
+
 const login = handleAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
@@ -171,10 +175,6 @@ export const verify2FALogin = handleAsync(
   },
 );
 
-interface DecodedToken {
-  sub: string;
-}
-
 const refreshToken = handleAsync(async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
@@ -243,6 +243,7 @@ const updateUserProfile = handleAsync(
       auctionRule,
       teaching,
       adRemoval,
+      rankConferral,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -326,6 +327,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof auctionRule !== 'undefined') {
         updateData.auctionRule = auctionRule;
+      }
+      if (typeof rankConferral !== 'undefined') {
+        updateData.rankConferral = rankConferral;
       }
     }
 
