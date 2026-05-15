@@ -108,6 +108,7 @@ const botUserConfigSchema = new mongoose.Schema(
       coordinates: {
         type: [Number],
         required: false,
+        default: undefined, // 禁止 Mongoose 自动填充空数组默认值
       },
     },
   },
