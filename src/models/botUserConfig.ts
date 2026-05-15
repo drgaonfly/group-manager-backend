@@ -30,6 +30,11 @@ export interface IBotUserConfig extends Document {
   usdt_balance: number; // 用户余额
   trx_balance: number; // 用户余额
   promotionLink?: mongoose.Types.ObjectId; // 关联的推广链接
+  /** 用户上次更新的位置坐标，用于附近老师搜索 */
+  location?: {
+    type: 'Point';
+    coordinates: [number, number]; // [lng, lat]
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -94,6 +99,15 @@ const botUserConfigSchema = new mongoose.Schema(
       ref: 'PromotionLink',
       required: false,
     },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+      },
+      coordinates: {
+        type: [Number], // [lng, lat]
+      },
+    },
   },
   {
     timestamps: true,
@@ -101,6 +115,8 @@ const botUserConfigSchema = new mongoose.Schema(
 );
 
 botUserConfigSchema.index({ bot: 1, botUser: 1 }, { unique: true });
+// sparse: 没有 location 的文档不参与索引，不报错
+botUserConfigSchema.index({ location: '2dsphere' }, { sparse: true });
 
 const BotUserConfig = mongoose.model<IBotUserConfig>(
   'BotUserConfig',

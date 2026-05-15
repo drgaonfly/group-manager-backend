@@ -10,10 +10,10 @@ export interface ITeacher extends Document {
   botUser: mongoose.Types.ObjectId | IBotUser;
 
   display_name: string;
-  contactLink: string; // 修正拼写: contact_link
+  contactLink: string;
   address: string;
 
-  isAvailable: boolean; // 建议将 isClass (是否上课) 改为 isAvailable (是否营业/接单中) 更符合语义
+  isAvailable: boolean;
   reviews: string[];
 
   images: string[];
