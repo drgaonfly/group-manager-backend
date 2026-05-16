@@ -11,6 +11,7 @@ import {
   getEvaluationDetail,
 } from './handleEvaluation';
 import Evaluation from '../../../../models/evaluation';
+import Teacher from '../../../../models/teacher';
 import path from 'path';
 import fs from 'fs/promises';
 import createDebug from 'debug';
@@ -173,60 +174,64 @@ startCommand.callbackQuery(/^show_eval_([a-f\d]{24})$/i, async (ctx) => {
 });
 
 // 处理查看评价照片回调
-startCommand.callbackQuery(/^show_eval_media_([a-f\d]{24})$/i, async (ctx) => {
-  const evalId = ctx.match[1];
-  try {
-    const evaluation = await Evaluation.findById(evalId);
+startCommand.callbackQuery(
+  /^show_teacher_media_([a-f\d]{24})$/i,
+  async (ctx) => {
+    const teacherId = ctx.match[1];
+    try {
+      const teacher = await Teacher.findById(teacherId);
 
-    if (
-      !evaluation ||
-      !evaluation.proof_media ||
-      evaluation.proof_media.length === 0
-    ) {
-      await ctx.answerCallbackQuery('❌ 暂无照片');
-      return;
-    }
+      if (!teacher || !teacher.images || teacher.images.length === 0) {
+        await ctx.answerCallbackQuery('❌ 暂无照片');
+        return;
+      }
 
-    const mediaGroup = await Promise.all(
-      evaluation.proof_media.map(async (file: string) => {
-        const filePath = path.join(process.cwd(), 'tmp', file);
-        try {
-          await fs.access(filePath);
-          const isVideo = file.match(/\.(mp4|mov|avi)$/i);
-          if (isVideo) {
+      const teacher_media = {
+        ...teacher.images,
+        ...teacher.videos,
+      };
+
+      const mediaGroup = await Promise.all(
+        teacher_media.map(async (file: string) => {
+          const filePath = path.join(process.cwd(), 'tmp', file);
+          try {
+            await fs.access(filePath);
+            const isVideo = file.match(/\.(mp4|mov|avi)$/i);
+            if (isVideo) {
+              return {
+                type: 'video' as const,
+                media: new InputFile(filePath),
+              };
+            }
             return {
-              type: 'video' as const,
+              type: 'photo' as const,
               media: new InputFile(filePath),
             };
+          } catch (e) {
+            return null;
           }
-          return {
-            type: 'photo' as const,
-            media: new InputFile(filePath),
-          };
-        } catch (e) {
-          return null;
-        }
-      }),
-    );
+        }),
+      );
 
-    const validMedia = mediaGroup.filter((m) => m !== null) as any[];
+      const validMedia = mediaGroup.filter((m) => m !== null) as any[];
 
-    if (validMedia.length === 0) {
-      await ctx.answerCallbackQuery('❌ 照片文件不存在');
-      return;
+      if (validMedia.length === 0) {
+        await ctx.answerCallbackQuery('❌ 照片文件不存在');
+        return;
+      }
+
+      // 分批发送，每组最多 10 个
+      for (let i = 0; i < validMedia.length; i += 10) {
+        const chunk = validMedia.slice(i, i + 10);
+        await ctx.replyWithMediaGroup(chunk);
+      }
+
+      await ctx.answerCallbackQuery();
+    } catch (err) {
+      console.error('Show evaluation media failed:', err);
+      await ctx.answerCallbackQuery('❌ 加载失败');
     }
-
-    // 分批发送，每组最多 10 个
-    for (let i = 0; i < validMedia.length; i += 10) {
-      const chunk = validMedia.slice(i, i + 10);
-      await ctx.replyWithMediaGroup(chunk);
-    }
-
-    await ctx.answerCallbackQuery();
-  } catch (err) {
-    console.error('Show evaluation media failed:', err);
-    await ctx.answerCallbackQuery('❌ 加载失败');
-  }
-});
+  },
+);
 
 export default startCommand;

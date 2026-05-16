@@ -74,6 +74,8 @@ export async function handleEvaluation(ctx: MyContext, evalId: string) {
         populate: { path: 'botUser' },
       });
 
+    const teacher = await Teacher.findById(evaluation.teacher);
+
     if (!evaluation || evaluation.status !== 'approved') {
       await ctx.reply('❌ 评价报告不存在或未通过审核');
       return;
@@ -84,14 +86,11 @@ export async function handleEvaluation(ctx: MyContext, evalId: string) {
     const keyboard = new InlineKeyboard();
 
     // 如果有媒体文件，增加查看照片按钮
-    if (evaluation.proof_media && evaluation.proof_media.length > 0) {
-      keyboard.text('🖼 查看照片', `show_eval_media_${evaluation._id}`).row();
+    if (teacher.images && teacher.images.length > 0) {
+      keyboard.text('🖼 查看照片', `show_teacher_media_${teacher._id}`).row();
     }
 
-    keyboard.text(
-      '⬅️ 返回列表',
-      `eval_list_${(evaluation.teacher as any)?._id}`,
-    );
+    keyboard.text('⬅️ 返回列表', `eval_list_${teacher._id}`);
 
     await ctx.reply(msg, {
       parse_mode: 'HTML',
