@@ -5,7 +5,6 @@ import LotteryParticipant from '../models/lotteryParticipant';
 import Bot from '../models/bot';
 import Group from '../models/group';
 import { setupBot } from '../bot/botSetup';
-import { formatBeijingDate } from '../utils/formatBeijingDate';
 import { v4 as uuidv4 } from 'uuid';
 import { buildInlineKeyboard } from '../bot/utils/buildInlineKeyboard';
 import { sendLotteryMessage } from '../bot/utils/sendLotteryMessage';
