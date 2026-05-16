@@ -22,6 +22,7 @@ export interface IFixedWinner {
 export interface ILottery extends Document {
   proxy: mongoose.Schema.Types.ObjectId | IUser; // 代理用户
   bot: mongoose.Schema.Types.ObjectId; // 关联机器人
+  group: mongoose.Schema.Types.ObjectId; // 指定群组
   creator?: mongoose.Schema.Types.ObjectId | IBotUser; // 创建者
   code: string; // 唯一参与码，用于生成参与链接
   title: string;
@@ -115,6 +116,11 @@ const lotterySchema = new mongoose.Schema(
     bot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
+      required: true,
+    },
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
       required: true,
     },
     creator: {
@@ -217,6 +223,7 @@ const lotterySchema = new mongoose.Schema(
 );
 
 lotterySchema.index({ bot: 1, status: 1 });
+lotterySchema.index({ bot: 1, group: 1, status: 1 });
 lotterySchema.index({ proxy: 1 });
 lotterySchema.index({ code: 1 });
 

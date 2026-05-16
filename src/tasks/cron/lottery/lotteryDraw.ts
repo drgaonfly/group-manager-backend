@@ -242,27 +242,29 @@ export async function checkAndDrawLotteries() {
     const keyboard = buildInlineKeyboard(lottery.drawResultButtons || []);
     console.log(`[抽奖任务] 生成的键盘:`, keyboard ? '有按钮' : '无按钮');
 
-    // 获取机器人关联的所有群组（机器人本位架构）
-    const targetGroups = await Group.find({ bot: bot._id });
+    // 获取抽奖指定的群组
+    const targetGroup = await Group.findById(lottery.group as any);
+    if (!targetGroup) {
+      console.error(`[抽奖任务] 抽奖 ${lottery._id} 指定的群组不存在`);
+      return;
+    }
 
-    // 发送到所有关联的群组
-    for (const group of targetGroups) {
-      try {
-        await sendLotteryMessage(
-          telegramBot,
-          group.id,
-          message,
-          keyboard,
-          lottery.media,
-          lottery.mediaType,
-          lottery.drawResultPin,
-        );
-      } catch (error) {
-        console.error(
-          `抽奖 ${lottery._id} 发送开奖通知到群组 ${group.title} 失败:`,
-          error,
-        );
-      }
+    // 发送到指定群组
+    try {
+      await sendLotteryMessage(
+        telegramBot,
+        targetGroup.id,
+        message,
+        keyboard,
+        lottery.media,
+        lottery.mediaType,
+        lottery.drawResultPin,
+      );
+    } catch (error) {
+      console.error(
+        `抽奖 ${lottery._id} 发送开奖通知到群组 ${targetGroup.title} 失败:`,
+        error,
+      );
     }
 
     console.log(`抽奖 ${lottery._id} 开奖成功，${winners.length} 人中奖`);

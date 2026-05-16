@@ -213,9 +213,10 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
     return next();
   }
 
-  // 查找该机器人下的进行中抽奖活动（机器人本位架构）
+  // 查找该机器人+群组下的进行中抽奖活动
   const lottery = await Lottery.findOne({
     bot: currentBot._id,
+    group: currentGroup._id,
     status: { $in: ['pending', 'ongoing'] },
   });
 
