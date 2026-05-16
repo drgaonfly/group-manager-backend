@@ -86,12 +86,11 @@ export const createAuction = async (req: RequestCustom, res: Response) => {
       return;
     }
 
-    // 检查该群组是否已有进行中的竞拍活动
+    // 检查该群组是否已有进行中的竞拍活动（不依赖 endTime，以 status 为准）
     const existingAuction = await Auction.findOne({
       bot: botId,
       group: data.group,
       status: 'ongoing',
-      endTime: { $gt: new Date() }, // 还未结束
     });
 
     if (existingAuction) {
@@ -139,13 +138,12 @@ export const updateAuction = async (req: Request, res: Response) => {
     return;
   }
 
-  // 如果要修改群组，检查目标群组是否已有进行中的竞拍
+  // 如果要修改群组，检查目标群组是否已有进行中的竞拍（以 status 为准）
   if (req.body.group && req.body.group !== auction.group.toString()) {
     const existingAuction = await Auction.findOne({
       bot: auction.bot,
       group: req.body.group,
       status: 'ongoing',
-      endTime: { $gt: new Date() },
       _id: { $ne: auction._id }, // 排除当前竞拍
     });
 
@@ -231,27 +229,41 @@ export const endAuction = async (req: Request, res: Response) => {
 
 // 执行竞拍结束逻辑
 export const executeAuctionEnd = async (auction: any) => {
-  // 确保 bot 和 group 已 populate
-  if (!auction.populated('bot')) {
-    await auction.populate('bot', 'token userName botName');
+  // 原子性更新：只有 status 为 ongoing 时才能结束，防止并发重复执行
+  const updated = await Auction.findOneAndUpdate(
+    { _id: auction._id, status: 'ongoing' },
+    { $set: { status: 'completed', completedAt: new Date() } },
+    { new: false }, // 返回更新前的文档，用于判断是否真的执行了更新
+  );
+
+  if (!updated) {
+    // 已经被其他进程结束了，直接返回
+    console.log(`[竞拍] ${auction._id} 已结束，跳过重复执行`);
+    return;
   }
-  if (!auction.populated('group')) {
-    await auction.populate('group', 'id title');
-  }
+
+  // 重新从数据库读取最新状态（含 populate）
+  const freshAuction = await Auction.findById(auction._id)
+    .populate('bot', 'token userName botName')
+    .populate('group', 'id title');
+
+  if (!freshAuction) return;
+
+  // 确保 auction 对象的引用也更新（供后续逻辑使用）
+  auction.status = 'completed';
+  auction.completedAt = freshAuction.completedAt;
 
   // 无人出价的情况
-  if (auction.bids.length === 0) {
-    auction.status = 'completed';
-    auction.completedAt = new Date();
-    await auction.save();
-
+  if (freshAuction.bids.length === 0) {
     // 群通知：无人参与
-    if (auction.bot?.token && auction.group?.id) {
+    const freshBot = freshAuction.bot as any;
+    const freshGroup = freshAuction.group as any;
+    if (freshBot?.token && freshGroup?.id) {
       try {
-        const telegramBot = setupBot(auction.bot.token);
+        const telegramBot = setupBot(freshBot.token);
         await telegramBot.api.sendMessage(
-          auction.group.id,
-          `📢 竞拍活动"${auction.title}"已结束\n\n😔 本次竞拍无人参与`,
+          freshGroup.id,
+          `📢 竞拍活动"${freshAuction.title}"已结束\n\n😔 本次竞拍无人参与`,
           { parse_mode: 'HTML' },
         );
       } catch (error) {
@@ -262,15 +274,17 @@ export const executeAuctionEnd = async (auction: any) => {
   }
 
   // 找到最高出价
-  const highestBid = auction.bids.reduce((highest: any, current: any) =>
+  const highestBid = freshAuction.bids.reduce((highest: any, current: any) =>
     current.bidAmount > highest.bidAmount ? current : highest,
   );
 
-  // 更新竞拍状态
-  auction.status = 'completed';
-  auction.winner = highestBid.botUser;
-  auction.winningBid = highestBid.bidAmount;
-  auction.completedAt = new Date();
+  // 记录获胜者信息（状态已由原子更新写入，这里只补充 winner/winningBid）
+  await Auction.findByIdAndUpdate(freshAuction._id, {
+    $set: {
+      winner: highestBid.botUser,
+      winningBid: highestBid.bidAmount,
+    },
+  });
 
   // 扣除获胜者积分
   const winnerConfig = await BotUserConfig.findOne({
@@ -283,26 +297,28 @@ export const executeAuctionEnd = async (auction: any) => {
     await winnerConfig.save();
   }
 
-  await auction.save();
-
   const winnerName =
     highestBid.firstName ||
     (highestBid.username ? `@${highestBid.username}` : null) ||
     `用户${highestBid.telegramId}`;
 
-  const endTime = formatBeijingDate(auction.completedAt);
+  const endTime = formatBeijingDate(freshAuction.completedAt || new Date());
 
   // 统计参与人数（去重）
-  const participantCount = new Set(auction.bids.map((b: any) => b.telegramId))
-    .size;
+  const participantCount = new Set(
+    freshAuction.bids.map((b: any) => b.telegramId),
+  ).size;
+
+  const bot = freshAuction.bot as any;
+  const group = freshAuction.group as any;
 
   // 1. 发送私信给获胜者
-  if (auction.bot?.token) {
+  if (bot?.token) {
     try {
-      const telegramBot = setupBot(auction.bot.token);
+      const telegramBot = setupBot(bot.token);
       await telegramBot.api.sendMessage(
         highestBid.telegramId,
-        `🎉 恭喜您在竞拍活动"${auction.title}"中获胜！\n\n${auction.auctionResult}`,
+        `🎉 恭喜您在竞拍活动"${freshAuction.title}"中获胜！\n\n${freshAuction.auctionResult}`,
         { parse_mode: 'HTML' },
       );
     } catch (error) {
@@ -311,21 +327,21 @@ export const executeAuctionEnd = async (auction: any) => {
   }
 
   // 2. 在群里发送结束通知
-  if (auction.bot?.token && auction.group?.id) {
+  if (bot?.token && group?.id) {
     try {
-      const telegramBot = setupBot(auction.bot.token);
+      const telegramBot = setupBot(bot.token);
 
       // 构建结束通知内容
-      let endMessage = auction.endNotifyContent || '';
+      let endMessage = freshAuction.endNotifyContent || '';
 
       if (endMessage) {
-        endMessage = replaceAuctionEndVariables(endMessage, auction, {
+        endMessage = replaceAuctionEndVariables(endMessage, freshAuction, {
           winnerName,
           winningBid: highestBid.bidAmount,
-          totalBids: auction.bids.length,
+          totalBids: freshAuction.bids.length,
           participantCount,
           endTime,
-          currentBot: `@${auction.bot.userName}`,
+          currentBot: `@${bot.userName}`,
         });
         endMessage = convertToTelegramHtml(endMessage);
       }
@@ -333,16 +349,16 @@ export const executeAuctionEnd = async (auction: any) => {
       // 没有配置则用默认模板
       if (!endMessage.trim()) {
         endMessage =
-          `🏆 竞拍结束：${auction.title}\n\n` +
+          `🏆 竞拍结束：${freshAuction.title}\n\n` +
           `🎉 恭喜获胜者：${winnerName}\n` +
           `💰 获胜出价：${highestBid.bidAmount}积分\n` +
-          `📊 总出价次数：${auction.bids.length}\n` +
+          `📊 总出价次数：${freshAuction.bids.length}\n` +
           `👥 参与人数：${participantCount}\n` +
           `⏰ 结束时间：${endTime}\n\n` +
           `感谢大家的参与！`;
       }
 
-      await telegramBot.api.sendMessage(auction.group.id, endMessage, {
+      await telegramBot.api.sendMessage(group.id, endMessage, {
         parse_mode: 'HTML',
         link_preview_options: { is_disabled: true },
       });
@@ -485,12 +501,11 @@ export const createAuctionPublic = async (
       return;
     }
 
-    // 检查该群组是否已有进行中的竞拍活动
+    // 检查该群组是否已有进行中的竞拍活动（不依赖 endTime，以 status 为准）
     const existingAuction = await Auction.findOne({
       bot: botId,
       group: data.group,
       status: 'ongoing',
-      endTime: { $gt: new Date() }, // 还未结束
     });
 
     if (existingAuction) {
