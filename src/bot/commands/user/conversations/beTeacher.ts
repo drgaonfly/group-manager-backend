@@ -4,7 +4,6 @@ import { MyContext } from '../../../types';
 import { checkInBot } from '../../../middlewares/checkInBot';
 import { checkTeaching } from '../../../middlewares/checkTeaching';
 import Teacher from '../../../../models/teacher';
-import BotUserConfig from '../../../../models/botUserConfig';
 import { downloadTelegramFile } from '../../../services/dowlnloader';
 import createDebug from 'debug';
 
@@ -113,36 +112,8 @@ async function beTeacherConversation(
   }
   const location = locationResult.message?.text || '未填';
 
-  // 获取服务地点坐标（必填）
-  await ctx.reply(
-    '4️⃣ 请发送您的服务地点位置（点击 📎 附件 → 位置），方便用户搜索附近老师。',
-    { reply_markup: cancelKeyboard },
-  );
-  let geoCoords: [number, number] | null = null;
-
-  // 循环直到用户发送位置或取消
-  while (!geoCoords) {
-    const geoResult = await conversation.waitFor(
-      ['message:location', 'callback_query:data'],
-      { maxMilliseconds: TIMEOUT },
-    );
-
-    if (geoResult.callbackQuery?.data === 'close') {
-      await ctx.deleteMessage();
-      await ctx.reply('❌ 已取消操作');
-      return;
-    }
-
-    if (geoResult.message?.location) {
-      const { longitude, latitude } = geoResult.message.location;
-      geoCoords = [longitude, latitude];
-    } else {
-      await ctx.reply('请发送位置（点击 📎 附件 → 位置），不能跳过哦～');
-    }
-  }
-
   // 获取描述
-  await ctx.reply('5️⃣ 请输入您的个人描述（例如：身高、体重、籍贯等）：', {
+  await ctx.reply('4️⃣ 请输入您的个人描述（例如：身高、体重、籍贯等）：', {
     reply_markup: cancelKeyboard,
   });
   const descResult = await conversation.waitFor(
@@ -157,12 +128,6 @@ async function beTeacherConversation(
   const description = descResult.message?.text || '无';
 
   const brief = `1️⃣名字：${nickName}\n2️⃣价位：${price}\n3️⃣描述：${description}`;
-
-  // 位置存到 BotUserConfig（统一位置存储）
-  await BotUserConfig.findOneAndUpdate(
-    { bot: bot._id, botUser: botUser._id },
-    { $set: { location: { type: 'Point', coordinates: geoCoords } } },
-  );
 
   const doc = await Teacher.findOneAndUpdate(
     {
@@ -253,7 +218,7 @@ async function beTeacherConversation(
 
   debug('registered teacher', doc._id);
   await ctx.reply(
-    `✅ 注册成功，你已成为认证老师\n联系方式：${contactLink}\n已上传：${images.length}张图片，${videos.length}个视频\n📍 服务地点已设置\n\n如需更新位置，可随时发送「更新位置」`,
+    `✅ 注册成功，你已成为认证老师\n联系方式：${contactLink}\n已上传：${images.length}张图片，${videos.length}个视频`,
   );
 }
 
