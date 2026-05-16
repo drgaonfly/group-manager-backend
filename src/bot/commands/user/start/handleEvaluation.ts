@@ -86,9 +86,8 @@ export async function handleEvaluation(ctx: MyContext, evalId: string) {
     const keyboard = new InlineKeyboard();
 
     // 如果有媒体文件，增加查看照片按钮
-    if (teacher.images && teacher.images.length > 0) {
-      keyboard.text('🖼 查看照片', `show_teacher_media_${teacher._id}`).row();
-    }
+
+    keyboard.text('🖼 查看照片', `show_teacher_media_${teacher._id}`).row();
 
     keyboard.text('⬅️ 返回列表', `eval_list_${teacher._id}`);
 
