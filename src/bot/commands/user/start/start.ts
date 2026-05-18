@@ -186,10 +186,10 @@ startCommand.callbackQuery(
         return;
       }
 
-      const teacher_media = {
-        ...teacher.images,
-        ...teacher.videos,
-      };
+      const teacher_media = [
+        ...(teacher.images || []),
+        ...(teacher.videos || []),
+      ];
 
       const mediaGroup = await Promise.all(
         teacher_media.map(async (file: string) => {

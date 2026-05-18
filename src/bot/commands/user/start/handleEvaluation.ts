@@ -74,10 +74,17 @@ export async function handleEvaluation(ctx: MyContext, evalId: string) {
         populate: { path: 'botUser' },
       });
 
-    const teacher = await Teacher.findById(evaluation.teacher);
-
     if (!evaluation || evaluation.status !== 'approved') {
       await ctx.reply('❌ 评价报告不存在或未通过审核');
+      return;
+    }
+
+    // evaluation.teacher 已经 populate，取 _id 查原始 teacher 文档
+    const teacherId = (evaluation.teacher as any)?._id ?? evaluation.teacher;
+    const teacher = await Teacher.findById(teacherId);
+
+    if (!teacher) {
+      await ctx.reply('❌ 老师信息不存在');
       return;
     }
 
@@ -86,8 +93,12 @@ export async function handleEvaluation(ctx: MyContext, evalId: string) {
     const keyboard = new InlineKeyboard();
 
     // 如果有媒体文件，增加查看照片按钮
-
-    keyboard.text('🖼 查看照片', `show_teacher_media_${teacher._id}`).row();
+    const hasMedia =
+      (teacher.images && teacher.images.length > 0) ||
+      (teacher.videos && teacher.videos.length > 0);
+    if (hasMedia) {
+      keyboard.text('🖼 查看照片', `show_teacher_media_${teacher._id}`).row();
+    }
 
     keyboard.text('⬅️ 返回列表', `eval_list_${teacher._id}`);
 
