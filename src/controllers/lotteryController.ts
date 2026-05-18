@@ -2,6 +2,7 @@ import { InlineKeyboard } from 'grammy';
 import { Request, Response } from 'express';
 import Lottery from '../models/lottery';
 import LotteryParticipant from '../models/lotteryParticipant';
+import BotUserConfig from '../models/botUserConfig';
 import Bot from '../models/bot';
 import Group from '../models/group';
 import { setupBot } from '../bot/botSetup';
@@ -222,19 +223,81 @@ export const drawLottery = async (req: Request, res: Response) => {
   }
 
   const winners: any[] = [];
-  const shuffled = [...participants].sort(() => Math.random() - 0.5);
+  const usedParticipantIds = new Set<string>();
+  const fixedWinners = lottery.fixedWinners || [];
 
-  let winnerIndex = 0;
-  for (const prize of lottery.prizes) {
-    for (let i = 0; i < prize.quantity && winnerIndex < shuffled.length; i++) {
-      const winner = shuffled[winnerIndex];
-      winner.isWinner = true;
-      winner.prizeIndex = lottery.prizes.indexOf(prize);
-      winner.prizeName = prize.name;
-      winner.prizeValue = prize.value;
-      await winner.save();
-      winners.push(winner);
-      winnerIndex++;
+  // 按奖品处理（与 cron/Bot 逻辑保持一致）
+  for (let prizeIdx = 0; prizeIdx < lottery.prizes.length; prizeIdx++) {
+    const prize = lottery.prizes[prizeIdx];
+    let remainingQuantity = prize.quantity;
+
+    // 1. 先处理内定用户
+    const fixedForThisPrize = fixedWinners.filter(
+      (fw: any) => fw.prizeIndex === prizeIdx,
+    );
+    for (const fixed of fixedForThisPrize) {
+      if (remainingQuantity <= 0) break;
+
+      const fixedBotUserId =
+        (fixed.botUser as any)?._id?.toString() || fixed.botUser?.toString();
+      const participant = participants.find(
+        (p) =>
+          p.botUser?.toString() === fixedBotUserId &&
+          !usedParticipantIds.has(p._id.toString()),
+      );
+
+      if (participant) {
+        participant.isWinner = true;
+        participant.prizeIndex = prizeIdx;
+        participant.prizeName = prize.name;
+        participant.prizeValue = prize.value;
+        participant.isFixed = true;
+        await participant.save();
+
+        // 给中奖用户加积分
+        const botUserConfig = await BotUserConfig.findOne({
+          botUser: participant.botUser,
+        });
+        if (botUserConfig) {
+          botUserConfig.usdt_balance =
+            (botUserConfig.usdt_balance || 0) + Number(prize.value);
+          await botUserConfig.save();
+        }
+
+        winners.push(participant);
+        usedParticipantIds.add(participant._id.toString());
+        remainingQuantity--;
+      }
+    }
+
+    // 2. 剩余名额随机抽取
+    if (remainingQuantity > 0) {
+      const available = participants.filter(
+        (p) => !usedParticipantIds.has(p._id.toString()),
+      );
+      const shuffled = [...available].sort(() => Math.random() - 0.5);
+
+      for (let i = 0; i < remainingQuantity && i < shuffled.length; i++) {
+        const winner = shuffled[i];
+        winner.isWinner = true;
+        winner.prizeIndex = prizeIdx;
+        winner.prizeName = prize.name;
+        winner.prizeValue = prize.value;
+        await winner.save();
+
+        // 给中奖用户加积分
+        const botUserConfig = await BotUserConfig.findOne({
+          botUser: winner.botUser,
+        });
+        if (botUserConfig) {
+          botUserConfig.usdt_balance =
+            (botUserConfig.usdt_balance || 0) + Number(prize.value);
+          await botUserConfig.save();
+        }
+
+        winners.push(winner);
+        usedParticipantIds.add(winner._id.toString());
+      }
     }
   }
 
