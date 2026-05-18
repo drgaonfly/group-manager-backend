@@ -98,6 +98,9 @@ export interface IBot extends Document {
 
   // 授衔功能
   canRankConferral: boolean;
+
+  // 充值
+  canRecharge: boolean;
 }
 
 export interface IMenu extends Document {
@@ -384,6 +387,11 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     canRankConferral: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    canRecharge: {
       type: Boolean,
       required: false,
       default: false,

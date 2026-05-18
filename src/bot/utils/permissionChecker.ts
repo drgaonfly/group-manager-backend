@@ -94,6 +94,10 @@ export class PermissionChecker {
     return !!(proxyUser?.adRemoval && bot?.canRemoveAd);
   }
 
+  static canUseRecharge(proxyUser: IUser | null, bot: IBot): boolean {
+    return !!(proxyUser?.recharge && bot?.canRecharge);
+  }
+
   /**
    * 获取所有功能的可用状态
    * @param proxyUser 代理用户
@@ -111,6 +115,7 @@ export class PermissionChecker {
       groupVerify: this.canUseGroupVerify(proxyUser, bot),
       teaching: this.canUseTeaching(proxyUser, bot),
       adRemoval: this.canUseAdRemoval(proxyUser, bot),
+      recharge: this.canUseRecharge(proxyUser, bot),
     };
   }
 }

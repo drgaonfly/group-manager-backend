@@ -45,7 +45,9 @@ async function createMainKeyboard(ctx: MyContext) {
   }
 
   // 2. 充值余额
-  keyboard.text('充值余额');
+  if (PermissionChecker.canUseRecharge(proxyUser, ctx.currentBot)) {
+    keyboard.text('充值余额');
+  }
 
   // 3. 其它功能模块（仅在私聊中显示）
   if (!isGroupChat) {

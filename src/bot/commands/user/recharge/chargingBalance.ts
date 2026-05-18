@@ -1,8 +1,9 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import charger from '../../../menus/inline/charger';
-import createDebug from 'debug';
 import BotUserConfig from '../../../../models/botUserConfig';
+import { checkRecharge } from '../../../middlewares/checkRecharge';
+import createDebug from 'debug';
 
 const chargingBalanceCommand = new Composer<MyContext>();
 const debug = createDebug('bot:charging-balance');
@@ -37,23 +38,12 @@ export async function handleChargingBalance(ctx: MyContext) {
   });
 }
 
-chargingBalanceCommand.hears(keys, async (ctx) => {
+chargingBalanceCommand.hears(keys, checkRecharge, async (ctx) => {
   await handleChargingBalance(ctx);
 });
 
-chargingBalanceCommand.callbackQuery('recharge', async (ctx) => {
+chargingBalanceCommand.callbackQuery('recharge', checkRecharge, async (ctx) => {
   await handleChargingBalance(ctx);
-});
-
-chargingBalanceCommand.command('recharge', async (ctx) => {
-  await handleChargingBalance(ctx);
-});
-
-chargingBalanceCommand.callbackQuery('close', async (ctx) => {
-  await ctx.conversation.exitAll();
-
-  await ctx.deleteMessage();
-  await ctx.answerCallbackQuery('已取消充值');
 });
 
 export default chargingBalanceCommand;
