@@ -1,4 +1,4 @@
-import { Composer, InlineKeyboard, InputFile } from 'grammy';
+import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
@@ -12,8 +12,7 @@ import {
 } from './handleEvaluation';
 import Evaluation from '../../../../models/evaluation';
 import Teacher from '../../../../models/teacher';
-import path from 'path';
-import fs from 'fs/promises';
+import { generateSignedUrl } from '../../../../utils/generateSignedUrl';
 import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();
@@ -26,18 +25,9 @@ export async function handleStart(ctx: MyContext) {
 
   // 如果 multi_image 和 multi_content 都有，才发送图片和内容，否则什么都不做
   if (bot.multi_image && bot.multi_content) {
-    const imagePath = path.join(process.cwd(), 'tmp', bot.multi_image);
-
-    // 检查图片文件是否存在
-    try {
-      await fs.access(imagePath);
-    } catch (err) {
-      // 图片不存在，不发送也不提示
-      return;
-    }
-
-    await ctx.replyWithPhoto(new InputFile(imagePath, 'multi.jpg'), {
-      caption: [bot.multi_content].join('\n'),
+    const imageUrl = await generateSignedUrl(bot.multi_image);
+    await ctx.replyWithPhoto(imageUrl, {
+      caption: bot.multi_content,
       parse_mode: 'HTML',
     });
   }
@@ -201,42 +191,46 @@ startCommand.callbackQuery(
         return;
       }
 
-      const mediaGroup = await Promise.all(
-        teacher_media.map(async (file: string) => {
-          const filePath = path.join(process.cwd(), 'tmp', file);
-          try {
-            await fs.access(filePath);
-            const isVideo = file.match(/\.(mp4|mov|avi)$/i);
-            if (isVideo) {
-              return {
-                type: 'video' as const,
-                media: new InputFile(filePath),
-              };
-            }
-            return {
-              type: 'photo' as const,
-              media: new InputFile(filePath),
-            };
-          } catch (e) {
-            return null;
-          }
-        }),
+      // 生成签名 URL（与项目其他地方保持一致）
+      const mediaUrls = await Promise.all(
+        teacher_media.map((file) => generateSignedUrl(file)),
       );
 
-      const validMedia = mediaGroup.filter((m) => m !== null) as any[];
+      await ctx.answerCallbackQuery();
 
-      if (validMedia.length === 0) {
-        await ctx.answerCallbackQuery('❌ 照片文件不存在');
+      if (mediaUrls.length === 1) {
+        const url = mediaUrls[0];
+        const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(url);
+        if (isVideo) {
+          await ctx.replyWithVideo(url);
+        } else {
+          await ctx.replyWithPhoto(url);
+        }
         return;
       }
 
-      // 分批发送，每组最多 10 个
-      for (let i = 0; i < validMedia.length; i += 10) {
-        const chunk = validMedia.slice(i, i + 10);
-        await ctx.replyWithMediaGroup(chunk);
+      // 分批发送，每组最多 10 个，replyWithMediaGroup 要求至少 2 个
+      for (let i = 0; i < mediaUrls.length; i += 10) {
+        const chunk = mediaUrls.slice(i, i + 10);
+        if (chunk.length === 1) {
+          const url = chunk[0];
+          const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(url);
+          if (isVideo) {
+            await ctx.replyWithVideo(url);
+          } else {
+            await ctx.replyWithPhoto(url);
+          }
+        } else {
+          const mediaGroup = chunk.map((url) => {
+            const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(url);
+            return {
+              type: isVideo ? ('video' as const) : ('photo' as const),
+              media: url,
+            };
+          });
+          await ctx.replyWithMediaGroup(mediaGroup);
+        }
       }
-
-      await ctx.answerCallbackQuery();
     } catch (err) {
       console.error('Show evaluation media failed:', err);
       await ctx.answerCallbackQuery('❌ 加载失败');
