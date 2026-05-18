@@ -150,17 +150,22 @@ startCommand.callbackQuery(/^show_eval_([a-f\d]{24})$/i, async (ctx) => {
       return;
     }
 
+    const teacherId = (evaluation.teacher as any)?._id ?? evaluation.teacher;
+    const teacher = await Teacher.findById(teacherId);
+
     const msg = getEvaluationDetail(evaluation);
     const keyboard = new InlineKeyboard();
 
-    if (evaluation.proof_media && evaluation.proof_media.length > 0) {
-      keyboard.text('🖼 查看照片', `show_eval_media_${evaluation._id}`).row();
+    const hasMedia =
+      teacher &&
+      ((teacher.images && teacher.images.length > 0) ||
+        (teacher.videos && teacher.videos.length > 0));
+
+    if (hasMedia) {
+      keyboard.text('🖼 查看照片', `show_teacher_media_${teacher._id}`).row();
     }
 
-    keyboard.text(
-      '⬅️ 返回列表',
-      `eval_list_${(evaluation.teacher as any)?._id}`,
-    );
+    keyboard.text('⬅️ 返回列表', `eval_list_${teacherId}`);
 
     await ctx.editMessageText(msg, {
       parse_mode: 'HTML',
@@ -181,8 +186,8 @@ startCommand.callbackQuery(
     try {
       const teacher = await Teacher.findById(teacherId);
 
-      if (!teacher || !teacher.images || teacher.images.length === 0) {
-        await ctx.answerCallbackQuery('❌ 暂无照片');
+      if (!teacher) {
+        await ctx.answerCallbackQuery('❌ 老师信息不存在');
         return;
       }
 
@@ -190,6 +195,11 @@ startCommand.callbackQuery(
         ...(teacher.images || []),
         ...(teacher.videos || []),
       ];
+
+      if (teacher_media.length === 0) {
+        await ctx.answerCallbackQuery('❌ 暂无照片');
+        return;
+      }
 
       const mediaGroup = await Promise.all(
         teacher_media.map(async (file: string) => {
