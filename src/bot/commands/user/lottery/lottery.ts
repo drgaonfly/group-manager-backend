@@ -103,6 +103,7 @@ async function executeDraw(ctx: MyContext, lottery: any) {
 
         // 给中奖用户加积分
         const botUserConfig = await BotUserConfig.findOne({
+          bot: lottery.bot,
           botUser: participant.botUser,
         });
         if (botUserConfig) {
@@ -139,6 +140,7 @@ async function executeDraw(ctx: MyContext, lottery: any) {
 
         // 给中奖用户加积分
         const botUserConfig = await BotUserConfig.findOne({
+          bot: lottery.bot,
           botUser: winner.botUser,
         });
         if (botUserConfig) {

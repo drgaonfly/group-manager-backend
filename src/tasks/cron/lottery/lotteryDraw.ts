@@ -150,6 +150,7 @@ export async function checkAndDrawLotteries() {
 
           // 给中奖用户加积分
           const botUserConfig = await BotUserConfig.findOne({
+            bot: bot._id,
             botUser: participant.botUser,
           });
           if (botUserConfig) {
@@ -186,6 +187,7 @@ export async function checkAndDrawLotteries() {
 
           // 给中奖用户加积分
           const botUserConfig = await BotUserConfig.findOne({
+            bot: bot._id,
             botUser: winner.botUser,
           });
           if (botUserConfig) {

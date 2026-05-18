@@ -256,6 +256,7 @@ export const drawLottery = async (req: Request, res: Response) => {
 
         // 给中奖用户加积分
         const botUserConfig = await BotUserConfig.findOne({
+          bot: lottery.bot,
           botUser: participant.botUser,
         });
         if (botUserConfig) {
@@ -287,6 +288,7 @@ export const drawLottery = async (req: Request, res: Response) => {
 
         // 给中奖用户加积分
         const botUserConfig = await BotUserConfig.findOne({
+          bot: lottery.bot,
           botUser: winner.botUser,
         });
         if (botUserConfig) {
