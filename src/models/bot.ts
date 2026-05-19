@@ -101,6 +101,9 @@ export interface IBot extends Document {
 
   // 充值
   canRecharge: boolean;
+
+  // 积分继承
+  canSuccess: boolean;
 }
 
 export interface IMenu extends Document {
@@ -392,6 +395,11 @@ const botSchema = new mongoose.Schema(
       default: false,
     },
     canRecharge: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    canSuccess: {
       type: Boolean,
       required: false,
       default: false,

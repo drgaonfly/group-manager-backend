@@ -264,6 +264,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     adRemoval,
     rankConferral,
     recharge,
+    success,
     ...body
   } = req.body;
 
@@ -316,6 +317,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       adRemoval,
       rankConferral,
       recharge,
+      success,
     },
     { new: true },
   );

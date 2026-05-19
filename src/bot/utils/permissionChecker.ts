@@ -98,6 +98,10 @@ export class PermissionChecker {
     return !!(proxyUser?.recharge && bot?.canRecharge);
   }
 
+  static canUseSuccess(proxyUser: IUser | null, bot: IBot): boolean {
+    return !!(proxyUser?.success && bot?.canSuccess);
+  }
+
   /**
    * 获取所有功能的可用状态
    * @param proxyUser 代理用户

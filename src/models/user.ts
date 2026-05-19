@@ -44,6 +44,7 @@ export interface IUser extends Document {
   adRemoval: boolean; // 广告移除
   rankConferral: boolean; // 授衔
   recharge: boolean;
+  success: boolean;
 }
 
 const userSchema = new mongoose.Schema(
@@ -110,6 +111,7 @@ const userSchema = new mongoose.Schema(
     adRemoval: { type: Boolean, default: false }, // 广告移除
     rankConferral: { type: Boolean, default: false },
     recharge: { type: Boolean, default: false },
+    success: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

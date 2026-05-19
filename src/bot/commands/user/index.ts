@@ -12,6 +12,7 @@ import speechStaticComposer from './speechStatic';
 import startingComposer from './starting';
 import teachingComposer from './teaching';
 import rechargeComposer from './recharge';
+import successComposer from './success';
 // import cloneComposer from './clone';
 // import walletComposer from './wallet';
 // import exchangeComposer from './exchange';
@@ -28,16 +29,12 @@ import conversationsComposer from './conversations';
 // 创建一个新的 Composer 实例
 const userComposer = new Composer();
 
-// 在群里使用的
-// userComposer.use(operatorComposer.middleware());
-// userComposer.use(setComposer.middleware());
-
-// 在机器人使用的
-
+// conversations 必须最先注册，确保 createConversation 在任何 enter() 调用前生效
+userComposer.use(conversationsComposer.middleware());
 userComposer.use(startComposer.middleware());
 userComposer.use(rechargeComposer.middleware());
+userComposer.use(successComposer.middleware());
 userComposer.use(teachingComposer);
-userComposer.use(conversationsComposer.middleware());
 userComposer.use(speechStaticComposer.middleware());
 userComposer.use(profileComposer.middleware());
 userComposer.use(startingComposer.middleware());

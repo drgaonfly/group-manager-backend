@@ -245,6 +245,7 @@ const updateUserProfile = handleAsync(
       adRemoval,
       rankConferral,
       recharge,
+      success,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -334,6 +335,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof recharge !== 'undefined') {
         updateData.recharge = recharge;
+      }
+      if (typeof success !== 'undefined') {
+        updateData.success = success;
       }
     }
 

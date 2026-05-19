@@ -10,6 +10,9 @@ import {
   handleEvaluationList,
   getEvaluationDetail,
 } from './handleEvaluation';
+import { handleMySuccess } from './handleMySuccess';
+import { findBotProxy } from '../../../services/findBotProxy';
+import { PermissionChecker } from '../../../utils/permissionChecker';
 import Evaluation from '../../../../models/evaluation';
 import Teacher from '../../../../models/teacher';
 import { generateSignedUrl } from '../../../../utils/generateSignedUrl';
@@ -55,6 +58,25 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     if (code) {
       await handleJoinLottery(ctx, code);
       return;
+    }
+  }
+
+  // 处理积分继承深链接
+  if (startParam === 'mycode' || startParam === 'inherit') {
+    const { proxyUser } = await findBotProxy(ctx.currentBot);
+    if (PermissionChecker.canUseSuccess(proxyUser, ctx.currentBot)) {
+      if (startParam === 'mycode') {
+        await handleMySuccess(ctx);
+        return;
+      }
+      if (startParam === 'inherit') {
+        const keyboard = new InlineKeyboard().text('💸 开始继承', 'inherit');
+        await ctx.reply(
+          '💸 *立即继承*\n\n点击下方按钮，输入继承码将积分转移到本账号。',
+          { parse_mode: 'Markdown', reply_markup: keyboard },
+        );
+        return;
+      }
     }
   }
 
