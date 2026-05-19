@@ -40,7 +40,7 @@ export async function handleMySuccess(ctx: MyContext) {
   await ctx.reply(
     `🔑 *您的继承码*\n\n` +
       `\`${record.code}\`\n\n` +
-      `💰 当前积分余额：*${balance} USDT*\n\n` +
+      `💰 当前积分余额：*${balance} *\n\n` +
       `将此继承码提供给新账号，新账号使用「立即继承」功能输入此码后，您的积分将转移至新账号。\n\n` +
       `⚠️ 继承码仅可使用一次，继承后积分将清零。`,
     { parse_mode: 'Markdown' },
