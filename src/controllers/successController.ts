@@ -7,7 +7,10 @@ import BotUser from '../models/botUser';
 const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
-  if (queryParams.bot) {
+  // 支持直接传 botId（精确）或 bot（botName 模糊）
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  } else if (queryParams.bot) {
     const botData = await Bot.find({
       botName: { $regex: queryParams.bot, $options: 'i' },
     });
