@@ -51,6 +51,7 @@ import evaluationRoutes from './routes/evaluationRoutes';
 import adRemovalRoutes from './routes/adRemovalRoutes';
 import rechargeRoutes from './routes/rechargeRoutes';
 import badgeRoutes from './routes/badgeRoutes';
+import successRoutes from './routes/successRoutes';
 
 dotenv.config();
 
@@ -115,6 +116,7 @@ app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/ad-removals', adRemovalRoutes);
 app.use('/api/recharges', rechargeRoutes);
 app.use('/api/badges', badgeRoutes);
+app.use('/api/successes', successRoutes);
 
 app.use('/api/static', express.static('tmp'));
 

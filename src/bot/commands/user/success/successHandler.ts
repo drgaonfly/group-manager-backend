@@ -27,10 +27,11 @@ export async function handleInheritCode(
   const record = await Success.findOne({
     bot: bot._id,
     code: normalizedCode,
+    used: false,
   });
 
   if (!record) {
-    await ctx.reply('❌ 继承码无效，请检查后重试');
+    await ctx.reply('❌ 继承码无效 或者 已经使用过了，请检查后重试');
     return;
   }
 
@@ -68,8 +69,16 @@ export async function handleInheritCode(
     { $inc: { usdt_balance: amount } },
   );
 
-  // 继承码一次性使用，用完删除
-  await Success.findByIdAndDelete(record._id);
+  // 标记继承码已使用，保留记录（不删除）
+  await Success.findByIdAndUpdate(record._id, {
+    $set: {
+      used: true,
+      targetBotUser: botUser._id,
+      amountBefore: amount,
+      amountAfter: 0,
+      usedAt: new Date(),
+    },
+  });
 
   debug(
     `积分继承成功：${amount} USDT 从 ${sourceBotUserId} 转移至 ${botUser._id}`,
