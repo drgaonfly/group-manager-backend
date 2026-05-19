@@ -14,41 +14,25 @@ import {
 
 export const lotteryCommand = new Composer<MyContext>();
 
-// 检查并执行开奖
+// 检查并执行开奖（满人、定时满足任一即可）
 async function checkAndDraw(ctx: MyContext, lottery: any, joinNum: number) {
+  const now = new Date();
   let shouldDraw = false;
 
-  // 检查满人开奖
   if (
     lottery.drawMethod.includes('fullParticipants') &&
-    lottery.fullParticipantsCount
+    lottery.fullParticipantsCount &&
+    joinNum >= lottery.fullParticipantsCount
   ) {
-    if (joinNum >= lottery.fullParticipantsCount) {
-      // 如果同时有定时开奖条件，需要两个都满足
-      if (lottery.drawMethod.includes('scheduledTime')) {
-        if (
-          lottery.scheduledDrawTime &&
-          new Date() >= new Date(lottery.scheduledDrawTime)
-        ) {
-          shouldDraw = true;
-        }
-      } else {
-        shouldDraw = true;
-      }
-    }
+    shouldDraw = true;
   }
 
-  // 只有定时开奖（无满人条件）
   if (
     lottery.drawMethod.includes('scheduledTime') &&
-    !lottery.drawMethod.includes('fullParticipants')
+    lottery.scheduledDrawTime &&
+    now >= new Date(lottery.scheduledDrawTime)
   ) {
-    if (
-      lottery.scheduledDrawTime &&
-      new Date() >= new Date(lottery.scheduledDrawTime)
-    ) {
-      shouldDraw = true;
-    }
+    shouldDraw = true;
   }
 
   if (shouldDraw) {

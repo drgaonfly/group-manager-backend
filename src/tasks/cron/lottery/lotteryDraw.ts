@@ -41,40 +41,34 @@ export async function checkAndDrawLotteries() {
         )}`,
       );
 
-      let shouldDraw = false;
+      // 满足任一已选开奖条件即可开奖（满人 OR 定时）
+      const drawChecks: boolean[] = [];
 
-      // 检查开奖条件
-      if (lottery.drawMethod.length === 1) {
-        // 单一条件
-        if (lottery.drawMethod.includes('fullParticipants')) {
-          // 满人开奖：需要达到指定人数
-          shouldDraw = participantCount >= (lottery.fullParticipantsCount || 0);
-          console.log(
-            `[抽奖任务] 满人开奖检查: ${participantCount} >= ${lottery.fullParticipantsCount} = ${shouldDraw}`,
-          );
-        } else if (lottery.drawMethod.includes('scheduledTime')) {
-          // 定时开奖：需要到达指定时间
-          shouldDraw =
-            lottery.scheduledDrawTime &&
-            now >= new Date(lottery.scheduledDrawTime);
-          console.log(
-            `[抽奖任务] 定时开奖检查: ${now.toISOString()} >= ${
-              lottery.scheduledDrawTime
-            } = ${shouldDraw}`,
-          );
-        }
-      } else if (lottery.drawMethod.length > 1) {
-        // 多条件（需同时满足）
-        const fullParticipantsMet =
-          !lottery.drawMethod.includes('fullParticipants') ||
+      if (lottery.drawMethod.includes('fullParticipants')) {
+        const fullMet =
           participantCount >= (lottery.fullParticipantsCount || 0);
-        const scheduledTimeMet =
-          !lottery.drawMethod.includes('scheduledTime') ||
-          (lottery.scheduledDrawTime &&
-            now >= new Date(lottery.scheduledDrawTime));
-        shouldDraw = fullParticipantsMet && scheduledTimeMet;
+        drawChecks.push(fullMet);
         console.log(
-          `[抽奖任务] 多条件检查: 满人=${fullParticipantsMet}, 定时=${scheduledTimeMet}, 结果=${shouldDraw}`,
+          `[抽奖任务] 满人开奖检查: ${participantCount} >= ${lottery.fullParticipantsCount} = ${fullMet}`,
+        );
+      }
+
+      if (lottery.drawMethod.includes('scheduledTime')) {
+        const scheduledMet =
+          !!lottery.scheduledDrawTime &&
+          now >= new Date(lottery.scheduledDrawTime);
+        drawChecks.push(scheduledMet);
+        console.log(
+          `[抽奖任务] 定时开奖检查: ${now.toISOString()} >= ${
+            lottery.scheduledDrawTime
+          } = ${scheduledMet}`,
+        );
+      }
+
+      const shouldDraw = drawChecks.some(Boolean);
+      if (drawChecks.length > 1) {
+        console.log(
+          `[抽奖任务] 多条件检查（满足任一即可）: 结果=${shouldDraw}`,
         );
       }
 
