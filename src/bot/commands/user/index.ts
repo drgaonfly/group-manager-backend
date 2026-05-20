@@ -21,6 +21,7 @@ import checkinComposer from './checkin';
 import lotteryComposer from './lottery';
 import auctionComposer from './auction';
 import conversationsComposer from './conversations';
+import postComposer from './post';
 
 // import spreadComposer from './spread';
 // import linkComposer from './link';
@@ -38,6 +39,7 @@ userComposer.use(teachingComposer);
 userComposer.use(speechStaticComposer.middleware());
 userComposer.use(profileComposer.middleware());
 userComposer.use(startingComposer.middleware());
+userComposer.use(postComposer.middleware());
 userComposer.use(contactComposer.middleware());
 userComposer.use(helpComposer.middleware());
 userComposer.use(lotteryComposer.middleware());
@@ -48,6 +50,7 @@ userComposer.use(checkinComposer.middleware());
 // userComposer.use(walletComposer.middleware());
 // userComposer.use(exchangeComposer.middleware());
 userComposer.use(veryfiyComposer.middleware());
+
 // userComposer.use(spreadComposer.middleware());
 // userComposer.use(linkComposer.middleware());
 // userComposer.use(orderComposer.middleware());

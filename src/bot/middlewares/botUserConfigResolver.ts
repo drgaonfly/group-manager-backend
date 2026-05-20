@@ -10,7 +10,7 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
   }
 
   if (!ctx.currentBotUser) {
-    await ctx.reply('请先初始化用户');
+    // await ctx.reply('请先初始化用户');
     return;
   }
 

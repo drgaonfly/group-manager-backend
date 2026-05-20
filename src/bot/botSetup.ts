@@ -14,13 +14,14 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import proxyResolver from './middlewares/proxyResolver';
 import { adRemovalResolver } from './middlewares/adRemovalResolver';
-import { MyContext } from './types'; // 引入你的 MyContext 类型
+import { MyContext } from './types';
 import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
 import { redis } from '../utils/redis';
 import { conversations } from '@grammyjs/conversations';
 import { autoQuote } from '@roziscoding/grammy-autoquote';
 import createDebug from 'debug';
+import channelPostSaver from './middlewares/channelPostSaver';
 
 const log = createDebug('bot:setup');
 
@@ -73,6 +74,9 @@ export const setupBot = (token: string) => {
   );
 
   bot.use(autoQuote());
+
+  // 频道帖子保存，优先于其他中间件
+  bot.use(channelPostSaver);
 
   // 由于 session 已经合并到 context，后续中间件类型也要兼容 MyContext
   // 需要确保所有中间件都用 MyContext 类型
