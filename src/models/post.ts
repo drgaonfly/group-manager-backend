@@ -1,17 +1,17 @@
 import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IGroup } from './group';
+import { IUser } from './user';
 
-// 帖子接口定义
 export interface IPost extends Document {
-  bot: mongoose.Schema.Types.ObjectId | IBot; // 关联机器人
-  source: mongoose.Schema.Types.ObjectId | IGroup; // 来源频道（Group）
-  link: string; // 帖子链接
-  title: string; // 帖子标题（来自文本第一行）
-  messageId: number; // Telegram 消息 ID
+  bot: mongoose.Schema.Types.ObjectId | IBot;
+  source: mongoose.Schema.Types.ObjectId | IGroup;
+  proxy: mongoose.Schema.Types.ObjectId | IUser;
+  link: string;
+  title: string;
+  messageId: number;
 }
 
-// 帖子 Schema
 const postSchema = new mongoose.Schema(
   {
     bot: {
@@ -22,6 +22,11 @@ const postSchema = new mongoose.Schema(
     source: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
+      required: false,
+    },
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       required: false,
     },
     link: {
@@ -42,7 +47,6 @@ const postSchema = new mongoose.Schema(
   },
 );
 
-// 同一个 bot 下不允许重复的帖子链接
 postSchema.index({ bot: 1, link: 1 }, { unique: true });
 
 const Post = mongoose.model<IPost>('Post', postSchema);

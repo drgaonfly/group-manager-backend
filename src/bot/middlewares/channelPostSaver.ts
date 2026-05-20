@@ -62,6 +62,7 @@ const channelPostSaver: Middleware<MyContext> = async (ctx, next) => {
         $setOnInsert: {
           bot: botDoc._id,
           source: group._id,
+          proxy: botDoc.user,
           link,
           title,
           messageId: msg.message_id,
