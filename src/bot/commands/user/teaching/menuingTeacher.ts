@@ -23,10 +23,12 @@ const getTeacherMenu = async (ctx: MyContext, page: number) => {
   // 2. 计算每个老师的平均评分
   const teachersWithRatings = await Promise.all(
     teachers.map(async (teacher) => {
-      const evaluations = await Evaluation.find({
-        teacher: teacher._id,
-        status: 'approved',
-      });
+      const query = { teacher: teacher._id, status: 'approved' };
+
+      const [evaluations, evaluationCount] = await Promise.all([
+        Evaluation.find(query).sort({ createdAt: -1 }).limit(10),
+        Evaluation.countDocuments(query),
+      ]);
 
       let averageRating = 0;
       if (evaluations.length > 0) {
@@ -40,7 +42,7 @@ const getTeacherMenu = async (ctx: MyContext, page: number) => {
               evaluation.attitude_rating +
               evaluation.circumstance_rating) /
               6
-          ); // 6个维度的平均分
+          ); // 6个维度的平均分（取最新10条）
         }, 0);
         averageRating = totalRating / evaluations.length;
       }
@@ -49,7 +51,7 @@ const getTeacherMenu = async (ctx: MyContext, page: number) => {
       return {
         ...teacherObj,
         averageRating,
-        evaluationCount: evaluations.length,
+        evaluationCount,
       };
     }),
   );
