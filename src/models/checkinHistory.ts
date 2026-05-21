@@ -16,6 +16,10 @@ export interface ICheckinHistory extends Document {
   group: mongoose.Schema.Types.ObjectId | IGroup;
   type: CheckinType;
   reward: number; // 获得的积分数量
+  baseReward: number; // 基础积分（用于计算倍率）
+  streakDays: number; // 连续签到天数
+  multiplier: number; // 本次倍率
+  createdAt: Date;
 }
 
 const checkinHistorySchema = new mongoose.Schema(
@@ -46,6 +50,9 @@ const checkinHistorySchema = new mongoose.Schema(
       required: true,
     },
     reward: { type: Number, default: 10, min: 1 },
+    baseReward: { type: Number, default: 10, min: 1 },
+    streakDays: { type: Number, default: 1, min: 1 },
+    multiplier: { type: Number, default: 1, min: 1 },
   },
   { timestamps: true },
 );

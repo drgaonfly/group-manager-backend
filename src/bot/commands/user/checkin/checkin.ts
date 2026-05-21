@@ -4,7 +4,12 @@ import CheckinRule from '../../../../models/checkInRule';
 import CheckinHistory from '../../../../models/checkinHistory';
 import BotUserConfig from '../../../../models/botUserConfig';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
-import { hasCheckedInToday, isFirstTimeCheckin } from './handleCheckin';
+import {
+  hasCheckedInToday,
+  isFirstTimeCheckin,
+  getStreakDays,
+  calculateMultiplier,
+} from './handleCheckin';
 import { replaceMessageVariables } from '../../../../utils/telegramHtmlConvert';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import {
@@ -92,9 +97,29 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       return next();
     }
 
+    // 计算实际奖励（考虑连续签到倍率）
+    let actualReward = matchedRule.reward;
+    let streakDays = 1;
+    let multiplier = 1;
+
+    if (matchedRule.type === 'daily' && matchedRule.enableStreakBonus) {
+      // 计算连续签到天数
+      streakDays = await getStreakDays(botId, botUserId, groupId);
+
+      // 计算倍率
+      multiplier = calculateMultiplier(
+        streakDays,
+        matchedRule.streakCycles,
+        matchedRule.maxMultiplier,
+      );
+
+      // 计算实际奖励
+      actualReward = Math.round(matchedRule.reward * multiplier);
+    }
+
     // 更新用户余额
     const previoususdt_balance = botUserConfig.usdt_balance || 0;
-    botUserConfig.usdt_balance = previoususdt_balance + matchedRule.reward;
+    botUserConfig.usdt_balance = previoususdt_balance + actualReward;
     await botUserConfig.save();
 
     // 创建签到历史记录
@@ -103,7 +128,10 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       bot: botId,
       botUser: botUserId,
       type: matchedRule.type,
-      reward: matchedRule.reward,
+      reward: actualReward,
+      baseReward: matchedRule.reward,
+      streakDays,
+      multiplier,
       group: ctx.currentGroup._id,
     });
     await checkinHistory.save();
@@ -120,10 +148,21 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
 
       const lines = [
         `🎉 ${checkinTypeText}成功！`,
-        `💰 获得 ${matchedRule.reward} 积分`,
+        `💰 获得 ${actualReward} 积分`,
+      ];
+
+      // 添加连续签到信息
+      if (matchedRule.type === 'daily' && matchedRule.enableStreakBonus) {
+        lines.push(`📅 连续签到: ${streakDays} 天`);
+        if (multiplier > 1) {
+          lines.push(`⚡ 倍率: ${multiplier} 倍`);
+        }
+      }
+
+      lines.push(
         `💎 当前余额: ${botUserConfig.usdt_balance} 积分`,
         `⏰ 签到时间: ${formatBeijingDate(new Date())}`,
-      ];
+      );
 
       successMessage = lines.join('\n');
     }
@@ -173,7 +212,7 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     debug('Success message sent successfully');
 
     debug(
-      `User ${botUserId} checked in successfully. Reward: ${matchedRule.reward}, New usdt_balance: ${botUserConfig.usdt_balance}`,
+      `User ${botUserId} checked in successfully. Reward: ${actualReward} (base: ${matchedRule.reward} × ${multiplier}), Streak: ${streakDays} days, New usdt_balance: ${botUserConfig.usdt_balance}`,
     );
   } catch (error) {
     debug('Error in checkin command:', error);
