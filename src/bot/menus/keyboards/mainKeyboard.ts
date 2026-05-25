@@ -54,7 +54,7 @@ async function createMainKeyboard(ctx: MyContext) {
     // 教学模块按钮
     if (PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)) {
       keyboard.row();
-      keyboard.text('注册老师').text('找老师').text('附近').row();
+      keyboard.text('注册老师').text('找老师');
       keyboard.text('写车评').text('我的车评').text('更新位置').row();
     }
   }
