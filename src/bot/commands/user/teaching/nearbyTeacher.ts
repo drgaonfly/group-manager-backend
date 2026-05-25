@@ -18,19 +18,15 @@ async function getNearbyTeachersPage(
   lat: number,
   page: number,
 ) {
-  // 1. 拿该 bot 下所有 approved 老师
+  // 1. 拿该 bot 下所有 approved 老师的 botUser IDs
   const botObjectId = new mongoose.Types.ObjectId(botId.toString());
 
   const approvedTeachers = await Teacher.find({
     bot: botObjectId,
     status: 'approved',
-  }).select('botUser isAvailable display_name address contactLink');
+  }).select('botUser');
 
   console.log(`[nearby] approved teachers count: ${approvedTeachers.length}`);
-  console.log(
-    `[nearby] approved teacher botUserIds:`,
-    approvedTeachers.map((t) => t.botUser?.toString()),
-  );
 
   if (approvedTeachers.length === 0) {
     return { text: '暂无认证老师', keyboard: null, total: 0 };
@@ -104,25 +100,29 @@ async function getNearbyTeachersPage(
     };
   }
 
-  const teacherMap = new Map<string, any>();
-  approvedTeachers.forEach((t) => {
-    teacherMap.set(t.botUser.toString(), t);
-  });
-
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE) || 1;
   const paged = results.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE,
   );
 
-  const lines = paged.map((config: any) => {
-    const teacher = teacherMap.get(config.botUser.toString());
-    const distKm = (config.dist.calculated / 1000).toFixed(2);
-    const statusIcon = teacher?.isAvailable ? '✅' : '🚫';
-    const name = teacher?.display_name || '老师';
-    const area = teacher?.address || '';
-    return `${statusIcon} ${name}${area ? `·${area}` : ''} （${distKm}公里）`;
-  });
+  const lines = await Promise.all(
+    paged.map(async (config: any) => {
+      const distKm = (config.dist.calculated / 1000).toFixed(2);
+
+      // 实时查询完整的老师信息
+      const teacher = await Teacher.findOne({
+        bot: botObjectId,
+        botUser: config.botUser,
+        status: 'approved',
+      }).select('isAvailable display_name address');
+
+      const statusIcon = teacher?.isAvailable ? '✅' : '🚫';
+      const name = teacher?.display_name || '老师';
+      const area = teacher?.address || '';
+      return `${statusIcon} ${name}${area ? `·${area}` : ''} （${distKm}公里）`;
+    }),
+  );
 
   const text = [
     `为您找到 <b>${total}</b> 位附近的老师：`,
