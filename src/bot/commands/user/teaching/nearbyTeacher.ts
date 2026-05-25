@@ -17,14 +17,22 @@ async function getNearbyTeachersPage(
   lng: number,
   lat: number,
   page: number,
+  excludeBotUserId?: any, // 排除的用户ID（通常是查询者自己）
 ) {
   // 1. 拿该 bot 下所有 approved 老师的 botUser IDs
   const botObjectId = new mongoose.Types.ObjectId(botId.toString());
 
-  const approvedTeachers = await Teacher.find({
+  const query: any = {
     bot: botObjectId,
     status: 'approved',
-  }).select('botUser');
+  };
+
+  // 排除查询者自己（如果是老师的话）
+  if (excludeBotUserId) {
+    query.botUser = { $ne: excludeBotUserId };
+  }
+
+  const approvedTeachers = await Teacher.find(query).select('botUser');
 
   console.log(`[nearby] approved teachers count: ${approvedTeachers.length}`);
 
@@ -189,6 +197,7 @@ nearbyTeacherComposer.hears('附近', checkTeaching, async (ctx) => {
     lng,
     lat,
     1,
+    botUser._id, // 传入当前用户ID，用于排除自己
   );
 
   await ctx.reply(text, {
@@ -210,6 +219,7 @@ nearbyTeacherComposer.callbackQuery(
       lng,
       lat,
       page,
+      ctx.currentBotUser?._id, // 分页时也排除自己
     );
 
     try {
