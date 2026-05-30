@@ -120,11 +120,17 @@ export const addTeacher = handleAsync(
       data.botUser = botUserDoc._id;
     }
 
-    const teacher = new Teacher(data);
-    const savedTeacher = await teacher.save();
+    const teacher = await Teacher.findOneAndUpdate(
+      {
+        bot: data.bot,
+        botUser: data.botUser,
+      },
+      { $set: data },
+      { new: true, upsert: true, runValidators: true },
+    );
     res.status(201).json({
       success: true,
-      data: savedTeacher,
+      data: teacher,
     });
   },
 );

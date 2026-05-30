@@ -19,7 +19,7 @@ export async function getUserByUsername(botToken: string, username: string) {
     console.log('处理 @username 提及:', uname);
 
     return {
-      id,
+      id: id.value?.toString() ?? id.toString(), // 确保返回纯数字字符串，兼容 MTProto Long 对象
       username: uname,
       first_name: firstName,
       last_name: lastName,
