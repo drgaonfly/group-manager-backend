@@ -14,7 +14,6 @@ import {
   sendGroupMessage,
   sendChannelPost,
   updateGroupWelcome,
-  updateGroupVerify,
   copyBotFeatureConfig,
 } from '../controllers/botController';
 import {
@@ -67,8 +66,6 @@ router
   .route('/:id/group-welcome')
   .put(protect, checkPermission, updateGroupWelcome);
 
-router
-  .route('/:id/group-verify')
-  .put(protect, checkPermission, updateGroupVerify);
+// 注意：群验证已改为按群组配置，使用 /api/group-verifies 接口
 
 export default router;

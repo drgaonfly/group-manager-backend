@@ -1155,7 +1155,8 @@ const copyBotFeatureConfig = handleAsync(
     }
 
     const oldTargetGw = targetBot.groupWelcome;
-    const oldTargetGv = targetBot.groupVerify;
+    // 注意：groupVerify 已改为按群组配置，不再全局克隆
+    // const oldTargetGv = targetBot.groupVerify;
 
     const newGroupWelcomeId = await cloneGroupWelcomeDoc(
       sourceBot.groupWelcome as unknown as
@@ -1163,16 +1164,12 @@ const copyBotFeatureConfig = handleAsync(
         | string
         | undefined,
     );
-    const newGroupVerifyId = await cloneGroupVerifyDoc(
-      sourceBot.groupVerify as unknown as
-        | mongoose.Types.ObjectId
-        | string
-        | undefined,
-    );
+    // 群验证现在是按群组配置的，不再克隆 bot 级别的 groupVerify
+    // const newGroupVerifyId = await cloneGroupVerifyDoc(...)
 
     const featureUpdate: Record<string, unknown> = {
       groupWelcome: newGroupWelcomeId,
-      groupVerify: newGroupVerifyId,
+      // groupVerify: null, // 不再克隆，保持目标 bot 原有配置
     };
 
     for (const key of BOT_FEATURE_FIELD_KEYS) {
@@ -1301,9 +1298,7 @@ const copyBotFeatureConfig = handleAsync(
     if (oldTargetGw && String(oldTargetGw) !== String(newGroupWelcomeId)) {
       await GroupWelcome.deleteOne({ _id: oldTargetGw });
     }
-    if (oldTargetGv && String(oldTargetGv) !== String(newGroupVerifyId)) {
-      await GroupVerify.deleteOne({ _id: oldTargetGv });
-    }
+    // 群验证已改为按群组配置，旧 bot 级别的 groupVerify 无需处理
 
     const updatedBot = await Bot.findById(targetBotId)
       .populate('groupWelcome')
@@ -1339,6 +1334,5 @@ export {
   sendGroupMessage,
   sendChannelPost,
   updateGroupWelcome,
-  updateGroupVerify,
   copyBotFeatureConfig,
 };

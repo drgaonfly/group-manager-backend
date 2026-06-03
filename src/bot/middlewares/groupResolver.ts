@@ -5,6 +5,7 @@ import { PermissionChecker } from '../utils/permissionChecker';
 import { sendGroupWelcomeMessage } from '../../services/sendGroupWelcomeMessage';
 import { sendGroupVerifyMessage } from '../../services/sendGroupVerifyMessage';
 import Group from '../../models/group';
+import GroupVerify from '../../models/groupVerify';
 import BotUser from '../../models/botUser';
 import createDebug from 'debug';
 
@@ -477,14 +478,41 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       if (PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot)) {
         debug('Attempting to send verification message...');
         try {
-          // 发送验证消息，使用新成员的 ID 来生成回调数据
-          await sendGroupVerifyMessage(
-            ctx,
-            username,
-            ctx.currentBot.groupVerify,
-            member.id, // 传递新成员的 ID
-          );
-          debug(`✅ Verification message sent for new member: ${username}`);
+          // 查询该群组的验证配置
+          const groupVerifyConfig = await GroupVerify.findOne({
+            bot: ctx.currentBot._id,
+            group: ctx.currentGroup?._id,
+            isActive: true,
+          });
+
+          if (
+            groupVerifyConfig &&
+            groupVerifyConfig.question &&
+            groupVerifyConfig.asks &&
+            groupVerifyConfig.asks.length > 0
+          ) {
+            // 发送验证消息，使用新成员的 ID 来生成回调数据
+            await sendGroupVerifyMessage(
+              ctx,
+              username,
+              groupVerifyConfig,
+              member.id, // 传递新成员的 ID
+            );
+            debug(`✅ Verification message sent for new member: ${username}`);
+          } else {
+            debug('⚠️ No valid group verify config found, fallback to welcome');
+            // 没有配置验证，降级到发欢迎消息
+            if (
+              PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)
+            ) {
+              await sendGroupWelcomeMessage(
+                ctx,
+                username,
+                memberName,
+                ctx.currentBot.groupWelcome,
+              );
+            }
+          }
         } catch (error) {
           debug('❌ Failed to send verification message:', error);
         }

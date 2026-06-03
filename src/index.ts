@@ -53,6 +53,7 @@ import rechargeRoutes from './routes/rechargeRoutes';
 import badgeRoutes from './routes/badgeRoutes';
 import successRoutes from './routes/successRoutes';
 import postRoutes from './routes/postRoutes';
+import groupVerifyRoutes from './routes/groupVerifyRoutes';
 
 dotenv.config();
 
@@ -119,6 +120,7 @@ app.use('/api/recharges', rechargeRoutes);
 app.use('/api/badges', badgeRoutes);
 app.use('/api/successes', successRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/group-verifies', groupVerifyRoutes);
 
 app.use('/api/static', express.static('tmp'));
 

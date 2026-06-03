@@ -71,14 +71,8 @@ export class PermissionChecker {
   }
 
   static canUseGroupVerify(proxyUser: IUser | null, bot: IBot): boolean {
-    // 检查权限开启 + 配置完整（有问题和答案选项）
-    const config = bot?.groupVerify;
-    const hasValidConfig = !!(
-      config?.question &&
-      config?.asks &&
-      config.asks.length > 0
-    );
-    return !!(proxyUser?.groupVerify && bot?.canGroupVerify && hasValidConfig);
+    // 只检查代理用户权限和 bot 开关，配置有效性在 resolver 层按群组检查
+    return !!(proxyUser?.groupVerify && bot?.canGroupVerify);
   }
 
   static canReportMemberNameUpdated(
