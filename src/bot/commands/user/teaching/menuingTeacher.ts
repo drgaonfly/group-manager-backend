@@ -75,39 +75,41 @@ const getTeacherMenu = async (ctx: MyContext, page: number) => {
   const end = start + ITEMS_PER_PAGE;
   const paginatedTeachers = sortedTeachers.slice(start, end);
 
-  // 4. 构建消息文本
+  // 4. 构建消息文本 + 内联键盘（榜单形式，评分在按钮上）
   const messageText = [
-    `以下为所有老师（按评分排序）：`,
-    `状态说明： 🟢可约  🔴休息中`,
+    `📋 <b>老师榜单</b>（按评分排序）`,
+    `状态说明：🟢可约  🔴休息中`,
     ``,
-    `发送：**<b>老师</b> 名字** 可以跳出老师描述和榜单`,
-    `发送：**<b>老师飞机号</b>** 可以查看老师名下所有车评`,
+    `💡 点击按钮联系老师`,
+    `发送：<b>老师 名字</b> 可查看老师详情`,
+    `发送：<b>老师飞机号</b> 可查看该老师所有评价`,
   ].join('\n');
 
-  // 5. 构建内联键盘 (一行三个)
+  // 5. 构建内联键盘（每行一个，包含排名+状态+名字+评分）
   const keyboard = new InlineKeyboard();
 
-  paginatedTeachers.forEach((teacher: any, index) => {
+  let rank = start;
+  paginatedTeachers.forEach((teacher: any) => {
     const botUser = teacher.botUser;
-    const name = teacher.display_name || botUser.userName;
-    const statusIcon = teacher.isAvailable ? '🟢' : '🔴';
+    if (!botUser) {
+      return; // 跳过 botUser 为 null 的老师
+    }
 
-    // 显示评分信息
+    rank++;
+    const name = teacher.display_name || botUser.userName || '未知';
+    const statusIcon = teacher.isAvailable ? '🟢' : '🔴';
     const ratingText =
       teacher.averageRating > 0
         ? ` ⭐${teacher.averageRating.toFixed(1)}(${teacher.evaluationCount})`
         : '';
 
-    const buttonText = `${statusIcon} ${name}${ratingText}`;
+    const buttonText = `${rank}. ${statusIcon} ${name}${ratingText}`;
 
     keyboard.url(
       buttonText,
       teacher.contactLink || `https://t.me/${botUser?.userName || ''}`,
     );
-
-    if ((index + 1) % 3 === 0) {
-      keyboard.row();
-    }
+    keyboard.row();
   });
 
   // 6. 添加分页按钮
