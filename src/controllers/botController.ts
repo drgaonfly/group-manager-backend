@@ -1008,49 +1008,6 @@ const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
   });
 });
 
-/**
- * 更新群验证配置
- */
-const updateGroupVerify = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const groupVerifyData = req.body;
-
-  const botManager = await Bot.findById(id);
-
-  if (!botManager) {
-    res.status(404);
-    throw new Error('机器人不存在');
-  }
-
-  if (botManager.groupVerify) {
-    // 更新现有的 GroupVerify
-
-    await GroupVerify.findByIdAndUpdate(
-      botManager.groupVerify,
-      groupVerifyData,
-      { new: true, runValidators: true },
-    );
-  } else {
-    // 创建新的 GroupVerify
-    const newGroupVerify = await GroupVerify.create(groupVerifyData);
-    // 使用 findByIdAndUpdate 避免 save() 触发完整文档验证导致的 options 未定义错误
-    await Bot.findByIdAndUpdate(id, {
-      $set: { groupVerify: newGroupVerify._id },
-    });
-  }
-
-  // 重新查询完整的 bot 数据，包括 populate
-  const updatedBot = await Bot.findById(id)
-    .populate('groupWelcome')
-    .populate('groupVerify');
-
-  res.json({
-    success: true,
-    data: updatedBot,
-    message: '群验证配置更新成功',
-  });
-});
-
 const BOT_FEATURE_FIELD_KEYS: string[] = [
   'message',
   'menus',
@@ -1103,17 +1060,7 @@ async function cloneGroupWelcomeDoc(
   return created._id;
 }
 
-async function cloneGroupVerifyDoc(
-  refId: mongoose.Types.ObjectId | string | undefined | null,
-): Promise<mongoose.Types.ObjectId | null> {
-  if (!refId) return null;
-  const doc = await GroupVerify.findById(refId).lean();
-  if (!doc) return null;
-  const [created] = await GroupVerify.create([
-    omitDocMeta(doc as Record<string, unknown>),
-  ]);
-  return created._id;
-}
+// 注意：cloneGroupVerifyDoc 已废弃，群验证现在是按群组配置的，无需克隆
 
 async function newLotteryCode(): Promise<string> {
   for (let i = 0; i < 24; i++) {
