@@ -7,23 +7,13 @@
  * 运行方式：npx ts-node src/migrations/migrateGroupVerifyToGroupBased.ts
  */
 
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+import setupDB, { closeDB } from '../utils/db';
 import Bot from '../models/bot';
 import GroupVerify from '../models/groupVerify';
 
-dotenv.config();
-
-const MONGODB_URI = process.env.MONGODB_URI || '';
-
 async function migrateGroupVerify() {
-  if (!MONGODB_URI) {
-    console.error('❌ MONGODB_URI 未配置');
-    process.exit(1);
-  }
-
   console.log('🔗 连接数据库...');
-  await mongoose.connect(MONGODB_URI);
+  await setupDB();
   console.log('✅ 数据库连接成功');
 
   try {
@@ -115,7 +105,7 @@ async function migrateGroupVerify() {
     console.error('❌ 迁移过程出错:', error);
     throw error;
   } finally {
-    await mongoose.disconnect();
+    await closeDB();
     console.log('🔌 数据库连接已断开');
   }
 }
