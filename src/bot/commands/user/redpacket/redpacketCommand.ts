@@ -15,7 +15,7 @@ redpacketCommand.command(
   async (ctx) => {
     debug('红包命令触发');
 
-    const botId = ctx.currentBot._id;
+    // const botId = ctx.currentBot._id;
     const botUserId = ctx.currentBotUser?._id;
     const groupId = ctx.currentGroup?._id;
 
