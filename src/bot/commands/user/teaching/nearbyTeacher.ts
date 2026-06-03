@@ -127,8 +127,8 @@ async function getNearbyTeachersPage(
 
       const statusIcon = teacher?.isAvailable ? '✅' : '🚫';
       const name = teacher?.display_name || '老师';
-      const area = teacher?.address || '';
-      return `${statusIcon} ${name}${area ? `·${area}` : ''} （${distKm}公里）`;
+      // const area = teacher?.address || '';
+      return `${statusIcon} ${name}（${distKm}公里）`;
     }),
   );
 
