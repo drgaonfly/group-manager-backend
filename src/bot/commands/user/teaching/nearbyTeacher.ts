@@ -18,6 +18,7 @@ async function getNearbyTeachersPage(
   lat: number,
   page: number,
   excludeBotUserId?: any, // 排除的用户ID（通常是查询者自己）
+  botUserName?: string, // 机器人 username，用于生成"更新位置"链接
 ) {
   // 1. 拿该 bot 下所有 approved 老师的 botUser IDs
   const botObjectId = new mongoose.Types.ObjectId(botId.toString());
@@ -37,7 +38,14 @@ async function getNearbyTeachersPage(
   console.log(`[nearby] approved teachers count: ${approvedTeachers.length}`);
 
   if (approvedTeachers.length === 0) {
-    return { text: '暂无认证老师', keyboard: null, total: 0 };
+    const keyboard = new InlineKeyboard();
+    if (botUserName) {
+      keyboard.url(
+        '📍 更新我的位置',
+        `https://t.me/${botUserName}?start=update_location`,
+      );
+    }
+    return { text: '暂无认证老师', keyboard, total: 0 };
   }
 
   const botUserIds = approvedTeachers.map((t) => t.botUser);
@@ -101,9 +109,16 @@ async function getNearbyTeachersPage(
 
   const total = results.length;
   if (total === 0) {
+    const keyboard = new InlineKeyboard();
+    if (botUserName) {
+      keyboard.url(
+        '📍 更新我的位置',
+        `https://t.me/${botUserName}?start=update_location`,
+      );
+    }
     return {
       text: `📍 ${DEFAULT_RADIUS_METERS / 1000} 公里内暂无老师`,
-      keyboard: null,
+      keyboard,
       total: 0,
     };
   }
@@ -146,6 +161,12 @@ async function getNearbyTeachersPage(
     if (page < totalPages)
       keyboard.text('➡️ 下一页', `nearby_page:${page + 1}:${lng}:${lat}`);
     keyboard.row();
+  }
+  if (botUserName) {
+    keyboard.url(
+      '📍 更新我的位置',
+      `https://t.me/${botUserName}?start=update_location`,
+    );
   }
 
   return { text, keyboard, total, totalPages };
@@ -198,11 +219,12 @@ nearbyTeacherComposer.hears('附近', checkTeaching, async (ctx) => {
     lat,
     1,
     botUser._id, // 传入当前用户ID，用于排除自己
+    ctx.me.username, // 传入机器人 username，用于"更新位置"按钮
   );
 
   await ctx.reply(text, {
     parse_mode: 'HTML',
-    reply_markup: total > 0 ? keyboard ?? undefined : undefined,
+    reply_markup: keyboard ?? undefined,
   });
 });
 
@@ -220,6 +242,7 @@ nearbyTeacherComposer.callbackQuery(
       lat,
       page,
       ctx.currentBotUser?._id, // 分页时也排除自己
+      ctx.me.username, // 分页时也带上"更新位置"按钮
     );
 
     try {
