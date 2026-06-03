@@ -18,7 +18,7 @@ router.post('/public', createRedPacketPublic);
 router.get('/', protect, checkPermission, getRedPackets);
 router.get('/:id', protect, checkPermission, getRedPacketById);
 router.get('/:id/claims', protect, checkPermission, getRedPacketClaims);
-router.delete('/batch', protect, checkPermission, deleteMultipleRedPackets);
+router.delete('/', protect, checkPermission, deleteMultipleRedPackets);
 router.delete('/:id', protect, checkPermission, deleteRedPacket);
 
 export default router;
