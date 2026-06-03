@@ -222,6 +222,8 @@ nearbyTeacherComposer.hears('附近', checkTeaching, async (ctx) => {
     ctx.me.username, // 传入机器人 username，用于"更新位置"按钮
   );
 
+  console.log('total', total);
+
   await ctx.reply(text, {
     parse_mode: 'HTML',
     reply_markup: keyboard ?? undefined,
