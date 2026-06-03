@@ -30,7 +30,6 @@ import { getBotInfoWithGramjs } from '../utils/getBotInfoWithGramjs';
 import { getBotInfoByToken } from '../utils/getBotInfo';
 import { startClientAndGetSession } from '../bot/services/gramClient';
 import GroupWelcome from '../models/groupWelcome';
-import GroupVerify from '../models/groupVerify';
 
 import dotenv from 'dotenv';
 dotenv.config();
