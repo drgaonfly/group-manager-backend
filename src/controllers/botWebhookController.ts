@@ -6,7 +6,14 @@ import { setupBot } from '../bot/botSetup';
 export const handleBotWebhook = handleAsync(
   async (req: Request, res: Response) => {
     // Handle the webhook
-    console.log('Webhook received:', req.body);
+    console.log(
+      'Webhook received update_id:',
+      req.body?.update_id,
+      'type:',
+      Object.keys(req.body || {})
+        .filter((k) => k !== 'update_id')
+        .join(','),
+    );
 
     const botId = req.params.id;
 

@@ -54,6 +54,7 @@ import badgeRoutes from './routes/badgeRoutes';
 import successRoutes from './routes/successRoutes';
 import postRoutes from './routes/postRoutes';
 import groupVerifyRoutes from './routes/groupVerifyRoutes';
+import redPacketRoutes from './routes/redPacketRoutes';
 
 dotenv.config();
 
@@ -121,6 +122,7 @@ app.use('/api/badges', badgeRoutes);
 app.use('/api/successes', successRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/group-verifies', groupVerifyRoutes);
+app.use('/api/red-packets', redPacketRoutes);
 
 app.use('/api/static', express.static('tmp'));
 

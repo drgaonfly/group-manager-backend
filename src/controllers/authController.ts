@@ -246,6 +246,7 @@ const updateUserProfile = handleAsync(
       rankConferral,
       recharge,
       success,
+      redPacket,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -338,6 +339,9 @@ const updateUserProfile = handleAsync(
       }
       if (typeof success !== 'undefined') {
         updateData.success = success;
+      }
+      if (typeof redPacket !== 'undefined') {
+        updateData.redPacket = redPacket;
       }
     }
 

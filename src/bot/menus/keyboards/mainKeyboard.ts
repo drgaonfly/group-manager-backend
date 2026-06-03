@@ -49,6 +49,8 @@ async function createMainKeyboard(ctx: MyContext) {
     keyboard.text('充值余额');
   }
 
+  // 红包功能通过 /redpacket 命令触发，不在 mainKeyboard 显示
+
   // 3. 其它功能模块（仅在私聊中显示）
   if (!isGroupChat) {
     // 教学模块按钮

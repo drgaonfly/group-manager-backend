@@ -1,6 +1,7 @@
 import { Bot, GrammyError, HttpError, session } from 'grammy';
 import logger from './middlewares/logger';
 import userComposer from './commands/user';
+import webAppDataQuery from './commands/user/redpacket/webAppDataQuery';
 import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
 import botUserResolver from './middlewares/botUserResolver';
@@ -92,6 +93,8 @@ export const setupBot = (token: string) => {
   bot.use(logger);
   bot.use(rankingPaginationHandler);
   bot.use(replyRuleHandler);
+  // web_app_data 需要在顶层注册，确保私聊中能收到
+  bot.use(webAppDataQuery.middleware());
   bot.use(userComposer.middleware());
   // bot.use(adminComposer.middleware());
 

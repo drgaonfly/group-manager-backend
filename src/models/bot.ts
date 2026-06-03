@@ -106,6 +106,9 @@ export interface IBot extends Document {
 
   // 积分继承
   canSuccess: boolean;
+
+  // 红包功能
+  canRedPacket: boolean;
 }
 
 export interface IMenu extends Document {
@@ -411,6 +414,11 @@ const botSchema = new mongoose.Schema(
       required: false,
       default: false,
     },
+    canRedPacket: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -468,6 +476,13 @@ botSchema.virtual('teachers', {
 // 虚拟字段：关联的去除广告规则详情
 botSchema.virtual('adRemovals', {
   ref: 'AdRemoval',
+  localField: '_id',
+  foreignField: 'bot',
+});
+
+// 虚拟字段：关联的红包
+botSchema.virtual('redPackets', {
+  ref: 'RedPacket',
   localField: '_id',
   foreignField: 'bot',
 });

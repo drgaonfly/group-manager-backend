@@ -96,6 +96,10 @@ export class PermissionChecker {
     return !!(proxyUser?.success && bot?.canSuccess);
   }
 
+  static canUseRedPacket(proxyUser: IUser | null, bot: IBot): boolean {
+    return !!(proxyUser?.redPacket && bot?.canRedPacket);
+  }
+
   /**
    * 获取所有功能的可用状态
    * @param proxyUser 代理用户
@@ -114,6 +118,7 @@ export class PermissionChecker {
       teaching: this.canUseTeaching(proxyUser, bot),
       adRemoval: this.canUseAdRemoval(proxyUser, bot),
       recharge: this.canUseRecharge(proxyUser, bot),
+      redPacket: this.canUseRedPacket(proxyUser, bot),
     };
   }
 }
