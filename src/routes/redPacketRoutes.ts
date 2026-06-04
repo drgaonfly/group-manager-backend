@@ -7,6 +7,8 @@ import {
   deleteMultipleRedPackets,
   createRedPacketPublic,
   getGroupsForRedPacket,
+  getSentRedPackets,
+  getClaimedRedPackets,
 } from '../controllers/redPacketController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -15,6 +17,8 @@ const router = Router();
 // 公开路由（Web App 调用，无需登录）
 router.post('/public', createRedPacketPublic);
 router.get('/public/groups', getGroupsForRedPacket);
+router.get('/public/sent', getSentRedPackets);
+router.get('/public/claimed', getClaimedRedPackets);
 
 // 需要认证的路由
 router.get('/', protect, checkPermission, getRedPackets);

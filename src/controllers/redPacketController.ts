@@ -324,3 +324,92 @@ export const getGroupsForRedPacket = handleAsync(
     res.json({ success: true, data: groups });
   },
 );
+
+// ─── Public：我发出的红包历史 ──────────────────────────────────────────────────
+
+export const getSentRedPackets = handleAsync(
+  async (req: Request, res: Response) => {
+    const { botId, botUserId, current = '1', pageSize = '10' } = req.query;
+
+    if (!botId || !botUserId) {
+      res.status(400);
+      throw new Error('缺少 botId 或 botUserId');
+    }
+
+    const query = { bot: botId, creator: botUserId };
+
+    const data = await RedPacket.find(query)
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .populate('group', 'title username')
+      .lean();
+
+    const total = await RedPacket.countDocuments(query);
+
+    // 附加每条红包的领取数
+    const ids = data.map((r) => r._id);
+    const claimCounts = await RedPacketClaim.aggregate([
+      { $match: { redPacket: { $in: ids } } },
+      { $group: { _id: '$redPacket', count: { $sum: 1 } } },
+    ]);
+    const claimMap: Record<string, number> = {};
+    claimCounts.forEach((c) => {
+      claimMap[c._id.toString()] = c.count;
+    });
+
+    const result = data.map((r) => ({
+      ...r,
+      claimedCount: claimMap[r._id.toString()] ?? 0,
+    }));
+
+    res.json({
+      success: true,
+      data: result,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
+
+// ─── Public：我领取的红包历史 ──────────────────────────────────────────────────
+
+export const getClaimedRedPackets = handleAsync(
+  async (req: Request, res: Response) => {
+    const { botId, botUserId, current = '1', pageSize = '10' } = req.query;
+
+    if (!botId || !botUserId) {
+      res.status(400);
+      throw new Error('缺少 botId 或 botUserId');
+    }
+
+    const total = await RedPacketClaim.countDocuments({ botUser: botUserId });
+
+    const claims = await RedPacketClaim.find({ botUser: botUserId })
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .populate({
+        path: 'redPacket',
+        match: { bot: botId },
+        select: 'totalPoints totalSlots status group createdAt creator',
+        populate: [
+          { path: 'group', select: 'title username' },
+          { path: 'creator', select: 'userName firstName lastName' },
+        ],
+      })
+      .lean();
+
+    // 过滤掉 redPacket 为 null（不属于该 bot）的记录
+    const filtered = claims.filter((c) => c.redPacket != null);
+
+    res.json({
+      success: true,
+      data: filtered,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
