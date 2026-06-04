@@ -265,6 +265,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     rankConferral,
     recharge,
     success,
+    redPacket,
     ...body
   } = req.body;
 
@@ -318,6 +319,7 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       rankConferral,
       recharge,
       success,
+      redPacket,
     },
     { new: true },
   );
