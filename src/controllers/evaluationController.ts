@@ -191,3 +191,108 @@ export const deleteEvaluation = handleAsync(
     });
   },
 );
+
+// ── Mini App 公开接口 ──────────────────────────────────────────────
+import Teacher from '../models/teacher';
+import { calcEvalAvg, signImages } from './teacherController';
+
+/**
+ * POST /evaluations/public
+ * 用户提交车评，供 Mini App 调用
+ */
+export const submitEvaluationPublic = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const {
+      botId,
+      botUserId,
+      teacherId,
+      avatar_rating,
+      appearance_rating,
+      body_rating,
+      service_rating,
+      attitude_rating,
+      circumstance_rating,
+      process_desc,
+      isReportedAnoymously = false,
+      proof_media = [],
+    } = req.body;
+
+    if (!botId || !botUserId || !teacherId) {
+      res.status(400);
+      throw new Error('缺少必要参数');
+    }
+    if (!process_desc) {
+      res.status(400);
+      throw new Error('请填写过程描述');
+    }
+
+    if (!proof_media || proof_media.length === 0) {
+      res.status(400);
+      throw new Error('请至少上传一张出击图片或视频');
+    }
+
+    const teacher = await Teacher.findById(teacherId);
+    if (!teacher || teacher.status !== 'approved') {
+      res.status(404);
+      throw new Error('老师不存在或未通过认证');
+    }
+
+    if (teacher.botUser?.toString() === botUserId) {
+      res.status(400);
+      throw new Error('不能评价自己');
+    }
+
+    const evaluation = await Evaluation.create({
+      bot: botId,
+      reviewer: botUserId,
+      teacher: teacherId,
+      avatar_rating: Number(avatar_rating) || 3,
+      appearance_rating: Number(appearance_rating) || 3,
+      body_rating: Number(body_rating) || 3,
+      service_rating: Number(service_rating) || 3,
+      attitude_rating: Number(attitude_rating) || 3,
+      circumstance_rating: Number(circumstance_rating) || 3,
+      process_desc,
+      isReportedAnoymously,
+      proof_media,
+      status: 'pending',
+    });
+
+    res.status(201).json({ success: true, data: evaluation });
+  },
+);
+
+/**
+ * GET /evaluations/public/my-reviews
+ * 当前用户写过的车评列表，供 Mini App 调用
+ */
+export const getMyReviews = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { botId, botUserId } = req.query as Record<string, string>;
+
+    if (!botId || !botUserId) {
+      res.status(400);
+      throw new Error('缺少 botId 或 botUserId');
+    }
+
+    const evals = await Evaluation.find({ bot: botId, reviewer: botUserId })
+      .populate('teacher', 'display_name images')
+      .sort('-createdAt')
+      .limit(50)
+      .lean();
+
+    const data = await Promise.all(
+      evals.map(async (e) => {
+        const teacher = e.teacher as any;
+        return {
+          ...e,
+          teacher: teacher
+            ? { ...teacher, images: await signImages(teacher.images || []) }
+            : null,
+        };
+      }),
+    );
+
+    res.json({ success: true, data });
+  },
+);

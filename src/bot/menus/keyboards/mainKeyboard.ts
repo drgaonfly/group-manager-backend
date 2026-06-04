@@ -65,11 +65,15 @@ async function createMainKeyboard(ctx: MyContext) {
 
   // 3. 其它功能模块（仅在私聊中显示）
   if (!isGroupChat) {
-    // 教学模块按钮
+    // 教学模块：一个 Mini App 入口替代多个文字按钮
     if (PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)) {
-      keyboard.row();
-      keyboard.text('注册老师').text('找老师');
-      keyboard.text('写车评').text('我的车评').text('更新位置').row();
+      const frontendUrl = process.env.FRONTEND_URL;
+      const botId = ctx.currentBot._id;
+      const botUserId = ctx.currentBotUser?._id;
+      if (frontendUrl && botUserId) {
+        const url = `${frontendUrl}/teaching?botId=${botId}&botUserId=${botUserId}`;
+        keyboard.row().webApp('🎓 教学中心', url);
+      }
     }
   }
 

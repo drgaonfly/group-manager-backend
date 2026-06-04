@@ -4,6 +4,16 @@ import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
 
+// ── 公开路由（Mini App 调用，无需登录） ────────────────────────────
+router.get('/public/list', teacherController.getPublicTeachers);
+router.get(
+  '/public/evaluations',
+  teacherController.getPublicTeacherEvaluations,
+);
+router.get('/public/me', teacherController.getMyTeacherProfile);
+router.post('/public/register', teacherController.registerTeacherPublic);
+
+// ── 需要认证的路由 ─────────────────────────────────────────────────
 router
   .route('/')
   .get(protect, checkPermission, teacherController.getTeachers)
