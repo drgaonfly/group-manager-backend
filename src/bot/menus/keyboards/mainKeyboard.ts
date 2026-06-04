@@ -49,30 +49,30 @@ async function createMainKeyboard(ctx: MyContext) {
     keyboard.text('充值余额');
   }
 
-  // 红包功能：私聊时在主键盘加入按钮，直接弹出 Mini App
-  if (
-    !isGroupChat &&
-    PermissionChecker.canUseRedPacket(proxyUser, ctx.currentBot)
-  ) {
+  // 红包 + 教学：私聊时合并到同一行
+  if (!isGroupChat) {
     const frontendUrl = process.env.FRONTEND_URL;
     const botId = ctx.currentBot._id;
     const botUserId = ctx.currentBotUser?._id;
-    if (frontendUrl && botUserId) {
-      const url = `${frontendUrl}/redpacket/create?botId=${botId}&botUserId=${botUserId}`;
-      keyboard.row().webApp('🧧 发红包', url);
-    }
-  }
 
-  // 3. 其它功能模块（仅在私聊中显示）
-  if (!isGroupChat) {
-    // 教学模块：一个 Mini App 入口替代多个文字按钮
-    if (PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)) {
-      const frontendUrl = process.env.FRONTEND_URL;
-      const botId = ctx.currentBot._id;
-      const botUserId = ctx.currentBotUser?._id;
-      if (frontendUrl && botUserId) {
+    const canRedPacket = PermissionChecker.canUseRedPacket(
+      proxyUser,
+      ctx.currentBot,
+    );
+    const canTeaching = PermissionChecker.canUseTeaching(
+      proxyUser,
+      ctx.currentBot,
+    );
+
+    if (frontendUrl && botUserId && (canRedPacket || canTeaching)) {
+      keyboard.row();
+      if (canRedPacket) {
+        const url = `${frontendUrl}/redpacket/create?botId=${botId}&botUserId=${botUserId}`;
+        keyboard.webApp('🧧 发红包', url);
+      }
+      if (canTeaching) {
         const url = `${frontendUrl}/teaching?botId=${botId}&botUserId=${botUserId}`;
-        keyboard.row().webApp('🎓 教学中心', url);
+        keyboard.webApp('🎓 教学中心', url);
       }
     }
   }
