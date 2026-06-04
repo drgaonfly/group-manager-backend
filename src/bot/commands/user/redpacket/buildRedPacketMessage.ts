@@ -1,5 +1,4 @@
 import RedPacketClaim from '../../../../models/redPacketClaim';
-import BotUser from '../../../../models/botUser';
 
 /**
  * 构建红包群消息文本（HTML）
