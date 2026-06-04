@@ -1,12 +1,11 @@
 import { Response } from 'express';
 import Evaluation from '../models/evaluation';
-// import BotUser from '../models/botUser';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { setupBot } from '../bot/botSetup';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
-// import { getUserByUsername } from '../utils/getBotUserByUsername';
-// import Bot from '../models/bot';
+import Teacher from '../models/teacher';
+import { signImages } from './teacherController';
 
 /**
  * 获取评价列表
@@ -193,8 +192,6 @@ export const deleteEvaluation = handleAsync(
 );
 
 // ── Mini App 公开接口 ──────────────────────────────────────────────
-import Teacher from '../models/teacher';
-import { calcEvalAvg, signImages } from './teacherController';
 
 /**
  * POST /evaluations/public
