@@ -189,10 +189,19 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
             `grab_rp_${redPacketId}`,
           );
 
-      await ctx.api.editMessageText(ctx.chat.id, redPacket.messageId, text, {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
-      });
+      if (freshRp?.backgroundUrl) {
+        // 有背景图的消息用 editMessageCaption
+        await ctx.api.editMessageCaption(ctx.chat.id, redPacket.messageId, {
+          caption: text,
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.api.editMessageText(ctx.chat.id, redPacket.messageId, text, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      }
     } catch {
       // 消息已删或无权限，忽略
     }

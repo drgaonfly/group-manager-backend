@@ -10,6 +10,7 @@ import { findBotProxy } from '../bot/services/findBotProxy';
 import { setupBot } from '../bot/botSetup';
 import { InlineKeyboard } from 'grammy';
 import { buildRedPacketMessage } from '../bot/commands/user/redpacket/buildRedPacketMessage';
+import { sendMediaMessage } from '../utils/sendMultiMedia';
 
 // ─── 查询构建 ──────────────────────────────────────────────────────────────────
 
@@ -171,6 +172,7 @@ export const createRedPacketPublic = handleAsync(
       bombNumbers = [],
       bombMultiplier = 1.2,
       expireMinutes = 30,
+      backgroundUrl,
     } = req.body;
 
     // 基础校验
@@ -236,11 +238,12 @@ export const createRedPacketPublic = handleAsync(
       creator: botUserId,
       totalPoints,
       totalSlots,
-      remainingAmount: totalPoints, // 初始剩余金额 = 总金额
+      remainingAmount: totalPoints,
       bombNumbers,
       bombMultiplier,
       expiredAt,
       creatorPointsBefore,
+      backgroundUrl: backgroundUrl || undefined,
       status: 'active',
     });
 
@@ -263,10 +266,28 @@ export const createRedPacketPublic = handleAsync(
           `grab_rp_${redPacket._id}`,
         );
 
-        const sent = await botInstance.api.sendMessage(chatId, text, {
-          parse_mode: 'HTML',
-          reply_markup: keyboard,
-        });
+        let sent;
+        if (backgroundUrl) {
+          // 从 URL 中取出文件名，用 sendMediaMessage 走本地文件流发送
+          // backgroundUrl 格式: http://xxx/api/static/<filename>
+          const fileName = backgroundUrl.split('/api/static/').pop();
+          const result = await sendMediaMessage(
+            botInstance.api,
+            chatId,
+            [fileName],
+            {
+              caption: text,
+              parse_mode: 'HTML',
+              reply_markup: keyboard,
+            },
+          );
+          sent = result.message_id ? { message_id: result.message_id } : null;
+        } else {
+          sent = await botInstance.api.sendMessage(chatId, text, {
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          });
+        }
 
         await RedPacket.findByIdAndUpdate(redPacket._id, {
           messageId: sent.message_id,

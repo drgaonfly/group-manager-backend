@@ -11,6 +11,22 @@ import { generateSignedUrl } from '../utils/generateSignedUrl';
 
 const router = express.Router();
 
+// 公开上传（无需鉴权，供 Telegram WebApp 等无 token 场景使用）
+router.post('/public', handleFileUpload, async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ success: false, message: '未收到文件' });
+    return;
+  }
+  const fileName = req.file.filename;
+  res.json({
+    success: true,
+    data: {
+      url: await generateSignedUrl(fileName),
+      file: fileName,
+    },
+  });
+});
+
 if (process.env.FILE_STORAGE === 'aliyun') {
   router.post('/frontend', customerProtect, handleFileUpload, uploadFileToOSS);
   router.get('/get-credentials/frontend', customerProtect, getOssCredentials);

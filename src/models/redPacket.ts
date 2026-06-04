@@ -66,6 +66,9 @@ export interface IRedPacket extends Document {
   /** 群内红包消息 ID（方便 bot 后续编辑/撤回红包消息） */
   messageId?: number;
 
+  /** 红包背景图（S3 key），发送时作为图片 caption 发出 */
+  backgroundUrl?: string;
+
   /** 发起人发红包时的积分余额快照（扣款前，用于审计） */
   creatorPointsBefore: number;
 
@@ -142,6 +145,11 @@ const redPacketSchema = new mongoose.Schema<IRedPacket>(
     messageId: {
       type: Number,
       required: false,
+    },
+    backgroundUrl: {
+      type: String,
+      required: false,
+      trim: true,
     },
     creatorPointsBefore: {
       type: Number,
