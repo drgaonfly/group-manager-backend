@@ -22,6 +22,7 @@ export async function buildRedPacketMessage(
     ``,
     `🧧 红包金额：<b>${redPacket.totalPoints}.00 积分</b>`,
     `💰 红包倍数：<b>${redPacket.bombMultiplier}</b>`,
+    `📦 共 <b>${redPacket.totalSlots}</b> 份，随机金额`,
     hasBombs
       ? `💥 炸弹数字：<b>${(redPacket.bombNumbers as number[]).join('、')}</b>`
       : `😊 无炸弹，安心领取`,

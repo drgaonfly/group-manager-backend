@@ -227,7 +227,6 @@ export const createRedPacketPublic = handleAsync(
     config.usdt_balance = creatorPointsBefore - totalPoints;
     await config.save();
 
-    const pointsPerSlot = Math.floor(totalPoints / totalSlots);
     const expiredAt = new Date(Date.now() + expireMinutes * 60 * 1000);
 
     const redPacket = await RedPacket.create({
@@ -237,7 +236,7 @@ export const createRedPacketPublic = handleAsync(
       creator: botUserId,
       totalPoints,
       totalSlots,
-      pointsPerSlot,
+      remainingAmount: totalPoints, // 初始剩余金额 = 总金额
       bombNumbers,
       bombMultiplier,
       expiredAt,

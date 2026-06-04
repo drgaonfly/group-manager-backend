@@ -25,22 +25,11 @@ export async function settleRedPacket(
 
   let refundToCreator = 0;
 
-  // 整除余数无条件退还（totalPoints 不能被 totalSlots 整除时产生）
-  const remainder = redPacket.totalPoints % redPacket.totalSlots;
-  if (remainder > 0) {
-    refundToCreator += remainder;
-    debug('余数 %d 积分退还发起人', remainder);
-  }
-
-  // 未领份额退还
-  const unclaimedSlots = redPacket.totalSlots - claimedCount;
-  if (unclaimedSlots > 0) {
-    refundToCreator += unclaimedSlots * redPacket.pointsPerSlot;
-    debug(
-      '未领 %d 份，退还 %d 积分',
-      unclaimedSlots,
-      unclaimedSlots * redPacket.pointsPerSlot,
-    );
+  // 未领份额退还：直接用剩余金额字段（随机分配后的准确剩余）
+  const remainingAmount = redPacket.remainingAmount ?? 0;
+  if (remainingAmount > 0) {
+    refundToCreator += remainingAmount;
+    debug('未领剩余金额 %d 积分退还发起人', remainingAmount);
   }
 
   // 全炸退款：把所有炸弹扣款退还给发起人

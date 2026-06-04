@@ -71,13 +71,11 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
     botUser: botUser._id,
   });
   if (existing) {
-    const name = (() => {
-      const u = botUser as any;
-      const full = `${u?.firstName ?? ''}${
-        u?.lastName ? ' ' + u.lastName : ''
-      }`.trim();
-      return full || (u?.userName ? `@${u.userName}` : '你');
-    })();
+    const u = botUser as any;
+    const full = `${u?.firstName ?? ''}${
+      u?.lastName ? ' ' + u.lastName : ''
+    }`.trim();
+    const name = full || (u?.userName ? `@${u.userName}` : '你');
     const msg = existing.isBomb
       ? `💣 ${name}，你已经领过了！\n\n踩雷扣了 ${Math.abs(
           existing.pointsDelta,
@@ -87,35 +85,32 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
     return;
   }
 
-  // 随机分配未用数字
-  const usedNumbers = new Set(
-    (
-      await RedPacketClaim.find({ redPacket: redPacketId })
-        .select('assignedNumber')
-        .lean()
-    ).map((c: any) => c.assignedNumber),
-  );
-  const available = Array.from(
-    { length: redPacket.totalSlots },
-    (_, i) => i + 1,
-  ).filter((n) => !usedNumbers.has(n));
+  // 二倍均值法动态计算本次领取金额
+  const remainingCount = redPacket.totalSlots - claimedCount;
+  const remainingAmount = redPacket.remainingAmount;
 
-  if (available.length === 0) {
-    await ctx.answerCallbackQuery({
-      text: '😢 红包已被领完啦',
-      show_alert: true,
-    });
-    return;
+  let claimAmount: number;
+  if (remainingCount === 1) {
+    // 最后一份全拿剩余，保留两位小数
+    claimAmount = Math.round(remainingAmount * 100) / 100;
+  } else {
+    const maxAmount = (remainingAmount / remainingCount) * 2;
+    const minAmount = 0.01;
+    const cap = remainingAmount - (remainingCount - 1) * 0.01;
+    const raw = Math.random() * (maxAmount - minAmount) + minAmount;
+    claimAmount = Math.round(Math.min(raw, cap) * 100) / 100;
   }
 
-  const assignedNumber =
-    available[Math.floor(Math.random() * available.length)];
-  const isBomb = redPacket.bombNumbers.includes(assignedNumber);
-  const pointsDelta = isBomb
-    ? -Math.ceil(redPacket.pointsPerSlot * redPacket.bombMultiplier)
-    : redPacket.pointsPerSlot;
+  // 取金额最后一位小数（百分位数字）判断是否炸弹
+  // 例如 12.37 → 最后一位 = 7；12.30 → 最后一位 = 0
+  const lastDigit = Math.round(claimAmount * 100) % 10;
+  const isBomb = redPacket.bombNumbers.includes(lastDigit);
 
-  // 原子 $inc 更新余额，拿返回值做准确快照
+  const pointsDelta = isBomb
+    ? -Math.ceil(claimAmount * redPacket.bombMultiplier)
+    : claimAmount;
+
+  // 原子 $inc 更新用户余额，拿返回值做准确快照
   const updatedConfig = await BotUserConfig.findOneAndUpdate(
     { bot: bot._id, botUser: botUser._id },
     { $inc: { usdt_balance: pointsDelta } },
@@ -134,15 +129,15 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
     await RedPacketClaim.create({
       redPacket: redPacketId,
       botUser: botUser._id,
-      assignedNumber,
+      assignedNumber: lastDigit, // 记录命中的末位数字，方便审计
       isBomb,
       pointsBefore,
       pointsDelta,
       pointsAfter,
     });
   } catch (e: any) {
-    // 唯一索引冲突 = 并发下重复领取，回滚余额
     if (e?.code === 11000) {
+      // 并发重复领取，回滚余额
       await BotUserConfig.updateOne(
         { bot: bot._id, botUser: botUser._id },
         { $inc: { usdt_balance: -pointsDelta } },
@@ -156,6 +151,14 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
     throw e;
   }
 
+  // 扣减红包剩余金额（只在未踩雷时扣）
+  if (!isBomb) {
+    await RedPacket.updateOne(
+      { _id: redPacketId },
+      { $inc: { remainingAmount: -claimAmount } },
+    );
+  }
+
   const newClaimedCount = claimedCount + 1;
   const allClaimed = newClaimedCount >= redPacket.totalSlots;
 
@@ -166,19 +169,19 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
   // 更新消息正文 + 按钮
   if (redPacket.messageId && ctx.chat) {
     try {
-      // 查发起人名称
       const creator = await BotUser.findById(redPacket.creator).lean();
-      const creatorName = (creator as any)?.userName
-        ? `@${(creator as any).userName}`
-        : `${(creator as any)?.firstName ?? '用户'}`;
+      const creatorName = (creator as any)?.firstName
+        ? `${(creator as any).firstName}${
+            (creator as any).lastName ? ' ' + (creator as any).lastName : ''
+          }`
+        : (creator as any)?.userName
+          ? `@${(creator as any).userName}`
+          : '用户';
 
-      // 结算后重新查一次以拿到 allBombed / status
       const freshRp = allClaimed
         ? await RedPacket.findById(redPacket._id).lean()
         : redPacket;
-
       const text = await buildRedPacketMessage(freshRp, creatorName);
-
       const keyboard = allClaimed
         ? undefined
         : new InlineKeyboard().text(
@@ -195,19 +198,21 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
     }
   }
 
+  const bombTip = isBomb ? `\n💣 末位数字 ${lastDigit} 是炸弹！` : '';
   const resultMsg = isBomb
-    ? `💣 你踩雷了！第 ${assignedNumber} 号是炸弹，扣了 ${Math.abs(
+    ? `💣 你踩雷了！\n金额末位 ${lastDigit} 是炸弹，扣了 ${Math.abs(
         pointsDelta,
-      )} 积分\n当前余额：${pointsAfter}`
-    : `🎉 恭喜！你领到第 ${assignedNumber} 号，获得 +${pointsDelta} 积分\n当前余额：${pointsAfter}`;
+      )} 积分${bombTip}\n当前余额：${pointsAfter}`
+    : `🎉 恭喜！获得 ${claimAmount} 积分\n当前余额：${pointsAfter}`;
 
   await ctx.answerCallbackQuery({ text: resultMsg, show_alert: true });
 
   debug(
-    'user=%s grabbed rp=%s number=%d isBomb=%s delta=%d',
+    'user=%s grabbed rp=%s amount=%d lastDigit=%d isBomb=%s delta=%d',
     botUser._id,
     redPacketId,
-    assignedNumber,
+    claimAmount,
+    lastDigit,
     isBomb,
     pointsDelta,
   );

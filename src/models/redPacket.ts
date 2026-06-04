@@ -24,8 +24,8 @@ export interface IRedPacket extends Document {
   /** 红包总份数，同时决定分配数字的范围 1 ~ totalSlots */
   totalSlots: number;
 
-  /** 每份积分 = floor(totalPoints / totalSlots)，余数在结算时退还发起人 */
-  pointsPerSlot: number;
+  /** 剩余可分配积分（动态减少，用于二倍均值法随机分配） */
+  remainingAmount: number;
 
   /**
    * 炸弹数字列表（元素范围 1 ~ totalSlots）
@@ -108,10 +108,10 @@ const redPacketSchema = new mongoose.Schema<IRedPacket>(
       required: true,
       min: 1,
     },
-    pointsPerSlot: {
+    remainingAmount: {
       type: Number,
       required: true,
-      min: 1,
+      default: 0,
     },
     bombNumbers: {
       type: [Number],
