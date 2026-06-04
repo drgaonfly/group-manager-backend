@@ -7,10 +7,14 @@ import {
   deleteBotUserConfig,
   deleteMultipleBotUserConfigs,
   sendMessage,
+  updateLocationPublic,
 } from '../controllers/botUserConfigController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
+
+// 公开路由（Mini App 调用，无需登录）
+router.post('/public/location', updateLocationPublic);
 
 // 批量路由处理
 

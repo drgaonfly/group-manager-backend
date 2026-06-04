@@ -230,3 +230,53 @@ export {
   deleteMultipleBotUserConfigs,
   sendMessage,
 };
+
+/**
+ * POST /bot-user-configs/public/location
+ * Mini App 更新当前用户位置（供所有用户使用，无需登录）
+ */
+export const updateLocationPublic = handleAsync(
+  async (req: Request, res: Response) => {
+    const { botId, botUserId, lng, lat } = req.body;
+
+    if (!botId || !botUserId) {
+      res.status(400);
+      throw new Error('缺少 botId 或 botUserId');
+    }
+
+    const lngNum = parseFloat(lng);
+    const latNum = parseFloat(lat);
+
+    if (
+      isNaN(lngNum) ||
+      isNaN(latNum) ||
+      lngNum < -180 ||
+      lngNum > 180 ||
+      latNum < -90 ||
+      latNum > 90
+    ) {
+      res.status(400);
+      throw new Error('经纬度格式不正确');
+    }
+
+    const config = await BotUserConfig.findOneAndUpdate(
+      { bot: botId, botUser: botUserId },
+      {
+        $set: {
+          location: {
+            type: 'Point',
+            coordinates: [lngNum, latNum],
+          },
+        },
+      },
+      { new: true },
+    );
+
+    if (!config) {
+      res.status(404);
+      throw new Error('用户配置不存在');
+    }
+
+    res.json({ success: true, message: '位置已更新' });
+  },
+);
