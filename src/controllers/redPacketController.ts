@@ -9,6 +9,7 @@ import handleAsync from '../utils/handleAsync';
 import { findBotProxy } from '../bot/services/findBotProxy';
 import { setupBot } from '../bot/botSetup';
 import { InlineKeyboard } from 'grammy';
+import { buildRedPacketMessage } from '../bot/commands/user/redpacket/buildRedPacketMessage';
 
 // ─── 查询构建 ──────────────────────────────────────────────────────────────────
 
@@ -252,24 +253,11 @@ export const createRedPacketPublic = handleAsync(
       if (chatId) {
         const botInstance = setupBot(bot.token);
 
-        const creatorName = botUser.firstName || botUser.userName || '用户';
+        const creatorName = botUser.userName
+          ? `@${botUser.userName}`
+          : botUser.firstName || '用户';
 
-        const minutesLeft = expireMinutes;
-
-        const text = [
-          `🧧 <b>红包来啦！</b>`,
-          ``,
-          `👤 发起人：${creatorName}`,
-          `💰 总积分：<b>${totalPoints}</b>`,
-          `📦 共 ${totalSlots} 份，每份 <b>${pointsPerSlot}</b> 积分`,
-          bombNumbers.length > 0
-            ? `💣 炸弹数字：${(bombNumbers as number[]).join(
-                '、',
-              )}（踩雷扣 ${bombMultiplier} 倍）`
-            : `😊 无炸弹，安心领取`,
-          ``,
-          `⏰ ${minutesLeft} 分钟内有效`,
-        ].join('\n');
+        const text = await buildRedPacketMessage(redPacket, creatorName);
 
         const keyboard = new InlineKeyboard().text(
           `🧧 抢红包（0/${totalSlots}）`,
