@@ -110,12 +110,19 @@ grabCallbackQuery.callbackQuery(/^grab_rp_(.+)$/, async (ctx) => {
     ? -Math.ceil(claimAmount * redPacket.bombMultiplier)
     : claimAmount;
 
-  // 原子 $inc 更新用户余额，拿返回值做准确快照
+  // 无论是炸弹还是正常扣积分，只要 pointsDelta 是负数，都保证不扣成负数
   const updatedConfig = await BotUserConfig.findOneAndUpdate(
     { bot: bot._id, botUser: botUser._id },
-    { $inc: { usdt_balance: pointsDelta } },
+    [
+      {
+        $set: {
+          usdt_balance: { $max: [{ $add: ['$usdt_balance', pointsDelta] }, 0] },
+        },
+      },
+    ],
     { new: true },
   );
+
   if (!updatedConfig) {
     await ctx.answerCallbackQuery({ text: '❌ 账户异常', show_alert: true });
     return;
