@@ -61,24 +61,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     }
   }
 
-  // 处理红包深链接：私聊中弹出 Mini App
-  if (startParam?.startsWith('rp_')) {
-    const groupId = startParam.replace('rp_', '');
-    const { proxyUser } = await findBotProxy(ctx.currentBot);
-    if (PermissionChecker.canUseRedPacket(proxyUser, ctx.currentBot)) {
-      const webAppUrl = process.env.FRONTEND_URL || 'https://your-domain.com';
-      const botId = ctx.currentBot._id;
-      const botUserId = ctx.currentBotUser?._id;
-      const url = `${webAppUrl}/redpacket/create?botId=${botId}&botUserId=${botUserId}&groupId=${groupId}`;
-
-      const keyboard = new InlineKeyboard().webApp('🧧 发红包', url);
-      await ctx.reply('💰 点击下方按钮填写并发送红包', {
-        reply_markup: keyboard,
-      });
-      return;
-    }
-  }
-
   // 处理积分继承深链接
   if (startParam === 'mycode' || startParam === 'inherit') {
     const { proxyUser } = await findBotProxy(ctx.currentBot);

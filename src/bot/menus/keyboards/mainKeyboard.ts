@@ -49,7 +49,19 @@ async function createMainKeyboard(ctx: MyContext) {
     keyboard.text('充值余额');
   }
 
-  // 红包功能通过 /redpacket 命令触发，不在 mainKeyboard 显示
+  // 红包功能：私聊时在主键盘加入按钮，直接弹出 Mini App
+  if (
+    !isGroupChat &&
+    PermissionChecker.canUseRedPacket(proxyUser, ctx.currentBot)
+  ) {
+    const frontendUrl = process.env.FRONTEND_URL;
+    const botId = ctx.currentBot._id;
+    const botUserId = ctx.currentBotUser?._id;
+    if (frontendUrl && botUserId) {
+      const url = `${frontendUrl}/redpacket/create?botId=${botId}&botUserId=${botUserId}`;
+      keyboard.row().webApp('🧧 发红包', url);
+    }
+  }
 
   // 3. 其它功能模块（仅在私聊中显示）
   if (!isGroupChat) {

@@ -280,3 +280,26 @@ export const createRedPacketPublic = handleAsync(
     res.status(201).json({ success: true, data: { _id: redPacket._id } });
   },
 );
+
+// ─── Public：获取可发红包的群列表 ──────────────────────────────────────────────
+
+export const getGroupsForRedPacket = handleAsync(
+  async (req: Request, res: Response) => {
+    const { botId, botUserId } = req.query;
+
+    if (!botId || !botUserId) {
+      res.status(400);
+      throw new Error('缺少 botId 或 botUserId');
+    }
+
+    // 该 bot 管辖、且 botUsers 数组包含该 botUser 的群
+    const groups = await Group.find({
+      bot: botId,
+      botUsers: botUserId,
+    })
+      .select('_id id title username')
+      .lean();
+
+    res.json({ success: true, data: groups });
+  },
+);
