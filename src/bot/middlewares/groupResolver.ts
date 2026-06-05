@@ -462,6 +462,32 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         member.first_name + (member.last_name ? ` ${member.last_name}` : '');
       const username = member.username ? `@${member.username}` : memberName;
 
+      // 查找或创建 BotUser，并写入群组 botUsers
+      try {
+        let botUser = await BotUser.findOne({
+          id: member.id.toString(),
+          proxy: proxyUser._id,
+        });
+        if (!botUser) {
+          botUser = new BotUser({
+            id: member.id.toString(),
+            userName: member.username || '',
+            firstName: member.first_name,
+            lastName: member.last_name || '',
+            proxy: proxyUser._id,
+          });
+          await botUser.save();
+          debug(`✅ 创建新 BotUser: ${member.id}`);
+        }
+        await Group.updateOne(
+          { _id: ctx.currentGroup!._id },
+          { $addToSet: { botUsers: botUser._id } },
+        );
+        debug(`✅ 新成员 ${member.id} 已写入群组 botUsers`);
+      } catch (error) {
+        debug('写入 botUsers 失败:', error);
+      }
+
       debug(`Processing member: ${username} (ID: ${member.id})`);
       debug('Bot groupVerify:', ctx.currentBot.groupVerify);
       debug('Bot groupWelcome:', ctx.currentBot.groupWelcome);
