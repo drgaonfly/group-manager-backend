@@ -10,9 +10,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { buildInlineKeyboard } from '../bot/utils/buildInlineKeyboard';
 import { sendLotteryMessage } from '../bot/utils/sendLotteryMessage';
 import { findBotProxy } from '../bot/services/findBotProxy';
+import { convertToTelegramHtml } from '../bot/utils/telegramHtml';
 import { replaceLotteryVariables } from '../utils/replaceVariables';
+import { formatBeijingDate } from '../utils/formatBeijingDate';
 import { RequestCustom } from 'user';
-
 // 生成短唯一码
 const generateCode = () => uuidv4().replace(/-/g, '').slice(0, 10);
 
@@ -306,6 +307,56 @@ export const drawLottery = async (req: Request, res: Response) => {
   lottery.status = 'completed';
   lottery.drawnAt = new Date();
   await lottery.save();
+
+  // 构建中奖名单
+  const winnerList = winners
+    .map((w) => {
+      const name = w.firstName || w.username || `用户${w.telegramId}`;
+      const prizeText = `${w.prizeValue}积分`;
+      return `🎁 <a href="tg://user?id=${w.telegramId}">${name}</a> - ${w.prizeName}(${prizeText})`;
+    })
+    .join('\n');
+
+  // 发送开奖通知到群组
+  try {
+    const bot = await Bot.findById(lottery.bot);
+    const targetGroup = await Group.findById(lottery.group);
+
+    if (bot && targetGroup) {
+      const telegramBot = setupBot(bot.token);
+      const openTime = formatBeijingDate(new Date());
+
+      const drawResultContent = replaceLotteryVariables(
+        lottery.drawResultContent,
+        lottery,
+        {
+          joinNum: participants.length,
+          winnerList,
+          openTime,
+          currentBot: `@${bot.userName}`,
+        },
+      );
+
+      const message =
+        convertToTelegramHtml(drawResultContent) ||
+        `🎊 【${lottery.title}】开奖啦！\n\n参与人数：${participants.length}人\n\n中奖名单：\n${winnerList}`;
+
+      const keyboard = buildInlineKeyboard(lottery.drawResultButtons || []);
+
+      await sendLotteryMessage(
+        telegramBot,
+        targetGroup.id,
+        message,
+        keyboard,
+        lottery.media,
+        lottery.mediaType,
+        lottery.drawResultPin,
+      );
+    }
+  } catch (notifyErr) {
+    console.error('后台手动开奖发送通知失败:', notifyErr);
+    // 通知失败不影响开奖结果，继续返回成功
+  }
 
   res.json({
     message: '开奖成功',
