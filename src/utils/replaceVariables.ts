@@ -158,7 +158,7 @@ export const replaceLotteryVariables = (
     .replace(/\{joinNum\}/g, escapeHtml(String(options.joinNum || 0)))
     .replace(/\{currentTime\}/g, escapeHtml(beijingTime))
     .replace(/\{currentBot\}/g, escapeHtml(options.currentBot || ''))
-    .replace(/\{winnerList\}/g, escapeHtml(options.winnerList || ''))
+    .replace(/\{winnerList\}/g, options.winnerList || '')
     .replace(/\{openTime\}/g, escapeHtml(options.openTime || ''))
     .replace(/\{nickname\}/g, escapeHtml(options.nickname || ''))
     .replace(/\{userId\}/g, escapeHtml(String(options.userId || '')))
