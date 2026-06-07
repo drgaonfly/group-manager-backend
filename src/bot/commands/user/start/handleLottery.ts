@@ -87,6 +87,9 @@ export const handleJoinLottery = async (
     message = replaceLotteryVariables(message, lottery, {
       joinNum: participantCount,
       currentBot: `@${bot?.userName}`,
+      nickname: [botUser.firstName, botUser.lastName].filter(Boolean).join(' '),
+      userId: Number(botUser.id),
+      userName: botUser.userName ? `@${botUser.userName}` : '',
     });
   }
 

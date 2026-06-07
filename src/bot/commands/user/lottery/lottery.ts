@@ -158,11 +158,16 @@ async function executeDraw(ctx: MyContext, lottery: any) {
 
   // 发送开奖通知
   const openTime = formatBeijingDate(new Date());
-  const drawResultContent = lottery.drawResultContent
-    .replace(/{lotteryTitle}/g, lottery.title)
-    .replace(/{winnerList}/g, winnerList)
-    .replace(/{joinNum}/g, String(participants.length))
-    .replace(/{openTime}/g, openTime);
+  const drawResultContent = replaceLotteryVariables(
+    lottery.drawResultContent,
+    lottery,
+    {
+      joinNum: participants.length,
+      winnerList,
+      openTime,
+      currentBot: `@${ctx.currentBot.userName}`,
+    },
+  );
 
   const drawResultMsg = await ctx.reply(
     convertToTelegramHtml(drawResultContent) ||
@@ -239,17 +244,21 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
 
     // 如果已参与，直接返回参与信息
     if (existingParticipant) {
-      // 构建奖品列表和参与信息
-      const goodsList = lottery.prizes
-        .map((p, i) => {
-          const valueText = `${p.value}`;
-          return `${i + 1}. ${p.name} - ${valueText} x${p.quantity}份`;
-        })
-        .join('\n');
-
-      const notifyContent = (lottery.notifyContent || '您已参与该抽奖活动')
-        .replace(/{lotteryTitle}/g, lottery.title)
-        .replace(/{goodsList}/g, goodsList);
+      const notifyContent = replaceLotteryVariables(
+        lottery.notifyContent || '您已参与该抽奖活动',
+        lottery,
+        {
+          joinNum: await LotteryParticipant.countDocuments({
+            lottery: lottery._id,
+          }),
+          currentBot: `@${ctx.currentBot.userName}`,
+          nickname: [ctx.from?.first_name, ctx.from?.last_name]
+            .filter(Boolean)
+            .join(' '),
+          userId: ctx.from?.id,
+          userName: ctx.from?.username ? `@${ctx.from.username}` : '',
+        },
+      );
 
       await ctx.reply(convertToTelegramHtml(notifyContent), {
         parse_mode: 'HTML',
