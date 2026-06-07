@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import CheckinRule from '../models/checkInRule';
+import CheckinHistory from '../models/checkinHistory';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from 'user';
 import { isProxy } from '../middlewares/authMiddleware';
@@ -12,6 +13,10 @@ const buildQuery = async (
 
   if (queryParams.botId) {
     query.bot = queryParams.botId;
+  }
+
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
   }
 
   if (queryParams.type) {
@@ -39,6 +44,7 @@ const getCheckinRules = handleAsync(
     const checkinRules = await CheckinRule.find(query)
       .populate('bot', 'botName userName')
       .populate('proxy', 'name')
+      .populate('group', 'id title username')
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)
@@ -59,7 +65,8 @@ const getCheckinRules = handleAsync(
 const getCheckinRuleById = handleAsync(async (req: Request, res: Response) => {
   const checkinRule = await CheckinRule.findById(req.params.id)
     .populate('bot', 'botName userName')
-    .populate('proxy', 'name');
+    .populate('proxy', 'name')
+    .populate('group', 'id title username');
 
   if (!checkinRule) {
     res.status(404);
@@ -74,6 +81,22 @@ const getCheckinRuleById = handleAsync(async (req: Request, res: Response) => {
 
 const addCheckinRule = handleAsync(
   async (req: RequestCustom, res: Response) => {
+    const { bot, group } = req.body;
+
+    // 检查是否已存在相同 bot + group 的规则（group 为空时检查默认规则）
+    const query: any = { bot };
+    if (group) {
+      query.group = group;
+    } else {
+      query.group = { $in: [null, undefined] };
+    }
+    const existing = await CheckinRule.findOne(query);
+    if (existing) {
+      const label = group ? '该群组' : '该机器人（默认）';
+      res.status(400);
+      throw new Error(`${label}已有签到规则，请编辑现有规则`);
+    }
+
     const checkinRule = new CheckinRule({
       ...req.body,
       proxy: req.user._id,
@@ -81,9 +104,14 @@ const addCheckinRule = handleAsync(
 
     await checkinRule.save();
 
+    const populated = await CheckinRule.findById(checkinRule._id)
+      .populate('bot', 'botName userName')
+      .populate('proxy', 'name')
+      .populate('group', 'id title username');
+
     res.status(201).json({
       success: true,
-      data: checkinRule,
+      data: populated,
     });
   },
 );
@@ -96,7 +124,8 @@ const updateCheckinRule = handleAsync(async (req: Request, res: Response) => {
     runValidators: true,
   })
     .populate('bot', 'botName userName')
-    .populate('proxy', 'name');
+    .populate('proxy', 'name')
+    .populate('group', 'id title username');
 
   if (!checkinRule) {
     res.status(404);
@@ -143,6 +172,49 @@ const deleteMultipleCheckinRules = handleAsync(
   },
 );
 
+/**
+ * 获取签到记录（按 botId 或 groupId 过滤）
+ */
+const getCheckinHistories = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const {
+      current = '1',
+      pageSize = '20',
+      botId,
+      groupId,
+      botUserId,
+    } = req.query;
+
+    const query: any = {};
+
+    if (isProxy(req.user) && !req.user.isAdmin) {
+      query.proxy = req.user._id;
+    }
+
+    if (botId) query.bot = botId;
+    if (groupId) query.group = groupId;
+    if (botUserId) query.botUser = botUserId;
+
+    const histories = await CheckinHistory.find(query)
+      .populate('botUser', 'userName firstName lastName')
+      .populate('group', 'id title username')
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .exec();
+
+    const total = await CheckinHistory.countDocuments(query).exec();
+
+    res.json({
+      success: true,
+      data: histories,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
+
 export {
   getCheckinRules,
   getCheckinRuleById,
@@ -150,4 +222,5 @@ export {
   updateCheckinRule,
   deleteCheckinRule,
   deleteMultipleCheckinRules,
+  getCheckinHistories,
 };

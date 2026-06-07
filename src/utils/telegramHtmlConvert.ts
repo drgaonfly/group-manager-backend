@@ -18,8 +18,9 @@ export interface MessageVariables {
 /**
  * 替换消息中的变量占位符
  * 支持多种格式（不区分大小写）：
- * - {username} / {userName} - 用户的 @username（无用户名时降级为昵称）
- * - {memberName} / {member} / {nickname}
+ * - {username} / {userName} - 用户的 @username（无用户名时为空）
+ * - {member} - 带 t.me 链接的昵称（无 username 时降级为纯昵称）
+ * - {memberName} / {nickname} - 用户昵称（纯文本）
  * - {userId}
  * - {userBalance}
  * - {groupTitle}
@@ -39,21 +40,29 @@ export function replaceMessageVariables(
     variables.username ||
     '';
 
-  // {userName} 替换为 @username（有用户名则带 @，否则降级用昵称）
+  // {userName} 替换为 @username，无用户名时为空字符串（不降级到昵称）
   const userNameValue = variables.username
     ? `@${variables.username.replace(/^@/, '')}`
-    : displayName;
+    : '';
 
   result = result
     .replace(/\{userName\}/gi, userNameValue)
     .replace(/\{username\}/gi, userNameValue);
 
-  // 替换成员名称（与上面一致，保证 {memberName}/{member}/{nickname} 为昵称）
-  if (variables.memberName) {
+  // {member} 替换为带 t.me 链接的昵称；无 username 时降级为纯昵称文本
+  const memberLinkValue = variables.username
+    ? `<a href="https://t.me/${variables.username.replace(
+        /^@/,
+        '',
+      )}">${displayName}</a>`
+    : displayName;
+
+  // 替换成员名称相关变量
+  if (displayName) {
     result = result
-      .replace(/\{memberName\}/gi, variables.memberName)
-      .replace(/\{member\}/gi, variables.memberName)
-      .replace(/\{nickname\}/gi, variables.memberName);
+      .replace(/\{member\}/gi, memberLinkValue)
+      .replace(/\{memberName\}/gi, displayName)
+      .replace(/\{nickname\}/gi, displayName);
   }
 
   // 替换用户ID

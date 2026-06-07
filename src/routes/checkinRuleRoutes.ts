@@ -6,6 +6,7 @@ import {
   updateCheckinRule,
   deleteCheckinRule,
   deleteMultipleCheckinRules,
+  getCheckinHistories,
 } from '../controllers/checkinRuleController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -16,6 +17,8 @@ router
   .get(protect, checkPermission, getCheckinRules)
   .post(protect, checkPermission, addCheckinRule)
   .delete(protect, checkPermission, deleteMultipleCheckinRules);
+
+router.route('/histories').get(protect, checkPermission, getCheckinHistories);
 
 router
   .route('/:id')

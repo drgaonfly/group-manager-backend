@@ -42,11 +42,20 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
   debug('Checking checkin rules for message:', messageText);
 
   try {
-    // 获取机器人的签到规则（每个机器人只有一个规则）
-    const matchedRule = await CheckinRule.findOne({
+    // 优先匹配当前群组的专属规则，找不到再用 bot 级默认规则（group 为空）
+    let matchedRule = await CheckinRule.findOne({
       bot: botId,
+      group: groupId,
       isOnline: true,
     }).exec();
+
+    if (!matchedRule) {
+      matchedRule = await CheckinRule.findOne({
+        bot: botId,
+        group: { $in: [null, undefined] },
+        isOnline: true,
+      }).exec();
+    }
 
     if (!matchedRule) {
       return next();

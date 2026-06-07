@@ -1,6 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 import { IUser } from './user';
 import { IBot } from './bot';
+import { IGroup } from './group';
 
 // 签到类型
 export type CheckinRuleType =
@@ -16,6 +17,7 @@ export interface IStreakCycle {
 export interface ICheckinRule extends Document {
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
+  group?: mongoose.Schema.Types.ObjectId | IGroup; // 关联群组，可选；不填则作为 bot 级默认规则
   type: CheckinRuleType;
   reward: number; // 基础积分数量
   keywords: string[]; // 触发关键词
@@ -38,6 +40,12 @@ const checkinRuleSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
       required: true,
+    },
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: false,
+      default: null,
     },
     type: {
       type: String,
@@ -67,6 +75,10 @@ const checkinRuleSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// 每个群组只能有一条签到规则；group 为 null 时视为 bot 级默认规则，同样唯一
+// sparse: true 让 null 值不受唯一约束（允许同一 bot 有且仅有一条默认规则需在应用层保证）
+checkinRuleSchema.index({ bot: 1, group: 1 }, { unique: true, sparse: true });
 
 const CheckinRule = mongoose.model<ICheckinRule>(
   'CheckinRule',
