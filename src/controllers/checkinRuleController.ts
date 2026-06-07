@@ -215,6 +215,27 @@ const getCheckinHistories = handleAsync(
   },
 );
 
+/**
+ * 删除单条签到记录
+ */
+const deleteCheckinHistory = handleAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const history = await CheckinHistory.findByIdAndDelete(id);
+
+    if (!history) {
+      res.status(404);
+      throw new Error('签到记录不存在');
+    }
+
+    res.json({
+      success: true,
+      message: '签到记录删除成功',
+    });
+  },
+);
+
 export {
   getCheckinRules,
   getCheckinRuleById,
@@ -223,4 +244,5 @@ export {
   deleteCheckinRule,
   deleteMultipleCheckinRules,
   getCheckinHistories,
+  deleteCheckinHistory,
 };
