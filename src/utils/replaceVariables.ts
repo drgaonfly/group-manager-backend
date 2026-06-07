@@ -14,7 +14,7 @@ export interface MemberInfo {
  * - {member} - 带链接的成员名
  * - {userId} - 用户ID
  * - {nickname} - 用户昵称（firstName + lastName）
- * - {userName} - 优先昵称，没有再用 @username
+ * - {userName} - 用户的 @username（无用户名时为空）
  * - {username} - 兼容旧格式，同 {userName}
  * - {memberName} - 兼容旧格式，同 {nickname}
  * - {userBalance} - 用户积分余额
@@ -75,8 +75,8 @@ export const replaceVariables = (
       .filter(Boolean)
       .join(' ');
 
-    // 显示名：优先昵称，没有再用 @username
-    const userName = nickname || (member.username ? `@${member.username}` : '');
+    // @username：有用户名则带 @ 前缀，否则为空
+    const userName = member.username ? `@${member.username}` : '';
 
     result = result
       .replace(/\{member\}/g, memberLink)

@@ -18,7 +18,7 @@ export interface MessageVariables {
 /**
  * 替换消息中的变量占位符
  * 支持多种格式（不区分大小写）：
- * - {username} / {userName}
+ * - {username} / {userName} - 用户的 @username（无用户名时降级为昵称）
  * - {memberName} / {member} / {nickname}
  * - {userId}
  * - {userBalance}
@@ -39,10 +39,14 @@ export function replaceMessageVariables(
     variables.username ||
     '';
 
-  // 替换用户名/昵称（{userName}、{username} 均优先显示昵称）
+  // {userName} 替换为 @username（有用户名则带 @，否则降级用昵称）
+  const userNameValue = variables.username
+    ? `@${variables.username.replace(/^@/, '')}`
+    : displayName;
+
   result = result
-    .replace(/\{userName\}/gi, displayName)
-    .replace(/\{username\}/gi, displayName);
+    .replace(/\{userName\}/gi, userNameValue)
+    .replace(/\{username\}/gi, userNameValue);
 
   // 替换成员名称（与上面一致，保证 {memberName}/{member}/{nickname} 为昵称）
   if (variables.memberName) {
