@@ -83,9 +83,9 @@ export class SpeechStatisticService {
     // 获取群组信息并关联 Bot
     const group = await Group.findById(groupId).populate('bot');
 
-    const bot = await Bot.findById(group.bot);
-
     if (!group) return null;
+
+    const bot = await Bot.findById(group.bot);
 
     // 从 Bot 获取动态配置，使用默认值兜底
     const minSpeechLength = bot?.minSpeechLength ?? 1;

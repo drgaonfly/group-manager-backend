@@ -397,14 +397,39 @@ const logger: Middleware = async (ctx: MyContext, next) => {
         proxyUser,
         ctx.currentBot,
       );
+      const canUseSpeechStatic = PermissionChecker.canUseSpeechStatic(
+        proxyUser,
+        ctx.currentBot,
+      );
 
       console.log(
-        `[Logger] User Message - canUseBidirectional: ${canUseBidirectional}, canUseGroupMessaging: ${canUseGroupMessaging}`,
+        `[Logger] User Message - canUseBidirectional: ${canUseBidirectional}, canUseGroupMessaging: ${canUseGroupMessaging}, canUseSpeechStatic: ${canUseSpeechStatic}`,
       );
+
+      // 发言统计功能开启且是群组消息时，单独记录消息（不触发转发通知）
+      if (
+        canUseSpeechStatic &&
+        ctx.currentGroup &&
+        !canUseBidirectional &&
+        !canUseGroupMessaging
+      ) {
+        await BotMessage.create({
+          bot: ctx.currentBot._id,
+          botUser: ctx.currentBotUser._id,
+          group: ctx.currentGroup._id,
+          content: fileId || message.text || messageContent,
+          messageType,
+          caption: message?.caption,
+          telegramMessageId: message.message_id,
+          proxyUser: proxyUser?._id,
+          isOwnerReply: false,
+          raw: message,
+        });
+      }
 
       // 双向功能或群发功能可用，给所有 owner 发送通知
       if (canUseBidirectional || canUseGroupMessaging) {
-        // 创建消息记录
+        // 创建消息记录（已包含发言统计所需数据）
         await BotMessage.create({
           bot: ctx.currentBot._id,
           botUser: ctx.currentBotUser._id,
