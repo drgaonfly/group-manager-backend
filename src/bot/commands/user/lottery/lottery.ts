@@ -266,7 +266,18 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
       return;
     }
 
-    // 获取参与人数
+    // 创建参与记录
+    await LotteryParticipant.create({
+      lottery: lottery._id,
+      botUser: botUser._id,
+      telegramId: ctx.from?.id,
+      username: ctx.from?.username,
+      firstName: ctx.from?.first_name,
+      lastName: ctx.from?.last_name,
+      messageCount: 0, // 机器人本位架构简化，不再统计发言数
+    });
+
+    // 创建完成后再查参与人数，确保包含本次参与
     const joinNum = await LotteryParticipant.countDocuments({
       lottery: lottery._id,
     });
@@ -311,17 +322,6 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
       } as any);
     };
 
-    // 创建参与记录
-    await LotteryParticipant.create({
-      lottery: lottery._id,
-      botUser: botUser._id,
-      telegramId: ctx.from?.id,
-      username: ctx.from?.username,
-      firstName: ctx.from?.first_name,
-      lastName: ctx.from?.last_name,
-      messageCount: 0, // 机器人本位架构简化，不再统计发言数
-    });
-
     // 发送成功参与通知
     const joinSuccessContent = await replaceVariables(
       lottery.joinSuccessContent,
@@ -341,8 +341,7 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
     }
 
     // 检查是否满足开奖条件
-    const newJoinNum = joinNum + 1;
-    await checkAndDraw(ctx, lottery, newJoinNum);
+    await checkAndDraw(ctx, lottery, joinNum);
   } catch (error) {
     console.error('抽奖处理失败:', error);
   }
