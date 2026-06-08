@@ -1,6 +1,7 @@
 import { MyContext } from '../../../types';
 import Lottery from '../../../../models/lottery';
 import LotteryParticipant from '../../../../models/lotteryParticipant';
+import BotUserConfig from '../../../../models/botUserConfig';
 import { buildInlineKeyboard } from '../../../utils/buildInlineKeyboard';
 import { convertToTelegramHtml } from '../../../utils/telegramHtml';
 import { replaceLotteryVariables } from '../../../../utils/replaceVariables';
@@ -35,6 +36,23 @@ export const handleJoinLottery = async (
   if (existing) {
     await ctx.reply('⚠️ 您已经参与过这个抽奖活动了');
     return true;
+  }
+
+  // 积分门槛检查与扣积分
+  if (lottery.joinCostPoints && lottery.joinCostPoints > 0) {
+    const userConfig = await BotUserConfig.findOne({
+      bot: lottery.bot,
+      botUser: botUser._id,
+    });
+    if (!userConfig || userConfig.usdt_balance < lottery.joinCostPoints) {
+      const current = userConfig?.usdt_balance ?? 0;
+      await ctx.reply(
+        `❌ 积分不足，参与此抽奖需要 ${lottery.joinCostPoints} 积分，您当前积分为 ${current}`,
+      );
+      return true;
+    }
+    userConfig.usdt_balance -= lottery.joinCostPoints;
+    await userConfig.save();
   }
 
   // 机器人本位架构简化：跳过复杂的频道和发言数检查
