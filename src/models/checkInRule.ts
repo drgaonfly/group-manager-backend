@@ -27,6 +27,9 @@ export interface ICheckinRule extends Document {
   enableStreakBonus: boolean; // 是否启用连续签到奖励
   streakCycles: IStreakCycle[]; // 连续签到周期配置
   maxMultiplier: number; // 最高倍率限制
+  // 阅后即焚（0 = 不删除）
+  deleteAfterSeconds: number; // 签到成功消息自动删除延迟（秒）
+  deleteUserMsgAfterSeconds: number; // 用户签到触发消息自动删除延迟（秒）
 }
 
 const checkinRuleSchema = new mongoose.Schema(
@@ -72,6 +75,9 @@ const checkinRuleSchema = new mongoose.Schema(
       ],
     },
     maxMultiplier: { type: Number, default: 4, min: 1 },
+    // 阅后即焚（0 = 不删除）
+    deleteAfterSeconds: { type: Number, default: 0, min: 0 },
+    deleteUserMsgAfterSeconds: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );

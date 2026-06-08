@@ -21,6 +21,24 @@ import createDebug from 'debug';
 
 const debug = createDebug('bot:checkin');
 
+// 延迟删除消息（与 replyRuleHandler 保持一致）
+const scheduleMessageDeletion = (
+  ctx: MyContext,
+  chatId: number,
+  messageId: number,
+  delaySeconds: number,
+): void => {
+  if (delaySeconds <= 0) return;
+  setTimeout(async () => {
+    try {
+      await ctx.api.deleteMessage(chatId, messageId);
+      debug(`Deleted message ${messageId} after ${delaySeconds}s`);
+    } catch (error) {
+      debug('Error deleting message:', error);
+    }
+  }, delaySeconds * 1000);
+};
+
 const checkinCommand = new Composer<MyContext>();
 
 checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
@@ -214,11 +232,26 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     successMessage = replaceMessageVariables(successMessage, variables);
 
     debug('About to send success message:', successMessage);
-    await ctx.reply(successMessage, {
+    const sentMessage = await ctx.reply(successMessage, {
       parse_mode: 'HTML',
       link_preview_options: { is_disabled: true },
     });
     debug('Success message sent successfully');
+
+    // 阅后即焚：延迟删除签到成功消息
+    scheduleMessageDeletion(
+      ctx,
+      ctx.chat!.id,
+      sentMessage.message_id,
+      matchedRule.deleteAfterSeconds,
+    );
+    // 延迟删除用户触发消息
+    scheduleMessageDeletion(
+      ctx,
+      ctx.chat!.id,
+      ctx.message.message_id,
+      matchedRule.deleteUserMsgAfterSeconds,
+    );
 
     debug(
       `User ${botUserId} checked in successfully. Reward: ${actualReward} (base: ${matchedRule.reward} × ${multiplier}), Streak: ${streakDays} days, New usdt_balance: ${botUserConfig.usdt_balance}`,
