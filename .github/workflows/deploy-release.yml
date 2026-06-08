@@ -1,42 +1,32 @@
-name: Auto Deploy to Release Server
-on:
-  push:
-    branches:
-      - main
-jobs:
+# name: Auto Deploy to Release Server
+# on:
+#   push:
+#     branches:
+#       - main
+# jobs:
 
-  build:
-    name: deploy-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: send telegram message on push
-        uses: appleboy/telegram-action@master
-        with:
-          to: 8290668918
-          token: 8797183750:AAEZfyjR0whGj2V_fhxnWRGLFvIYVnMb9Xk
-          message: |
-            ${{ github.actor }} created commit:
-            Commit message: ${{ github.event.commits[0].message }}
-            
-            Repository: ${{ github.repository }}
-            
-            See changes: https://github.com/${{ github.repository }}/commit/${{github.sha}}
-      - name: deploy to release server
-        if: github.ref == 'refs/heads/main'
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 82.180.137.15
-          username: root
-          password: ${{ secrets.PASSWORD }}
-          port: 22
-          script: |
-            cd /www/wwwroot/group-manager-backend.2040fc.xyz/manager-backend &&
-            git pull --rebase origin main &&
-            /www/server/nodejs/v20.16.0/bin/pnpm install &&
-            git checkout -f . &&
-            npm run build &&
-            pm2 reload ecosystem.config.js &&
-            pm2 restart manager-bot &&
-            pm2 save
+#   build:
+#     name: deploy-release
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: send telegram message on push
+#         uses: appleboy/telegram-action@master
+#       - name: deploy to release server
+#         if: github.ref == 'refs/heads/main'
+#         uses: appleboy/ssh-action@v1.0.3
+#         with:
+#           host: 82.180.137.15
+#           username: root
+#           password: ${{ secrets.PASSWORD }}
+#           port: 22
+#           script: |
+#             cd /www/wwwroot/group-manager-backend.2040fc.xyz/manager-backend &&
+#             git pull --rebase origin main &&
+#             /www/server/nodejs/v20.16.0/bin/pnpm install &&
+#             git checkout -f . &&
+#             npm run build &&
+#             pm2 reload ecosystem.config.js &&
+#             pm2 restart manager-bot &&
+#             pm2 save
 
 

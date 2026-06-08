@@ -1,33 +1,33 @@
-name: Auto Deploy to Client Server
+# name: Auto Deploy to Client Server
+
+# # on:
+# #   push:
+# #     branches:
+# #       - main
 
 # on:
-#   push:
-#     branches:
-#       - main
+#   workflow_dispatch:  # 手动触发配置
+#     inputs:
+#       branch:
+#         description: '需要部署的分支'
+#         required: true
+#         default: 'main'
 
-on:
-  workflow_dispatch:  # 手动触发配置
-    inputs:
-      branch:
-        description: '需要部署的分支'
-        required: true
-        default: 'main'
-
-jobs:
-  deploy-client:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to client server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 82.180.137.15
-          username: root
-          password: ${{ secrets.PASSWORD }}
-          port: 22
-          script: |
-            cd /www/wwwroot/manager-backend.2040fc.xyz/manager-backend-remote &&
-            git pull --rebase origin ${GITHUB_REF##*/} &&
-            /www/server/nodejs/v20.16.0/bin/pnpm install &&
-            git checkout -f . &&
-            npm run build &&
-            npm run copy-to-remote
+# jobs:
+#   deploy-client:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Deploy to client server
+#         uses: appleboy/ssh-action@v1.0.3
+#         with:
+#           host: 82.180.137.15
+#           username: root
+#           password: ${{ secrets.PASSWORD }}
+#           port: 22
+#           script: |
+#             cd /www/wwwroot/manager-backend.2040fc.xyz/manager-backend-remote &&
+#             git pull --rebase origin ${GITHUB_REF##*/} &&
+#             /www/server/nodejs/v20.16.0/bin/pnpm install &&
+#             git checkout -f . &&
+#             npm run build &&
+#             npm run copy-to-remote
