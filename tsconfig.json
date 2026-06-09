@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES6",
+    "skipLibCheck": true,
     "module": "CommonJS",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -13,9 +14,7 @@
     "strict": false,
     "outDir": "dist",
     "baseUrl": ".",
-    "paths": {
-      "*": ["node_modules/*", "src/types/*"]
-    },
+    "paths": {},
     "types": ["express"],
     "typeRoots": ["./node_modules/@types", "./src/types"]
   },
