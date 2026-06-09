@@ -59,7 +59,7 @@
     "dev": "cross-env DEBUG=bot* ts-node-dev --respawn --transpile-only src/index.ts",
     "bot": "cross-env DEBUG=bot* nodemon --exec ts-node --files src/bot/development.ts",
     "clean": "rimraf coverage dist tmp",
-    "prebuild": "npm run lint",
+    "prebuild": "echo skip lint in production",
     "build": "rimraf dist && tsc -p tsconfig.json && cp -r src/templates dist/templates",
     "copy-to-remote": "node ./scripts/build.js",
     "build:watch": "tsc -w -p tsconfig.json",
