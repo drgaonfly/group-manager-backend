@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Menu, { IMenu } from '../models/menu';
 import checkMenu from '../utils/checkMenu';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import Permission from '../models/permission';
 
 const getChildren = async (parentId: string | null): Promise<IMenu[]> => {

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import Customer from '../models/customer';
 import { generateToken, generateRefreshToken } from '../utils/generateToken';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { IdGen } from '../utils/idGen';
 import crypto from 'crypto';
 import User from '../models/user';

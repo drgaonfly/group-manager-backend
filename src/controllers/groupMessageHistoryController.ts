@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import GroupMessageHistory from '../models/groupMessageHistory';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 
 const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};

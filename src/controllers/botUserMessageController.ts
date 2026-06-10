@@ -5,7 +5,7 @@ import Bot from '../models/bot';
 import BotUser from '../models/botUser';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { isProxy } from '../middlewares/authMiddleware';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 
 // 构建查询参数
 const buildQuery = async (

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import AdRemoval from '../models/adRemoval';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 
 /**
  * 获取所有去除广告规则（支持分页和过滤）

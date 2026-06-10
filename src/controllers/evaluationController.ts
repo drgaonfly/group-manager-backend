@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import Evaluation from '../models/evaluation';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { setupBot } from '../bot/botSetup';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import Teacher from '../models/teacher';

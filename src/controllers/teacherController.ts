@@ -4,7 +4,7 @@ import Evaluation from '../models/evaluation';
 import BotUser from '../models/botUser';
 import Teacher from '../models/teacher';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { getUserByUsername } from '../utils/getBotUserByUsername';
 import Bot from '../models/bot';
 

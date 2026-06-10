@@ -8,7 +8,7 @@ import Bot from '../models/bot';
 import { generateToken, generateRefreshToken } from '../utils/generateToken';
 import handleAsync from '../utils/handleAsync';
 import { exclude } from '../utils/handleData';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { redis } from '../utils/redis';
 import { v4 as uuidv4 } from 'uuid';
 

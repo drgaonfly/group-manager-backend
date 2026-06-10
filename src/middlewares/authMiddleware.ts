@@ -5,7 +5,7 @@ import User, { IUser } from '../models/user';
 import { IPermission } from '../models/permission';
 import handleAsync from '../utils/handleAsync';
 import { ROLES } from '../constants';
-import { RequestCustom } from '/user';
+import { RequestCustom } from '../types/user';
 import { IDataPermission } from '../models/dataPermission';
 import { IRole } from '../models/role';
 import Customer from '../models/customer';

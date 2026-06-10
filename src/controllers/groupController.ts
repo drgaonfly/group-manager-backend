@@ -4,7 +4,7 @@ import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import { isProxy } from '../middlewares/authMiddleware';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { setupBot } from '../bot/botSetup';
 import { extractChatUsername } from '../utils/extractChannelTarget';
 

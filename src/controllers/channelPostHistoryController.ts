@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import ChannelPostHistory from '../models/channelPostHistory';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
 
 const buildQuery = async (

@@ -4,7 +4,7 @@ import User from '../models/user';
 import Bot from '../models/bot';
 import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
 
 const buildQuery = async (

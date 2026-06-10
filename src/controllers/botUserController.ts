@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import BotUser from '../models/botUser'; // 引入botUser模型
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
 
 // Build query based on query parameters

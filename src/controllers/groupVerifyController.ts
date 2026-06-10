@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import handleAsync from '../utils/handleAsync';
 import GroupVerify from '../models/groupVerify';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 
 /**
  * 获取群验证列表

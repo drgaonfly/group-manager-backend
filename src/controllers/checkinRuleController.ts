@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import CheckinRule from '../models/checkInRule';
 import CheckinHistory from '../models/checkinHistory';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
 
 const buildQuery = async (

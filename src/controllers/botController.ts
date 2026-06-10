@@ -6,7 +6,7 @@ import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 import BotUser from '../models/botUser';
 import { printWebhookInfo, setupBot } from '../bot/botSetup';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
 import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';

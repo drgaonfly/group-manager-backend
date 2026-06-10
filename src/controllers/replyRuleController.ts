@@ -4,7 +4,7 @@ import handleAsync from '../utils/handleAsync';
 import Bot from '../models/bot';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { isProxy } from '../middlewares/authMiddleware';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 
 const buildQuery = async (
   queryParams: any,

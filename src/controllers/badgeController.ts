@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Badge from '../models/badge';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
 
 const buildQuery = async (

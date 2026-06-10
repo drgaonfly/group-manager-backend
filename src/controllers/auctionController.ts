@@ -12,7 +12,7 @@ import {
 } from '../utils/replaceVariables';
 import { convertToTelegramHtml } from '../bot/utils/telegramHtml';
 import { InlineKeyboard } from 'grammy';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 
 // 获取竞拍列表
 export const getAuctions = async (req: Request, res: Response) => {

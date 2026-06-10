@@ -5,7 +5,7 @@ import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import bcrypt from 'bcrypt';
 import { exclude } from '../utils/handleData';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import crypto from 'crypto';
 import { isEmployee, isProxy } from '../middlewares/authMiddleware';
 import Role from '../models/role';

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Customer, { ICustomer } from '../models/customer';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 import { IdGen } from '../utils/idGen';
 import User from '../models/user';
 import { isProxy } from '../middlewares/authMiddleware';

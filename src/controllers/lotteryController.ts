@@ -13,7 +13,7 @@ import { findBotProxy } from '../bot/services/findBotProxy';
 import { convertToTelegramHtml } from '../bot/utils/telegramHtml';
 import { replaceLotteryVariables } from '../utils/replaceVariables';
 import { formatBeijingDate } from '../utils/formatBeijingDate';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 // 生成短唯一码
 const generateCode = () => uuidv4().replace(/-/g, '').slice(0, 10);
 
