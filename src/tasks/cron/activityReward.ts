@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import Bot from '../../models/bot';
 import BotMessage from '../../models/botMessage';
 import BotUserConfig from '../../models/botUserConfig';
