@@ -56,6 +56,12 @@ export interface IBot extends Document {
   minSpeechLength: number; // 发言必须超过n个字符才进入统计
   allowPureNumberSpeech: boolean; // 是否允许纯数字发言才进入统计
 
+  // 活跃奖励
+  enableActivityReward: boolean; // 是否启用活跃奖励
+  activityRewardCycle: 'daily' | 'weekly' | 'monthly'; // 统计周期
+  activityRewardTopN: number; // 奖励前 N 名
+  activityRewardPoints: number; // 每人奖励积分数
+
   // 自由键盘
   canFreeKeyboard?: boolean;
   keyboards: IKeyboard[];
@@ -312,6 +318,26 @@ const botSchema = new mongoose.Schema(
     allowPureNumberSpeech: {
       type: Boolean,
       default: false,
+    },
+    // 活跃奖励配置
+    enableActivityReward: {
+      type: Boolean,
+      default: false,
+    },
+    activityRewardCycle: {
+      type: String,
+      enum: ['daily', 'weekly', 'monthly'],
+      default: 'daily',
+    },
+    activityRewardTopN: {
+      type: Number,
+      default: 3,
+      min: 1,
+    },
+    activityRewardPoints: {
+      type: Number,
+      default: 10,
+      min: 1,
     },
     balanceClearedAt: {
       type: Date,
