@@ -1,4 +1,4 @@
-import Bot from '../../models/bot';
+import SpeechConfig from '../../models/speechConfig';
 import BotMessage from '../../models/botMessage';
 import BotUserConfig from '../../models/botUserConfig';
 
@@ -15,7 +15,6 @@ function getPreviousCycleRange(cycle: Cycle): {
   const now = new Date();
 
   if (cycle === 'daily') {
-    // 昨天 00:00:00 ~ 23:59:59
     const endDate = new Date(now);
     endDate.setHours(0, 0, 0, 0);
     const startDate = new Date(endDate);
@@ -25,7 +24,6 @@ function getPreviousCycleRange(cycle: Cycle): {
   }
 
   if (cycle === 'weekly') {
-    // 上周一 00:00:00 ~ 本周一 00:00:00
     const thisMondayStart = new Date(now);
     const day = thisMondayStart.getDay();
     const diff = day === 0 ? -6 : 1 - day;
@@ -41,7 +39,7 @@ function getPreviousCycleRange(cycle: Cycle): {
     return { startDate, endDate, label };
   }
 
-  // monthly：上个自然月
+  // monthly
   const endDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
   const startDate = new Date(
     now.getFullYear(),
@@ -61,39 +59,35 @@ function getPreviousCycleRange(cycle: Cycle): {
 
 /**
  * 判断当前时间是否是指定周期的结算时间点
- * daily：每天 00:00
- * weekly：每周一 00:00
- * monthly：每月 1 日 00:00
  */
 function isSettlementTime(cycle: Cycle): boolean {
   const now = new Date();
   const hour = now.getHours();
   const minute = now.getMinutes();
 
-  // 只在 00:00（整点）执行，给 cron 任务 ±1 分钟的窗口
   if (hour !== 0 || minute > 1) return false;
 
   if (cycle === 'daily') return true;
-  if (cycle === 'weekly') return now.getDay() === 1; // 周一
-  if (cycle === 'monthly') return now.getDate() === 1; // 每月 1 日
+  if (cycle === 'weekly') return now.getDay() === 1;
+  if (cycle === 'monthly') return now.getDate() === 1;
   return false;
 }
 
 /**
- * 为指定 bot 查出活跃排行榜，并给前 N 名发放积分
+ * 为单条 SpeechConfig 执行排行榜奖励结算
  */
-async function rewardActiveSpeakers(bot: any): Promise<void> {
+async function settleActivityReward(config: any): Promise<void> {
   const {
-    _id: botId,
-    botName,
+    bot,
     activityRewardCycle,
     activityRewardTopN,
     activityRewardPoints,
     minSpeechLength,
     allowPureNumberSpeech,
-    groups,
-  } = bot;
+  } = config;
 
+  const botId = bot._id || bot;
+  const botName = bot.botName || botId;
   const cycle: Cycle = activityRewardCycle || 'daily';
   const topN: number = activityRewardTopN || 3;
   const rewardPoints: number = activityRewardPoints || 10;
@@ -104,15 +98,9 @@ async function rewardActiveSpeakers(bot: any): Promise<void> {
     `[activityReward] 机器人「${botName}」(${botId}) — 周期:${cycle}, 结算区间:${label}, 前${topN}名, 每人${rewardPoints}积分`,
   );
 
-  if (!groups || groups.length === 0) {
-    console.log(`[activityReward] 机器人「${botName}」无关联群组，跳过`);
-    return;
-  }
-
-  // 构建消息过滤条件（沿用 speechStatisticService 的逻辑）
+  // 构建消息过滤条件
   const matchConditions: any = {
     bot: botId,
-    group: { $in: groups },
     createdAt: { $gte: startDate, $lt: endDate },
     $expr: {
       $gte: [
@@ -143,7 +131,6 @@ async function rewardActiveSpeakers(bot: any): Promise<void> {
 
   const winnerIds = topSpeakers.map((s) => s._id).filter(Boolean);
 
-  // 批量为获奖用户增加积分
   const result = await BotUserConfig.updateMany(
     { bot: botId, botUser: { $in: winnerIds } },
     { $inc: { usdt_balance: rewardPoints } },
@@ -153,7 +140,6 @@ async function rewardActiveSpeakers(bot: any): Promise<void> {
     `[activityReward] 机器人「${botName}」奖励完成 — 共 ${result.modifiedCount} 名用户各获得 ${rewardPoints} 积分`,
   );
 
-  // 打印获奖名单（便于日志追溯）
   topSpeakers.forEach((s, idx) => {
     console.log(
       `  #${idx + 1} botUser:${s._id}  发言数:${
@@ -164,38 +150,41 @@ async function rewardActiveSpeakers(bot: any): Promise<void> {
 }
 
 /**
- * 主入口：扫描所有启用了活跃奖励且处于结算时间点的机器人并发放奖励
+ * 主入口：扫描所有启用了排行榜奖励且处于结算时间点的 SpeechConfig
  */
 export async function processActivityRewards(): Promise<void> {
   try {
     console.log('[activityReward] 开始检查活跃奖励任务...');
 
-    // 查询所有已启用活跃奖励的在线机器人
-    const bots = await Bot.find({
-      canSpeechStatic: true,
+    const configs = await SpeechConfig.find({
       enableActivityReward: true,
-      isOnline: true,
-    }).select(
-      '_id botName activityRewardCycle activityRewardTopN activityRewardPoints minSpeechLength allowPureNumberSpeech groups',
-    );
+    }).populate('bot', '_id botName isOnline');
 
     console.log(
-      `[activityReward] 共找到 ${bots.length} 个启用活跃奖励的机器人`,
+      `[activityReward] 共找到 ${configs.length} 个启用排行榜奖励的配置`,
     );
 
-    for (const bot of bots) {
-      const cycle: Cycle = (bot as any).activityRewardCycle || 'daily';
+    for (const config of configs) {
+      const botDoc = config.bot as any;
+
+      // 跳过离线机器人
+      if (botDoc?.isOnline === false) {
+        continue;
+      }
+
+      const cycle: Cycle = config.activityRewardCycle || 'daily';
 
       if (!isSettlementTime(cycle)) {
-        // 当前时间不是该周期的结算点，跳过
         continue;
       }
 
       try {
-        await rewardActiveSpeakers(bot);
+        await settleActivityReward(config);
       } catch (err) {
         console.error(
-          `[activityReward] 机器人「${(bot as any).botName}」奖励处理失败:`,
+          `[activityReward] 机器人「${
+            botDoc?.botName || config.bot
+          }」奖励处理失败:`,
           err,
         );
       }
