@@ -435,7 +435,7 @@ const deleteBot = handleAsync(async (req: RequestCustom, res: Response) => {
   }
 
   // 2. 检查机器人是否属于当前用户
-  if (bot.user.toString() !== req.user._id.toString()) {
+  if (bot.user.toString() !== req.user._id.toString() || !req.user.isAdmin) {
     res.status(403);
     throw new Error('您无权删除此机器人');
   }
