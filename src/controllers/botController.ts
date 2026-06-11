@@ -435,10 +435,10 @@ const deleteBot = handleAsync(async (req: RequestCustom, res: Response) => {
   }
 
   // 2. 检查机器人是否属于当前用户
-  if (bot.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
-    res.status(403);
-    throw new Error('您无权删除此机器人');
-  }
+  // if (bot.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+  //   res.status(403);
+  //   throw new Error('您无权删除此机器人');
+  // }
 
   // 3. 删除机器人（当前机器人数量从数据库动态查询，无需更新）
   await Bot.findByIdAndDelete(id);
@@ -469,14 +469,14 @@ const deleteMultipleBots = handleAsync(
     }
 
     // 2. 检查所有机器人是否都属于当前用户
-    const unauthorizedBots = bots.filter(
-      (bot) => bot.user.toString() !== req.user._id.toString(),
-    );
+    // const unauthorizedBots = bots.filter(
+    //   (bot) => bot.user.toString() !== req.user._id.toString(),
+    // );
 
-    if (unauthorizedBots.length > 0 && !req.user.isAdmin) {
-      res.status(403);
-      throw new Error('您无权删除部分机器人');
-    }
+    // if (unauthorizedBots.length > 0 && !req.user.isAdmin) {
+    //   res.status(403);
+    //   throw new Error('您无权删除部分机器人');
+    // }
 
     // 3. 删除机器人（当前机器人数量从数据库动态查询，无需更新）
     const botIds = bots.map((bot) => bot._id);
