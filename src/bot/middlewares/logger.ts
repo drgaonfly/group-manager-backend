@@ -8,6 +8,7 @@ import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
 import { searchTeachers } from '../../services/teacherService';
+import { tryGrantSpeechReward } from '../../services/speechRewardService';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:replaceMentions');
@@ -425,6 +426,11 @@ const logger: Middleware = async (ctx: MyContext, next) => {
           isOwnerReply: false,
           raw: message,
         });
+
+        // 即时发言奖励（fire-and-forget，不阻塞消息处理）
+        tryGrantSpeechReward(ctx.currentBot._id, ctx.currentBotUser._id).catch(
+          (err) => console.error('[speechReward] 即时奖励失败:', err),
+        );
       }
 
       // 双向功能或群发功能可用，给所有 owner 发送通知
@@ -442,6 +448,14 @@ const logger: Middleware = async (ctx: MyContext, next) => {
           isOwnerReply: false, // 客户消息，不是拥有者回复
           raw: message, // 原始消息体
         });
+
+        // 即时发言奖励（群组消息时触发）
+        if (canUseSpeechStatic && ctx.currentGroup) {
+          tryGrantSpeechReward(
+            ctx.currentBot._id,
+            ctx.currentBotUser._id,
+          ).catch((err) => console.error('[speechReward] 即时奖励失败:', err));
+        }
 
         try {
           const bot = setupBot(ctx.currentBot.token);

@@ -216,6 +216,26 @@ module.exports = {
       retain: 7,
       compress: true,
     },
+    // 活跃奖励结算任务 - 每天 00:00 执行，按周期为各机器人发放积分
+    {
+      name: 'manager-activity-reward',
+      script: 'dist/tasks/activityReward.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      error_file: './logs/activity-reward-error.log',
+      out_file: './logs/activity-reward-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
   ],
 };
 
