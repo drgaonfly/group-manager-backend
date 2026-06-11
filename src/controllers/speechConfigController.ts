@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import SpeechConfig from '../models/speechConfig';
 import handleAsync from '../utils/handleAsync';
-import { RequestCustom } from 'user';
+import { RequestCustom } from '../types/user';
 
 /**
  * GET /api/speech-configs?botId=xxx
