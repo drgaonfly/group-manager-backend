@@ -44,6 +44,7 @@ export const getGroupUserRankingList = async (
   groupBotUserIds?: (string | Types.ObjectId)[],
   page: number = 1,
   limit: number = ITEMS_PER_PAGE,
+  overrideBalance?: number, // 签到后传入最新积分，避免读到 ctx 中的旧缓存值
 ): Promise<{ text: string; hasNext: boolean; total: number }> => {
   if (!groupBotUserIds || groupBotUserIds.length === 0) {
     return { text: '暂无榜单数据', hasNext: false, total: 0 };
@@ -89,7 +90,8 @@ export const getGroupUserRankingList = async (
     })
     .join('\n');
 
-  const usdtBalance = ctx.currentBotUserConfig?.usdt_balance ?? 0;
+  const usdtBalance =
+    overrideBalance ?? ctx.currentBotUserConfig?.usdt_balance ?? 0;
 
   const ranking = await getGroupUserRanking(
     botId,

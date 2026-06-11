@@ -266,6 +266,23 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
       return;
     }
 
+    // 积分门槛检查与扣积分
+    if (lottery.joinCostPoints && lottery.joinCostPoints > 0) {
+      const userConfig = await BotUserConfig.findOne({
+        bot: currentBot._id,
+        botUser: botUser._id,
+      });
+      if (!userConfig || userConfig.usdt_balance < lottery.joinCostPoints) {
+        const current = userConfig?.usdt_balance ?? 0;
+        await ctx.reply(
+          `❌ 积分不足，参与此抽奖需要 ${lottery.joinCostPoints} 积分，您当前积分为 ${current}`,
+        );
+        return;
+      }
+      userConfig.usdt_balance -= lottery.joinCostPoints;
+      await userConfig.save();
+    }
+
     // 创建参与记录
     await LotteryParticipant.create({
       lottery: lottery._id,

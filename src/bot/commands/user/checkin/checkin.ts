@@ -100,7 +100,20 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
         'daily',
       );
       if (alreadyCheckedIn) {
-        await ctx.reply('今天已经签到过了，明天再来吧！');
+        const alreadyMsg = await ctx.reply('今天已经签到过了，明天再来吧！');
+        // 阅后即焚：删除提示消息和用户触发消息
+        scheduleMessageDeletion(
+          ctx,
+          ctx.chat!.id,
+          alreadyMsg.message_id,
+          matchedRule.deleteAfterSeconds,
+        );
+        scheduleMessageDeletion(
+          ctx,
+          ctx.chat!.id,
+          ctx.message.message_id,
+          matchedRule.deleteUserMsgAfterSeconds,
+        );
         return;
       }
     }
@@ -108,8 +121,14 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
     // 检查是否是首次签到
     const isFirstTime = await isFirstTimeCheckin(botUserId);
 
-    // 如果规则是初次签到，但用户已经签到过，跳过
+    // 如果规则是初次签到，但用户已经签到过，跳过（仍需删除用户触发消息）
     if (matchedRule.type === 'first' && !isFirstTime) {
+      scheduleMessageDeletion(
+        ctx,
+        ctx.chat!.id,
+        ctx.message.message_id,
+        matchedRule.deleteUserMsgAfterSeconds,
+      );
       return next();
     }
 
@@ -206,6 +225,9 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       ctx,
       botId,
       ctx.currentGroup?.botUsers as any,
+      1,
+      undefined,
+      botUserConfig.usdt_balance, // 传入签到后的最新积分，避免读到 ctx 中的旧缓存值
     );
     const userBalanceRankingList = rankingListData.text;
 

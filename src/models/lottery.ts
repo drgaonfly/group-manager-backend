@@ -43,6 +43,7 @@ export interface ILottery extends Document {
   scheduledDrawTime?: Date; // 定时开奖时间
   prizes: ILotteryPrize[];
   fixedWinners: IFixedWinner[]; // 内定中奖用户
+  joinCostPoints: number; // 参与抽奖消耗积分（0 = 免费参与）
   isOnline: boolean;
   status: 'pending' | 'ongoing' | 'completed'; // 待开始、进行中、已完成
   drawnAt?: Date; // 开奖时间
@@ -203,6 +204,11 @@ const lotterySchema = new mongoose.Schema(
     fixedWinners: {
       type: [fixedWinnerSchema],
       default: [],
+    },
+    joinCostPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     isOnline: {
       type: Boolean,
