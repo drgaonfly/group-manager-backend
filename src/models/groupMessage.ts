@@ -26,7 +26,7 @@ export const menuSchema = new mongoose.Schema({
 export interface IGroupMessage extends Document {
   bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的机器
   content: string; // 消息内容
-  groups?: mongoose.Schema.Types.ObjectId[] | IGroup[]; // 关联的群（如果是群消息）
+  group?: mongoose.Schema.Types.ObjectId | IGroup; // 关联的群（单群配置）
   proxy: mongoose.Types.ObjectId | IUser;
   medias: string[]; // 媒体文件（图片、视频等）
   intervalTime: number; // 间隔时间（单位：分钟）
@@ -62,7 +62,11 @@ const groupMessageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: false,
+    },
     intervalTime: {
       type: Number,
       required: false,

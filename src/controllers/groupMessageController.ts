@@ -72,7 +72,7 @@ const getGroupMessages = handleAsync(
         populate: { path: 'groups' },
       })
       .populate('proxy')
-      .populate('groups')
+      .populate('group')
       .sort('-createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)
@@ -113,7 +113,7 @@ const getGroupMessages = handleAsync(
 const getGroupMessageById = handleAsync(async (req: Request, res: Response) => {
   const groupMessage = await GroupMessage.findById(req.params.id)
     .populate('bot')
-    .populate('groups')
+    .populate('group')
     .exec();
 
   if (!groupMessage) {
