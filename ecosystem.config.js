@@ -73,27 +73,27 @@ module.exports = {
       compress: true,
     },
     // 频道定时发送任务
-    {
-      name: 'manager-task-channel-post',
-      script: 'dist/tasks/checkChannelPost.js',
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true, // 常驻进程，PM2 保障自动重启
-      watch: false,
-      env: {
-        NODE_ENV: 'production',
-        DEBUG: 'bot*',
-      },
-      // 日志配置
-      error_file: './logs/channel-post-error.log',
-      out_file: './logs/channel-post-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true,
-      // 日志切割配置（保留7天）
-      max_size: '10M',
-      retain: 7,
-      compress: true,
-    },
+    // {
+    //   name: 'manager-task-channel-post',
+    //   script: 'dist/tasks/checkChannelPost.js',
+    //   instances: 1,
+    //   exec_mode: 'fork',
+    //   autorestart: true, // 常驻进程，PM2 保障自动重启
+    //   watch: false,
+    //   env: {
+    //     NODE_ENV: 'production',
+    //     DEBUG: 'bot*',
+    //   },
+    //   // 日志配置
+    //   error_file: './logs/channel-post-error.log',
+    //   out_file: './logs/channel-post-out.log',
+    //   log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    //   merge_logs: true,
+    //   // 日志切割配置（保留7天）
+    //   max_size: '10M',
+    //   retain: 7,
+    //   compress: true,
+    // },
     // 群组成员名称变更任务
     // {
     //   name: 'manager-chatmember-name-updated',
