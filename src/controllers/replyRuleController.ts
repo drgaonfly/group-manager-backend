@@ -29,6 +29,10 @@ const buildQuery = async (
     }
   }
 
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
+  }
+
   if (queryParams.keyword) {
     query.keyword = { $regex: queryParams.keyword, $options: 'i' };
   }
@@ -62,6 +66,7 @@ const getReplyRules = handleAsync(async (req: RequestCustom, res: Response) => {
   const replyRules = await ReplyRule.find(query)
     .populate('bot')
     .populate('proxy')
+    .populate('group', 'title username id')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
     .limit(+pageSize)
@@ -95,6 +100,7 @@ const getReplyRules = handleAsync(async (req: RequestCustom, res: Response) => {
 const getReplyRuleById = handleAsync(async (req: Request, res: Response) => {
   const replyRule = await ReplyRule.findById(req.params.id)
     .populate('bot')
+    .populate('group', 'title username id')
     .exec();
 
   if (!replyRule) {
@@ -135,11 +141,14 @@ const addReplyRule = handleAsync(async (req: RequestCustom, res: Response) => {
 
 const updateReplyRule = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { medias, ...otherFields } = req.body;
+  const { medias, group, ...otherFields } = req.body;
 
-  const updates: any = {
-    ...otherFields,
-  };
+  const updates: any = { ...otherFields };
+
+  // group 必填，有值才允许更新
+  if (group) {
+    updates.group = group;
+  }
 
   if (medias !== undefined && Array.isArray(medias)) {
     updates.medias = medias.filter(

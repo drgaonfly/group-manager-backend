@@ -82,13 +82,20 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
   debug('Checking reply rules for message:', messageText);
 
   try {
-    // 查找匹配的回复规则
+    // 必须在群组内才触发（私聊没有 currentGroup，直接跳过）
+    const currentGroupId = ctx.currentGroup?._id?.toString();
+    if (!currentGroupId) {
+      return next();
+    }
+
+    // 只查询当前群组的在线规则，利用索引 { bot, group, isOnline }
     const replyRules = await ReplyRule.find({
       bot: botId,
+      group: ctx.currentGroup!._id,
       isOnline: true,
     }).exec();
 
-    // 查找第一个匹配的规则
+    // 查找第一个关键词匹配的规则
     const matchedRule = replyRules.find((rule) =>
       rule.keyword.some((kw) => isKeywordMatch(kw, messageText)),
     );

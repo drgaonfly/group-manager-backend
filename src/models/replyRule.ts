@@ -33,6 +33,7 @@ export const replyRuleMenuSchema = new mongoose.Schema({
 export interface IReplyRule extends Document {
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
+  group: mongoose.Schema.Types.ObjectId; // 必须指定群组，只在该群触发
   keyword: string[];
   content: string;
   medias: string[];
@@ -57,6 +58,11 @@ const replyRuleSchema = new mongoose.Schema(
     bot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
+      required: true,
+    },
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
       required: true,
     },
     keyword: {
@@ -103,7 +109,7 @@ const replyRuleSchema = new mongoose.Schema(
   },
 );
 
-replyRuleSchema.index({ bot: 1, isOnline: 1 });
+replyRuleSchema.index({ bot: 1, group: 1, isOnline: 1 });
 replyRuleSchema.index({ bot: 1, keyword: 1 });
 replyRuleSchema.index({ proxy: 1, createdAt: -1 });
 
