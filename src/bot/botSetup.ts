@@ -1,4 +1,5 @@
 import { Bot, GrammyError, HttpError, session } from 'grammy';
+import { autoRetry } from '@grammyjs/auto-retry';
 import logger from './middlewares/logger';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
@@ -120,72 +121,24 @@ export const setupBot = (token: string) => {
     }
   });
 
-  // 带重试的 setMyCommands，处理 429 限流和网络超时
-  const setCommandsWithRetry = async (
-    commands: typeof privateCommandsList,
-    scope: { type: string },
-    label: string,
-    maxRetries = 5,
-  ) => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await bot.api.setMyCommands(commands, { scope: scope as any });
-        log(`${label}已设置成功`);
-        return;
-      } catch (error) {
-        const isLastAttempt = attempt >= maxRetries;
-
-        if (error instanceof GrammyError && error.error_code === 429) {
-          const retryAfter = (error.parameters as any)?.retry_after ?? 30;
-          if (isLastAttempt) {
-            log(`设置${label}时触发限流，已达最大重试次数，放弃。`);
-            return;
-          }
-          log(
-            `设置${label}时触发限流，${retryAfter}秒后重试 (${attempt}/${maxRetries})...`,
-          );
-          await new Promise((resolve) =>
-            setTimeout(resolve, retryAfter * 1000),
-          );
-        } else if (error instanceof HttpError) {
-          // 网络超时等连接问题，等待后重试
-          const waitSec = attempt * 5;
-          if (isLastAttempt) {
-            log(`设置${label}时网络错误，已达最大重试次数，放弃:`, error);
-            return;
-          }
-          log(
-            `设置${label}时网络错误，${waitSec}秒后重试 (${attempt}/${maxRetries})...`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
-        } else {
-          log(`设置${label}时发生错误:`, error);
-          return;
-        }
-      }
-    }
-  };
-
-  // 顺序执行，避免并发打出多个请求
-  const setupCommands = async () => {
-    await setCommandsWithRetry(
-      privateCommandsList,
-      { type: 'all_private_chats' },
-      '私聊命令',
-    );
-    if (groupCommandsList.length > 0) {
-      await setCommandsWithRetry(
-        groupCommandsList,
-        { type: 'all_group_chats' },
-        '群组命令',
-      );
-    }
-  };
-
-  // 随机延迟 0-5 秒，分散多实例启动时的请求
-  setTimeout(setupCommands, Math.floor(Math.random() * 5000));
-
+  bot.api.config.use(autoRetry());
   bot.api.config.use(hydrateFiles(token));
+
+  // 设置私聊命令
+  bot.api
+    .setMyCommands(privateCommandsList, {
+      scope: { type: 'all_private_chats' },
+    })
+    .then(() => log('私聊命令已设置成功'))
+    .catch((error) => log('设置私聊命令时发生错误:', error));
+
+  // 设置群组命令
+  if (groupCommandsList.length > 0) {
+    bot.api
+      .setMyCommands(groupCommandsList, { scope: { type: 'all_group_chats' } })
+      .then(() => log('群组命令已设置成功'))
+      .catch((error) => log('设置群组命令时发生错误:', error));
+  }
 
   return bot;
 };

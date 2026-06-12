@@ -81,6 +81,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
+    "@grammyjs/auto-retry": "^2.0.2",
     "@grammyjs/conversations": "^2.1.0",
     "@grammyjs/files": "^1.1.1",
     "@grammyjs/storage-redis": "^2.5.1",
