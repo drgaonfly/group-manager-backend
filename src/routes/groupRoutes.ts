@@ -3,6 +3,7 @@ import {
   getGroups,
   getGroupById,
   getGroupsByBotId,
+  checkBotAdmin,
   addGroup,
   updateGroup,
   deleteGroup,
@@ -24,6 +25,9 @@ router.post('/verify-required-channel', verifyRequiredChannel);
 
 // 获取指定机器人的群组列表 - 必须在 /:id 路由之前
 router.get('/getByBotId', protect, checkPermission, getGroupsByBotId);
+
+// 检查机器人在指定群组中是否为管理员 - 必须在 /:id 路由之前
+router.get('/checkBotAdmin', protect, checkPermission, checkBotAdmin);
 
 router
   .route('/:id')

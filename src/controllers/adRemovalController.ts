@@ -27,6 +27,7 @@ export const getAdRemovals = handleAsync(
     }
 
     const adRemovals = await AdRemoval.find(query)
+      .populate('group', 'title username')
       .sort('-priority -createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)
@@ -49,7 +50,10 @@ export const getAdRemovals = handleAsync(
  */
 export const getAdRemovalById = handleAsync(
   async (req: Request, res: Response) => {
-    const adRemoval = await AdRemoval.findById(req.params.id);
+    const adRemoval = await AdRemoval.findById(req.params.id).populate(
+      'group',
+      'title username',
+    );
 
     if (!adRemoval) {
       res.status(404);
@@ -98,7 +102,7 @@ export const updateAdRemoval = handleAsync(
         new: true,
         runValidators: true,
       },
-    );
+    ).populate('group', 'title username');
 
     if (!adRemoval) {
       res.status(404);

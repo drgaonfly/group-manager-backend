@@ -8,6 +8,7 @@ import { IGroupWelcome } from './groupWelcome';
 import { IGroupVerify } from './groupVerify';
 
 export interface IBot extends Document {
+  id: string; // Telegram Bot 数字 ID（字符串存储，来自 getMe）
   token: string;
   botName: string;
   remark?: string;

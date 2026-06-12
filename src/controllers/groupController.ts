@@ -273,10 +273,113 @@ const getGroupsByBotId = handleAsync(async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * 检查机器人在指定群组列表中是否为管理员
+ * GET /groups/checkBotAdmin?botId=xxx&groupIds=id1,id2,...
+ *
+ * 返回：
+ * {
+ *   success: true,
+ *   data: [
+ *     { groupId: "...", isAdmin: true },
+ *     { groupId: "...", isAdmin: false, reason: "..." },
+ *   ]
+ * }
+ */
+const checkBotAdmin = handleAsync(async (req: Request, res: Response) => {
+  const { botId, groupIds } = req.query;
+
+  if (!botId) {
+    res.status(400);
+    throw new Error('缺少 botId 参数');
+  }
+
+  if (!groupIds) {
+    res.status(400);
+    throw new Error('缺少 groupIds 参数');
+  }
+
+  const bot = await Bot.findById(botId).select('token id').exec();
+  if (!bot) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  if (!bot.token) {
+    res.status(400);
+    throw new Error('机器人 Token 无效');
+  }
+
+  // groupIds 支持逗号分隔字符串或数组
+  const idList: string[] = Array.isArray(groupIds)
+    ? (groupIds as string[])
+    : (groupIds as string).split(',').filter(Boolean);
+
+  // 批量查询群组的 Telegram chatId（存在 group.id 字段）
+  const groups = await Group.find({ _id: { $in: idList } })
+    .select('_id id title')
+    .exec();
+
+  const telegramBot = setupBot(bot.token);
+
+  // 并行检查每个群组的管理员状态
+  const results = await Promise.all(
+    groups.map(async (group) => {
+      const groupId = group._id.toString();
+      const chatId = group.id; // Telegram 数字 chat id
+
+      if (!chatId) {
+        return {
+          groupId,
+          isAdmin: false,
+          reason: '群组无效（缺少 Telegram chatId）',
+        };
+      }
+
+      try {
+        // bot.id 是字符串形式的 Telegram Bot 数字 ID
+        const botTelegramId = Number(bot.id);
+        if (!botTelegramId) {
+          return {
+            groupId,
+            isAdmin: false,
+            reason: '机器人 Telegram ID 未记录，请重新保存机器人信息',
+          };
+        }
+
+        const member = await telegramBot.api.getChatMember(
+          chatId,
+          botTelegramId,
+        );
+        const isAdmin =
+          member.status === 'administrator' || member.status === 'creator';
+
+        return {
+          groupId,
+          isAdmin,
+          ...(!isAdmin && { reason: '机器人不是该群组的管理员' }),
+        };
+      } catch (err: any) {
+        return {
+          groupId,
+          isAdmin: false,
+          reason: err?.description || err?.message || '检查失败',
+        };
+      }
+    }),
+  );
+
+  res.json({
+    success: true,
+    data: results,
+  });
+});
+
 export {
   getGroups,
   getGroupById,
   getGroupsByBotId,
+  checkBotAdmin,
   addGroup,
   updateGroup,
   deleteGroup,

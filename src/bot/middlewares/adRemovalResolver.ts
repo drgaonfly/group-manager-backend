@@ -8,6 +8,10 @@ const debug = createDebug('bot:adRemovalResolver');
 
 /**
  * 去除广告核心处理中间件
+ *
+ * keywords 结构：string[][]
+ *   - 外层每个元素是 textarea 的一行，行间是 OR 关系（命中任意一行即触发）
+ *   - 行内多个词用空格分隔，mode='any' 时行内 OR，mode='all' 时行内 AND
  */
 export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
   // 仅处理文本消息或带说明的媒体消息
@@ -37,15 +41,31 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
 
     const chatId = ctx.chat?.id;
     const messageId = ctx.message?.message_id;
-    if (!chatId || !messageId) return await next();
+    const userId = ctx.from?.id;
+    if (!chatId || !messageId || !userId) return await next();
+
+    // ctx.currentGroup 由 groupResolver 提前挂载，直接取其 MongoDB _id
+    const currentGroupId = ctx.currentGroup?._id?.toString();
 
     for (const config of configs) {
-      const { keywords, mode, ignoreAdmin } = config;
+      const { keywords, mode, ignoreAdmin, punishment } = config;
+
+      // 群组范围过滤：group 有值时只在指定群生效，null/undefined 则全部群生效
+      if (config.group) {
+        if (!currentGroupId) {
+          // 无法确定当前群组，跳过有范围限制的规则
+          continue;
+        }
+        if (config.group.toString() !== currentGroupId) {
+          debug('Rule skipped (group not in scope):', config.name);
+          continue;
+        }
+      }
 
       // 检查管理员豁免
       if (ignoreAdmin) {
         try {
-          const member = await ctx.getChatMember(ctx.from?.id || 0);
+          const member = await ctx.getChatMember(userId);
           if (
             member.status === 'administrator' ||
             member.status === 'creator'
@@ -53,9 +73,9 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
             debug(
               'Admin exempted by rule:',
               config.name,
-              ctx.from?.username || ctx.from?.id,
+              ctx.from?.username || userId,
             );
-            continue; // 跳过此规则，继续检查下一个规则
+            continue;
           }
         } catch (error) {
           debug('Failed to get chat member status for exemption:', error);
@@ -64,39 +84,84 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
 
       if (!keywords || keywords.length === 0) continue;
 
-      let isHit = false;
-      if (mode === 'all') {
-        isHit = keywords.every((kw) => {
-          if (kw.isFuzzy) return text.includes(kw.content);
-          return text === kw.content;
-        });
-      } else {
-        isHit = keywords.some((kw) => {
-          if (kw.isFuzzy) return text.includes(kw.content);
-          return text === kw.content;
-        });
+      // 匹配逻辑：行间 OR，行内由 mode 控制（any=OR / all=AND）
+      const isHit = keywords.some((lineWords) => {
+        if (!lineWords || lineWords.length === 0) return false;
+        if (mode === 'all') {
+          return lineWords.every((word) => text.includes(word));
+        }
+        return lineWords.some((word) => text.includes(word));
+      });
+
+      if (!isHit) continue;
+
+      debug('Ad detected by rule:', config.name);
+
+      // 1. 删除消息
+      try {
+        await ctx.api.deleteMessage(chatId, messageId);
+      } catch (err: any) {
+        debug('Failed to delete ad message:', err.message);
+        if (
+          err.description?.includes("can't delete") ||
+          err.description?.includes('admin privileges')
+        ) {
+          await ctx
+            .reply(
+              `🛡️ **去除广告通知**\n检测到违规内容，但机器人目前**权限不足**，无法自动清理。\n请确保已授予机器人"**删除消息**"的管理员权限。`,
+            )
+            .catch(() => {});
+        }
       }
 
-      if (isHit) {
-        debug('Ad detected by rule:', config.name, 'Action: block');
+      // 2. 执行处罚
+      if (punishment?.type === 'kick') {
+        debug('Punishment: kick user', userId);
         try {
-          await ctx.api.deleteMessage(chatId, messageId);
+          await ctx.api.banChatMember(chatId, userId);
+          // 立即解封，相当于踢出（不永久封禁）
+          await ctx.api.unbanChatMember(chatId, userId);
         } catch (err: any) {
-          debug('Failed to delete ad message:', err.message);
-          // 如果是因为权限不足（403: Forbidden 或 400: Bad Request 且提示权限相关）
-          if (
-            err.description?.includes("can't delete") ||
-            err.description?.includes('admin privileges')
-          ) {
+          debug('Failed to kick user:', err.message);
+          if (err.description?.includes('admin privileges')) {
             await ctx
-              .reply(
-                `🛡️ **去除广告通知**\n检测到违规广告，但机器人目前**权限不足**，无法自动清理。\n请确保已授予机器人“**删除消息**”的管理员权限。`,
-              )
+              .reply(`🛡️ 检测到违规内容，但机器人**权限不足**，无法踢出用户。`)
               .catch(() => {});
           }
         }
-        return; // 命中即中止后续
+      } else if (punishment?.type === 'mute') {
+        const duration = punishment.muteDuration ?? 60; // 默认禁言 60 秒
+        const untilDate = Math.floor(Date.now() / 1000) + duration;
+        debug('Punishment: mute user', userId, 'for', duration, 'seconds');
+        try {
+          await ctx.api.restrictChatMember(
+            chatId,
+            userId,
+            {
+              can_send_messages: false,
+              can_send_audios: false,
+              can_send_documents: false,
+              can_send_photos: false,
+              can_send_videos: false,
+              can_send_video_notes: false,
+              can_send_voice_notes: false,
+              can_send_polls: false,
+              can_send_other_messages: false,
+              can_add_web_page_previews: false,
+            },
+            { until_date: untilDate },
+          );
+        } catch (err: any) {
+          debug('Failed to mute user:', err.message);
+          if (err.description?.includes('admin privileges')) {
+            await ctx
+              .reply(`🛡️ 检测到违规内容，但机器人**权限不足**，无法禁言用户。`)
+              .catch(() => {});
+          }
+        }
       }
+
+      return; // 命中即中止后续中间件
     }
 
     return await next();
