@@ -120,29 +120,61 @@ export const setupBot = (token: string) => {
     }
   });
 
-  // 设置私聊命令（只保留 /start）
-  bot.api
-    .setMyCommands(privateCommandsList, {
-      scope: { type: 'all_private_chats' },
-    })
-    .then(() => {
-      log('私聊命令已设置成功');
-    })
-    .catch((error) => {
-      log('设置私聊命令时发生错误:', error);
-    });
+  // 带重试的 setMyCommands，遇到 429 时等待 retry_after 秒后重试
+  const setCommandsWithRetry = async (
+    commands: typeof privateCommandsList,
+    scope: { type: string },
+    label: string,
+    maxRetries = 3,
+  ) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await bot.api.setMyCommands(commands, { scope: scope as any });
+        log(`${label}已设置成功`);
+        return;
+      } catch (error) {
+        if (
+          error instanceof GrammyError &&
+          error.error_code === 429 &&
+          attempt < maxRetries
+        ) {
+          const retryAfter = (error.parameters as any)?.retry_after ?? 30;
+          log(
+            `设置${label}时触发限流，${retryAfter}秒后重试 (${attempt}/${maxRetries})...`,
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, retryAfter * 1000),
+          );
+        } else {
+          log(`设置${label}时发生错误:`, error);
+          return;
+        }
+      }
+    }
+  };
 
-  // 不再设置群组命令
-  if (groupCommandsList.length > 0) {
-    bot.api
-      .setMyCommands(groupCommandsList, { scope: { type: 'all_group_chats' } })
-      .then(() => {
-        log('群组命令已设置成功');
-      })
-      .catch((error) => {
-        log('设置群组命令时发生错误:', error);
-      });
-  }
+  // 延迟执行命令设置，避免多实例同时启动时集中触发限流
+  setTimeout(
+    () => {
+      setCommandsWithRetry(
+        privateCommandsList,
+        { type: 'all_private_chats' },
+        '私聊命令',
+      );
+
+      if (groupCommandsList.length > 0) {
+        // 私聊与群组命令设置错开 2 秒，进一步降低并发请求压力
+        setTimeout(() => {
+          setCommandsWithRetry(
+            groupCommandsList,
+            { type: 'all_group_chats' },
+            '群组命令',
+          );
+        }, 2000);
+      }
+    },
+    Math.floor(Math.random() * 3000),
+  ); // 随机 0-3 秒初始延迟，分散多实例的请求
 
   bot.api.config.use(hydrateFiles(token));
 
