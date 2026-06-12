@@ -22,8 +22,7 @@ const botResolver: Middleware<MyContext> = async (ctx, next) => {
     token,
     isOnline: true,
   })
-    .populate('groupWelcome')
-    .populate('groupVerify');
+   
 
   if (!currentBot) {
     await ctx.reply('机器人已离线或不存在');
