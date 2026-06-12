@@ -120,12 +120,12 @@ export const setupBot = (token: string) => {
     }
   });
 
-  // 带重试的 setMyCommands，遇到 429 时等待 retry_after 秒后重试
+  // 带重试的 setMyCommands，处理 429 限流和网络超时
   const setCommandsWithRetry = async (
     commands: typeof privateCommandsList,
     scope: { type: string },
     label: string,
-    maxRetries = 3,
+    maxRetries = 5,
   ) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -133,18 +133,31 @@ export const setupBot = (token: string) => {
         log(`${label}已设置成功`);
         return;
       } catch (error) {
-        if (
-          error instanceof GrammyError &&
-          error.error_code === 429 &&
-          attempt < maxRetries
-        ) {
+        const isLastAttempt = attempt >= maxRetries;
+
+        if (error instanceof GrammyError && error.error_code === 429) {
           const retryAfter = (error.parameters as any)?.retry_after ?? 30;
+          if (isLastAttempt) {
+            log(`设置${label}时触发限流，已达最大重试次数，放弃。`);
+            return;
+          }
           log(
             `设置${label}时触发限流，${retryAfter}秒后重试 (${attempt}/${maxRetries})...`,
           );
           await new Promise((resolve) =>
             setTimeout(resolve, retryAfter * 1000),
           );
+        } else if (error instanceof HttpError) {
+          // 网络超时等连接问题，等待后重试
+          const waitSec = attempt * 5;
+          if (isLastAttempt) {
+            log(`设置${label}时网络错误，已达最大重试次数，放弃:`, error);
+            return;
+          }
+          log(
+            `设置${label}时网络错误，${waitSec}秒后重试 (${attempt}/${maxRetries})...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
         } else {
           log(`设置${label}时发生错误:`, error);
           return;
@@ -153,28 +166,24 @@ export const setupBot = (token: string) => {
     }
   };
 
-  // 延迟执行命令设置，避免多实例同时启动时集中触发限流
-  setTimeout(
-    () => {
-      setCommandsWithRetry(
-        privateCommandsList,
-        { type: 'all_private_chats' },
-        '私聊命令',
+  // 顺序执行，避免并发打出多个请求
+  const setupCommands = async () => {
+    await setCommandsWithRetry(
+      privateCommandsList,
+      { type: 'all_private_chats' },
+      '私聊命令',
+    );
+    if (groupCommandsList.length > 0) {
+      await setCommandsWithRetry(
+        groupCommandsList,
+        { type: 'all_group_chats' },
+        '群组命令',
       );
+    }
+  };
 
-      if (groupCommandsList.length > 0) {
-        // 私聊与群组命令设置错开 2 秒，进一步降低并发请求压力
-        setTimeout(() => {
-          setCommandsWithRetry(
-            groupCommandsList,
-            { type: 'all_group_chats' },
-            '群组命令',
-          );
-        }, 2000);
-      }
-    },
-    Math.floor(Math.random() * 3000),
-  ); // 随机 0-3 秒初始延迟，分散多实例的请求
+  // 随机延迟 0-5 秒，分散多实例启动时的请求
+  setTimeout(setupCommands, Math.floor(Math.random() * 5000));
 
   bot.api.config.use(hydrateFiles(token));
 
