@@ -1,11 +1,13 @@
 import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IUser } from './user';
+import { IGroup } from './group';
 
 export type SpeechRewardCycle = 'daily' | 'weekly' | 'monthly';
 
 export interface ISpeechConfig extends Document {
   bot: mongoose.Types.ObjectId | IBot;
+  group: mongoose.Types.ObjectId | IGroup; // 关联的群组（每群独立配置）
   proxy: mongoose.Types.ObjectId | IUser;
 
   // ── 基础统计 ──────────────────────────────────────────
@@ -34,7 +36,11 @@ const speechConfigSchema = new mongoose.Schema<ISpeechConfig>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
       required: true,
-      unique: true, // 每个 bot 只有一份配置
+    },
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: true,
     },
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -68,6 +74,10 @@ const speechConfigSchema = new mongoose.Schema<ISpeechConfig>(
   },
   { timestamps: true },
 );
+
+// 每个 bot+group 组合只有一份配置
+speechConfigSchema.index({ bot: 1, group: 1 }, { unique: true });
+speechConfigSchema.index({ bot: 1 });
 
 const SpeechConfig = mongoose.model<ISpeechConfig>(
   'SpeechConfig',

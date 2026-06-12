@@ -2,6 +2,7 @@ import Bot from '../models/bot';
 import BotMessage from '../models/botMessage';
 import BotUser from '../models/botUser';
 import Group from '../models/group';
+import SpeechConfig from '../models/speechConfig';
 
 export interface SpeechStatistic {
   botUserId: string;
@@ -80,16 +81,26 @@ export class SpeechStatisticService {
   ): Promise<GroupSpeechStatistics | null> {
     const { startDate, endDate, displayDate } = this.getDateRange(period, date);
 
-    // 获取群组信息并关联 Bot
-    const group = await Group.findById(groupId).populate('bot');
-
+    const group = await Group.findById(groupId);
     if (!group) return null;
 
-    const bot = await Bot.findById(group.bot);
+    // 优先从 SpeechConfig（群级配置）读取过滤参数，降级到 Bot 字段兜底
+    const speechConfig = await SpeechConfig.findOne({
+      bot: group.bot,
+      group: groupId,
+    }).lean();
 
-    // 从 Bot 获取动态配置，使用默认值兜底
-    const minSpeechLength = bot?.minSpeechLength ?? 1;
-    const allowPureNumberSpeech = bot?.allowPureNumberSpeech ?? false;
+    let minSpeechLength: number;
+    let allowPureNumberSpeech: boolean;
+
+    if (speechConfig) {
+      minSpeechLength = speechConfig.minSpeechLength ?? 1;
+      allowPureNumberSpeech = speechConfig.allowPureNumberSpeech ?? false;
+    } else {
+      const bot = await Bot.findById(group.bot);
+      minSpeechLength = bot?.minSpeechLength ?? 1;
+      allowPureNumberSpeech = bot?.allowPureNumberSpeech ?? false;
+    }
 
     // 构建匹配条件
     const matchConditions: any = {

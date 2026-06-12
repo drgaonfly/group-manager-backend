@@ -428,9 +428,11 @@ const logger: Middleware = async (ctx: MyContext, next) => {
         });
 
         // 即时发言奖励（fire-and-forget，不阻塞消息处理）
-        tryGrantSpeechReward(ctx.currentBot._id, ctx.currentBotUser._id).catch(
-          (err) => console.error('[speechReward] 即时奖励失败:', err),
-        );
+        tryGrantSpeechReward(
+          ctx.currentBot._id,
+          ctx.currentBotUser._id,
+          ctx.currentGroup?._id,
+        ).catch((err) => console.error('[speechReward] 即时奖励失败:', err));
       }
 
       // 双向功能或群发功能可用，给所有 owner 发送通知
@@ -454,6 +456,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
           tryGrantSpeechReward(
             ctx.currentBot._id,
             ctx.currentBotUser._id,
+            ctx.currentGroup._id,
           ).catch((err) => console.error('[speechReward] 即时奖励失败:', err));
         }
 

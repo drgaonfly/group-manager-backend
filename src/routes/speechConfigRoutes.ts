@@ -1,13 +1,24 @@
 import express, { Router } from 'express';
 import {
+  getSpeechConfigs,
   getSpeechConfig,
-  upsertSpeechConfig,
+  createSpeechConfig,
+  updateSpeechConfig,
+  deleteSpeechConfig,
 } from '../controllers/speechConfigController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
 const router: Router = express.Router();
 
-router.route('/').get(protect, checkPermission, getSpeechConfig);
-router.route('/:botId').put(protect, checkPermission, upsertSpeechConfig);
+router
+  .route('/')
+  .get(protect, checkPermission, getSpeechConfigs)
+  .post(protect, checkPermission, createSpeechConfig);
+
+router
+  .route('/:id')
+  .get(protect, checkPermission, getSpeechConfig)
+  .put(protect, checkPermission, updateSpeechConfig)
+  .delete(protect, checkPermission, deleteSpeechConfig);
 
 export default router;

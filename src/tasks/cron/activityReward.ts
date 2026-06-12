@@ -79,6 +79,7 @@ function isSettlementTime(cycle: Cycle): boolean {
 async function settleActivityReward(config: any): Promise<void> {
   const {
     bot,
+    group,
     activityRewardCycle,
     activityRewardTopN,
     activityRewardPoints,
@@ -88,6 +89,8 @@ async function settleActivityReward(config: any): Promise<void> {
 
   const botId = bot._id || bot;
   const botName = bot.botName || botId;
+  const groupId = group?._id || group;
+  const groupTitle = group?.title || groupId;
   const cycle: Cycle = activityRewardCycle || 'daily';
   const topN: number = activityRewardTopN || 3;
   const rewardPoints: number = activityRewardPoints || 10;
@@ -95,12 +98,13 @@ async function settleActivityReward(config: any): Promise<void> {
   const { startDate, endDate, label } = getPreviousCycleRange(cycle);
 
   console.log(
-    `[activityReward] 机器人「${botName}」(${botId}) — 周期:${cycle}, 结算区间:${label}, 前${topN}名, 每人${rewardPoints}积分`,
+    `[activityReward] 机器人「${botName}」群组「${groupTitle}」— 周期:${cycle}, 结算区间:${label}, 前${topN}名, 每人${rewardPoints}积分`,
   );
 
-  // 构建消息过滤条件
+  // 构建消息过滤条件（增加 group 过滤）
   const matchConditions: any = {
     bot: botId,
+    group: groupId,
     createdAt: { $gte: startDate, $lt: endDate },
     $expr: {
       $gte: [
@@ -124,7 +128,7 @@ async function settleActivityReward(config: any): Promise<void> {
 
   if (topSpeakers.length === 0) {
     console.log(
-      `[activityReward] 机器人「${botName}」本周期无有效发言，跳过奖励`,
+      `[activityReward] 机器人「${botName}」群组「${groupTitle}」本周期无有效发言，跳过奖励`,
     );
     return;
   }
@@ -137,7 +141,7 @@ async function settleActivityReward(config: any): Promise<void> {
   );
 
   console.log(
-    `[activityReward] 机器人「${botName}」奖励完成 — 共 ${result.modifiedCount} 名用户各获得 ${rewardPoints} 积分`,
+    `[activityReward] 机器人「${botName}」群组「${groupTitle}」奖励完成 — 共 ${result.modifiedCount} 名用户各获得 ${rewardPoints} 积分`,
   );
 
   topSpeakers.forEach((s, idx) => {
@@ -158,7 +162,9 @@ export async function processActivityRewards(): Promise<void> {
 
     const configs = await SpeechConfig.find({
       enableActivityReward: true,
-    }).populate('bot', '_id botName isOnline');
+    })
+      .populate('bot', '_id botName isOnline')
+      .populate('group', '_id title');
 
     console.log(
       `[activityReward] 共找到 ${configs.length} 个启用排行榜奖励的配置`,

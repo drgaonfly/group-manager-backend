@@ -42,14 +42,25 @@ function getPeriodStart(cycle: SpeechRewardCycle): Date {
  *    - 若 rewardedTimes >= maxTimes → 条件不满足，返回 null（不修改）
  * 2. 只有第一步成功（返回非 null）才给 BotUserConfig 加积分
  *
+ * @param botId   机器人 ID
+ * @param botUserId 用户 ID
+ * @param groupId 群组 ID（用于按群查配置）
  * @returns 实际发放的积分数（0 表示未发放）
  */
 export async function tryGrantSpeechReward(
   botId: any,
   botUserId: any,
+  groupId?: any,
 ): Promise<number> {
   try {
-    const config = await SpeechConfig.findOne({ bot: botId }).lean();
+    // 优先查群级配置，没有则降级到 bot 级配置（向后兼容）
+    let config = groupId
+      ? await SpeechConfig.findOne({ bot: botId, group: groupId }).lean()
+      : null;
+
+    if (!config) {
+      config = await SpeechConfig.findOne({ bot: botId }).lean();
+    }
 
     if (!config?.enableSpeechReward) {
       return 0;
