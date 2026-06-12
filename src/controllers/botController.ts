@@ -136,7 +136,6 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('clonedFrom')
     .populate('creator')
     .populate('channel_posts')
-    .populate('groupVerify')
     .populate({
       path: 'teachers',
       populate: {
@@ -355,7 +354,7 @@ const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
   const updatedBot = await Bot.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
-  }).populate('groupVerify');
+  });
 
   if (!updatedBot) {
     res.status(404);
@@ -1102,7 +1101,7 @@ const copyBotFeatureConfig = handleAsync(
 
     // 群欢迎/群验证已改为按群组配置，无需处理旧 bot 级别文档
 
-    const updatedBot = await Bot.findById(targetBotId).populate('groupVerify');
+    const updatedBot = await Bot.findById(targetBotId);
 
     const processedBot = await transformDocumentImage(updatedBot!, [
       'multi_image',

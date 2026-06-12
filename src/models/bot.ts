@@ -4,7 +4,6 @@ import { IBotUser } from './botUser';
 import { IGroup } from './group';
 import { IGroupMessage } from './groupMessage';
 import { IBotUserMessage } from './botUserMessage';
-import { IGroupVerify } from './groupVerify';
 
 export interface IBot extends Document {
   id: string; // Telegram Bot 数字 ID（字符串存储，来自 getMe）
@@ -81,7 +80,7 @@ export interface IBot extends Document {
 
   // 群验证
   canGroupVerify: boolean;
-  groupVerify?: IGroupVerify;
+  // groupVerify 已改为按群组独立配置，通过 /api/group-verifies?botId=... 查询
 
   // 报道群内成员昵称或用户名更新
   canReportMemberNameUpdated: boolean;
@@ -379,11 +378,6 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: false,
-    },
-    groupVerify: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'GroupVerify',
-      required: false,
     },
     canReportMemberNameUpdated: {
       type: Boolean,
