@@ -2,6 +2,8 @@ import mongoose, { Document } from 'mongoose';
 
 // 群欢迎接口定义
 export interface IGroupWelcome extends Document {
+  bot: mongoose.Schema.Types.ObjectId; // 关联机器人
+  group: mongoose.Schema.Types.ObjectId; // 关联群组（按群配置）
   contents: string[];
   caption?: string;
   medias: string[];
@@ -16,6 +18,16 @@ export interface IGroupWelcome extends Document {
 // 群欢迎 Schema
 const groupWelcomeSchema = new mongoose.Schema(
   {
+    bot: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Bot',
+      required: true,
+    },
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: true,
+    },
     contents: {
       type: [String],
       required: false,
@@ -58,6 +70,10 @@ const groupWelcomeSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+// 同一个 bot + group 只能有一条欢迎配置
+groupWelcomeSchema.index({ bot: 1, group: 1 }, { unique: true });
+groupWelcomeSchema.index({ bot: 1 });
 
 const GroupWelcome = mongoose.model<IGroupWelcome>(
   'GroupWelcome',

@@ -4,7 +4,6 @@ import { IBotUser } from './botUser';
 import { IGroup } from './group';
 import { IGroupMessage } from './groupMessage';
 import { IBotUserMessage } from './botUserMessage';
-import { IGroupWelcome } from './groupWelcome';
 import { IGroupVerify } from './groupVerify';
 
 export interface IBot extends Document {
@@ -75,7 +74,7 @@ export interface IBot extends Document {
 
   // 欢迎进群
   canGroupWelcome?: boolean;
-  groupWelcome?: IGroupWelcome;
+  // groupWelcome 已改为按群组独立配置，通过 /api/group-welcomes?botId=... 查询
 
   // 定时频道
   canOpenChannelPost: boolean;
@@ -370,11 +369,6 @@ const botSchema = new mongoose.Schema(
     canGroupWelcome: {
       type: Boolean,
       default: false,
-    },
-    groupWelcome: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'GroupWelcome',
-      required: false,
     },
     canOpenChannelPost: {
       type: Boolean,

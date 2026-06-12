@@ -3,6 +3,7 @@ import { InlineKeyboard } from 'grammy';
 import { sendGroupWelcomeMessage } from './sendGroupWelcomeMessage';
 import { findBotProxy } from '../bot/services/findBotProxy';
 import { PermissionChecker } from '../bot/utils/permissionChecker';
+import GroupWelcome from '../models/groupWelcome';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:group-verify');
@@ -127,11 +128,15 @@ export async function handleVerifyCallback(
           const username = ctx.from?.username
             ? `@${ctx.from.username}`
             : memberName;
+          const groupWelcomeConfig = await GroupWelcome.findOne({
+            bot: ctx.currentBot._id,
+            group: ctx.currentGroup?._id,
+          });
           await sendGroupWelcomeMessage(
             ctx,
             username,
             memberName,
-            ctx.currentBot.groupWelcome,
+            groupWelcomeConfig ?? undefined,
           );
           debug(`欢迎消息已发送给用户: ${username}`);
         }
@@ -219,11 +224,15 @@ async function handleAdminVerifyAction(
         const memberName =
           user.first_name + (user.last_name ? ` ${user.last_name}` : '');
         const username = user.username ? `@${user.username}` : memberName;
+        const groupWelcomeConfig = await GroupWelcome.findOne({
+          bot: ctx.currentBot._id,
+          group: ctx.currentGroup?._id,
+        });
         await sendGroupWelcomeMessage(
           ctx,
           username,
           memberName,
-          ctx.currentBot.groupWelcome,
+          groupWelcomeConfig ?? undefined,
         );
         debug(`欢迎消息已发送给用户: ${username}`);
       }

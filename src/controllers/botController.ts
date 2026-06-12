@@ -29,7 +29,6 @@ import { extractChannelTarget } from '../utils/extractChannelTarget';
 import { getBotInfoWithGramjs } from '../utils/getBotInfoWithGramjs';
 import { getBotInfoByToken } from '../utils/getBotInfo';
 import { startClientAndGetSession } from '../bot/services/gramClient';
-import GroupWelcome from '../models/groupWelcome';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -137,7 +136,6 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('clonedFrom')
     .populate('creator')
     .populate('channel_posts')
-    .populate('groupWelcome')
     .populate('groupVerify')
     .populate({
       path: 'teachers',
@@ -174,23 +172,6 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
       if (botObj.multi_image) {
         const signedUrl = await generateSignedUrl(botObj.multi_image);
         botObj.multi_image = signedUrl;
-      }
-
-      // 处理 groupWelcome 中的 medias
-      if (
-        botObj.groupWelcome &&
-        botObj.groupWelcome.medias &&
-        Array.isArray(botObj.groupWelcome.medias)
-      ) {
-        const processedMedias = await Promise.all(
-          botObj.groupWelcome.medias.map(async (mediaUrl: string) => {
-            if (mediaUrl) {
-              return await generateSignedUrl(mediaUrl);
-            }
-            return mediaUrl;
-          }),
-        );
-        botObj.groupWelcome.medias = processedMedias;
       }
 
       return botObj;
@@ -374,9 +355,7 @@ const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
   const updatedBot = await Bot.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
-  })
-    .populate('groupWelcome')
-    .populate('groupVerify');
+  }).populate('groupVerify');
 
   if (!updatedBot) {
     res.status(404);
@@ -401,21 +380,6 @@ const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
   ]);
 
   const botObj = processedBot.toObject ? processedBot.toObject() : processedBot;
-  if (
-    botObj.groupWelcome &&
-    botObj.groupWelcome.medias &&
-    Array.isArray(botObj.groupWelcome.medias)
-  ) {
-    const processedMedias = await Promise.all(
-      botObj.groupWelcome.medias.map(async (mediaUrl: string) => {
-        if (mediaUrl) {
-          return await generateSignedUrl(mediaUrl);
-        }
-        return mediaUrl;
-      }),
-    );
-    botObj.groupWelcome.medias = processedMedias;
-  }
 
   res.json({
     success: true,
@@ -926,87 +890,6 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
   }
 });
 
-/**
- * 更新群欢迎配置
- */
-const updateGroupWelcome = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const body = req.body;
-
-  const botManager = await Bot.findById(id);
-
-  if (!botManager) {
-    res.status(404);
-    throw new Error('机器人不存在');
-  }
-
-  // 只提取有效字段，避免传入非法数据；过滤掉 name/url 为空的 menu 项
-  const rawMenus = Array.isArray(body.menus) ? body.menus : [];
-  const validMenus = rawMenus.filter(
-    (m: any) =>
-      m &&
-      typeof m.name === 'string' &&
-      typeof m.url === 'string' &&
-      m.name.trim() &&
-      m.url.trim(),
-  );
-  const groupWelcomeData = {
-    contents: Array.isArray(body.contents) ? body.contents : [],
-    caption: body.caption ?? '',
-    medias: Array.isArray(body.medias) ? body.medias : [],
-    menus: validMenus,
-    deleteAfterSeconds:
-      typeof body.deleteAfterSeconds === 'number' ? body.deleteAfterSeconds : 0,
-    pinNewMember:
-      typeof body.pinNewMember === 'boolean' ? body.pinNewMember : false,
-  };
-
-  if (botManager.groupWelcome) {
-    // 更新现有的 GroupWelcome，使用 $set 确保正确更新
-    await GroupWelcome.findByIdAndUpdate(
-      botManager.groupWelcome,
-      { $set: groupWelcomeData },
-      { new: true, runValidators: true },
-    );
-  } else {
-    // 创建新的 GroupWelcome
-    const newGroupWelcome = await GroupWelcome.create(groupWelcomeData);
-    // 使用 findByIdAndUpdate 避免 save() 触发完整文档验证导致的 options 未定义错误
-    await Bot.findByIdAndUpdate(id, {
-      $set: { groupWelcome: newGroupWelcome._id },
-    });
-  }
-
-  // 重新查询完整的 bot 数据，包括 populate
-  const updatedBot = await Bot.findById(id)
-    .populate('groupWelcome')
-    .populate('groupVerify');
-
-  // 处理 groupWelcome 中的 medias
-  const botObj = updatedBot!.toObject ? updatedBot!.toObject() : updatedBot;
-  if (
-    botObj.groupWelcome &&
-    botObj.groupWelcome.medias &&
-    Array.isArray(botObj.groupWelcome.medias)
-  ) {
-    const processedMedias = await Promise.all(
-      botObj.groupWelcome.medias.map(async (mediaUrl: string) => {
-        if (mediaUrl) {
-          return await generateSignedUrl(mediaUrl);
-        }
-        return mediaUrl;
-      }),
-    );
-    botObj.groupWelcome.medias = processedMedias;
-  }
-
-  res.json({
-    success: true,
-    data: botObj,
-    message: '群欢迎配置更新成功',
-  });
-});
-
 const BOT_FEATURE_FIELD_KEYS: string[] = [
   'message',
   'menus',
@@ -1047,19 +930,8 @@ function omitDocMeta<T extends Record<string, unknown>>(doc: T) {
   return rest as Omit<T, '_id' | '__v' | 'createdAt' | 'updatedAt'>;
 }
 
-async function cloneGroupWelcomeDoc(
-  refId: mongoose.Types.ObjectId | string | undefined | null,
-): Promise<mongoose.Types.ObjectId | null> {
-  if (!refId) return null;
-  const doc = await GroupWelcome.findById(refId).lean();
-  if (!doc) return null;
-  const [created] = await GroupWelcome.create([
-    omitDocMeta(doc as Record<string, unknown>),
-  ]);
-  return created._id;
-}
-
 // 注意：cloneGroupVerifyDoc 已废弃，群验证现在是按群组配置的，无需克隆
+// 注意：cloneGroupWelcomeDoc 已废弃，群欢迎现在是按群组配置的，无需克隆
 
 async function newLotteryCode(): Promise<string> {
   for (let i = 0; i < 24; i++) {
@@ -1100,23 +972,10 @@ const copyBotFeatureConfig = handleAsync(
       throw new Error('机器人不存在');
     }
 
-    const oldTargetGw = targetBot.groupWelcome;
+    // 注意：groupWelcome 已改为按群组配置，不再 bot 级别克隆
     // 注意：groupVerify 已改为按群组配置，不再全局克隆
-    // const oldTargetGv = targetBot.groupVerify;
 
-    const newGroupWelcomeId = await cloneGroupWelcomeDoc(
-      sourceBot.groupWelcome as unknown as
-        | mongoose.Types.ObjectId
-        | string
-        | undefined,
-    );
-    // 群验证现在是按群组配置的，不再克隆 bot 级别的 groupVerify
-    // const newGroupVerifyId = await cloneGroupVerifyDoc(...)
-
-    const featureUpdate: Record<string, unknown> = {
-      groupWelcome: newGroupWelcomeId,
-      // groupVerify: null, // 不再克隆，保持目标 bot 原有配置
-    };
+    const featureUpdate: Record<string, unknown> = {};
 
     for (const key of BOT_FEATURE_FIELD_KEYS) {
       const v = (sourceBot as Record<string, unknown>)[key as string];
@@ -1241,14 +1100,9 @@ const copyBotFeatureConfig = handleAsync(
 
     await Bot.findByIdAndUpdate(targetBotId, { $set: featureUpdate });
 
-    if (oldTargetGw && String(oldTargetGw) !== String(newGroupWelcomeId)) {
-      await GroupWelcome.deleteOne({ _id: oldTargetGw });
-    }
-    // 群验证已改为按群组配置，旧 bot 级别的 groupVerify 无需处理
+    // 群欢迎/群验证已改为按群组配置，无需处理旧 bot 级别文档
 
-    const updatedBot = await Bot.findById(targetBotId)
-      .populate('groupWelcome')
-      .populate('groupVerify');
+    const updatedBot = await Bot.findById(targetBotId).populate('groupVerify');
 
     const processedBot = await transformDocumentImage(updatedBot!, [
       'multi_image',
@@ -1279,6 +1133,5 @@ export {
   sendMessage,
   sendGroupMessage,
   sendChannelPost,
-  updateGroupWelcome,
   copyBotFeatureConfig,
 };

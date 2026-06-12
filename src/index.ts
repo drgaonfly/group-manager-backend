@@ -56,6 +56,7 @@ import postRoutes from './routes/postRoutes';
 import groupVerifyRoutes from './routes/groupVerifyRoutes';
 import redPacketRoutes from './routes/redPacketRoutes';
 import speechConfigRoutes from './routes/speechConfigRoutes';
+import groupWelcomeRoutes from './routes/groupWelcomeRoutes';
 
 dotenv.config();
 
@@ -125,6 +126,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/group-verifies', groupVerifyRoutes);
 app.use('/api/red-packets', redPacketRoutes);
 app.use('/api/speech-configs', speechConfigRoutes);
+app.use('/api/group-welcomes', groupWelcomeRoutes);
 
 app.use('/api/static', express.static('tmp'));
 

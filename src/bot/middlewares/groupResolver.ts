@@ -6,6 +6,7 @@ import { sendGroupWelcomeMessage } from '../../services/sendGroupWelcomeMessage'
 import { sendGroupVerifyMessage } from '../../services/sendGroupVerifyMessage';
 import Group from '../../models/group';
 import GroupVerify from '../../models/groupVerify';
+import GroupWelcome from '../../models/groupWelcome';
 import BotUser from '../../models/botUser';
 import createDebug from 'debug';
 
@@ -489,8 +490,6 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       }
 
       debug(`Processing member: ${username} (ID: ${member.id})`);
-      debug('Bot groupVerify:', ctx.currentBot.groupVerify);
-      debug('Bot groupWelcome:', ctx.currentBot.groupWelcome);
       debug(
         'canUseGroupVerify:',
         PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot),
@@ -499,6 +498,17 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         'canUseGroupWelcome:',
         PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot),
       );
+
+      // 按当前群组查找群欢迎配置（按群独立配置）
+      const groupWelcomeConfig = PermissionChecker.canUseGroupWelcome(
+        proxyUser,
+        ctx.currentBot,
+      )
+        ? await GroupWelcome.findOne({
+            bot: ctx.currentBot._id,
+            group: ctx.currentGroup?._id,
+          })
+        : null;
 
       // 处理群组验证（验证通过后会自动发送欢迎消息）
       if (PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot)) {
@@ -535,7 +545,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
                 ctx,
                 username,
                 memberName,
-                ctx.currentBot.groupWelcome,
+                groupWelcomeConfig ?? undefined,
               );
             }
           }
@@ -552,7 +562,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
             ctx,
             username,
             memberName,
-            ctx.currentBot.groupWelcome,
+            groupWelcomeConfig ?? undefined,
           );
           debug(`✅ Welcome message sent for new member: ${username}`);
         } catch (error) {

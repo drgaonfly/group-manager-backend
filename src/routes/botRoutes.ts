@@ -13,7 +13,6 @@ import {
   sendMessage,
   sendGroupMessage,
   sendChannelPost,
-  updateGroupWelcome,
   copyBotFeatureConfig,
 } from '../controllers/botController';
 import {
@@ -62,10 +61,7 @@ router
   .route('/:id/send-channel-post')
   .put(protect, checkPermission, sendChannelPost);
 
-router
-  .route('/:id/group-welcome')
-  .put(protect, checkPermission, updateGroupWelcome);
-
 // 注意：群验证已改为按群组配置，使用 /api/group-verifies 接口
+// 注意：群欢迎已改为按群组配置，使用 /api/group-welcomes 接口
 
 export default router;
