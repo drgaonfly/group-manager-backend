@@ -157,7 +157,7 @@ export const updateAuction = async (req: Request, res: Response) => {
 
   const updated = await Auction.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
-  });
+  }).populate('group', 'title username');
 
   res.json(updated);
 };

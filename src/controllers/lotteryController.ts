@@ -48,10 +48,9 @@ export const getLotteries = async (req: Request, res: Response) => {
 
 // 获取单个抽奖
 export const getLottery = async (req: Request, res: Response) => {
-  const lottery = await Lottery.findById(req.params.id).populate(
-    'bot',
-    'botName userName',
-  );
+  const lottery = await Lottery.findById(req.params.id)
+    .populate('bot', 'botName userName')
+    .populate('group', 'title username');
   if (!lottery) {
     res.status(404).json({ message: '抽奖活动不存在' });
     return;
@@ -158,7 +157,7 @@ export const updateLottery = async (req: Request, res: Response) => {
 
   const updated = await Lottery.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
-  });
+  }).populate('group', 'title username');
 
   res.json(updated);
 };
