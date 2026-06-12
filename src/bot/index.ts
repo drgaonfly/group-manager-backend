@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { setupBot } from './botSetup';
+import { setupBot, setupBotCommands } from './botSetup';
 import { default as BotManager } from '../models/bot';
 import setupDB from '../utils/db';
 import { setupRedis } from '../utils/redis';
@@ -44,6 +44,9 @@ export const startWebHookBot = async () => {
       } else {
         console.log('webhook 已存在，跳过删除操作');
       }
+
+      // 命令菜单只在启动时设置一次，每个 bot 串行执行避免并发限流
+      await setupBotCommands(bot);
 
       console.log(
         `${activeBot.userName} Webhook ${activeBot.token} 已设置为 ${WEBHOOK_URL}/webhook-${activeBot.token}`,

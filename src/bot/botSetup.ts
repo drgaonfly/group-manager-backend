@@ -24,6 +24,9 @@ import channelPostSaver from './middlewares/channelPostSaver';
 
 const log = createDebug('bot:setup');
 
+// 全局 bot 实例缓存，同一 token 复用同一个 Bot 对象，避免高并发下重复初始化
+const botCache = new Map<string, Bot<MyContext>>();
+
 export const printWebhookInfo = async (bot: Bot) => {
   const info = await bot.api.getWebhookInfo();
   const debug = createDebug('bot:webhook');
@@ -33,6 +36,11 @@ export const printWebhookInfo = async (bot: Bot) => {
 };
 
 export const setupBot = (token: string) => {
+  // 缓存命中直接返回，避免高并发下重复初始化同一个 bot
+  if (botCache.has(token)) {
+    return botCache.get(token)!;
+  }
+
   const storage = new RedisAdapter({
     instance: redis,
     ttl: 10,
@@ -124,21 +132,34 @@ export const setupBot = (token: string) => {
   bot.api.config.use(autoRetry());
   bot.api.config.use(hydrateFiles(token));
 
-  // 设置私聊命令
-  bot.api
-    .setMyCommands(privateCommandsList, {
-      scope: { type: 'all_private_chats' },
-    })
-    .then(() => log('私聊命令已设置成功'))
-    .catch((error) => log('设置私聊命令时发生错误:', error));
-
-  // 设置群组命令
-  if (groupCommandsList.length > 0) {
-    bot.api
-      .setMyCommands(groupCommandsList, { scope: { type: 'all_group_chats' } })
-      .then(() => log('群组命令已设置成功'))
-      .catch((error) => log('设置群组命令时发生错误:', error));
-  }
+  // 写入缓存，后续同 token 的请求直接复用
+  botCache.set(token, bot);
 
   return bot;
+};
+
+/**
+ * 从缓存中删除指定 token 的 bot 实例（bot 下线或 token 更换时调用）
+ */
+export const evictBotCache = (token: string) => {
+  botCache.delete(token);
+  log(`已清除 token 缓存: ${token.slice(0, 10)}...`);
+};
+
+/**
+ * 仅在启动脚本中调用一次，设置所有 bot 的命令菜单。
+ * 不要在 webhook 请求处理流程中调用此函数。
+ */
+export const setupBotCommands = async (bot: Bot<MyContext>) => {
+  await bot.api.setMyCommands(privateCommandsList, {
+    scope: { type: 'all_private_chats' },
+  });
+  log('私聊命令已设置成功');
+
+  if (groupCommandsList.length > 0) {
+    await bot.api.setMyCommands(groupCommandsList, {
+      scope: { type: 'all_group_chats' },
+    });
+    log('群组命令已设置成功');
+  }
 };
