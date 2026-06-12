@@ -88,7 +88,7 @@ export async function sendGroupMessages() {
         for (const msg of botMessages) {
           const groups = msg.groups as IGroup[];
           if (groups && groups.length > 0) {
-            groups.forEach((g) => g && allGroups.add(g._id.toString()));
+            groups.forEach((g) => g?._id && allGroups.add(g._id.toString()));
           }
         }
 
@@ -112,13 +112,13 @@ export async function sendGroupMessages() {
             // 找到包含这个群组的消息
             const messageForGroup = botMessages.find((msg) => {
               const groups = msg.groups as IGroup[];
-              return groups?.some((g) => g._id.toString() === groupIdStr);
+              return groups?.some((g) => g?._id?.toString() === groupIdStr);
             });
 
             if (!messageForGroup) continue;
 
             const group = (messageForGroup.groups as IGroup[]).find(
-              (g) => g._id.toString() === groupIdStr,
+              (g) => g?._id?.toString() === groupIdStr,
             );
 
             if (!group) {
@@ -163,7 +163,7 @@ export async function sendGroupMessages() {
             } else {
               const lastSentIndex = botMessages.findIndex(
                 (msg) =>
-                  msg._id.toString() === history.lastSentMessage.toString(),
+                  msg._id?.toString() === history.lastSentMessage?.toString(),
               );
 
               const now = Date.now();
@@ -232,6 +232,28 @@ export async function sendGroupMessages() {
             // 发送消息
             let sentMessageId: number | undefined;
             try {
+              // 自动删除上一条已发送的消息
+              if (
+                nextMessage.autoDeletePrevious &&
+                history?.lastSentMessageId
+              ) {
+                try {
+                  await telegramBot.api.deleteMessage(
+                    group.id,
+                    history.lastSentMessageId,
+                  );
+                  console.log(
+                    `[autoDelete] 群 ${group.id} 已删除上一条消息 ${history.lastSentMessageId}`,
+                  );
+                } catch (delErr: any) {
+                  // 消息已不存在或无权限时静默跳过，不阻断发送
+                  console.warn(
+                    `[autoDelete] 群 ${group.id} 删除消息 ${history.lastSentMessageId} 失败（忽略）:`,
+                    delErr?.message,
+                  );
+                }
+              }
+
               // 准备变量替换数据
               const variables = {
                 groupTitle: String(group.title || group.id),
@@ -293,6 +315,7 @@ export async function sendGroupMessages() {
                 { group: group._id },
                 {
                   lastSentMessage: nextMessage._id,
+                  lastSentMessageId: sentMessageId,
                   sentAt: new Date(),
                 },
                 { upsert: true },

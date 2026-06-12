@@ -35,6 +35,7 @@ export interface IGroupMessage extends Document {
   menus_per_row: number; // 每行菜单数
   weight: number; // 权重
   isOnline: boolean;
+  autoDeletePrevious: boolean; // 发新消息前自动删除上一条已发送的消息
   startAt: Date; // 发送时间窗口开始
   endAt: Date; // 发送时间窗口结束
   createdAt: Date; // 创建时间
@@ -85,6 +86,11 @@ const groupMessageSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: true,
+    },
+    autoDeletePrevious: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     startAt: {
       type: Date,

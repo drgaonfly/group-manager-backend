@@ -6,6 +6,7 @@ import { IGroupMessage } from './groupMessage';
 export interface IGroupMessageHistory extends Document {
   group: mongoose.Types.ObjectId | IGroup;
   lastSentMessage: mongoose.Types.ObjectId | IGroupMessage;
+  lastSentMessageId?: number; // 上一条消息的 Telegram message_id，用于自动删除
   sentAt: Date;
 }
 
@@ -21,6 +22,10 @@ const groupMessageHistorySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'GroupMessage',
       required: true,
+    },
+    lastSentMessageId: {
+      type: Number,
+      required: false,
     },
     sentAt: {
       type: Date,
