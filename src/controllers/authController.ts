@@ -331,12 +331,6 @@ const updateUserProfile = handleAsync(
       if (typeof auctionRule !== 'undefined') {
         updateData.auctionRule = auctionRule;
       }
-      if (typeof rankConferral !== 'undefined') {
-        updateData.rankConferral = rankConferral;
-      }
-      if (typeof recharge !== 'undefined') {
-        updateData.recharge = recharge;
-      }
       if (typeof success !== 'undefined') {
         updateData.success = success;
       }
