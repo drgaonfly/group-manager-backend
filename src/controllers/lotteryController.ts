@@ -19,11 +19,14 @@ const generateCode = () => uuidv4().replace(/-/g, '').slice(0, 10);
 
 // 获取抽奖列表
 export const getLotteries = async (req: Request, res: Response) => {
-  const { botId, status, current = 1, pageSize = 10 } = req.query;
+  const { botId, groupId, status, current = 1, pageSize = 10 } = req.query;
   const query: any = {};
 
   if (botId) {
     query.bot = botId;
+  }
+  if (groupId) {
+    query.group = groupId;
   }
   if (status) {
     query.status = status;

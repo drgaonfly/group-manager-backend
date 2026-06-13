@@ -26,10 +26,11 @@ const processMedias = async (welcomeObj: any) => {
  */
 export const getGroupWelcomes = handleAsync(
   async (req: Request, res: Response) => {
-    const { botId, current = '1', pageSize = '50' } = req.query;
+    const { botId, groupId, current = '1', pageSize = '50' } = req.query;
 
     const query: any = {};
     if (botId) query.bot = botId;
+    if (groupId) query.group = groupId;
 
     const total = await GroupWelcome.countDocuments(query);
     const data = await GroupWelcome.find(query)

@@ -32,7 +32,10 @@ const buildQuery = async (
     }
   }
 
-  if (queryParams.group) {
+  // 支持 groupId 精确查询（优先于 group 模糊查）
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
+  } else if (queryParams.group) {
     const groupData = await Group.find({
       title: {
         $regex: queryParams.group,

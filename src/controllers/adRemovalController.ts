@@ -21,9 +21,14 @@ export const getAdRemovals = handleAsync(
       query.isOnline = isOnline === 'true';
     }
 
-    // 如果传了 botId，则只看关联到该机器人的规则（虽然逻辑上目前是一个库对应一个或多个机器人）
+    // 如果传了 botId，则只看关联到该机器人的规则
     if (botId) {
       query.bot = botId;
+    }
+
+    // 如果传了 groupId，精确过滤到该群组的规则
+    if (req.query.groupId) {
+      query.group = req.query.groupId;
     }
 
     const adRemovals = await AdRemoval.find(query)

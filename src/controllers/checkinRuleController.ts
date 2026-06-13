@@ -81,10 +81,10 @@ const getCheckinRuleById = handleAsync(async (req: Request, res: Response) => {
 
 const addCheckinRule = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { bot, group } = req.body;
+    const { bot, group, type } = req.body;
 
-    // 检查是否已存在相同 bot + group 的规则（group 为空时检查默认规则）
-    const query: any = { bot };
+    // 同一个 bot + group + type 组合唯一
+    const query: any = { bot, type };
     if (group) {
       query.group = group;
     } else {
@@ -92,9 +92,12 @@ const addCheckinRule = handleAsync(
     }
     const existing = await CheckinRule.findOne(query);
     if (existing) {
-      const label = group ? '该群组' : '该机器人（默认）';
+      const typeLabel = type === 'daily' ? '每日签到' : '初次签到';
+      const label = group
+        ? `该群组的${typeLabel}`
+        : `该机器人（默认）的${typeLabel}`;
       res.status(400);
-      throw new Error(`${label}已有签到规则，请编辑现有规则`);
+      throw new Error(`${label}规则已存在，请编辑现有规则`);
     }
 
     const checkinRule = new CheckinRule({
