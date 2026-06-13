@@ -46,8 +46,6 @@ export interface IBot extends Document {
 
   balanceClearedAt: number; // 每月清零日期（1-31）
 
-  post_source: mongoose.Schema.Types.ObjectId | IGroup; // 新闻源频道（关联 Group）
-
   // 多功能配置
 
   // 群内统计
@@ -334,11 +332,6 @@ const botSchema = new mongoose.Schema(
     },
     balanceClearedAt: {
       type: Date,
-      required: false,
-    },
-    post_source: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Group',
       required: false,
     },
 
