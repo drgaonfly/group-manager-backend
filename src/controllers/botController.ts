@@ -897,7 +897,6 @@ const BOT_FEATURE_FIELD_KEYS: string[] = [
   'intervalTime',
   'minSpeechLength',
   'allowPureNumberSpeech',
-  'balanceClearedAt',
   'canSpeechStatic',
   'canFreeKeyboard',
   'canGroupMessaging',
