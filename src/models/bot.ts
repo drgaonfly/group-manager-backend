@@ -106,9 +106,6 @@ export interface IBot extends Document {
   // 授衔功能
   canRankConferral: boolean;
 
-  // 充值
-  canRecharge: boolean;
-
   // 积分继承
   canSuccess: boolean;
 

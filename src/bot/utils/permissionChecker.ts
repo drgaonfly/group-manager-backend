@@ -88,10 +88,6 @@ export class PermissionChecker {
     return !!(proxyUser?.adRemoval && bot?.canRemoveAd);
   }
 
-  static canUseRecharge(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.recharge && bot?.canRecharge);
-  }
-
   static canUseSuccess(proxyUser: IUser | null, bot: IBot): boolean {
     return !!(proxyUser?.success && bot?.canSuccess);
   }
@@ -117,7 +113,6 @@ export class PermissionChecker {
       groupVerify: this.canUseGroupVerify(proxyUser, bot),
       teaching: this.canUseTeaching(proxyUser, bot),
       adRemoval: this.canUseAdRemoval(proxyUser, bot),
-      recharge: this.canUseRecharge(proxyUser, bot),
       redPacket: this.canUseRedPacket(proxyUser, bot),
     };
   }
