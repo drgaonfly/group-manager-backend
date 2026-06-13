@@ -42,7 +42,6 @@ export interface IUser extends Document {
   auctionRule: boolean;
   teaching: boolean;
   adRemoval: boolean; // 广告移除
-  rankConferral: boolean; // 授衔
   recharge: boolean;
   success: boolean;
   redPacket: boolean; // 红包
@@ -110,7 +109,6 @@ const userSchema = new mongoose.Schema(
     auctionRule: { type: Boolean, default: false },
     teaching: { type: Boolean, default: false },
     adRemoval: { type: Boolean, default: false }, // 广告移除
-    rankConferral: { type: Boolean, default: false },
     recharge: { type: Boolean, default: false },
     success: { type: Boolean, default: false },
     redPacket: { type: Boolean, default: false }, // 红包
