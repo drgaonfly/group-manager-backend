@@ -2,7 +2,6 @@ import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import charger from '../../../menus/inline/charger';
 import BotUserConfig from '../../../../models/botUserConfig';
-import { checkRecharge } from '../../../middlewares/checkRecharge';
 import createDebug from 'debug';
 
 const chargingBalanceCommand = new Composer<MyContext>();
@@ -38,11 +37,11 @@ export async function handleChargingBalance(ctx: MyContext) {
   });
 }
 
-chargingBalanceCommand.hears(keys, checkRecharge, async (ctx) => {
+chargingBalanceCommand.hears(keys, async (ctx) => {
   await handleChargingBalance(ctx);
 });
 
-chargingBalanceCommand.callbackQuery('recharge', checkRecharge, async (ctx) => {
+chargingBalanceCommand.callbackQuery('recharge', async (ctx) => {
   await handleChargingBalance(ctx);
 });
 
