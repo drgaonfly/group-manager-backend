@@ -11,6 +11,17 @@ export interface IPunishment {
   muteDuration?: number; // 禁言时长（秒），仅 type=mute 时有效
 }
 
+/**
+ * 警告配置：在真正处罚前先给用户发警告
+ * warningCount=0 表示不警告、直接处罚
+ * warningWindowSeconds=0 表示不限制时间窗口（累计计数，不重置）
+ */
+export interface IWarningConfig {
+  count: number; // 达到多少次警告后才触发处罚（0 = 直接处罚）
+  windowSeconds: number; // 警告计数的时间窗口（秒，0 = 不限制）
+  selfDestructSeconds: number; // 警告消息多少秒后自动删除（0 = 不删除）
+}
+
 // 主接口
 export interface IAdRemoval extends Document {
   bot: mongoose.Types.ObjectId | IBot;
@@ -37,6 +48,8 @@ export interface IAdRemoval extends Document {
   mode: 'any' | 'all'; // 保留：控制行内多词是 any（含任意词）还是 all（含全部词）
 
   punishment?: IPunishment; // 处罚配置，不填则仅删除消息
+
+  warning?: IWarningConfig; // 警告配置，不填或 warningCount=0 时直接处罚
 }
 
 const punishmentSchema = new Schema<IPunishment>(
@@ -49,6 +62,27 @@ const punishmentSchema = new Schema<IPunishment>(
     muteDuration: {
       type: Number,
       min: 1,
+    },
+  },
+  { _id: false },
+);
+
+const warningConfigSchema = new Schema<IWarningConfig>(
+  {
+    count: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    windowSeconds: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    selfDestructSeconds: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   { _id: false },
@@ -113,6 +147,11 @@ const adRemovalSchema = new Schema<IAdRemoval>(
 
     punishment: {
       type: punishmentSchema,
+      default: null,
+    },
+
+    warning: {
+      type: warningConfigSchema,
       default: null,
     },
   },
