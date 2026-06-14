@@ -30,11 +30,12 @@ export interface IAdRemoval extends Document {
   remark?: string;
 
   /**
-   * 关键词二维数组：外层每个元素对应 textarea 的一行，内层是该行按空格拆分的多个词。
-   * 命中逻辑：一行内的词全部命中（AND），行与行之间任一命中（OR）。
-   * 示例：[["广告", "推广"], ["代理"]] → 消息同时含"广告"和"推广"，或含"代理"，即命中。
+   * 关键词列表。
+   * 命中逻辑由 mode 控制：
+   *   mode='any' → 消息含任意一个词即命中（OR）
+   *   mode='all' → 消息含全部词才命中（AND）
    */
-  keywords: string[][];
+  keywords: string[];
 
   /**
    * 适用群组（单个 ObjectId）。
@@ -45,7 +46,7 @@ export interface IAdRemoval extends Document {
   isOnline: boolean;
   ignoreAdmin: boolean;
 
-  mode: 'any' | 'all'; // 保留：控制行内多词是 any（含任意词）还是 all（含全部词）
+  mode: 'any' | 'all'; // 词间匹配关系：any=含任意词命中（OR），all=含全部词才命中（AND）
 
   punishment?: IPunishment; // 处罚配置，不填则仅删除消息
 
@@ -115,9 +116,9 @@ const adRemovalSchema = new Schema<IAdRemoval>(
       trim: true,
     },
 
-    // 二维数组：每行是一组词（空格分隔），行间 OR，行内 AND/OR 由 mode 控制
+    // 关键词列表，mode 控制词间匹配关系
     keywords: {
-      type: [[String]],
+      type: [String],
       default: [],
     },
 

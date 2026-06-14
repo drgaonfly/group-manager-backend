@@ -87,9 +87,9 @@ const MUTE_MAX_SECONDS = 366 * 24 * 3600;
 /**
  * 去除广告核心处理中间件
  *
- * keywords 结构：string[][]
- *   - 外层每个元素是 textarea 的一行，行间是 OR 关系（命中任意一行即触发）
- *   - 行内多个词用空格分隔，mode='any' 时行内 OR，mode='all' 时行内 AND
+ * keywords 结构：string[]
+ *   - mode='any'：消息含任意一个词即命中（OR）
+ *   - mode='all'：消息含全部词才命中（AND）
  */
 export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
   // 仅处理文本消息或带说明的媒体消息
@@ -161,25 +161,16 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
 
       if (!keywords || keywords.length === 0) continue;
 
-      // 匹配逻辑：行间 OR，行内由 mode 控制（any=OR / all=AND）
-      const isHit = keywords.some((lineWords) => {
-        if (!lineWords || lineWords.length === 0) return false;
-        if (mode === 'all') {
-          return lineWords.every((word) => text.includes(word));
-        }
-        return lineWords.some((word) => text.includes(word));
-      });
+      // 匹配逻辑：mode='any' 时含任意词命中（OR），mode='all' 时含全部词才命中（AND）
+      const isHit =
+        mode === 'all'
+          ? keywords.every((word) => text.includes(word))
+          : keywords.some((word) => text.includes(word));
 
       if (!isHit) continue;
 
       // 命中的第一个关键词（用于警告消息展示）
-      const hitKeyword =
-        keywords
-          .find((line) => {
-            if (mode === 'all') return line.every((w) => text.includes(w));
-            return line.some((w) => text.includes(w));
-          })
-          ?.find((w) => text.includes(w)) ?? '';
+      const hitKeyword = keywords.find((w) => text.includes(w)) ?? '';
 
       debug('Ad detected by rule:', config.name);
 
