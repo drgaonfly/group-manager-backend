@@ -11,9 +11,8 @@ const reloadCommand = new Composer<MyContext>();
 reloadCommand.command('reload', async (ctx) => {
   const chat = ctx.chat;
 
-  if (chat.type == 'private') {
+  if (chat.type === 'private') {
     debug('请群聊中使用此命令');
-    // ctx.reply('Please use this command in a private chat with the bot');
     return;
   }
 
@@ -22,11 +21,7 @@ reloadCommand.command('reload', async (ctx) => {
   const chatUsername = (chat as any).username ?? '';
   const chatType = chat.type;
 
-  //   if (!chatId) {
-  //     await ctx.reply('该命令仅在群组使用');
-  //   }
-
-  // 检查群组记录是否已存在
+  // 检查群组记录是否已存在（只用 id 判断，避免因 bot 字段不同而误判为新群组）
   const existingGroup = await Group.findOne({
     id: chatId,
     bot: ctx.currentBot._id,
@@ -37,34 +32,34 @@ reloadCommand.command('reload', async (ctx) => {
     return;
   }
 
-  // 查找操作者的 BotUser 记录，用作 creator
+  // 查找操作者的 BotUser 记录，用作 creator（required 字段）
   let creatorBotUser = await BotUser.findOne({
     id: ctx.from!.id.toString(),
-    proxy: ctx.currentProxyUser._id,
+
+    bot: ctx.currentBot._id,
   });
 
   if (!creatorBotUser) {
-    // 自动创建 BotUser
     creatorBotUser = new BotUser({
       id: ctx.from!.id.toString(),
       userName: ctx.from!.username || '',
       firstName: ctx.from!.first_name,
       lastName: ctx.from!.last_name || '',
       bot: ctx.currentBot._id,
-      proxy: ctx.currentProxyUser._id,
+      proxy: ctx.currentProxyUser?._id,
     });
     await creatorBotUser.save();
     debug(`✅ 创建新 BotUser: ${ctx.from!.id}`);
   }
 
-  // 创建新群组记录
+  // 创建新群组记录，creator 为必填字段
   const newGroup = new Group({
     id: chatId,
     title: chatTitle,
     username: chatUsername,
     type: chatType,
     bot: ctx.currentBot._id,
-    proxy: ctx.currentProxyUser._id,
+    proxy: ctx.currentProxyUser?._id,
   });
 
   await newGroup.save();
@@ -77,7 +72,7 @@ reloadCommand.command('reload', async (ctx) => {
   });
 
   debug(`✅ /reload 重新创建群组记录: ${chatTitle} (${chatId})`);
-  await ctx.reply('重启成功');
+  await ctx.reply('✅ 重启成功');
 });
 
 export default reloadCommand;

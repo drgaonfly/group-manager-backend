@@ -34,7 +34,7 @@ const groupSchema = new mongoose.Schema(
     id: {
       type: Number,
       required: true,
-      unique: true,
+      unique: false,
     },
     // 群组名称
     title: {
