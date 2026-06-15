@@ -11,14 +11,20 @@ const reloadCommand = new Composer<MyContext>();
 reloadCommand.command('reload', async (ctx) => {
   const chat = ctx.chat;
 
+  if (chat.type == 'private') {
+    debug('请群聊中使用此命令');
+    // ctx.reply('Please use this command in a private chat with the bot');
+    return;
+  }
+
   const chatId = chat.id;
   const chatTitle = (chat as any).title ?? '';
   const chatUsername = (chat as any).username ?? '';
   const chatType = chat.type;
 
-  if (!chatId) {
-    await ctx.reply('该命令仅在群组使用');
-  }
+  //   if (!chatId) {
+  //     await ctx.reply('该命令仅在群组使用');
+  //   }
 
   // 检查群组记录是否已存在
   const existingGroup = await Group.findOne({
