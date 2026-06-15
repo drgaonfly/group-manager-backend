@@ -9,4 +9,5 @@ export const groupCommandsList = [
   { command: 'start', description: '开始使用' },
   { command: 'help', description: '帮助' },
   { command: 'news', description: '最新' },
+  { command: 'reload', description: '重启' },
 ];

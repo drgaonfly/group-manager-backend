@@ -65,7 +65,7 @@ const groupSchema = new mongoose.Schema(
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
-      required: true,
+      required: false,
     },
     // 操作人
     operators: [
