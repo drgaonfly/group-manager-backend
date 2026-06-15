@@ -320,6 +320,7 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
               can_send_polls: false,
               can_send_other_messages: false,
               can_add_web_page_previews: false,
+              can_invite_users: true,
             },
             { until_date: untilDate },
           );

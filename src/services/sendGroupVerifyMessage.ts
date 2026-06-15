@@ -163,6 +163,7 @@ export async function handleVerifyCallback(
           can_send_polls: false,
           can_send_other_messages: false,
           can_add_web_page_previews: false,
+          can_invite_users: true,
         });
         await ctx.editMessageText(`❌ 验证失败！${displayName} 已被禁言。`);
         await ctx.answerCallbackQuery('验证失败');
