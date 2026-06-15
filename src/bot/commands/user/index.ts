@@ -21,7 +21,6 @@ import veryfiyComposer from './verify';
 import checkinComposer from './checkin';
 import lotteryComposer from './lottery';
 import auctionComposer from './auction';
-import reloadComposer from './reload';
 import conversationsComposer from './conversations';
 
 // import spreadComposer from './spread';
@@ -51,7 +50,7 @@ userComposer.use(checkinComposer.middleware());
 // userComposer.use(walletComposer.middleware());
 // userComposer.use(exchangeComposer.middleware());
 userComposer.use(veryfiyComposer.middleware());
-userComposer.use(reloadComposer.middleware());
+// reloadComposer 已移至 botSetup.ts 在 adRemovalResolver 之前独立注册
 
 // userComposer.use(spreadComposer.middleware());
 // userComposer.use(linkComposer.middleware());

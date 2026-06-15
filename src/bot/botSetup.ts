@@ -19,6 +19,7 @@ import { RedisAdapter } from '@grammyjs/storage-redis';
 import { redis } from '../utils/redis';
 import { conversations } from '@grammyjs/conversations';
 import { autoQuote } from '@roziscoding/grammy-autoquote';
+import reloadComposer from './commands/user/reload';
 import createDebug from 'debug';
 
 const log = createDebug('bot:setup');
@@ -90,6 +91,9 @@ export const setupBot = (token: string) => {
   bot.use(groupResolver);
   bot.use(proxyResolver);
   bot.use(errorHandler);
+
+  // /reload 在广告过滤之前独立处理，避免错误冒泡导致 next already called
+  bot.use(reloadComposer.middleware());
 
   // 处理广告的优先级高于一般消息处理
   bot.use(adRemovalResolver);
