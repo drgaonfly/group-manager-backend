@@ -14,7 +14,7 @@ async function createMainKeyboard(ctx: MyContext) {
 
   // 1. 自由键盘配置（在群组和私聊中都显示）
   if (
-    PermissionChecker.canUseFreeKeyboard(proxyUser, ctx.currentBot) &&
+    PermissionChecker.canUseFreeKeyboard(proxyUser) &&
     ctx.currentBot?.keyboards &&
     ctx.currentBot.keyboards.length > 0
   ) {

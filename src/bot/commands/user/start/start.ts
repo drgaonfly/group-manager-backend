@@ -1,7 +1,7 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
-import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
+// import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
 import { handlePromotion } from './handlePromotion';
@@ -112,13 +112,33 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   }
 
   // 自由键盘等（权限判断在 createMainKeyboard 内部）
-  const replyOptions: any = {
-    reply_markup: await createMainKeyboard(ctx),
+  // const replyOptions: any = {
+  //   reply_markup: await createMainKeyboard(ctx),
+  // };
+
+  const message = [
+    `嗨！ ${ctx.currentBot.botName} 能幫助你方便地安全管理你的群組，是 TG 上最完善的機器人！`,
+    ``,
+    `將我添加到超級群組並授予管理員權限，這樣我才能進行操作！`,
+    ``,
+    `點擊 /help 查看所有指令及使用方法。`,
+  ].join('\n');
+
+  const inlineKeyboard = {
+    inline_keyboard: [
+      [
+        {
+          text: '把我加到群组',
+          url: `https://t.me/${ctx.currentBot.userName}?startgroup=start`,
+        },
+        { text: '克隆机器人', callback_data: 'clone_start' },
+      ],
+    ],
   };
 
-  const welcomeText = bot.message || '欢迎使用机器人';
-
-  await ctx.reply(welcomeText, replyOptions);
+  await ctx.reply(message, {
+    reply_markup: inlineKeyboard,
+  });
 });
 
 export default startCommand;
