@@ -870,6 +870,20 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * 内部接口：触发指定 Bot 设置 Webhook（供 bot 内部调用，不需鉴权）
+ */
+const triggerSetWebhook = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const bot = await Bot.findById(id);
+  if (!bot) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+  await setWebhook(bot);
+  res.json({ success: true });
+});
+
 export {
   getBots,
   addBot,
@@ -884,4 +898,5 @@ export {
   sendMessage,
   sendGroupMessage,
   sendChannelPost,
+  triggerSetWebhook,
 };

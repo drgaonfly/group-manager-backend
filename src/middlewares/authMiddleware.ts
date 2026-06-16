@@ -265,21 +265,6 @@ const checkDataPermission = handleAsync(
   },
 );
 
-const isAdmin = handleAsync(
-  async (
-    req: RequestCustom,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    if (req.user.isAdmin) {
-      return next();
-    } else {
-      res.status(403);
-      throw new Error('Access Denied');
-    }
-  },
-);
-
 export const isProxy = (user: IUser): boolean => {
   return (
     user.roles && user.roles.length === 1 && user.roles[0]?.name === '代理'
@@ -298,5 +283,4 @@ export {
   checkPermission,
   checkDataPermission,
   customerProtect,
-  isAdmin,
 };

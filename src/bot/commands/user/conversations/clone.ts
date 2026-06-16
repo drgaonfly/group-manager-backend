@@ -72,7 +72,7 @@ async function cloneBotConversation(
         `🔑 <b>密码：</b><code>${password}</code>`,
         `🌐 <b>后台地址：</b>${adminUrl}`,
         '',
-        '⚠️ 请登录后台后立即修改密码。',
+        '💡 机器人正在初始化，稍后即可正常使用。',
       ].join('\n'),
       { parse_mode: 'HTML' },
     );
