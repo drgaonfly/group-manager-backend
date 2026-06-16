@@ -5,16 +5,9 @@ import createMainKeyboard from '../../../menus/keyboards/mainKeyboard';
 import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
 import { handlePromotion } from './handlePromotion';
-import {
-  handleEvaluation,
-  handleEvaluationList,
-  getEvaluationDetail,
-} from './handleEvaluation';
 import { handleMySuccess } from './handleMySuccess';
 import { findBotProxy } from '../../../services/findBotProxy';
 import { PermissionChecker } from '../../../utils/permissionChecker';
-import Evaluation from '../../../../models/evaluation';
-import Teacher from '../../../../models/teacher';
 import { generateSignedUrl } from '../../../../utils/generateSignedUrl';
 import createDebug from 'debug';
 
@@ -82,16 +75,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
 
   // 处理评价链接
   if (startParam) {
-    if (startParam.startsWith('eval_list_')) {
-      const teacherId = startParam.replace('eval_list_', '');
-      await handleEvaluationList(ctx, teacherId);
-      return;
-    }
-    if (startParam.startsWith('eval_')) {
-      const evalId = startParam.replace('eval_', '');
-      await handleEvaluation(ctx, evalId);
-      return;
-    }
     await handlePromotion(ctx, startParam);
   }
 
@@ -137,127 +120,5 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
 
   await ctx.reply(welcomeText, replyOptions);
 });
-
-// 处理评价列表回调
-startCommand.callbackQuery(/^eval_list_(.+?)(?:_(\d+))?$/, async (ctx) => {
-  const teacherId = ctx.match[1];
-  const page = ctx.match[2] ? parseInt(ctx.match[2]) : 1;
-  await handleEvaluationList(ctx, teacherId, true, page);
-  await ctx.answerCallbackQuery();
-});
-
-// 处理具体评价详情回调
-startCommand.callbackQuery(/^show_eval_([a-f\d]{24})$/i, async (ctx) => {
-  const evalId = ctx.match[1];
-  try {
-    const evaluation = await Evaluation.findById(evalId)
-      .populate('reviewer', 'userName firstName lastName')
-      .populate({
-        path: 'teacher',
-        populate: { path: 'botUser' },
-      });
-
-    if (!evaluation) {
-      await ctx.answerCallbackQuery('❌ 评价不存在');
-      return;
-    }
-
-    const teacherId = (evaluation.teacher as any)?._id ?? evaluation.teacher;
-    const teacher = await Teacher.findById(teacherId);
-
-    const msg = getEvaluationDetail(evaluation);
-    const keyboard = new InlineKeyboard();
-
-    const hasMedia =
-      teacher &&
-      ((teacher.images && teacher.images.length > 0) ||
-        (teacher.videos && teacher.videos.length > 0));
-
-    if (hasMedia) {
-      keyboard.text('🖼 查看照片', `show_teacher_media_${teacher._id}`).row();
-    }
-
-    keyboard.text('⬅️ 返回列表', `eval_list_${teacherId}`);
-
-    await ctx.editMessageText(msg, {
-      parse_mode: 'HTML',
-      reply_markup: keyboard,
-    });
-    await ctx.answerCallbackQuery();
-  } catch (err) {
-    console.error('Show evaluation detail failed:', err);
-    await ctx.answerCallbackQuery('❌ 加载失败');
-  }
-});
-
-// 处理查看评价照片回调
-startCommand.callbackQuery(
-  /^show_teacher_media_([a-f\d]{24})$/i,
-  async (ctx) => {
-    const teacherId = ctx.match[1];
-    try {
-      const teacher = await Teacher.findById(teacherId);
-
-      if (!teacher) {
-        await ctx.answerCallbackQuery('❌ 老师信息不存在');
-        return;
-      }
-
-      const teacher_media = [
-        ...(teacher.images || []),
-        ...(teacher.videos || []),
-      ];
-
-      if (teacher_media.length === 0) {
-        await ctx.answerCallbackQuery('❌ 暂无照片');
-        return;
-      }
-
-      // 生成签名 URL（与项目其他地方保持一致）
-      const mediaUrls = await Promise.all(
-        teacher_media.map((file) => generateSignedUrl(file)),
-      );
-
-      await ctx.answerCallbackQuery();
-
-      if (mediaUrls.length === 1) {
-        const url = mediaUrls[0];
-        const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(url);
-        if (isVideo) {
-          await ctx.replyWithVideo(url);
-        } else {
-          await ctx.replyWithPhoto(url);
-        }
-        return;
-      }
-
-      // 分批发送，每组最多 10 个，replyWithMediaGroup 要求至少 2 个
-      for (let i = 0; i < mediaUrls.length; i += 10) {
-        const chunk = mediaUrls.slice(i, i + 10);
-        if (chunk.length === 1) {
-          const url = chunk[0];
-          const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(url);
-          if (isVideo) {
-            await ctx.replyWithVideo(url);
-          } else {
-            await ctx.replyWithPhoto(url);
-          }
-        } else {
-          const mediaGroup = chunk.map((url) => {
-            const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(url);
-            return {
-              type: isVideo ? ('video' as const) : ('photo' as const),
-              media: url,
-            };
-          });
-          await ctx.replyWithMediaGroup(mediaGroup);
-        }
-      }
-    } catch (err) {
-      console.error('Show evaluation media failed:', err);
-      await ctx.answerCallbackQuery('❌ 加载失败');
-    }
-  },
-);
 
 export default startCommand;

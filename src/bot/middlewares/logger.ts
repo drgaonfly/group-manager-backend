@@ -1,5 +1,4 @@
-// src/middlewares/logger.ts
-import { Middleware, InlineKeyboard } from 'grammy';
+import { Middleware } from 'grammy';
 import BotUser from '../../models/botUser';
 import BotMessage from '../../models/botMessage';
 import { findBotProxy } from '../services/findBotProxy';
@@ -7,7 +6,6 @@ import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { MyContext } from '../types';
 import { setupBot } from '../botSetup';
 import { PermissionChecker } from '../utils/permissionChecker';
-import { searchTeachers } from '../../services/teacherService';
 import { tryGrantSpeechReward } from '../../services/speechRewardService';
 
 import createDebug from 'debug';
@@ -95,9 +93,6 @@ const logger: Middleware = async (ctx: MyContext, next) => {
 
   console.log(
     `[Logger] Checking bidirectional for user ${ctx.currentBotUser.id}, isOwner: ${isOwner}`,
-  );
-  console.log(
-    `[Logger] proxyUser bidirectional: ${proxyUser?.bidirectional}, bot canBidirectional: ${ctx.currentBot.canBidirectional}`,
   );
 
   // 如果是拥有者回复消息，且双向功能可用，则转发给原始用户，同时也发送给其他拥有者
@@ -541,61 +536,6 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       new Date(),
     )} 发来了 ${messageType} 类型消息: ${messageContent}`,
   );
-
-  // 如果消息是文本，尝试查找老师
-  if (
-    message?.text &&
-    !isOwner &&
-    PermissionChecker.canUseTeaching(proxyUser, ctx.currentBot)
-  ) {
-    const text = message.text.trim();
-    // 简单正则判断是否可能是老师花名（这里可以根据需求调整逻辑）
-    // 比如：如果消息长度适中且不包含特殊指令前缀
-    if (text.length >= 2 && text.length <= 30 && !text.startsWith('/')) {
-      try {
-        let sentMsg: any = null;
-        // 群内文本触发：仅按老师 display_name（花名）匹配，不按 Telegram 用户反查
-        const {
-          teachers,
-          message: teacherMsg,
-          botUserName,
-        } = await searchTeachers(text, ctx.currentBot._id);
-
-        if (teachers.length > 0) {
-          const keyboard = new InlineKeyboard();
-          teachers.forEach((t, idx) => {
-            if (botUserName) {
-              const url = `https://t.me/${botUserName}?start=eval_list_${t._id}`;
-              keyboard.url(`查看 ${t.display_name || '老师'} 的评价`, url);
-              if ((idx + 1) % 1 === 0) keyboard.row();
-            }
-          });
-
-          sentMsg = await ctx.reply(
-            `💡 发现匹配的老师信息：\n\n${teacherMsg}`,
-            {
-              parse_mode: 'Markdown',
-              reply_to_message_id: message.message_id,
-              reply_markup: keyboard,
-            },
-          );
-        }
-
-        // 统一焚烧逻辑
-        if (sentMsg) {
-          setTimeout(async () => {
-            try {
-              await ctx.api.deleteMessage(ctx.chat.id, sentMsg.message_id);
-            } catch (e) {
-              console.error('Failed to delete message:', e);
-            }
-          }, 25000);
-        }
-      } catch (err) {
-        console.error('Logger teacher lookup failed:', err);
-      }
-    }
-  }
 
   await next();
 };

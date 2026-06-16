@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import { randomBytes } from 'crypto';
 import Bot, { IBot } from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 import BotUser from '../models/botUser';
+import BotUserMessage from '../models/botUserMessage';
 import { printWebhookInfo, setupBot } from '../bot/botSetup';
 import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
@@ -12,17 +11,6 @@ import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import { transformDocumentImage } from '../utils/transformUtils';
-import BotUserMessage from '../models/botUserMessage';
-import GroupMessage from '../models/groupMessage';
-import ChannelPost from '../models/channelPost';
-import ReplyRule from '../models/replyRule';
-import CheckinRule from '../models/checkInRule';
-import Lottery from '../models/lottery';
-import Teacher from '../models/teacher';
-import Evaluation from '../models/evaluation';
-import GroupMessageRecord from '../models/groupMessageRecord';
-import ChannelPostHistory from '../models/channelPostHistory';
-import LotteryParticipant from '../models/lotteryParticipant';
 import { buildInlineKeyboard } from '../utils/buildInlineKeyboard';
 import { sendMediaMessage } from '../utils/sendMultiMedia';
 import { extractChannelTarget } from '../utils/extractChannelTarget';
@@ -136,13 +124,6 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('clonedFrom')
     .populate('creator')
     .populate('channel_posts')
-    .populate({
-      path: 'teachers',
-      populate: {
-        path: 'botUser',
-        select: 'id userName firstName lastName',
-      },
-    })
     .populate({
       path: 'botUserConfigs',
       populate: [
@@ -889,234 +870,6 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
   }
 });
 
-const BOT_FEATURE_FIELD_KEYS: string[] = [
-  'message',
-  'menus',
-  'keyboards',
-  'presets',
-  'intervalTime',
-  'minSpeechLength',
-  'allowPureNumberSpeech',
-  'canSpeechStatic',
-  'canFreeKeyboard',
-  'canGroupMessaging',
-  'canBidirectional',
-  'canGroupWelcome',
-  'canOpenChannelPost',
-  'canGroupVerify',
-  'canReportMemberNameUpdated',
-  'canReplyRule',
-  'canCheckIn',
-  'canLotteryRule',
-  'canAuctionRule',
-  'canTeaching',
-  'canRemoveAd',
-  'canRankConferral',
-  'multi_image',
-  'multi_content',
-  'fee',
-  'auto_exchange_address',
-  'exchange_rate',
-];
-
-function omitDocMeta<T extends Record<string, unknown>>(doc: T) {
-  const rest = { ...(doc as Record<string, unknown>) };
-  delete rest._id;
-  delete rest.__v;
-  delete rest.createdAt;
-  delete rest.updatedAt;
-  return rest as Omit<T, '_id' | '__v' | 'createdAt' | 'updatedAt'>;
-}
-
-// 注意：cloneGroupVerifyDoc 已废弃，群验证现在是按群组配置的，无需克隆
-// 注意：cloneGroupWelcomeDoc 已废弃，群欢迎现在是按群组配置的，无需克隆
-
-async function newLotteryCode(): Promise<string> {
-  for (let i = 0; i < 24; i++) {
-    const code = randomBytes(8).toString('hex');
-    const dup = await Lottery.findOne({ code }).select('_id').lean();
-    if (!dup) return code;
-  }
-  throw new Error('无法生成唯一抽奖码');
-}
-
-/**
- * 超级管理员：将源机器人的功能配置复制到目标机器人（覆盖目标侧同类配置）。
- * 群发/频道推广中的群组、频道绑定会清空，需在目标机器人上重新选择。
- * 不使用 MongoDB 事务，以便在单机（非副本集）环境下可用；副本集部署下亦为顺序执行。
- */
-const copyBotFeatureConfig = handleAsync(
-  async (req: RequestCustom, res: Response) => {
-    const { sourceBotId, targetBotId } = req.body as {
-      sourceBotId?: string;
-      targetBotId?: string;
-    };
-
-    if (!sourceBotId || !targetBotId) {
-      res.status(400);
-      throw new Error('请提供 sourceBotId 与 targetBotId');
-    }
-
-    if (String(sourceBotId) === String(targetBotId)) {
-      res.status(400);
-      throw new Error('源机器人与目标机器人不能相同');
-    }
-
-    const sourceBot = await Bot.findById(sourceBotId).lean();
-    const targetBot = await Bot.findById(targetBotId).lean();
-
-    if (!sourceBot || !targetBot) {
-      res.status(404);
-      throw new Error('机器人不存在');
-    }
-
-    // 注意：groupWelcome 已改为按群组配置，不再 bot 级别克隆
-    // 注意：groupVerify 已改为按群组配置，不再全局克隆
-
-    const featureUpdate: Record<string, unknown> = {};
-
-    for (const key of BOT_FEATURE_FIELD_KEYS) {
-      const v = (sourceBot as Record<string, unknown>)[key as string];
-      if (v !== undefined) {
-        featureUpdate[key as string] = v;
-      }
-    }
-
-    const targetLotteryIds = (
-      await Lottery.find({ bot: targetBotId }).select('_id').lean()
-    ).map((l) => l._id);
-    if (targetLotteryIds.length > 0) {
-      await LotteryParticipant.deleteMany({
-        lottery: { $in: targetLotteryIds },
-      });
-    }
-    await Lottery.deleteMany({ bot: targetBotId });
-
-    await GroupMessageRecord.deleteMany({ bot: targetBotId });
-    await GroupMessage.deleteMany({ bot: targetBotId });
-
-    await ChannelPostHistory.deleteMany({ bot: targetBotId });
-    await ChannelPost.deleteMany({ bot: targetBotId });
-
-    await ReplyRule.deleteMany({ bot: targetBotId });
-    await CheckinRule.deleteMany({ bot: targetBotId });
-    await BotUserMessage.deleteMany({ bot: targetBotId });
-
-    await Evaluation.deleteMany({ bot: targetBotId });
-    await Teacher.deleteMany({ bot: targetBotId });
-
-    const proxyId = targetBot.user;
-
-    const groupMessages = await GroupMessage.find({ bot: sourceBotId }).lean();
-    if (groupMessages.length > 0) {
-      await GroupMessage.insertMany(
-        groupMessages.map((row) => ({
-          ...omitDocMeta(row as Record<string, unknown>),
-          bot: targetBotId,
-          proxy: proxyId,
-          groups: [],
-        })),
-      );
-    }
-
-    const channelPosts = await ChannelPost.find({ bot: sourceBotId }).lean();
-    if (channelPosts.length > 0) {
-      await ChannelPost.insertMany(
-        channelPosts.map((row) => ({
-          ...omitDocMeta(row as Record<string, unknown>),
-          bot: targetBotId,
-          proxy: proxyId,
-          channel: undefined,
-          channels: [],
-          lastPostTime: undefined,
-          lastPostMessageId: undefined,
-        })),
-      );
-    }
-
-    const replyRules = await ReplyRule.find({ bot: sourceBotId }).lean();
-    if (replyRules.length > 0) {
-      await ReplyRule.insertMany(
-        replyRules.map((row) => ({
-          ...omitDocMeta(row as Record<string, unknown>),
-          bot: targetBotId,
-          proxy: proxyId,
-        })),
-      );
-    }
-
-    const checkinRules = await CheckinRule.find({ bot: sourceBotId }).lean();
-    if (checkinRules.length > 0) {
-      await CheckinRule.insertMany(
-        checkinRules.map((row) => ({
-          ...omitDocMeta(row as Record<string, unknown>),
-          bot: targetBotId,
-          proxy: proxyId,
-        })),
-      );
-    }
-
-    const lotteries = await Lottery.find({ bot: sourceBotId }).lean();
-    for (const row of lotteries) {
-      const code = await newLotteryCode();
-      const body = omitDocMeta(row as Record<string, unknown>);
-      await Lottery.create([
-        {
-          ...body,
-          bot: targetBotId,
-          proxy: proxyId,
-          code,
-          status: 'pending',
-          drawnAt: undefined,
-        },
-      ]);
-    }
-
-    const botUserMessages = await BotUserMessage.find({
-      bot: sourceBotId,
-    }).lean();
-    if (botUserMessages.length > 0) {
-      await BotUserMessage.insertMany(
-        botUserMessages.map((row) => ({
-          ...omitDocMeta(row as Record<string, unknown>),
-          bot: targetBotId,
-          proxy: proxyId,
-        })),
-      );
-    }
-
-    const teachers = await Teacher.find({ bot: sourceBotId }).lean();
-    if (teachers.length > 0) {
-      await Teacher.insertMany(
-        teachers.map((row) => ({
-          ...omitDocMeta(row as Record<string, unknown>),
-          bot: targetBotId,
-          proxy: proxyId,
-        })),
-      );
-    }
-
-    await Bot.findByIdAndUpdate(targetBotId, { $set: featureUpdate });
-
-    // 群欢迎/群验证已改为按群组配置，无需处理旧 bot 级别文档
-
-    const updatedBot = await Bot.findById(targetBotId);
-
-    const processedBot = await transformDocumentImage(updatedBot!, [
-      'multi_image',
-    ]);
-    const botObj = processedBot.toObject
-      ? processedBot.toObject()
-      : processedBot;
-
-    res.json({
-      success: true,
-      data: botObj,
-      message: '功能配置已复制到目标机器人',
-    });
-  },
-);
-
 export {
   getBots,
   addBot,
@@ -1131,5 +884,4 @@ export {
   sendMessage,
   sendGroupMessage,
   sendChannelPost,
-  copyBotFeatureConfig,
 };

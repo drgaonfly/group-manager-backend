@@ -40,7 +40,6 @@ export interface IUser extends Document {
   checkinRule: boolean;
   lotteryRule: boolean;
   auctionRule: boolean;
-  teaching: boolean;
   adRemoval: boolean; // 广告移除
   recharge: boolean;
   success: boolean;
@@ -107,7 +106,6 @@ const userSchema = new mongoose.Schema(
     checkinRule: { type: Boolean, default: false },
     lotteryRule: { type: Boolean, default: false },
     auctionRule: { type: Boolean, default: false },
-    teaching: { type: Boolean, default: false },
     adRemoval: { type: Boolean, default: false }, // 广告移除
     recharge: { type: Boolean, default: false },
     success: { type: Boolean, default: false },

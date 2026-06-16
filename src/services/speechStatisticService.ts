@@ -1,4 +1,3 @@
-import Bot from '../models/bot';
 import BotMessage from '../models/botMessage';
 import BotUser from '../models/botUser';
 import Group from '../models/group';
@@ -84,23 +83,15 @@ export class SpeechStatisticService {
     const group = await Group.findById(groupId);
     if (!group) return null;
 
-    // 优先从 SpeechConfig（群级配置）读取过滤参数，降级到 Bot 字段兜底
+    // 优先从 SpeechConfig（群级配置）读取过滤参数，无配置时使用默认值
     const speechConfig = await SpeechConfig.findOne({
       bot: group.bot,
       group: groupId,
     }).lean();
 
-    let minSpeechLength: number;
-    let allowPureNumberSpeech: boolean;
-
-    if (speechConfig) {
-      minSpeechLength = speechConfig.minSpeechLength ?? 1;
-      allowPureNumberSpeech = speechConfig.allowPureNumberSpeech ?? false;
-    } else {
-      const bot = await Bot.findById(group.bot);
-      minSpeechLength = bot?.minSpeechLength ?? 1;
-      allowPureNumberSpeech = bot?.allowPureNumberSpeech ?? false;
-    }
+    const minSpeechLength: number = speechConfig?.minSpeechLength ?? 1;
+    const allowPureNumberSpeech: boolean =
+      speechConfig?.allowPureNumberSpeech ?? false;
 
     // 构建匹配条件
     const matchConditions: any = {

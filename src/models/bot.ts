@@ -44,66 +44,14 @@ export interface IBot extends Document {
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
 
-  // 多功能配置
-
-  // 群内统计
-  canSpeechStatic?: boolean;
-  minSpeechLength: number; // 发言必须超过n个字符才进入统计
-  allowPureNumberSpeech: boolean; // 是否允许纯数字发言才进入统计
-
-  // 活跃奖励
-  enableActivityReward: boolean; // 是否启用活跃奖励
-  activityRewardCycle: 'daily' | 'weekly' | 'monthly'; // 统计周期
-  activityRewardTopN: number; // 奖励前 N 名
-  activityRewardPoints: number; // 每人奖励积分数
-
-  // 自由键盘
-  canFreeKeyboard?: boolean;
+  // 自由键盘（keyboards 数据仍保留）
   keyboards: IKeyboard[];
 
-  // 群发
-  canGroupMessaging?: boolean;
-
-  // 双向
-  canBidirectional?: boolean;
-
-  // 欢迎进群
-  canGroupWelcome?: boolean;
-  // groupWelcome 已改为按群组独立配置，通过 /api/group-welcomes?botId=... 查询
-
-  // 定时频道
+  // 定时频道 — cron job 用作查询过滤，保留
   canOpenChannelPost: boolean;
 
-  // 群验证
-  canGroupVerify: boolean;
-  // groupVerify 已改为按群组独立配置，通过 /api/group-verifies?botId=... 查询
-
-  // 报道群内成员昵称或用户名更新
+  // 名称变更播报 — cron job 用作查询过滤，保留
   canReportMemberNameUpdated: boolean;
-
-  // 关键词回复
-  canReplyRule: boolean;
-
-  // 群签到
-  canCheckIn: boolean;
-
-  // 群抽奖
-  canLotteryRule: boolean;
-
-  // 群竞拍
-  canAuctionRule: boolean;
-
-  // 教学模块
-  canTeaching: boolean;
-
-  // 处理广告功能模块
-  canRemoveAd: boolean;
-
-  // 积分继承
-  canSuccess: boolean;
-
-  // 红包功能
-  canRedPacket: boolean;
 }
 
 export interface IMenu extends Document {
@@ -300,112 +248,16 @@ const botSchema = new mongoose.Schema(
       ref: 'BotUser',
       required: false,
     },
-    minSpeechLength: {
-      type: Number,
-      default: 1,
-    },
-    allowPureNumberSpeech: {
-      type: Boolean,
-      default: false,
-    },
-    // 活跃奖励配置
-    enableActivityReward: {
-      type: Boolean,
-      default: false,
-    },
-    activityRewardCycle: {
-      type: String,
-      enum: ['daily', 'weekly', 'monthly'],
-      default: 'daily',
-    },
-    activityRewardTopN: {
-      type: Number,
-      default: 3,
-      min: 1,
-    },
-    activityRewardPoints: {
-      type: Number,
-      default: 10,
-      min: 1,
-    },
 
-    // 功能开关
-    canSpeechStatic: {
-      type: Boolean,
-      default: false,
-    },
-    canFreeKeyboard: {
-      type: Boolean,
-      default: false,
-    },
-    canGroupMessaging: {
-      type: Boolean,
-      default: false,
-    },
-    canBidirectional: {
-      type: Boolean,
-      default: false,
-    },
-    canGroupWelcome: {
-      type: Boolean,
-      default: false,
-    },
+    // 功能开关（仅保留作为 cron 查询过滤条件的字段）
+
     canOpenChannelPost: {
       type: Boolean,
       required: false,
       default: false,
     },
-    canGroupVerify: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
+
     canReportMemberNameUpdated: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canReplyRule: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canCheckIn: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canLotteryRule: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canAuctionRule: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canTeaching: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canRemoveAd: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canRecharge: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canSuccess: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    canRedPacket: {
       type: Boolean,
       required: false,
       default: false,
@@ -453,13 +305,6 @@ botSchema.virtual('lotteries', {
 // 虚拟字段：关联的竞拍活动
 botSchema.virtual('auctions', {
   ref: 'Auction',
-  localField: '_id',
-  foreignField: 'bot',
-});
-
-// 虚拟字段：关联的老师
-botSchema.virtual('teachers', {
-  ref: 'Teacher',
   localField: '_id',
   foreignField: 'bot',
 });

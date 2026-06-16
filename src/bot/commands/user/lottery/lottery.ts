@@ -199,11 +199,6 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
   // 检查群组是否属于当前机器人
   const currentBot = ctx.currentBot;
 
-  // 检查机器人是否启用抽奖功能
-  if (!currentBot.canLotteryRule) {
-    return next();
-  }
-
   // 查找该机器人+群组下的进行中抽奖活动
   const lottery = await Lottery.findOne({
     bot: currentBot._id,

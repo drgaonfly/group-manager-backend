@@ -1,6 +1,7 @@
 import Lottery from '../../../models/lottery';
 import LotteryParticipant from '../../../models/lotteryParticipant';
 import BotUserConfig from '../../../models/botUserConfig';
+import Bot from '../../../models/bot';
 import Group from '../../../models/group';
 import { setupBot } from '../../../bot/botSetup';
 import { formatBeijingDate } from '../../../utils/formatBeijingDate';
@@ -12,16 +13,12 @@ import { replaceLotteryVariables } from '../../../utils/replaceVariables';
 export async function checkAndDrawLotteries() {
   const now = new Date();
 
-  // 查找需要开奖的抽奖活动（关联机器人并检查机器人是否启用抽奖）
+  // 查找需要开奖的抽奖活动
   const lotteries = await Lottery.find({
     status: { $in: ['pending', 'ongoing'] },
-  }).populate('bot');
-
-  // 过滤出机器人启用了抽奖功能的活动
-  const activeLotteries = lotteries.filter((lottery) => {
-    const bot = lottery.bot as any;
-    return bot && bot.canLotteryRule;
   });
+
+  const activeLotteries = lotteries;
 
   console.log(
     `[抽奖任务] 找到 ${activeLotteries.length} 个进行中的抽奖活动（共 ${lotteries.length} 个）`,

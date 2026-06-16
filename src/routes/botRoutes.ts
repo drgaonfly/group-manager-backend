@@ -13,7 +13,6 @@ import {
   sendMessage,
   sendGroupMessage,
   sendChannelPost,
-  copyBotFeatureConfig,
 } from '../controllers/botController';
 import {
   protect,
@@ -28,10 +27,6 @@ router
   .get(protect, checkPermission, getBots)
   .post(protect, checkPermission, addBot)
   .delete(protect, checkPermission, deleteMultipleBots);
-
-router
-  .route('/copy-feature-config')
-  .post(protect, isAdmin, copyBotFeatureConfig);
 
 router
   .route('/:id')

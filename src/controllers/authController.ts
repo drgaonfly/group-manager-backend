@@ -241,7 +241,6 @@ const updateUserProfile = handleAsync(
       checkinRule,
       lotteryRule,
       auctionRule,
-      teaching,
       adRemoval,
       rankConferral,
       recharge,
@@ -321,9 +320,6 @@ const updateUserProfile = handleAsync(
       }
       if (typeof lotteryRule !== 'undefined') {
         updateData.lotteryRule = lotteryRule;
-      }
-      if (typeof teaching !== 'undefined') {
-        updateData.teaching = teaching;
       }
       if (typeof adRemoval !== 'undefined') {
         updateData.adRemoval = adRemoval;

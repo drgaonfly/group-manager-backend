@@ -2,118 +2,73 @@ import { IUser } from '../../models/user';
 import { IBot } from '../../models/bot';
 
 /**
- * 检查用户权限和机器人功能配置的工具函数
+ * 检查用户权限的工具函数。
+ *
+ * 权限采用单层控制：只由平台授予代理用户的功能字段决定，
+ * Bot 自身的 canXxx 开关不再参与判断（已废弃双重门控）。
+ * bot 参数保留以维持调用兼容性，但不参与逻辑。
  */
 export class PermissionChecker {
-  /**
-   * 检查代理用户功能是否被禁用
-   * @param proxyUser 代理用户
-   * @returns 是否被禁用
-   */
-  // private static isFunctionDisabled(proxyUser: IUser | null): boolean {
-  //   if (!proxyUser || !proxyUser.function_disabledAt) {
-  //     return false;
-  //   }
-  //   // 检查是否到期（当前时间小于禁用时间表示还在禁用期内）
-  //   return new Date() < new Date(proxyUser.function_disabledAt);
-  // }
-
-  /**
-   * 检查群内统计功能是否可用
-   * @param proxyUser 代理用户
-   * @param bot 机器人
-   * @returns 是否可用
-   */
-  static canUseSpeechStatic(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.speech_static && bot?.canSpeechStatic);
+  static canUseSpeechStatic(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.speech_static;
   }
 
-  /**
-   * 检查自由键盘功能是否可用
-   * @param proxyUser 代理用户
-   * @param bot 机器人
-   * @returns 是否可用
-   */
-  static canUseFreeKeyboard(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.keyboardConfig && bot?.canFreeKeyboard);
+  static canUseFreeKeyboard(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.keyboardConfig;
   }
 
-  /**
-   * 检查群发功能是否可用
-   * @param proxyUser 代理用户
-   * @param bot 机器人
-   * @returns 是否可用
-   */
-  static canUseGroupMessaging(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.groupMessage && bot?.canGroupMessaging);
+  static canUseGroupMessaging(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.groupMessage;
   }
 
-  /**
-   * 检查双向功能是否可用
-   * @param proxyUser 代理用户
-   * @param bot 机器人
-   * @returns 是否可用
-   */
-  static canUseBidirectional(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.bidirectional && bot?.canBidirectional);
+  static canUseBidirectional(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.bidirectional;
   }
 
-  static canUseGroupWelcome(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.groupWelcome && bot?.canGroupWelcome);
+  static canUseGroupWelcome(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.groupWelcome;
   }
 
-  static canUseChannelPost(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.channelPost && bot?.canOpenChannelPost);
+  static canUseChannelPost(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.channelPost;
   }
 
-  static canUseTeaching(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.teaching && bot?.canTeaching);
-  }
-
-  static canUseGroupVerify(proxyUser: IUser | null, bot: IBot): boolean {
-    // 只检查代理用户权限和 bot 开关，配置有效性在 resolver 层按群组检查
-    return !!(proxyUser?.groupVerify && bot?.canGroupVerify);
+  /** 配置有效性在 resolver 层按群组检查 */
+  static canUseGroupVerify(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.groupVerify;
   }
 
   static canReportMemberNameUpdated(
     proxyUser: IUser | null,
-    bot: IBot,
+    _bot?: IBot,
   ): boolean {
-    return !!(
-      proxyUser?.reportGroupMemberNameUpdated && bot?.canReportMemberNameUpdated
-    );
+    return !!proxyUser?.reportGroupMemberNameUpdated;
   }
 
-  static canUseAdRemoval(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.adRemoval && bot?.canRemoveAd);
+  static canUseAdRemoval(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.adRemoval;
   }
 
-  static canUseSuccess(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.success && bot?.canSuccess);
+  static canUseSuccess(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.success;
   }
 
-  static canUseRedPacket(proxyUser: IUser | null, bot: IBot): boolean {
-    return !!(proxyUser?.redPacket && bot?.canRedPacket);
+  static canUseRedPacket(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.redPacket;
   }
 
-  /**
-   * 获取所有功能的可用状态
-   * @param proxyUser 代理用户
-   * @param bot 机器人
-   * @returns 功能可用状态对象
-   */
-  static getAllPermissions(proxyUser: IUser | null, bot: IBot) {
+  /** 获取所有功能的可用状态 */
+  static getAllPermissions(proxyUser: IUser | null, _bot?: IBot) {
     return {
-      speechStatic: this.canUseSpeechStatic(proxyUser, bot),
-      freeKeyboard: this.canUseFreeKeyboard(proxyUser, bot),
-      groupMessaging: this.canUseGroupMessaging(proxyUser, bot),
-      bidirectional: this.canUseBidirectional(proxyUser, bot),
-      groupWelcome: this.canUseGroupWelcome(proxyUser, bot),
-      channelPost: this.canUseChannelPost(proxyUser, bot),
-      groupVerify: this.canUseGroupVerify(proxyUser, bot),
-      teaching: this.canUseTeaching(proxyUser, bot),
-      adRemoval: this.canUseAdRemoval(proxyUser, bot),
-      redPacket: this.canUseRedPacket(proxyUser, bot),
+      speechStatic: this.canUseSpeechStatic(proxyUser),
+      freeKeyboard: this.canUseFreeKeyboard(proxyUser),
+      groupMessaging: this.canUseGroupMessaging(proxyUser),
+      bidirectional: this.canUseBidirectional(proxyUser),
+      groupWelcome: this.canUseGroupWelcome(proxyUser),
+      channelPost: this.canUseChannelPost(proxyUser),
+      groupVerify: this.canUseGroupVerify(proxyUser),
+      adRemoval: this.canUseAdRemoval(proxyUser),
+      redPacket: this.canUseRedPacket(proxyUser),
     };
   }
 }

@@ -48,7 +48,7 @@ async function createMainKeyboard(ctx: MyContext) {
 
   // keyboard.text('充值余额');
 
-  // 红包 + 教学：私聊时合并到同一行
+  // 红包：私聊时显示
   if (!isGroupChat) {
     const frontendUrl = process.env.FRONTEND_URL;
     const botId = ctx.currentBot._id;
@@ -58,20 +58,12 @@ async function createMainKeyboard(ctx: MyContext) {
       proxyUser,
       ctx.currentBot,
     );
-    const canTeaching = PermissionChecker.canUseTeaching(
-      proxyUser,
-      ctx.currentBot,
-    );
 
-    if (frontendUrl && botUserId && (canRedPacket || canTeaching)) {
+    if (frontendUrl && botUserId && canRedPacket) {
       keyboard.row();
       if (canRedPacket) {
         const url = `${frontendUrl}/redpacket/create?botId=${botId}&botUserId=${botUserId}`;
         keyboard.webApp('🧧 发红包', url);
-      }
-      if (canTeaching) {
-        const url = `${frontendUrl}/teaching?botId=${botId}&botUserId=${botUserId}`;
-        keyboard.webApp('🎓 教学中心', url);
       }
     }
   }

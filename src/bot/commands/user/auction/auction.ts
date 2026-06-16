@@ -21,9 +21,6 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
   }
 
   const currentBot = ctx.currentBot;
-  if (!currentBot.canAuctionRule) {
-    return next();
-  }
 
   // 查找该群组下的进行中竞拍活动
   const auction = await Auction.findOne({
@@ -65,10 +62,10 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
 
     const userBalance = userConfig?.usdt_balance || 0;
 
-    // 检查余额是否足够
+    // 检查余额是否足�?
     if (userBalance < bidAmount) {
       await ctx.reply(
-        `❌ 积分余额不足！\n当前余额：${userBalance}积分\n出价金额：${bidAmount}积分`,
+        `�?积分余额不足！\n当前余额�?{userBalance}积分\n出价金额�?{bidAmount}积分`,
         {
           reply_to_message_id: ctx.message.message_id,
         },
@@ -85,10 +82,10 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       minimumBid = auction.startingPrice + auction.minBidIncrement;
     }
 
-    // 检查出价是否符合最小加价要求
+    // 检查出价是否符合最小加价要�?
     if (bidAmount < minimumBid) {
       await ctx.reply(
-        `❌ 出价过低！\n最低出价：${minimumBid}积分\n您的出价：${bidAmount}积分`,
+        `�?出价过低！\n最低出价：${minimumBid}积分\n您的出价�?{bidAmount}积分`,
         {
           reply_to_message_id: ctx.message.message_id,
         },
@@ -96,13 +93,13 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       return;
     }
 
-    // 检查出价是否超过最大加价限制
+    // 检查出价是否超过最大加价限�?
     if (auction.bids.length > 0) {
       const currentHighest = Math.max(...auction.bids.map((b) => b.bidAmount));
       const maxAllowedBid = currentHighest + auction.maxBidIncrement;
       if (bidAmount > maxAllowedBid) {
         await ctx.reply(
-          `❌ 出价过高！\n当前最高价：${currentHighest}积分\n最大允许出价：${maxAllowedBid}积分\n您的出价：${bidAmount}积分`,
+          `�?出价过高！\n当前最高价�?{currentHighest}积分\n最大允许出价：${maxAllowedBid}积分\n您的出价�?{bidAmount}积分`,
           {
             reply_to_message_id: ctx.message.message_id,
           },
@@ -111,7 +108,7 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       }
     }
 
-    // 检查用户是否已经是最高出价者
+    // 检查用户是否已经是最高出价�?
     if (auction.bids.length > 0) {
       const currentHighestBid = auction.bids.reduce((highest, current) =>
         current.bidAmount > highest.bidAmount ? current : highest,
@@ -119,7 +116,7 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
 
       if (currentHighestBid.botUser.toString() === botUser._id.toString()) {
         await ctx.reply(
-          `❌ 您已经是当前最高出价者！\n当前最高价：${currentHighestBid.bidAmount}积分`,
+          `�?您已经是当前最高出价者！\n当前最高价�?{currentHighestBid.bidAmount}积分`,
           {
             reply_to_message_id: ctx.message.message_id,
           },
@@ -128,7 +125,7 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       }
     }
 
-    // 将之前的出价标记为非获胜状态
+    // 将之前的出价标记为非获胜状�?
     auction.bids.forEach((bid) => {
       bid.isWinning = false;
     });
@@ -153,7 +150,7 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       .sort(
         (a, b) => new Date(b.bidTime).getTime() - new Date(a.bidTime).getTime(),
       )
-      .slice(0, 10); // 只显示最近10条
+      .slice(0, 10); // 只显示最�?0�?
 
     const bidRecords = sortedBids
       .map((bid, _index) => {
@@ -170,14 +167,14 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       `🎉 您参与的是：${auction.title} 竞拍活动\n\n` +
       `💡 参与方式：直接用您的出价回复本消息！\n\n` +
       `竞拍详情见置顶\n\n` +
-      `出价记录（${auction.bids.length}）：\n${bidRecords}`;
+      `出价记录�?{auction.bids.length}）：\n${bidRecords}`;
 
     const sentMessage = await ctx.reply(responseMessage, {
       reply_to_message_id: ctx.message.message_id,
       parse_mode: 'HTML',
     });
 
-    // 检查是否需要置顶
+    // 检查是否需要置�?
     if (auction.isPinned && sentMessage.message_id) {
       try {
         await ctx.api.pinChatMessage(ctx.chat!.id, sentMessage.message_id);
@@ -186,16 +183,16 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       }
     }
 
-    // 检查竞拍是否结束
+    // 检查竞拍是否结�?
     if (new Date() >= auction.endTime) {
-      // 确保 populate bot 和 group
+      // 确保 populate bot �?group
       await auction.populate('bot', 'token userName botName');
       await auction.populate('group', 'id title');
       await executeAuctionEnd(auction);
     }
   } catch (error) {
     console.error('竞拍出价处理失败:', error);
-    await ctx.reply('❌ 出价失败，请稍后重试', {
+    await ctx.reply('�?出价失败，请稍后重试', {
       reply_to_message_id: ctx.message.message_id,
     });
   }
@@ -203,7 +200,7 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
 
 // 关键词触发竞拍参与（只在群组中工作）
 auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
-  // 如果是命令（以 / 开头），跳过关键词处理
+  // 如果是命令（�?/ 开头），跳过关键词处理
   if (ctx.message.text.startsWith('/')) {
     return next();
   }
@@ -214,9 +211,6 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
   }
 
   const currentBot = ctx.currentBot;
-  if (!currentBot.canAuctionRule) {
-    return next();
-  }
 
   // 查找该群组下的进行中竞拍活动
   const auction = await Auction.findOne({
@@ -234,9 +228,9 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
   const matched = auction.keywords.some((k) => text === k);
 
   console.log(
-    `[竞拍] 机器人: ${currentBot.botName}, 群组: ${
+    `[竞拍] 机器�? ${currentBot.botName}, 群组: ${
       currentGroup.title
-    }, 关键词: ${auction.keywords.join(
+    }, 关键�? ${auction.keywords.join(
       ',',
     )}, 用户输入: ${text}, 匹配: ${matched}`,
   );
@@ -251,7 +245,7 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       return next();
     }
 
-    // 获取当前最高出价
+    // 获取当前最高出�?
     let currentHighestBid = auction.startingPrice;
     let minimumBid = auction.startingPrice + auction.minBidIncrement;
 
@@ -265,7 +259,7 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
       .sort(
         (a, b) => new Date(b.bidTime).getTime() - new Date(a.bidTime).getTime(),
       )
-      .slice(0, 5); // 只显示最近5条
+      .slice(0, 5); // 只显示最�?�?
 
     let bidRecords = '';
     if (sortedBids.length > 0) {
@@ -288,11 +282,11 @@ auctionCommand.on('message:text', checkGroup, async (ctx, next) => {
     const responseMessage =
       `🎉 您参与的是：${auction.title} 竞拍活动\n\n` +
       `💡 参与方式：直接用您的出价回复本消息！\n\n` +
-      `💰 当前最高价：${currentHighestBid}积分\n` +
-      `📈 加价区间：${auction.minBidIncrement}-${auction.maxBidIncrement}积分\n` +
+      `💰 当前最高价�?{currentHighestBid}积分\n` +
+      `📈 加价区间�?{auction.minBidIncrement}-${auction.maxBidIncrement}积分\n` +
       `📊 最低出价：${minimumBid}积分\n` +
-      `⏰ 结束时间：${endTime}\n\n` +
-      `出价记录（${auction.bids.length}）：\n${bidRecords}`;
+      `�?结束时间�?{endTime}\n\n` +
+      `出价记录�?{auction.bids.length}）：\n${bidRecords}`;
 
     await ctx.reply(responseMessage, {
       reply_to_message_id: ctx.message.message_id,
