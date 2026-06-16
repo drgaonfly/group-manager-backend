@@ -61,7 +61,7 @@ async function cloneBotConversation(
 
   if (result2.success) {
     const { email, password } = result2.account!;
-    const adminUrl = process.env.FRONTEND_URL || '请联系管理员获取后台地址';
+    const adminUrl = process.env.ADMIN_URL || '请联系管理员获取后台地址';
     await ctx.reply(
       [
         '✅ <b>克隆成功！</b>',
