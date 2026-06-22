@@ -85,281 +85,8 @@ const logger: Middleware = async (ctx: MyContext, next) => {
     _id: { $in: ctx.currentBot.owners || [] },
   });
 
-  // 检查当前用户是否是拥有者
-  const isOwner = owners.some((owner) => owner.id === ctx.currentBotUser.id);
-
   // 获取代理用户权限
   const { proxyUser } = await findBotProxy(ctx.currentBot);
-
-  console.log(
-    `[Logger] Checking bidirectional for user ${ctx.currentBotUser.id}, isOwner: ${isOwner}`,
-  );
-
-  // 如果是拥有者回复消息，且双向功能可用，则转发给原始用户，同时也发送给其他拥有者
-  if (
-    isOwner &&
-    message?.reply_to_message &&
-    PermissionChecker.canUseBidirectional(proxyUser, ctx.currentBot)
-  ) {
-    try {
-      console.log('=== 拥有者回复检测 ===');
-      console.log('回复的消息:', message.reply_to_message);
-
-      const replyMsg = message.reply_to_message as any;
-      let originalUserId: number | undefined;
-
-      // 检查回复的消息是否是转发的消息
-      if (replyMsg.forward_from || replyMsg.forward_from_chat) {
-        originalUserId = replyMsg.forward_from?.id;
-
-        if (originalUserId) {
-          const bot = setupBot(ctx.currentBot.token);
-
-          // 获取被回复的客户 BotUser
-          let originalBotUser: any = null;
-          try {
-            originalBotUser = await BotUser.findOne({
-              id: originalUserId.toString(),
-              bot: ctx.currentBot._id,
-            });
-          } catch (err) {
-            console.error('获取原始用户信息失败:', err);
-          }
-
-          // 检测消息类型和内容
-          const mediaTypes = {
-            photo: message?.photo?.[message.photo.length - 1]?.file_id,
-            video: message?.video?.file_id,
-            document: message?.document?.file_id,
-            animation: message?.animation?.file_id,
-            voice: message?.voice?.file_id,
-            audio: message?.audio?.file_id,
-            sticker: message?.sticker?.file_id,
-            video_note: message?.video_note?.file_id,
-          };
-          const mediaType = Object.entries(mediaTypes).find(
-            ([_, id]) => id,
-          )?.[0];
-          const fileId = mediaType ? mediaTypes[mediaType] : null;
-          const ownerReplyMessageType = mediaType || messageType;
-          const ownerReplyContent = fileId || message?.text || messageContent;
-
-          try {
-            // 将拥有者的回复复制给原始用户
-            await bot.api.copyMessage(
-              originalUserId,
-              ctx.chat.id,
-              message.message_id,
-            );
-
-            console.log(`✅ 已将拥有者的回复发送给用户: ${originalUserId}`);
-          } catch (copyErr: any) {
-            // 如果复制失败（比如用户还没有和机器人开始对话）
-            if (
-              copyErr.error_code === 400 &&
-              copyErr.description?.includes('chat not found')
-            ) {
-              console.log(
-                `用户 ${originalUserId} 还没有和机器人开始对话，无法发送回复`,
-              );
-              await ctx.reply('❌ 发送失败：用户还没有和机器人开始对话');
-            } else {
-              console.error('发送回复给用户失败:', copyErr);
-              const errorMsg =
-                copyErr?.message ||
-                copyErr?.description ||
-                copyErr?.toString() ||
-                '未知错误';
-              await ctx.reply(`❌ 发送失败：${errorMsg}`);
-            }
-          }
-
-          // 保存拥有者回复的消息到数据库（关联到客户的 BotUser）
-          // 即使 originalBotUser 不存在，也要尝试保存（使用当前拥有者作为 botUser）
-          try {
-            let targetBotUser = originalBotUser;
-
-            // 如果找不到客户的 BotUser，使用拥有者的 BotUser（可能是拥有者在回复）
-            if (!targetBotUser) {
-              console.warn(
-                `未找到客户 BotUser (ID: ${originalUserId})，使用拥有者 BotUser`,
-              );
-              targetBotUser = ctx.currentBotUser;
-            }
-
-            if (targetBotUser) {
-              await BotMessage.create({
-                bot: ctx.currentBot._id,
-                botUser: targetBotUser._id, // 关联到客户或拥有者
-                group: ctx.currentGroup?._id,
-                content: ownerReplyContent,
-                messageType: ownerReplyMessageType,
-                caption: message?.caption,
-                telegramMessageId: message.message_id, // 电报消息 ID
-                proxyUser: proxyUser?._id, // 代理用户
-                isOwnerReply: true, // 标记为拥有者回复
-                raw: message, // 原始消息体
-              });
-              console.log(
-                `✅ 已保存拥有者回复消息到数据库，关联到: ${
-                  originalBotUser
-                    ? `客户 (${originalUserId})`
-                    : `拥有者 (${targetBotUser.id})`
-                }`,
-              );
-            } else {
-              console.error(
-                `无法保存拥有者回复消息：找不到 BotUser (客户ID: ${originalUserId})`,
-              );
-            }
-          } catch (saveErr: any) {
-            console.error('保存拥有者回复消息失败:', saveErr);
-            console.error('错误详情:', saveErr.message || saveErr);
-          }
-
-          // 将拥有者的回复也发送给其他拥有者
-          const otherOwners = owners.filter(
-            (owner) =>
-              owner.id !== ctx.currentBotUser.id && owner.id !== originalUserId,
-          );
-
-          if (otherOwners.length > 0) {
-            console.log(`📢 将回复同步给其他 ${otherOwners.length} 个拥有者`);
-
-            // 获取回复的拥有者信息（当前发送消息的用户）
-            const replyOwner = ctx.currentBotUser;
-            let replyOwnerDisplayName = '';
-            if (replyOwner) {
-              const firstName = replyOwner.firstName || '';
-              const lastName = replyOwner.lastName || '';
-              const userName = replyOwner.userName || '';
-
-              if (firstName || lastName) {
-                replyOwnerDisplayName = `${firstName} ${lastName}`.trim();
-              } else if (userName) {
-                replyOwnerDisplayName = `@${userName}`;
-              } else {
-                replyOwnerDisplayName = `ID: ${replyOwner.id}`;
-              }
-            }
-
-            // 获取被回复的客户信息（已在上面获取，这里不需要重复获取）
-
-            // 构建客户显示名称：优先 firstName + lastName，没有才用 userName
-            let customerDisplayName = '';
-            if (originalBotUser) {
-              const firstName = originalBotUser.firstName || '';
-              const lastName = originalBotUser.lastName || '';
-              const userName = originalBotUser.userName || '';
-
-              if (firstName || lastName) {
-                customerDisplayName = `${firstName} ${lastName}`.trim();
-              } else if (userName) {
-                customerDisplayName = `@${userName}`;
-              } else {
-                customerDisplayName = `ID: ${originalUserId}`;
-              }
-            } else {
-              customerDisplayName = `ID: ${originalUserId}`;
-            }
-
-            for (const otherOwner of otherOwners) {
-              if (otherOwner?.id) {
-                try {
-                  // 使用 forwardMessage 转发两条消息，都使用 forward
-                  // 第一条：转发客户的原始消息（显示客户信息）
-                  try {
-                    await bot.api.forwardMessage(
-                      otherOwner.id,
-                      ctx.chat.id,
-                      replyMsg.message_id,
-                    );
-                    console.log(`✅ 已转发客户消息给拥有者 ${otherOwner.id}`);
-                  } catch (forwardCustomerErr: any) {
-                    // 如果转发客户消息失败，记录但不中断
-                    console.error(
-                      `转发客户消息给拥有者 ${otherOwner.id} 失败:`,
-                      forwardCustomerErr.message ||
-                        forwardCustomerErr.description,
-                    );
-                  }
-
-                  // 第二条：转发拥有者的回复（forward_from 会自动显示回复的拥有者信息）
-                  try {
-                    await bot.api.forwardMessage(
-                      otherOwner.id,
-                      ctx.chat.id,
-                      message.message_id,
-                    );
-                    console.log(
-                      `✅ 已转发拥有者回复给拥有者 ${otherOwner.id} (回复者: ${replyOwnerDisplayName})`,
-                    );
-                  } catch (forwardReplyErr: any) {
-                    // 如果转发失败，尝试复制消息并发送提示信息
-                    console.error(
-                      `转发拥有者回复给拥有者 ${otherOwner.id} 失败，尝试复制:`,
-                      forwardReplyErr.message || forwardReplyErr.description,
-                    );
-
-                    // 先发送提示信息：哪个拥有者回复了哪个客户
-                    const syncMessage = `💬 拥有者回复客户\n\n回复者: ${replyOwnerDisplayName}\n客户: ${customerDisplayName}\n回复内容:\n\n`;
-
-                    let infoMsg: any = null;
-                    try {
-                      infoMsg = await bot.api.sendMessage(
-                        otherOwner.id,
-                        syncMessage,
-                      );
-                    } catch (sendErr: any) {
-                      console.error(
-                        `发送提示信息给拥有者 ${otherOwner.id} 失败:`,
-                        sendErr.message || sendErr.description,
-                      );
-                    }
-
-                    // 然后复制消息
-                    try {
-                      await bot.api.copyMessage(
-                        otherOwner.id,
-                        ctx.chat.id,
-                        message.message_id,
-                        infoMsg
-                          ? { reply_to_message_id: infoMsg.message_id }
-                          : undefined,
-                      );
-                      console.log(
-                        `✅ 已复制拥有者回复给拥有者 ${otherOwner.id}`,
-                      );
-                    } catch (copyErr) {
-                      console.error(
-                        `复制拥有者回复给拥有者 ${otherOwner.id} 也失败:`,
-                        copyErr,
-                      );
-                    }
-                  }
-                } catch (syncErr: any) {
-                  // 如果同步失败，记录错误但不中断流程
-                  console.error(
-                    `同步回复给拥有者 ${otherOwner.id} 失败:`,
-                    syncErr.message || syncErr.description,
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
-    } catch (err: any) {
-      console.error('转发拥有者回复失败:', err);
-      const errorMsg =
-        err?.message || err?.description || err?.toString() || '未知错误';
-      await ctx.reply(`❌ 发送失败：${errorMsg}`);
-    }
-
-    // 拥有者的回复不需要继续处理
-    await next();
-    return;
-  }
 
   // 自己是拥有者的话，不要发给自己
   const processed_owners = owners.filter(
@@ -385,10 +112,6 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       const mediaType = Object.entries(mediaTypes).find(([_, id]) => id)?.[0];
       const fileId = mediaType ? mediaTypes[mediaType] : null;
 
-      const canUseBidirectional = PermissionChecker.canUseBidirectional(
-        proxyUser,
-        ctx.currentBot,
-      );
       const canUseGroupMessaging = PermissionChecker.canUseGroupMessaging(
         proxyUser,
         ctx.currentBot,
@@ -399,16 +122,11 @@ const logger: Middleware = async (ctx: MyContext, next) => {
       );
 
       console.log(
-        `[Logger] User Message - canUseBidirectional: ${canUseBidirectional}, canUseGroupMessaging: ${canUseGroupMessaging}, canUseSpeechStatic: ${canUseSpeechStatic}`,
+        `[Logger] User Message - canUseGroupMessaging: ${canUseGroupMessaging}, canUseSpeechStatic: ${canUseSpeechStatic}`,
       );
 
       // 发言统计功能开启且是群组消息时，单独记录消息（不触发转发通知）
-      if (
-        canUseSpeechStatic &&
-        ctx.currentGroup &&
-        !canUseBidirectional &&
-        !canUseGroupMessaging
-      ) {
+      if (canUseSpeechStatic && ctx.currentGroup && !canUseGroupMessaging) {
         await BotMessage.create({
           bot: ctx.currentBot._id,
           botUser: ctx.currentBotUser._id,
@@ -430,8 +148,8 @@ const logger: Middleware = async (ctx: MyContext, next) => {
         ).catch((err) => console.error('[speechReward] 即时奖励失败:', err));
       }
 
-      // 双向功能或群发功能可用，给所有 owner 发送通知
-      if (canUseBidirectional || canUseGroupMessaging) {
+      // 群发功能可用，给所有 owner 发送通知
+      if (canUseGroupMessaging) {
         // 创建消息记录（已包含发言统计所需数据）
         await BotMessage.create({
           bot: ctx.currentBot._id,

@@ -247,7 +247,6 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     proxySharingRate,
     stackingChannel,
     serviceLink,
-    bidirectional,
     groupMessage,
     keyboardConfig,
     availableBotCount,
@@ -298,7 +297,6 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       liquidRate,
       stakeRate,
       serviceLink, // 服务链接
-      bidirectional, // 双向
       groupMessage, // 群发
       keyboardConfig, // 菜单配置
       availableBotCount, // 可用机器人数量（配额）

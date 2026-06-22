@@ -228,7 +228,6 @@ const updateUserProfile = handleAsync(
       currentPassword,
       confirmPassword,
       serviceLink,
-      bidirectional,
       groupMessage,
       keyboardConfig,
       speech_static,
@@ -288,9 +287,6 @@ const updateUserProfile = handleAsync(
 
     // 只有管理员可以修改权限相关字段
     if (req.user.isAdmin) {
-      if (typeof bidirectional !== 'undefined') {
-        updateData.bidirectional = bidirectional;
-      }
       if (typeof groupMessage !== 'undefined') {
         updateData.groupMessage = groupMessage;
       }

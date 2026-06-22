@@ -28,7 +28,6 @@ export interface IUser extends Document {
 
   function_disabledAt: Date; // 功能禁用时间，给代理角色的
 
-  bidirectional: boolean; // 双向
   groupMessage: boolean; // 群发
   keyboardConfig: boolean; // 菜单配置
   speech_static: boolean; // 群组内发言统计
@@ -94,7 +93,6 @@ const userSchema = new mongoose.Schema(
 
     function_disabledAt: { type: Date, default: null }, // 功能禁用时间
 
-    bidirectional: { type: Boolean, default: false }, // 双向
     groupMessage: { type: Boolean, default: false }, // 群发
     keyboardConfig: { type: Boolean, default: false }, // 菜单配置
     speech_static: { type: Boolean, default: false }, // 群组内发言统计

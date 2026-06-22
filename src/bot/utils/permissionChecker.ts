@@ -21,10 +21,6 @@ export class PermissionChecker {
     return !!proxyUser?.groupMessage;
   }
 
-  static canUseBidirectional(proxyUser: IUser | null, _bot?: IBot): boolean {
-    return !!proxyUser?.bidirectional;
-  }
-
   static canUseGroupWelcome(proxyUser: IUser | null, _bot?: IBot): boolean {
     return !!proxyUser?.groupWelcome;
   }
@@ -63,7 +59,6 @@ export class PermissionChecker {
       speechStatic: this.canUseSpeechStatic(proxyUser),
       freeKeyboard: this.canUseFreeKeyboard(proxyUser),
       groupMessaging: this.canUseGroupMessaging(proxyUser),
-      bidirectional: this.canUseBidirectional(proxyUser),
       groupWelcome: this.canUseGroupWelcome(proxyUser),
       channelPost: this.canUseChannelPost(proxyUser),
       groupVerify: this.canUseGroupVerify(proxyUser),
