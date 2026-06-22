@@ -16,7 +16,6 @@ export async function channelPost() {
     // 查询所有开启频道发送且在线的机器人
     const bots = await Bot.find({
       isOnline: true,
-      canOpenChannelPost: true,
     }).populate('groups');
 
     console.log(`查询到 ${bots.length} 个开启频道发送的在线机器人`);
@@ -32,13 +31,12 @@ export async function channelPost() {
           continue;
         }
 
-        // 查询该机器人的所有启用的频道推广，并 populate channels
+        // 查询该机器人的所有启用的频道推广，并 populate channel
         const allChannelPosts = await ChannelPost.find({
           bot: bot._id,
           isOnline: true,
         })
           .populate('channel')
-          .populate('channels')
           .sort({ weight: 1, createdAt: -1 });
 
         if (!allChannelPosts || allChannelPosts.length === 0) {
@@ -198,63 +196,13 @@ export async function channelPost() {
 }
 
 /**
- * 获取所有频道目标：优先使用 channels 数组，兼容旧的 channel 和 url
+ * 获取频道目标（channel.id）
  */
-function getChannelTargets(channelPost: any): (string | number)[] {
-  const targets: (string | number)[] = [];
-
-  // 优先使用 channels 数组
-  if (channelPost.channels && channelPost.channels.length > 0) {
-    for (const channel of channelPost.channels) {
-      if (channel && channel.id) {
-        targets.push(channel.id);
-      }
-    }
+function getChannelTargets(post: any): (string | number)[] {
+  if (post.channel?.id) {
+    return [post.channel.id];
   }
-
-  // 兼容旧数据：使用单个 channel
-  if (targets.length === 0 && channelPost.channel) {
-    if (channelPost.channel.id) {
-      targets.push(channelPost.channel.id);
-    }
-  }
-
-  // 兼容更旧的数据：使用 url 字段
-  if (targets.length === 0 && channelPost.url) {
-    const target = extractChannelTarget(channelPost.url);
-    if (target) {
-      targets.push(target);
-    }
-  }
-
-  return targets;
-}
-
-/**
- * 从频道URL中提取Telegram频道ID或用户名
- */
-function extractChannelTarget(url: string): string | null {
-  if (!url) return null;
-
-  // 处理 t.me/channelname 格式
-  const telegramMatch = url.match(/t\.me\/([a-zA-Z0-9_]+)/);
-  if (telegramMatch) {
-    return `@${telegramMatch[1]}`;
-  }
-
-  // 处理直接的频道ID格式 (如 -1001234567890)
-  const channelIdMatch = url.match(/^-?\d+$/);
-  if (channelIdMatch) {
-    return url;
-  }
-
-  // 处理 @channelname 格式
-  const usernameMatch = url.match(/^@([a-zA-Z0-9_]+)$/);
-  if (usernameMatch) {
-    return url;
-  }
-
-  return null;
+  return [];
 }
 
 /**
@@ -333,19 +281,8 @@ function checkChannelSendInterval(post: any): boolean {
  * 根据频道目标查找对应的 Group 对象
  */
 function findChannelGroup(post: any, channelTarget: string | number): any {
-  // 从 channels 数组中查找
-  if (post.channels && post.channels.length > 0) {
-    for (const channel of post.channels) {
-      if (channel && channel.id === channelTarget) {
-        return channel;
-      }
-    }
-  }
-
-  // 从单个 channel 中查找
-  if (post.channel && post.channel.id === channelTarget) {
+  if (post.channel?.id === channelTarget) {
     return post.channel;
   }
-
   return null;
 }

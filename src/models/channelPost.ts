@@ -5,16 +5,14 @@ import { IGroup } from './group';
 
 // 频道推广接口定义
 export interface IChannelPost extends Document {
-  title?: string; // 保留用于兼容旧数据
-  url?: string; // 保留用于兼容旧数据
-  channel?: mongoose.Schema.Types.ObjectId | IGroup; // 保留用于兼容旧数据（单个频道）
-  channels?: (mongoose.Schema.Types.ObjectId | IGroup)[]; // 关联的多个频道 Group
+  channel: mongoose.Schema.Types.ObjectId | IGroup; // 关联的频道 Group
   content: string;
   medias: string[]; // 媒体文件（图片、视频等）
   menus: {
     name: string;
     url: string;
   }[];
+  menus_per_row?: number;
   weight: number;
   interval: number; // 发送间隔时间（单位：分钟）
   lastPostTime?: Date; // 上次发送时间
@@ -43,14 +41,8 @@ const channelPostSchema = new mongoose.Schema(
     channel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
-      required: false, // 保留用于兼容旧数据
+      required: true,
     },
-    channels: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Group',
-      },
-    ],
     content: {
       type: String,
       required: false,
@@ -66,15 +58,9 @@ const channelPostSchema = new mongoose.Schema(
         url: String,
       },
     ],
-    title: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    url: {
-      type: String,
-      required: false,
-      trim: true,
+    menus_per_row: {
+      type: Number,
+      default: 1,
     },
     weight: {
       type: Number,

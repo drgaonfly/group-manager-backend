@@ -43,6 +43,13 @@ const buildQuery = async (
     }
   }
 
+  // 支持按频道精确查询
+  if (queryParams.channelId) {
+    query.channel = queryParams.channelId;
+  } else if (queryParams.groupId) {
+    query.channel = queryParams.groupId;
+  }
+
   // 支持 botId 精确查询
   if (queryParams.botId) {
     query.bot = queryParams.botId;
@@ -93,7 +100,6 @@ export const getChannelPosts = handleAsync(
         populate: { path: 'groups' },
       })
       .populate('channel')
-      .populate('channels')
       .sort('weight createdAt')
       .skip((+current - 1) * +pageSize)
       .limit(+pageSize)
