@@ -6,8 +6,8 @@ import GroupMessageRecord from '../../models/groupMessageRecord';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
-import { InlineKeyboard } from 'grammy';
 import { sendMediaMessage } from '../../utils/sendMultiMedia';
+import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
 import { replaceMessageVariables } from '../../utils/telegramHtmlConvert';
 
 /**
@@ -100,19 +100,7 @@ export async function sendGroupMessages() {
 
         const telegramBot = setupBot(bot.token);
 
-        // 构建内联键盘
-        let replyMarkup: InlineKeyboard | undefined;
-        if (Array.isArray(msg.menus) && msg.menus.length > 0) {
-          const perRow = msg.menus_per_row || 1;
-          replyMarkup = new InlineKeyboard();
-          for (let i = 0; i < msg.menus.length; i += perRow) {
-            const buttons = msg.menus
-              .slice(i, i + perRow)
-              .filter((m) => m.name && m.url)
-              .map((m) => ({ text: m.name, url: m.url }));
-            if (buttons.length > 0) replyMarkup.add(...buttons).row();
-          }
-        }
+        const replyMarkup = buildInlineKeyboard(msg.menus);
 
         let sentMessageId: number | undefined;
         try {

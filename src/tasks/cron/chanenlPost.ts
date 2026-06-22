@@ -5,6 +5,7 @@ import { findBotProxy } from '../../bot/services/findBotProxy';
 import { PermissionChecker } from '../../bot/utils/permissionChecker';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard } from 'grammy';
+import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { sendMediaMessage } from '../../utils/sendMultiMedia';
 
@@ -216,21 +217,7 @@ function buildChannelMessage(
   const messageContent =
     post.content || bot.purchasing_introduction || '📺 频道推荐';
 
-  // 构建内联键盘
-  const keyboard = new InlineKeyboard();
-
-  // 如果有自定义菜单，使用自定义菜单
-  if (post.menus && post.menus.length > 0) {
-    const menusPerRow = post.menus_per_row || 1;
-
-    for (let i = 0; i < post.menus.length; i += menusPerRow) {
-      const rowMenus = post.menus.slice(i, i + menusPerRow);
-      for (const menu of rowMenus) {
-        keyboard.url(menu.name, menu.url);
-      }
-      keyboard.row();
-    }
-  }
+  const keyboard = buildInlineKeyboard(post.menus) || new InlineKeyboard();
 
   // 添加机器人的客服和机器人链接（如果有的话）
   if (bot.customer_service_link) {

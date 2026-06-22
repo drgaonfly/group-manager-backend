@@ -203,10 +203,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     // 合并自定义菜单
     if (matchedRule.menus && matchedRule.menus.length > 0) {
-      const customKeyboard = buildInlineKeyboard(
-        matchedRule.menus,
-        matchedRule.menus_per_row || 1,
-      );
+      const customKeyboard = buildInlineKeyboard(matchedRule.menus);
       if (customKeyboard && customKeyboard.inline_keyboard) {
         inlineButtons.push(...customKeyboard.inline_keyboard);
       }
@@ -264,10 +261,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
         // 如果有内联键盘，需要单独发送
         if (matchedRule.menus && matchedRule.menus.length > 0) {
           await ctx.reply('👆 点击上方按钮', {
-            reply_markup: buildInlineKeyboard(
-              matchedRule.menus,
-              matchedRule.menus_per_row || 1,
-            ),
+            reply_markup: buildInlineKeyboard(matchedRule.menus),
           });
         }
       }

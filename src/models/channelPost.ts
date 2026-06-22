@@ -11,8 +11,8 @@ export interface IChannelPost extends Document {
   menus: {
     name: string;
     url: string;
+    row?: number;
   }[];
-  menus_per_row?: number;
   weight: number;
   interval: number; // 发送间隔时间（单位：分钟）
   lastPostTime?: Date; // 上次发送时间
@@ -56,12 +56,9 @@ const channelPostSchema = new mongoose.Schema(
       {
         name: String,
         url: String,
+        row: { type: Number, default: 0 },
       },
     ],
-    menus_per_row: {
-      type: Number,
-      default: 1,
-    },
     weight: {
       type: Number,
       default: 0,

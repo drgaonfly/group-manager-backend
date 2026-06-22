@@ -667,7 +667,6 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
       botUsers: botManager.botUsers,
       intervalTime,
       menus,
-      menus_per_row,
       proxy: req.user._id,
     });
   }
@@ -686,7 +685,7 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
 const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const { content, medias, menus, menus_per_row } = req.body;
+  const { content, medias, menus } = req.body;
 
   const botManager = await Bot.findById(id)
     .populate('botUsers')
@@ -714,7 +713,7 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const telegramBot = setupBot(botManager.token);
 
   // 构建菜单 InlineKeyboard
-  const replyMarkup = buildInlineKeyboard(menus, menus_per_row);
+  const replyMarkup = buildInlineKeyboard(menus);
 
   // 保证catch时跳过，不影响其它的
   await Promise.all(
@@ -760,8 +759,7 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
  */
 const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { url, channels, title, content, medias, menus, menus_per_row } =
-    req.body;
+  const { url, channels, title, content, medias, menus } = req.body;
 
   const botManager = await Bot.findById(id).populate('groups');
 
@@ -807,7 +805,7 @@ const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
   }
 
   // 构建内联键盘
-  const replyMarkup = buildInlineKeyboard(menus, menus_per_row);
+  const replyMarkup = buildInlineKeyboard(menus);
 
   try {
     // 向每个频道发送消息

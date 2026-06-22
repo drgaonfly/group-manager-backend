@@ -6,6 +6,7 @@ import { IUser } from './user';
 export interface IMenu extends Document {
   name: string;
   url: string;
+  row: number;
 }
 
 export const menuSchema = new mongoose.Schema({
@@ -20,6 +21,7 @@ export const menuSchema = new mongoose.Schema({
       message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
     },
   },
+  row: { type: Number, required: false, default: 0 },
 });
 
 // 只存客户发给机器人的消息（toBot），不存机器人发给客户的消息（fromBot）
@@ -32,7 +34,6 @@ export interface IGroupMessage extends Document {
   intervalTime: number; // 间隔时间（单位：分钟）
   isRealtime: boolean; // 是否实时
   menus: IMenu[];
-  menus_per_row: number; // 每行菜单数
   weight: number; // 权重
   isOnline: boolean;
   autoDeletePrevious: boolean; // 发新消息前自动删除上一条已发送的消息
@@ -76,11 +77,6 @@ const groupMessageSchema = new mongoose.Schema(
       required: false,
     },
     menus: [menuSchema],
-    menus_per_row: {
-      type: Number,
-      required: false,
-      default: 1,
-    },
     weight: {
       type: Number,
       required: false,
