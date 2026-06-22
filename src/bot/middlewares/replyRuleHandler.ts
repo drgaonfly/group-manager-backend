@@ -23,12 +23,20 @@ const containsTronAddress = (text: string): boolean => {
 };
 
 // 检查关键词是否匹配
-const isKeywordMatch = (keyword: string, messageText: string): boolean => {
+const isKeywordMatch = (
+  keyword: string,
+  messageText: string,
+  isFuzzy = false,
+): boolean => {
   // 特殊关键词：<tron_address> 匹配所有波场地址
   if (keyword === '<tron_address>') {
     return containsTronAddress(messageText);
   }
-  // 普通关键词：完全匹配
+  // 模糊匹配：消息包含关键词即触发
+  if (isFuzzy) {
+    return messageText.includes(keyword);
+  }
+  // 精确匹配：完全相等
   return messageText === keyword;
 };
 
@@ -97,7 +105,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     // 查找第一个关键词匹配的规则
     const matchedRule = replyRules.find((rule) =>
-      rule.keyword.some((kw) => isKeywordMatch(kw, messageText)),
+      rule.keyword.some((kw) => isKeywordMatch(kw, messageText, rule.isFuzzy)),
     );
 
     if (!matchedRule) {

@@ -35,6 +35,7 @@ export interface IReplyRule extends Document {
   bot: mongoose.Schema.Types.ObjectId | IBot;
   group: mongoose.Schema.Types.ObjectId; // 必须指定群组，只在该群触发
   keyword: string[];
+  isFuzzy: boolean; // 是否模糊匹配（包含即触发）
   content: string;
   medias: string[];
   menus: IReplyRuleMenu[];
@@ -68,6 +69,11 @@ const replyRuleSchema = new mongoose.Schema(
     keyword: {
       type: [String],
       required: true,
+    },
+    isFuzzy: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     content: {
       type: String,
