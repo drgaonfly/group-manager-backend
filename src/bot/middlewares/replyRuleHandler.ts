@@ -192,6 +192,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     // 构建回复选项
     const replyOptions: any = {
+      parse_mode: 'HTML' as const,
       link_preview_options: { is_disabled: true },
     };
 
@@ -246,6 +247,7 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
             type: isVideo ? 'video' : 'photo',
             media: url,
             caption: index === 0 ? content : undefined,
+            parse_mode: index === 0 ? 'HTML' : undefined,
           };
         }) as any;
 

@@ -23,6 +23,5 @@ export const convertToTelegramHtml = (html: string): string => {
     .replace(/<br\s*\/?>/g, '\n')
     .replace(/<p>/g, '')
     .replace(/<\/p>/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    .replace(/^\s+/, '');
 };
