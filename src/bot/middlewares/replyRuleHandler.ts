@@ -104,9 +104,21 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
     }).exec();
 
     // 查找第一个关键词匹配的规则
-    const matchedRule = replyRules.find((rule) =>
-      rule.keyword.some((kw) => isKeywordMatch(kw, messageText, rule.isFuzzy)),
-    );
+    const matchedRule = replyRules.find((rule) => {
+      debug(
+        'Checking rule:',
+        rule._id,
+        'isFuzzy:',
+        rule.isFuzzy,
+        'keywords:',
+        rule.keyword,
+      );
+      return rule.keyword.some((kw) => {
+        const match = isKeywordMatch(kw, messageText, rule.isFuzzy);
+        debug('Keyword:', kw, 'match:', match);
+        return match;
+      });
+    });
 
     if (!matchedRule) {
       return next();
