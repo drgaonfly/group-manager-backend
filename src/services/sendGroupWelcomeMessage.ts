@@ -22,13 +22,12 @@ export const sendGroupWelcomeMessage = async (
   memberName: string,
   groupWelcome?: IGroupWelcome,
 ) => {
-  // 如果没有配置群欢迎消息，使用默认消息
+  // 如果没有配置群欢迎消息，直接返回，不发送任何消息
   if (
     !groupWelcome ||
     (!groupWelcome.contents?.length && !groupWelcome.medias?.length)
   ) {
-    const defaultMessage = `欢迎 ${username} 加入群组！👋`;
-    await ctx.reply(defaultMessage);
+    debug('No group welcome config found, skipping welcome message');
     return;
   }
 
