@@ -1,5 +1,6 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 
 import { errorHandler, notFound } from './middlewares/errorMiddleware';
 import morgan from 'morgan';
@@ -129,7 +130,7 @@ app.use('/api/red-packets', redPacketRoutes);
 app.use('/api/speech-configs', speechConfigRoutes);
 app.use('/api/group-welcomes', groupWelcomeRoutes);
 
-app.use('/api/static', express.static('tmp'));
+app.use('/api/static', express.static(path.join(__dirname, '../tmp')));
 
 setupDB();
 setupRedis();
