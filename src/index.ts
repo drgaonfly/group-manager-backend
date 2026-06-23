@@ -130,7 +130,7 @@ app.use('/api/red-packets', redPacketRoutes);
 app.use('/api/speech-configs', speechConfigRoutes);
 app.use('/api/group-welcomes', groupWelcomeRoutes);
 
-app.use('/api/static', express.static(path.join(__dirname, '../tmp')));
+app.use('/api/static', express.static(path.join(process.cwd(), 'tmp')));
 
 setupDB();
 setupRedis();
