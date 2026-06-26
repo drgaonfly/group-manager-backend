@@ -150,22 +150,33 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
     const groupTitle =
       ctx.chat?.type !== 'private' ? (ctx.chat as any)?.title || '' : '';
 
-    // 获取用户积分排名
-    const userBalanceRanking = await getGroupUserRanking(
-      botId,
-      ctx.currentBotUserConfig?.usdt_balance || 0,
-      ctx.currentGroup?.botUsers as any,
-    );
+    // 检查是否需要排名数据（只有内容包含排名相关变量时才获取）
+    const needsRankingData =
+      matchedRule.content.includes('{ranking_list}') ||
+      matchedRule.content.includes('{user_ranking}');
 
-    // 获取用户积分榜单
-    const rankingListData = await getGroupUserRankingList(
-      ctx,
-      botId,
-      ctx.currentGroup?.botUsers as any,
-      1,
-      ITEMS_PER_PAGE,
-    );
-    const userBalanceRankingList = rankingListData.text;
+    let userBalanceRanking = 0;
+    let userBalanceRankingList = '';
+    let rankingListData: any = { hasNext: false, total: 0 };
+
+    if (needsRankingData) {
+      // 获取用户积分排名
+      userBalanceRanking = await getGroupUserRanking(
+        botId,
+        ctx.currentBotUserConfig?.usdt_balance || 0,
+        ctx.currentGroup?.botUsers as any,
+      );
+
+      // 获取用户积分榜单
+      rankingListData = await getGroupUserRankingList(
+        ctx,
+        botId,
+        ctx.currentGroup?.botUsers as any,
+        1,
+        ITEMS_PER_PAGE,
+      );
+      userBalanceRankingList = rankingListData.text;
+    }
 
     // 替换变量
     const content = replaceVariables(
@@ -181,8 +192,11 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
     // 构建内联键盘
     const inlineButtons: any[] = [];
 
-    // 如果有分页，添加分页按钮
-    if (rankingListData.hasNext || rankingListData.total > ITEMS_PER_PAGE) {
+    // 只有在需要排名数据且有分页时，才添加分页按钮
+    if (
+      needsRankingData &&
+      (rankingListData.hasNext || rankingListData.total > ITEMS_PER_PAGE)
+    ) {
       const currentPage = 1;
       const buttons = [];
       if (currentPage > 1) {
