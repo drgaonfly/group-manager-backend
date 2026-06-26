@@ -15,21 +15,6 @@ const startCommand = new Composer<MyContext>();
 
 const debug = createDebug('bot:start');
 
-export async function handleStart(ctx: MyContext) {
-  const bot = ctx.currentBot;
-  debug('imageurl', bot.multi_image);
-
-  // 如果 multi_image 和 multi_content 都有，才发送图片和内容，否则什么都不做
-  if (bot.multi_image && bot.multi_content) {
-    const imageUrl = await generateSignedUrl(bot.multi_image);
-    await ctx.replyWithPhoto(imageUrl, {
-      caption: bot.multi_content,
-      parse_mode: 'HTML',
-    });
-  }
-  // 如果没有 multi_image 或 multi_content，什么都不做
-}
-
 // 开始命令处理（私聊与群/超级群均可，群内可拉取自由键盘）
 startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   debug('start');
@@ -106,11 +91,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   //   return;
   // }
 
-  // 群内不发送 multi 推广图，避免刷屏；私聊保持原样
-  if (!isGroupChat) {
-    await handleStart(ctx);
-  }
-
   // 自由键盘等（权限判断在 createMainKeyboard 内部）
   // const replyOptions: any = {
   //   reply_markup: await createMainKeyboard(ctx),
@@ -124,17 +104,12 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     `點擊 /help 查看所有指令及使用方法。`,
   ].join('\n');
 
-  const inlineKeyboard = {
-    inline_keyboard: [
-      [
-        {
-          text: '把我加到群组',
-          url: `https://t.me/${ctx.currentBot.userName}?startgroup=start`,
-        },
-        { text: '克隆机器人', callback_data: 'clone_start' },
-      ],
-    ],
-  };
+  const inlineKeyboard = new InlineKeyboard()
+    .text(
+      '把我加到群组',
+      `https://t.me/${ctx.currentBot.userName}?startgroup=start`,
+    )
+    .text('克隆机器人', 'clone_start');
 
   await ctx.reply(message, {
     reply_markup: inlineKeyboard,

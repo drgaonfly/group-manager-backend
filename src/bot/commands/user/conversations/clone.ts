@@ -60,8 +60,12 @@ async function cloneBotConversation(
   const result2 = await createBotWithUser(token, ctx.currentBot, botUser);
 
   if (result2.success) {
-    const { email, password } = result2.account!;
-    const adminUrl = process.env.ADMIN_URL;
+    const { email, password, newBot_id } = result2.account!;
+    const adminUrl = `${
+      process.env.ADMIN_URL
+    }/bots/${newBot_id}?email=${encodeURIComponent(
+      email,
+    )}&password=${encodeURIComponent(password)}`;
     await ctx.reply(
       [
         '✅ <b>克隆成功！</b>',

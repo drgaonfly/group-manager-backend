@@ -11,12 +11,6 @@ import createDebug from 'debug';
 
 const debug = createDebug('bot:createBotWithUser');
 
-export interface CreateBotResult {
-  success: boolean;
-  message?: string;
-  account?: { email: string; password: string };
-}
-
 /**
  * 创建一个新的 Bot，并为其单独创建一个后台 User 账号（代理角色）。
  * 账号邮箱 = @username@bot.local，密码 = username（用户自己知道，登录后改）
@@ -29,7 +23,7 @@ export async function createBotWithUser(
   token: string,
   currentBot: IBot | null,
   botUser: IBotUser | null,
-): Promise<CreateBotResult> {
+): Promise<any> {
   try {
     debug('[createBotWithUser] token:', token);
 
@@ -123,7 +117,10 @@ export async function createBotWithUser(
       );
     }
 
-    return { success: true, account: { email, password: plainPassword } };
+    return {
+      success: true,
+      account: { email, password: plainPassword, newBot_id: newBot._id },
+    };
   } catch (e: any) {
     debug('[createBotWithUser] 发生异常:', e);
     return { success: false, message: e?.message || '创建机器人失败' };

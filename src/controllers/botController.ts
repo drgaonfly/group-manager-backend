@@ -261,16 +261,27 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
 });
 
 const getBotById = handleAsync(async (req: Request, res: Response) => {
-  const bot = await Bot.findById(req.params.id);
+  const bot = await Bot.findById(req.params.id)
+    .populate('groups')
+    .populate('botUsers')
+    .populate('botUserConfigs');
 
   if (!bot) {
     res.status(404);
     throw new Error('Bot 机器人不存在');
   }
 
+  const botObj = bot.toObject ? bot.toObject() : bot;
+
+  // 处理 multi_image
+  if (botObj.multi_image) {
+    const signedUrl = await generateSignedUrl(botObj.multi_image);
+    botObj.multi_image = signedUrl;
+  }
+
   res.json({
     success: true,
-    data: bot,
+    data: botObj,
   });
 });
 
