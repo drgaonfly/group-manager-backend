@@ -85,10 +85,7 @@ const checkinRuleSchema = new mongoose.Schema(
 // 同一个 bot + group + type 组合唯一：
 // 每个群的每种签到类型只能有一条规则（daily / first 各一条）
 // group 为 null 时表示 bot 级默认规则，sparse: true 让多个 null 不冲突
-checkinRuleSchema.index(
-  { bot: 1, group: 1, type: 1 },
-  { unique: true, sparse: true },
-);
+checkinRuleSchema.index({ bot: 1, group: 1, type: 1 });
 
 const CheckinRule = mongoose.model<ICheckinRule>(
   'CheckinRule',
