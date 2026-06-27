@@ -77,7 +77,6 @@ const speechConfigSchema = new mongoose.Schema<ISpeechConfig>(
 
 // 每个 bot+group 组合只有一份配置
 speechConfigSchema.index({ bot: 1, group: 1 }, { unique: true });
-speechConfigSchema.index({ bot: 1 });
 
 const SpeechConfig = mongoose.model<ISpeechConfig>(
   'SpeechConfig',

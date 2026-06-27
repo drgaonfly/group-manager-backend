@@ -12,15 +12,20 @@ import { RequestCustom } from '../types/user';
  */
 const getSpeechConfigs = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { botId, current = 1, pageSize = 50 } = req.query;
+    const { botId, groupId, current = 1, pageSize = 50 } = req.query;
 
     if (!botId) {
       res.status(400);
       throw new Error('botId 不能为空');
     }
 
-    const total = await SpeechConfig.countDocuments({ bot: botId });
-    const data = await SpeechConfig.find({ bot: botId })
+    const filter: any = { bot: botId };
+    if (groupId) {
+      filter.group = groupId;
+    }
+
+    const total = await SpeechConfig.countDocuments(filter);
+    const data = await SpeechConfig.find(filter)
       .populate('group', 'title username id')
       .sort({ createdAt: -1 })
       .skip((Number(current) - 1) * Number(pageSize))
