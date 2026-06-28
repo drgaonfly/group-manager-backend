@@ -152,8 +152,8 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     // 检查是否需要排名数据（只有内容包含排名相关变量时才获取）
     const needsRankingData =
-      matchedRule.content.includes('{ranking_list}') ||
-      matchedRule.content.includes('{user_ranking}');
+      matchedRule.content.includes('{userBalanceRankingList}') ||
+      matchedRule.content.includes('{userBalanceRanking}');
 
     let userBalanceRanking = 0;
     let userBalanceRankingList = '';
