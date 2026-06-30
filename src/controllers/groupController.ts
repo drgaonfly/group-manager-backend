@@ -157,12 +157,25 @@ const getGroupById = handleAsync(async (req: Request, res: Response) => {
 });
 
 // 添加新群组
-const addGroup = handleAsync(async (req: Request, res: Response) => {
+const addGroup = handleAsync(async (req: RequestCustom, res: Response) => {
   const newId = await IdGen.next(Group, 'id', 6);
+
+  // 获取机器人信息，判断是否为公共机器人
+  const bot = await Bot.findById(req.body.bot);
+  if (!bot) {
+    res.status(404);
+    throw new Error('机器人不存在');
+  }
+
+  // 如果是公共机器人，需要设置proxy为当前用户（用于多租户隔离）
+  // 如果是专属机器人，保持原有的proxy逻辑
+  const proxy =
+    bot.type === 'public' ? req.user._id : req.body.proxy || req.user._id;
 
   const newGroup = new Group({
     ...req.body,
     id: newId,
+    proxy,
   });
 
   const savedGroup = await newGroup.save();

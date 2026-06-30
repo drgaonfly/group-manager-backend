@@ -91,9 +91,14 @@ const buildQuery = async (
     }
   }
 
-  // 与 userController 代理列表一致：超级管理员（isAdmin）可看全部机器人，不受单一「代理」角色限制
+  // 多租户共享机器人逻辑：
+  // - 公共机器人（type: 'public'）对所有用户可见
+  // - 专属机器人（type: 'private'）只对拥有者可见
   if (isProxy(req.user) && !req.user.isAdmin) {
-    query.user = req.user._id;
+    query.$or = [
+      { type: 'public' }, // 显示所有公共机器人
+      { user: req.user._id }, // 显示用户自己的专属机器人
+    ];
   }
 
   return query;

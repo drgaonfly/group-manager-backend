@@ -19,10 +19,10 @@ export const notifyBotExpiration = async () => {
         $gt: now,
         $lte: threeDaysLater,
       },
-      type: 'custom',
+      type: 'private',
       preExpirationNotified: { $ne: true },
     })
-      .populate('owners')
+      .populate('owner')
       .populate('authorized_users');
 
     console.log(
@@ -35,28 +35,26 @@ export const notifyBotExpiration = async () => {
       // 获取机器人实例
       const botInstance = setupBot(bot.token);
 
-      // 通知所有拥有者
-      if (bot.owners && bot.owners.length > 0) {
-        for (const ownerId of bot.owners) {
-          const owner = await BotUser.findById(ownerId);
-          if (owner?.id) {
-            try {
-              await botInstance.api.sendMessage(
-                owner.id,
-                `⚠️ 提醒：机器人 <b>${bot.botName}</b> (@${bot.userName}) 将在3天后过期\n` +
-                  `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
-                  `请及时续费以继续使用服务。`,
-                { parse_mode: 'HTML' },
-              );
-              console.log(
-                `[notifyBotExpiration] 已通知拥有者 ${owner.id} 机器人即将过期`,
-              );
-            } catch (msgErr) {
-              console.error(
-                `[notifyBotExpiration] 通知拥有者 ${owner.id} 失败:`,
-                msgErr,
-              );
-            }
+      // 通知拥有者
+      if (bot.owner) {
+        const owner = await BotUser.findById(bot.owner);
+        if (owner?.id) {
+          try {
+            await botInstance.api.sendMessage(
+              owner.id,
+              `⚠️ 提醒：机器人 <b>${bot.botName}</b> (@${bot.userName}) 将在3天后过期\n` +
+                `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
+                `请及时续费以继续使用服务。`,
+              { parse_mode: 'HTML' },
+            );
+            console.log(
+              `[notifyBotExpiration] 已通知拥有者 ${owner.id} 机器人即将过期`,
+            );
+          } catch (msgErr) {
+            console.error(
+              `[notifyBotExpiration] 通知拥有者 ${owner.id} 失败:`,
+              msgErr,
+            );
           }
         }
       }

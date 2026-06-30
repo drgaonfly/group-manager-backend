@@ -12,8 +12,8 @@ export const updateBotExpiration = async () => {
     const expiredBots = await Bot.find({
       expireAt: { $exists: true, $lt: now },
       isExpired: false,
-      type: 'custom',
-    }).populate('owners');
+      type: 'private',
+    }).populate('owner');
 
     console.log(
       `[updateBotExpiration] 查询到 ${expiredBots.length} 个待处理的过期机器人`,
@@ -28,28 +28,26 @@ export const updateBotExpiration = async () => {
       // 获取机器人实例
       const botInstance = setupBot(bot.token);
 
-      // 通知所有拥有者
-      if (bot.owners && bot.owners.length > 0) {
-        for (const ownerId of bot.owners) {
-          const owner = await BotUser.findById(ownerId);
-          if (owner?.id) {
-            try {
-              await botInstance.api.sendMessage(
-                owner.id,
-                `⚠️ 机器人 <b>${bot.botName}</b> (@${bot.userName}) 已过期\n` +
-                  `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
-                  `请及时续费以继续使用服务。`,
-                { parse_mode: 'HTML' },
-              );
-              console.log(
-                `[updateBotExpiration] 已通知拥有者 ${owner.id} 机器人过期`,
-              );
-            } catch (msgErr) {
-              console.error(
-                `[updateBotExpiration] 通知拥有者 ${owner.id} 失败:`,
-                msgErr,
-              );
-            }
+      // 通知拥有者
+      if (bot.owner) {
+        const owner = await BotUser.findById(bot.owner);
+        if (owner?.id) {
+          try {
+            await botInstance.api.sendMessage(
+              owner.id,
+              `⚠️ 机器人 <b>${bot.botName}</b> (@${bot.userName}) 已过期\n` +
+                `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
+                `请及时续费以继续使用服务。`,
+              { parse_mode: 'HTML' },
+            );
+            console.log(
+              `[updateBotExpiration] 已通知拥有者 ${owner.id} 机器人过期`,
+            );
+          } catch (msgErr) {
+            console.error(
+              `[updateBotExpiration] 通知拥有者 ${owner.id} 失败:`,
+              msgErr,
+            );
           }
         }
       }

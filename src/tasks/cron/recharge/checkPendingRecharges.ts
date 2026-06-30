@@ -170,32 +170,28 @@ export async function checkPendingRecharges() {
         }
 
         // 通知机器人主人
-        const owners = await BotUser.find({
-          _id: { $in: bot.owners },
-        });
+        const owner = await BotUser.findById(bot.owner);
 
-        if (owners && owners.length > 0) {
-          for (const owner of owners) {
-            try {
-              await telegramBot.api.sendMessage(
-                owner.id,
-                [
-                  `💰 收到新充值`,
-                  '\n',
-                  `🔸买家： <code>${botUser.displayName}</code>`,
-                  `🔸买家 ID： <code>${botUser.id}</code>`,
-                  `🔸充值编号： <code>${recharge.id}</code>`,
-                  `🔸充值金额： ${recharge.amount.toFixed(3)} USDT`,
-                  `🔸实际到账： ${matchedTransfer.money.toFixed(3)} USDT`,
-                  `🔸充值日期： ${formatBeijingDate(recharge.createdAt)}`,
-                  `🔸交易哈希： <code>${matchedTransfer.trade_id}</code>`,
-                ].join('\n'),
-                { parse_mode: 'HTML' },
-              );
-              debug(`已通知机器人主人 ${owner.id} 充值成功`);
-            } catch (ownerErr) {
-              console.error(`通知机器人主人 ${owner.id} 失败:`, ownerErr);
-            }
+        if (owner) {
+          try {
+            await telegramBot.api.sendMessage(
+              owner.id,
+              [
+                `💰 收到新充值`,
+                '\n',
+                `🔸买家： <code>${botUser.displayName}</code>`,
+                `🔸买家 ID： <code>${botUser.id}</code>`,
+                `🔸充值编号： <code>${recharge.id}</code>`,
+                `🔸充值金额： ${recharge.amount.toFixed(3)} USDT`,
+                `🔸实际到账： ${matchedTransfer.money.toFixed(3)} USDT`,
+                `🔸充值日期： ${formatBeijingDate(recharge.createdAt)}`,
+                `🔸交易哈希： <code>${matchedTransfer.trade_id}</code>`,
+              ].join('\n'),
+              { parse_mode: 'HTML' },
+            );
+            debug(`已通知机器人主人 ${owner.id} 充值成功`);
+          } catch (ownerErr) {
+            console.error(`通知机器人主人 ${owner.id} 失败:`, ownerErr);
           }
         }
       } catch (msgErr) {

@@ -28,7 +28,7 @@ const checkUserPermission = (
  */
 export function isBotExpired(bot: IBot): boolean {
   // 仅 custom 类型 bot 需要检查过期
-  if (bot.type !== 'custom') {
+  if (bot.type !== 'private') {
     return false;
   }
 
