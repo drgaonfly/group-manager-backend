@@ -84,13 +84,16 @@ export async function createBotWithUser(
     await newUser.save();
     debug('[createBotWithUser] 新 User 已创建:', newUser._id);
 
-    // 4. 创建新 Bot，绑定到新 User
+    // 4. 创建新 Bot，绑定到新 User，类型固定为 private（克隆产物，不可再克隆）
     const newBot = new Bot({
       token,
       user: newUser._id,
       clonedFrom: currentBot?._id ?? null,
       creator: botUser?._id ?? null,
+      owner: botUser?._id ?? null, // 克隆者自动成为 owner
+      ownerPassword: plainPassword, // 明文密码，供 /start 构造自动登录链接
       isOnline: true,
+      type: 'private',
       ...(botInfo && {
         userName: botInfo.username || '',
         botName: botInfo.firstName || botInfo.username || '',

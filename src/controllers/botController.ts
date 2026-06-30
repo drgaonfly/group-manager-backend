@@ -119,7 +119,7 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('user')
     .populate('botUsers')
     .populate('groups')
-    .populate('owners')
+    .populate('owner')
     .populate('authorized_users')
     .populate('clonedFrom')
     .populate('creator')
@@ -261,9 +261,19 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
 });
 
 const getBotById = handleAsync(async (req: Request, res: Response) => {
+  // 支持 ?username=xxx 过滤群组（public bot 场景，只返回该用户参与的群）
+  const { username } = req.query as { username?: string };
+
   const bot = await Bot.findById(req.params.id)
-    .populate('groups')
+    .populate({
+      path: 'groups',
+      populate: {
+        path: 'botUsers',
+        select: 'id userName firstName lastName',
+      },
+    })
     .populate('botUsers')
+    .populate('owner')
     .populate('botUserConfigs');
 
   if (!bot) {
@@ -272,6 +282,24 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
   }
 
   const botObj = bot.toObject ? bot.toObject() : bot;
+
+  // 有 username 时，找到对应 BotUser._id，过滤群组
+  if (username) {
+    const cleanUsername = username.replace(/^@/, '');
+    const botUser = await BotUser.findOne({ userName: cleanUsername }).select(
+      '_id',
+    );
+    if (botUser) {
+      const botUserIdStr = botUser._id.toString();
+      botObj.groups = (botObj.groups || []).filter((g: any) =>
+        (g.botUsers || []).some(
+          (bu: any) => (bu._id?.toString() || bu.toString()) === botUserIdStr,
+        ),
+      );
+    } else {
+      botObj.groups = [];
+    }
+  }
 
   // 处理 multi_image
   if (botObj.multi_image) {
@@ -454,83 +482,52 @@ const addOwner = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const botManager = await Bot.findById(id);
-
   if (!botManager) {
     res.status(404);
     throw new Error('机器人不存在');
   }
 
-  // 一定是字符串的，去掉 req.body.owner 前面的 @（如果有）
   const ownerUsername = req.body.owner.replace(/^@/, '');
   const user = await getUserByUsername(botManager.session, ownerUsername);
 
-  if (user) {
-    // 查找或创建 BotUser，并填充 subscriptions 字段
-    const botUser = await BotUser.findOneAndUpdate(
-      { id: user.id.toString() },
-      {
-        $set: {
-          userName: user.username,
-          firstName: user.first_name,
-          lastName: user.last_name,
-        },
-      },
-      { new: true, upsert: true },
-    ).populate('subscriptions');
-
-    // 同时将当前用户添加到机器人的用户列表和 owners 列表中
-    await Bot.findByIdAndUpdate(
-      id,
-      {
-        $addToSet: {
-          botUsers: botUser._id,
-          owners: botUser._id,
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-      },
-    );
-  } else {
+  if (!user) {
     res.status(404);
     throw new Error('用户在电报上不存在');
   }
 
-  res.json({
-    success: true,
-  });
+  const botUser = await BotUser.findOneAndUpdate(
+    { id: user.id.toString() },
+    {
+      $set: {
+        userName: user.username,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      },
+    },
+    { new: true, upsert: true },
+  );
+
+  await Bot.findByIdAndUpdate(
+    id,
+    { $addToSet: { botUsers: botUser._id }, $set: { owner: botUser._id } },
+    { new: true },
+  );
+
+  res.json({ success: true });
 });
 
 const delOwner = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { owner } = req.body;
 
   const botManager = await Bot.findById(id);
-
   if (!botManager) {
     res.status(404);
     throw new Error('机器人不存在');
   }
 
-  const botUser = await BotUser.findById(owner);
+  await Bot.findByIdAndUpdate(id, { $unset: { owner: '' } }, { new: true });
 
-  if (!botUser) {
-    res.status(404);
-    throw new Error('用户不存在');
-  }
-
-  await Bot.findByIdAndUpdate(
-    id,
-    {
-      $pull: { owners: owner },
-    },
-    { new: true },
-  );
-
-  res.json({
-    success: true,
-  });
+  res.json({ success: true });
 });
 
 const addAuthorizer = handleAsync(async (req: Request, res: Response) => {

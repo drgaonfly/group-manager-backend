@@ -91,6 +91,16 @@ cloneConversationComposer.use(createConversation(cloneBotConversation));
 // 入口按钮
 cloneConversationComposer.callbackQuery('clone_start', async (ctx) => {
   debug('clone_start clicked');
+
+  // private 机器人（克隆产物）不允许再次克隆
+  if (ctx.currentBot?.type === 'private') {
+    await ctx.answerCallbackQuery({
+      text: '此机器人不支持克隆操作',
+      show_alert: true,
+    });
+    return;
+  }
+
   await ctx.conversation.exitAll();
 
   await ctx.reply(

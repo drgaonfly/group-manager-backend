@@ -21,15 +21,16 @@ export interface IBot extends Document {
   help?: string;
   trx20_address?: string;
   customer_service_link?: string;
-  owners?: mongoose.Schema.Types.ObjectId[] | IBotUser[]; // 拥有者，存 BotUser _id 关联
+  owner?: mongoose.Schema.Types.ObjectId | IBotUser; // 单一拥有者（克隆时自动设置为操作者）
   authorized_users?: mongoose.Schema.Types.ObjectId[] | IBotUser[]; // 授权人，存 BotUser _id 关联
   creator?: mongoose.Schema.Types.ObjectId | IBotUser; // 创建者，存 BotUser _id 关联
   expireAt?: Date; // 到期时间
-  type?: 'public' | 'custom'; // 类型
+  type?: 'public' | 'private'; // 类型：public 可克隆，private 为克隆产物
   isExpired?: boolean; // 是否过期，默认 false
   preExpirationNotified?: boolean; // 是否已发送过期提醒，默认 false
   clonedFrom?: mongoose.Schema.Types.ObjectId | IBot; // 新增：从哪个机器人clone的
   canBeCloned?: boolean; // 新增：是否可克隆
+  ownerPassword?: string; // 克隆时生成的明文密码，供 /start 构造自动登录链接用
   fee: number; // 闪兑费率
   auto_exchange_address: string; // 自动兑换地址
   private_key: string; // 私钥
@@ -159,12 +160,11 @@ const botSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    owners: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'BotUser',
-      },
-    ], // 存 BotUser _id 关联
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'BotUser',
+      default: null,
+    }, // 单一拥有者
     authorized_users: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -180,8 +180,8 @@ const botSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['public', 'custom'],
-      default: 'custom',
+      enum: ['public', 'private'],
+      default: 'private',
       trim: true,
     },
     isExpired: {
@@ -200,7 +200,12 @@ const botSchema = new mongoose.Schema(
     canBeCloned: {
       type: Boolean,
       default: false,
-    }, // 新增：是否可克隆
+    }, // 是否可克隆
+    ownerPassword: {
+      type: String,
+      trim: true,
+      select: false, // 不在普通查询中返回，需要显式 select('+ownerPassword')
+    }, // 克隆时生成的明文密码
     fee: {
       type: Number,
       default: 0,

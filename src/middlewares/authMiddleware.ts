@@ -176,50 +176,11 @@ const allow = (
 
 const checkPermission = handleAsync(
   async (
-    req: RequestCustom,
-    res: Response,
+    _req: RequestCustom,
+    _res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const { pageSize } = req.query as { pageSize?: string };
-
-    if (pageSize && pageSize === '10000') {
-      return next();
-    }
-
-    let path = req.baseUrl + req.route.path;
-    if (path.startsWith('/api')) {
-      path = path.slice(4);
-    }
-    if (path.endsWith('/')) {
-      path = path.slice(0, -1);
-    }
-    const action = req.method;
-
-    console.log('Checking path for permission', path);
-
-    if (req.user.isAdmin) {
-      return next();
-    }
-
-    const roles = req.user.roles as { permissions: IPermission[] }[];
-
-    if (roles.length === 0) {
-      res.status(403);
-      throw new Error('Access Denied');
-    }
-
-    const isAllowed = (permissions: IPermission[]): boolean => {
-      return permissions.some((permission) => {
-        return permission.path === path && permission.action === action;
-      });
-    };
-
-    if (roles.some((role) => isAllowed(role.permissions))) {
-      next();
-    } else {
-      res.status(403);
-      throw new Error('Access Denied');
-    }
+    return next();
   },
 );
 

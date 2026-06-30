@@ -398,4 +398,40 @@ export const disable2FA = handleAsync(
   },
 );
 
-export { login, getUserProfile, updateUserProfile, refreshToken };
+/**
+ * POST /api/auth/bot-login
+ * 用 Bot Token 换取后台 JWT，供 Telegram Bot /start 构造自动登录链接用。
+ * 无需密码，凭 Bot Token 验证身份（Bot Token 本身就是可信凭证，只有 bot.user 才持有）。
+ */
+const botLogin = handleAsync(async (req: Request, res: Response) => {
+  const { botToken } = req.body;
+
+  if (!botToken) {
+    res.status(400);
+    throw new Error('botToken 不能为空');
+  }
+
+  // 通过 token 找到 bot，再找到对应的后台 User
+  const bot = await Bot.findOne({ token: botToken }).select('user');
+  if (!bot) {
+    res.status(404);
+    throw new Error('Bot 不存在');
+  }
+
+  const user = await User.findById(bot.user);
+  if (!user || !user.live) {
+    res.status(404);
+    throw new Error('对应后台账号不存在或已禁用');
+  }
+
+  const token = generateToken(user._id);
+  const refreshToken = generateRefreshToken(user._id.toString());
+
+  res.json({
+    success: true,
+    token,
+    refreshToken,
+  });
+});
+
+export { login, getUserProfile, updateUserProfile, refreshToken, botLogin };

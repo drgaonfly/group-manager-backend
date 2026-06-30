@@ -8,6 +8,7 @@ import {
   verify2FA,
   verify2FALogin,
   disable2FA,
+  botLogin,
 } from '../controllers/authController';
 import { protect } from '../middlewares/authMiddleware';
 
@@ -15,6 +16,7 @@ const router: Router = express.Router();
 
 router.post('/login', login);
 router.post('/login/verify-2fa', verify2FALogin);
+router.post('/bot-login', botLogin);
 
 router.post('/refresh', refreshToken);
 
