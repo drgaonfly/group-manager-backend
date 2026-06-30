@@ -291,13 +291,13 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
     );
     if (botUser) {
       const botUserIdStr = botUser._id.toString();
-      botObj.groups = (botObj.groups || []).filter((g: any) =>
+      (botObj as any).groups = (botObj.groups || []).filter((g: any) =>
         (g.botUsers || []).some(
           (bu: any) => (bu._id?.toString() || bu.toString()) === botUserIdStr,
         ),
       );
     } else {
-      botObj.groups = [];
+      (botObj as any).groups = [];
     }
   }
 
