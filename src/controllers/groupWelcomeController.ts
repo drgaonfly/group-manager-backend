@@ -119,29 +119,8 @@ export const createGroupWelcome = handleAsync(
       throw new Error('该群组已存在欢迎配置，请直接编辑');
     }
 
-    const rawMenus = Array.isArray(body.menus) ? body.menus : [];
-    const validMenus = rawMenus.filter(
-      (m: any) =>
-        m &&
-        typeof m.name === 'string' &&
-        typeof m.url === 'string' &&
-        m.name.trim() &&
-        m.url.trim(),
-    );
-
     const doc = await GroupWelcome.create({
-      bot: body.bot,
-      group: body.group,
-      contents: Array.isArray(body.contents) ? body.contents : [],
-      caption: body.caption ?? '',
-      medias: Array.isArray(body.medias) ? body.medias : [],
-      menus: validMenus,
-      deleteAfterSeconds:
-        typeof body.deleteAfterSeconds === 'number'
-          ? body.deleteAfterSeconds
-          : 0,
-      pinNewMember:
-        typeof body.pinNewMember === 'boolean' ? body.pinNewMember : false,
+      ...req.body,
     });
 
     const populated = await GroupWelcome.findById(doc._id).populate(
@@ -171,16 +150,6 @@ export const updateGroupWelcome = handleAsync(
       throw new Error('群欢迎配置不存在');
     }
 
-    const rawMenus = Array.isArray(body.menus) ? body.menus : [];
-    const validMenus = rawMenus.filter(
-      (m: any) =>
-        m &&
-        typeof m.name === 'string' &&
-        typeof m.url === 'string' &&
-        m.name.trim() &&
-        m.url.trim(),
-    );
-
     const updated = await GroupWelcome.findByIdAndUpdate(
       id,
       {
@@ -188,7 +157,7 @@ export const updateGroupWelcome = handleAsync(
           contents: Array.isArray(body.contents) ? body.contents : doc.contents,
           caption: body.caption ?? doc.caption,
           medias: Array.isArray(body.medias) ? body.medias : doc.medias,
-          menus: validMenus,
+          menus: Array.isArray(body.menus) ? body.menus : doc.menus,
           deleteAfterSeconds:
             typeof body.deleteAfterSeconds === 'number'
               ? body.deleteAfterSeconds

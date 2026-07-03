@@ -1,44 +1,18 @@
 import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IUser } from './user';
-
-export interface IReplyRuleMenu extends Document {
-  name: string;
-  url: string;
-  row: number;
-  style: 'primary' | 'success' | 'danger';
-}
-
-export const replyRuleMenuSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  url: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function (v: string): boolean {
-        return /^(http|https):\/\/.*/.test(v);
-      },
-      message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
-    },
-  },
-  row: { type: Number, required: false, default: 1 },
-  style: {
-    type: String,
-    enum: ['primary', 'success', 'danger'],
-    default: 'primary',
-  },
-});
+import { IMenu, menuSchema } from './groupMessage';
 
 // ReplyRule 关键词回复
 export interface IReplyRule extends Document {
   proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
-  group: mongoose.Schema.Types.ObjectId; // 必须指定群组，只在该群触发
+  group: mongoose.Schema.Types.ObjectId;
   keyword: string[];
-  isFuzzy: boolean; // 是否模糊匹配（包含即触发）
+  isFuzzy: boolean;
   content: string;
   medias: string[];
-  menus: IReplyRuleMenu[];
+  menus: IMenu[];
   menus_per_row: number;
   replyToMessage: boolean;
   replyToAdmin: boolean;
@@ -83,7 +57,7 @@ const replyRuleSchema = new mongoose.Schema(
       type: [String],
       required: false,
     },
-    menus: [replyRuleMenuSchema],
+    menus: [menuSchema],
     replyToMessage: {
       type: Boolean,
       required: false,

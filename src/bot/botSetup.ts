@@ -20,6 +20,10 @@ import { redis } from '../utils/redis';
 import { conversations } from '@grammyjs/conversations';
 import { autoQuote } from '@roziscoding/grammy-autoquote';
 import reloadComposer from './commands/user/reload';
+import GroupMessage from '../models/groupMessage';
+import GroupWelcome from '../models/groupWelcome';
+import ReplyRule from '../models/replyRule';
+
 import createDebug from 'debug';
 
 const log = createDebug('bot:setup');
@@ -114,6 +118,45 @@ export const setupBot = (token: string) => {
     await ctx.conversation.exitAll();
     await ctx.deleteMessage();
     await ctx.answerCallbackQuery({ text: '消息已删除' });
+  });
+
+  // callback 按钮：根据 menu._id 查对应的弹窗文字
+  bot.on('callback_query:data', async (ctx, next) => {
+    const data = ctx.callbackQuery.data;
+    if (!data) return next();
+    try {
+      let callbackText: string | undefined;
+
+      const gm = await GroupMessage.findOne(
+        { 'menus._id': data },
+        { 'menus.$': 1 },
+      );
+      callbackText = gm?.menus?.[0]?.callback;
+
+      if (!callbackText) {
+        const gw = await GroupWelcome.findOne(
+          { 'menus._id': data },
+          { 'menus.$': 1 },
+        );
+        callbackText = (gw?.menus?.[0] as any)?.callback;
+      }
+
+      if (!callbackText) {
+        const rr = await ReplyRule.findOne(
+          { 'menus._id': data },
+          { 'menus.$': 1 },
+        );
+        callbackText = rr?.menus?.[0]?.callback;
+      }
+
+      if (callbackText) {
+        await ctx.answerCallbackQuery({ text: callbackText, show_alert: true });
+        return;
+      }
+    } catch {
+      // 查询失败时继续走后续 handler
+    }
+    return next();
   });
 
   bot.catch((err) => {

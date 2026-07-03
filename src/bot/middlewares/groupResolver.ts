@@ -54,10 +54,9 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       chatMemberUpdate.new_chat_member.status,
     );
 
-  // 普通群组仍然使用 message.new_chat_members
-  const isNewMemberJoined =
-    isNewMemberFromChatMember ||
-    (ctx.message?.new_chat_members && ctx.message.new_chat_members.length > 0);
+  // 只处理 chat_member update 来源的新成员事件
+  // message.new_chat_members 是 Telegram 旧 API，与 chat_member 重复触发，直接忽略
+  const isNewMemberJoined = !!isNewMemberFromChatMember;
 
   const chatId = chat.id;
   const chatTitle = (chat as any).title;
@@ -409,6 +408,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
   debug('isNewMemberFromChatMember:', isNewMemberFromChatMember);
   debug('new_chat_members:', ctx.message?.new_chat_members);
   debug('chatMemberUpdate:', chatMemberUpdate);
+  debug('update_id:', ctx.update.update_id);
 
   if (isNewMemberJoined) {
     debug('Processing new members, proxyUser:', proxyUser?.name);
@@ -424,8 +424,8 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
     const newMembers: NewMember[] = [];
 
-    // 从 chat_member update 获取（supergroup）
-    if (isNewMemberFromChatMember && chatMemberUpdate) {
+    // 只从 chat_member update 获取新成员
+    if (chatMemberUpdate) {
       const user = chatMemberUpdate.new_chat_member.user;
       newMembers.push({
         id: user.id,
@@ -434,22 +434,6 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         last_name: user.last_name,
         username: user.username,
       });
-    }
-
-    // 从 message.new_chat_members 获取（普通群组）
-    if (ctx.message?.new_chat_members) {
-      for (const member of ctx.message.new_chat_members) {
-        // 避免重复添加
-        if (!newMembers.some((m) => m.id === member.id)) {
-          newMembers.push({
-            id: member.id,
-            is_bot: member.is_bot,
-            first_name: member.first_name,
-            last_name: member.last_name,
-            username: member.username,
-          });
-        }
-      }
     }
 
     for (const member of newMembers) {

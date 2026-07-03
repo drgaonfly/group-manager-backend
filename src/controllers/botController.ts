@@ -17,6 +17,7 @@ import { extractChannelTarget } from '../utils/extractChannelTarget';
 import { getBotInfoWithGramjs } from '../utils/getBotInfoWithGramjs';
 import { getBotInfoByToken } from '../utils/getBotInfo';
 import { startClientAndGetSession } from '../bot/services/gramClient';
+import GroupMessage from '../models/groupMessage';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -725,8 +726,25 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
 
   const telegramBot = setupBot(botManager.token);
 
+  // 先保存 GroupMessage 记录，获取真实的 menu._id 用于 callback_data
+  let menusWithIds = menus;
+  if (Array.isArray(menus) && menus.some((m: any) => m?.type === 'callback')) {
+    try {
+      const saved = await GroupMessage.create({
+        ...req.body,
+        bot: id,
+        proxy: (req as RequestCustom).user?._id,
+        sendType: 'immediate',
+        isRealtime: true,
+      });
+      menusWithIds = saved.menus;
+    } catch (e) {
+      // 保存失败不影响发送，降级用原始 menus
+    }
+  }
+
   // 构建菜单 InlineKeyboard
-  const replyMarkup = buildInlineKeyboard(menus);
+  const replyMarkup = buildInlineKeyboard(menusWithIds);
 
   // 保证catch时跳过，不影响其它的
   await Promise.all(

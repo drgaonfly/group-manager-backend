@@ -21,7 +21,10 @@ export async function sendGroupMessages() {
     console.log(`[当前时间] ${formatBeijingDate(currentTime)}`);
 
     // 查询所有在线的群发消息，关联 bot、group
-    const groupMessages = await GroupMessage.find({ isOnline: true })
+    const groupMessages = await GroupMessage.find({
+      isOnline: true,
+      sendType: { $ne: 'immediate' },
+    })
       .populate({
         path: 'bot',
         populate: { path: 'user' },

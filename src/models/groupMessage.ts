@@ -5,42 +5,63 @@ import { IUser } from './user';
 
 export interface IMenu extends Document {
   name: string;
-  url: string;
+  type?: 'url' | 'callback' | 'copy_text';
+  url?: string;
+  callback?: string; // 弹窗显示文字
+  callback_data?: string; // Telegram callback_data（随机短 ID）
+  copy_text?: string;
   row: number;
+  style?: 'primary' | 'success' | 'danger';
 }
 
 export const menuSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  type: {
+    type: String,
+    enum: ['url', 'callback', 'copy_text'],
+    required: true,
+    default: 'url',
+  },
   url: {
     type: String,
-    required: true,
+    required: false,
     validate: {
       validator: function (v: string): boolean {
+        if (!v) return true;
         return /^(http|https):\/\/.*/.test(v);
       },
       message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
     },
   },
+  callback: { type: String, required: false },
+  callback_data: { type: String, required: false },
+  copy_text: { type: String, required: false },
   row: { type: Number, required: false, default: 1 },
+  style: {
+    type: String,
+    enum: ['primary', 'success', 'danger'],
+    required: false,
+  },
 });
 
 // 只存客户发给机器人的消息（toBot），不存机器人发给客户的消息（fromBot）
 export interface IGroupMessage extends Document {
-  bot: mongoose.Schema.Types.ObjectId | IBot; // 关联的机器
-  content: string; // 消息内容
-  group?: mongoose.Schema.Types.ObjectId | IGroup; // 关联的群（单群配置）
+  bot: mongoose.Schema.Types.ObjectId | IBot;
+  content: string;
+  group?: mongoose.Schema.Types.ObjectId | IGroup;
   proxy: mongoose.Types.ObjectId | IUser;
-  medias: string[]; // 媒体文件（图片、视频等）
-  intervalTime: number; // 间隔时间（单位：分钟）
-  isRealtime: boolean; // 是否实时
+  medias: string[];
+  intervalTime: number;
+  isRealtime: boolean;
+  sendType: 'immediate' | 'scheduled';
   menus: IMenu[];
-  weight: number; // 权重
+  weight: number;
   isOnline: boolean;
-  autoDeletePrevious: boolean; // 发新消息前自动删除上一条已发送的消息
-  startAt: Date; // 发送时间窗口开始
-  endAt: Date; // 发送时间窗口结束
-  createdAt: Date; // 创建时间
-  updatedAt: Date; // 更新时间
+  autoDeletePrevious: boolean;
+  startAt: Date;
+  endAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const groupMessageSchema = new mongoose.Schema(
@@ -75,6 +96,12 @@ const groupMessageSchema = new mongoose.Schema(
     isRealtime: {
       type: Boolean,
       required: false,
+    },
+    sendType: {
+      type: String,
+      enum: ['immediate', 'scheduled'],
+      required: false,
+      default: 'scheduled',
     },
     menus: [menuSchema],
     weight: {

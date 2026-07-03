@@ -1,19 +1,16 @@
 import mongoose, { Document } from 'mongoose';
+import { IMenu, menuSchema } from './groupMessage';
 
 // 群欢迎接口定义
 export interface IGroupWelcome extends Document {
-  bot: mongoose.Schema.Types.ObjectId; // 关联机器人
-  group: mongoose.Schema.Types.ObjectId; // 关联群组（按群配置）
+  bot: mongoose.Schema.Types.ObjectId;
+  group: mongoose.Schema.Types.ObjectId;
   contents: string[];
   caption?: string;
   medias: string[];
-  menus: {
-    name: string;
-    url: string;
-    row?: number;
-  }[];
-  deleteAfterSeconds?: number; // 阅后即焚：发送后多少秒自动删除
-  pinNewMember?: boolean; // 是否置顶新成员
+  menus: IMenu[];
+  deleteAfterSeconds?: number;
+  pinNewMember?: boolean;
 }
 
 // 群欢迎 Schema
@@ -43,23 +40,7 @@ const groupWelcomeSchema = new mongoose.Schema(
       type: [String],
       required: false,
     },
-    menus: [
-      {
-        name: {
-          type: String,
-          required: true,
-        },
-        url: {
-          type: String,
-          required: true,
-        },
-        row: {
-          type: Number,
-          required: false,
-          default: 1,
-        },
-      },
-    ],
+    menus: [menuSchema],
     deleteAfterSeconds: {
       type: Number,
       required: false,
