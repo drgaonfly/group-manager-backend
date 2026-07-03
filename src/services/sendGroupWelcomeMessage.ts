@@ -1,10 +1,11 @@
-import { InlineKeyboard, InputFile } from 'grammy';
+import { InputFile } from 'grammy';
 import { MyContext } from '../bot/types';
 import { generateLocalSignedUrl } from '../utils/generateSignedUrl';
 import { getMediaType } from '../utils/mediaUtils';
 import { replaceMessageVariables } from '../utils/telegramHtmlConvert';
 import { formatBeijingDate } from '../utils/formatBeijingDate';
 import { IGroupWelcome } from '../models/groupWelcome';
+import { buildInlineKeyboard } from '../utils/buildInlineKeyboard';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:group-welcome');
@@ -32,17 +33,8 @@ export const sendGroupWelcomeMessage = async (
   }
 
   // 构建内联键盘
-  let keyboard: InlineKeyboard | undefined;
-  if (groupWelcome.menus && groupWelcome.menus.length > 0) {
-    keyboard = new InlineKeyboard();
-    groupWelcome.menus.forEach((menu, index) => {
-      keyboard!.url(menu.name, menu.url);
-      // 每行最多3个按钮
-      if ((index + 1) % 3 === 0) {
-        keyboard!.row();
-      }
-    });
-  }
+
+  const keyboard = buildInlineKeyboard(groupWelcome.menus || []);
 
   // 准备变量替换数据
   const variables = {
@@ -61,15 +53,19 @@ export const sendGroupWelcomeMessage = async (
   const hasContents = groupWelcome.contents && groupWelcome.contents.length > 0;
   const hasMedias = groupWelcome.medias && groupWelcome.medias.length > 0;
 
-  // 1. 先发送所有的文本内容（welcome_message）
+  // 1. 先发送所有的文本内容（welcome_message），不带 keyboard
   if (hasContents) {
     for (let i = 0; i < groupWelcome.contents.length; i++) {
       const content = groupWelcome.contents[i];
       const processedContent = replaceMessageVariables(content, variables);
+      // 没有媒体时，最后一条 content 带上 keyboard
+      const isLast = i === groupWelcome.contents.length - 1;
+      const attachKeyboard = isLast && !hasMedias ? keyboard : undefined;
 
       try {
         const sentMsg = await ctx.reply(processedContent, {
           parse_mode: 'HTML',
+          ...(attachKeyboard ? { reply_markup: attachKeyboard } : {}),
         });
         sentMessageIds.push(sentMsg.message_id);
       } catch (error) {
@@ -78,7 +74,7 @@ export const sendGroupWelcomeMessage = async (
     }
   }
 
-  // 2. 发送媒体文件（media_caption 和 welcome_medias 一起发）
+  // 2. 发送媒体文件
   if (hasMedias) {
     try {
       const processedCaption = groupWelcome.caption
@@ -86,7 +82,7 @@ export const sendGroupWelcomeMessage = async (
         : undefined;
 
       if (groupWelcome.medias.length === 1) {
-        // 单个媒体文件
+        // 单个媒体：caption 和 keyboard 都附在媒体上
         const mediaUrl = groupWelcome.medias[0];
         const processedMediaUrl = await generateLocalSignedUrl(mediaUrl);
         const mediaType = getMediaType(mediaUrl);
@@ -113,17 +109,17 @@ export const sendGroupWelcomeMessage = async (
           sentMessageIds.push(sentMsg.message_id);
         }
       } else {
-        // 多个媒体文件，使用 sendMediaGroup
+        // 多个媒体：sendMediaGroup 不支持 keyboard
+        // 有 keyboard 时：caption 单独作为文本消息发送并附上 keyboard（与 sendMultiMedia 逻辑一致）
+        // 无 keyboard 时：caption 附在第一个媒体上
         const media = await Promise.all(
           groupWelcome.medias.map(async (mediaUrl: string, idx: number) => {
             const processedMediaUrl = await generateLocalSignedUrl(mediaUrl);
             const mediaType = getMediaType(mediaUrl);
-
             return {
               type: mediaType as 'photo' | 'video',
               media: new InputFile({ url: processedMediaUrl }),
-              // caption 放在第一个媒体上
-              ...(idx === 0 && processedCaption
+              ...(!keyboard && idx === 0 && processedCaption
                 ? { caption: processedCaption, parse_mode: 'HTML' }
                 : {}),
             };
@@ -138,8 +134,15 @@ export const sendGroupWelcomeMessage = async (
           sentMessageIds.push(msg.message_id),
         );
 
-        // 如果有键盘，单独发送一条带键盘的消息
-        if (keyboard) {
+        // 有 keyboard 时，单独发送 caption 文本并带上 keyboard
+        if (keyboard && processedCaption) {
+          const sentMsg = await ctx.reply(processedCaption, {
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          });
+          sentMessageIds.push(sentMsg.message_id);
+        } else if (keyboard) {
+          // 有 keyboard 但无 caption，发一条空占位消息带 keyboard
           const sentMsg = await ctx.reply('👆 欢迎查看上方内容', {
             reply_markup: keyboard,
           });
@@ -147,7 +150,7 @@ export const sendGroupWelcomeMessage = async (
         }
       }
     } catch (error) {
-      debug('Failed to send media group:', error);
+      debug('Failed to send media:', error);
       if (keyboard) {
         try {
           const sentMsg = await ctx.reply('📎 媒体文件发送失败', {
@@ -161,7 +164,8 @@ export const sendGroupWelcomeMessage = async (
     }
   }
 
-  // 3. 如果既没有内容也没有媒体，但有键盘，发送默认消息和键盘
+  // 3. 无媒体时：keyboard 已在最后一条 content 上附加（见上方循环）
+  //    如果完全没有内容和媒体但有 keyboard，发默认消息
   if (!hasContents && !hasMedias && keyboard) {
     const defaultMessage = `欢迎 ${username} 加入群组！👋`;
     const sentMsg = await ctx.reply(defaultMessage, { reply_markup: keyboard });

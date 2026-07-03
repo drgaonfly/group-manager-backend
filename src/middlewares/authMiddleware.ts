@@ -2,7 +2,6 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/user';
-import { IPermission } from '../models/permission';
 import handleAsync from '../utils/handleAsync';
 import { ROLES } from '../constants';
 import { RequestCustom } from '../types/user';

@@ -10,6 +10,7 @@ export interface IGroupWelcome extends Document {
   menus: {
     name: string;
     url: string;
+    row?: number;
   }[];
   deleteAfterSeconds?: number; // 阅后即焚：发送后多少秒自动删除
   pinNewMember?: boolean; // 是否置顶新成员
@@ -51,6 +52,11 @@ const groupWelcomeSchema = new mongoose.Schema(
         url: {
           type: String,
           required: true,
+        },
+        row: {
+          type: Number,
+          required: false,
+          default: 1,
         },
       },
     ],

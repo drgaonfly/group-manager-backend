@@ -509,6 +509,12 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
             group: ctx.currentGroup?._id,
           })
         : null;
+      debug(
+        'groupWelcomeConfig:',
+        groupWelcomeConfig
+          ? `found (menus: ${groupWelcomeConfig.menus?.length})`
+          : 'null',
+      );
 
       // 处理群组验证（验证通过后会自动发送欢迎消息）
       if (PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot)) {

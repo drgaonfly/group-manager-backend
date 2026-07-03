@@ -21,7 +21,7 @@ export const menuSchema = new mongoose.Schema({
       message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
     },
   },
-  row: { type: Number, required: false, default: 0 },
+  row: { type: Number, required: false, default: 1 },
 });
 
 // 只存客户发给机器人的消息（toBot），不存机器人发给客户的消息（fromBot）
