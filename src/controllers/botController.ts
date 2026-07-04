@@ -323,7 +323,7 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
 const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
-  const { private_key, multi_image, token, ...updateData } = req.body;
+  const { private_key, token, proxy, ...updateData } = req.body;
 
   const botManager = await Bot.findById(id);
 
@@ -336,6 +336,11 @@ const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
 
   if (!isSuperAdmin) {
     delete (updateData as Record<string, unknown>).token;
+  }
+
+  // 如果提供了代理账号，将其赋值给bot.user
+  if (proxy !== undefined) {
+    (updateData as Record<string, unknown>).user = proxy;
   }
 
   const isTokenChanged = Boolean(
@@ -375,10 +380,6 @@ const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
     (updateData as Record<string, unknown>).private_key = encrypt(private_key);
   }
 
-  if (multi_image === '' || (multi_image && !multi_image.startsWith('http'))) {
-    (updateData as Record<string, unknown>).multi_image = multi_image;
-  }
-
   const updatedBot = await Bot.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
@@ -402,11 +403,7 @@ const updateBot = handleAsync(async (req: RequestCustom, res: Response) => {
     await setWebhook(updatedBot);
   }
 
-  const processedBot = await transformDocumentImage(updatedBot, [
-    'multi_image',
-  ]);
-
-  const botObj = processedBot.toObject ? processedBot.toObject() : processedBot;
+  const botObj = updatedBot.toObject ? updatedBot.toObject() : updatedBot;
 
   res.json({
     success: true,
