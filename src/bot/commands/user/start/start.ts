@@ -19,7 +19,7 @@ const debug = createDebug('bot:start');
  */
 async function getBotJwt(botToken: string): Promise<string | null> {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5007';
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5010';
     const res = await axios.post(`${backendUrl}/api/auth/bot-login`, {
       botToken,
     });

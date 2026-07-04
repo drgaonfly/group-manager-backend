@@ -126,15 +126,6 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     debug('Matched reply rule:', matchedRule._id);
 
-    // 检查是否需要回复管理员
-    if (!matchedRule.replyToAdmin) {
-      const isAdmin = await isUserAdmin(ctx);
-      if (isAdmin) {
-        debug('Skipping reply to admin');
-        return next();
-      }
-    }
-
     // 构建成员信息用于变量替换
     const user = ctx.from;
     const memberInfo: MemberInfo | undefined = user

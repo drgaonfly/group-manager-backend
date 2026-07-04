@@ -15,7 +15,6 @@ export interface IReplyRule extends Document {
   menus: IMenu[];
   menus_per_row: number;
   replyToMessage: boolean;
-  replyToAdmin: boolean;
   deleteAfterSeconds: number;
   deleteUserMsgAfterSeconds: number;
   isOnline: boolean;
@@ -62,11 +61,6 @@ const replyRuleSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: false,
-    },
-    replyToAdmin: {
-      type: Boolean,
-      required: false,
-      default: true,
     },
     deleteAfterSeconds: {
       type: Number,

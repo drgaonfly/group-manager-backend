@@ -60,29 +60,30 @@ export async function createBotWithUser(
     const email = `${rawUsername}@bot.local`;
     const plainPassword = rawUsername; // 密码 = username，简单易记，用户登录后自改
 
-    // 邮箱已存在说明同一用户之前克隆过
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return { success: false, message: `账号 ${email} 已存在，请勿重复克隆` };
+    // 检查用户是否已存在，如果存在则复用
+    let newUser = await User.findOne({ email });
+    if (!newUser) {
+      // 用户不存在，创建新用户
+      const salt = await bcrypt.genSalt(10);
+      const hashPassword = await bcrypt.hash(plainPassword, salt);
+      const inviteCode = await generateUserInviteCode();
+      const proxyRole = await Role.findOne({ name: '代理' });
+
+      newUser = new User({
+        id: newUserId,
+        email,
+        password: hashPassword,
+        inviteCode,
+        name: botInfo?.firstName || botInfo?.username || rawUsername,
+        live: true,
+        proxy: currentBot?.user ?? null,
+        roles: proxyRole ? [proxyRole._id] : [],
+      });
+      await newUser.save();
+      debug('[createBotWithUser] 新 User 已创建:', newUser._id);
+    } else {
+      debug('[createBotWithUser] 复用现有 User:', newUser._id);
     }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashPassword = await bcrypt.hash(plainPassword, salt);
-    const inviteCode = await generateUserInviteCode();
-    const proxyRole = await Role.findOne({ name: '代理' });
-
-    const newUser = new User({
-      id: newUserId,
-      email,
-      password: hashPassword,
-      inviteCode,
-      name: botInfo?.firstName || botInfo?.username || rawUsername,
-      live: true,
-      proxy: currentBot?.user ?? null,
-      roles: proxyRole ? [proxyRole._id] : [],
-    });
-    await newUser.save();
-    debug('[createBotWithUser] 新 User 已创建:', newUser._id);
 
     // 4. 创建新 Bot，绑定到新 User，类型固定为 private（克隆产物，不可再克隆）
     const newBot = new Bot({
