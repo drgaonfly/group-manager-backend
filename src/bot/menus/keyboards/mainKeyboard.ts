@@ -12,42 +12,6 @@ async function createMainKeyboard(ctx: MyContext) {
   const isGroupChat =
     ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
 
-  // 1. 自由键盘配置（在群组和私聊中都显示）
-  if (
-    PermissionChecker.canUseFreeKeyboard(proxyUser) &&
-    ctx.currentBot?.keyboards &&
-    ctx.currentBot.keyboards.length > 0
-  ) {
-    keyboard.row();
-    // ... 排序和分组逻辑 ...
-    const sortedKeyboards = [...ctx.currentBot.keyboards].sort(
-      (a, b) => (a.row || 1) - (b.row || 1),
-    );
-
-    const groupedByRow: { [key: number]: typeof sortedKeyboards } = {};
-    sortedKeyboards.forEach((item) => {
-      const rowNum = item.row || 1;
-      if (!groupedByRow[rowNum]) {
-        groupedByRow[rowNum] = [];
-      }
-      groupedByRow[rowNum].push(item);
-    });
-
-    Object.keys(groupedByRow)
-      .sort((a, b) => Number(a) - Number(b))
-      .forEach((rowKey) => {
-        const rowButtons = groupedByRow[Number(rowKey)];
-        rowButtons.forEach((item) => {
-          keyboard.text(item.label || item.command);
-        });
-        keyboard.row();
-      });
-  }
-
-  // 2. 充值余额
-
-  // keyboard.text('充值余额');
-
   // 红包：私聊时显示
   if (!isGroupChat) {
     const frontendUrl = process.env.FRONTEND_URL;

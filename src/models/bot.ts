@@ -45,9 +45,6 @@ export interface IBot extends Document {
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
 
-  // 自由键盘（keyboards 数据仍保留）
-  keyboards: IKeyboard[];
-
   // 定时频道 — cron job 用作查询过滤，保留
   canOpenChannelPost: boolean;
 
@@ -58,13 +55,6 @@ export interface IBot extends Document {
 export interface IMenu extends Document {
   name: string;
   url: string;
-}
-
-export interface IKeyboard extends Document {
-  row: number;
-  label: string;
-  command: string;
-  content: string;
 }
 
 export interface Ipreset extends Document {
@@ -84,13 +74,6 @@ const menuSchema = new mongoose.Schema({
       message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
     },
   },
-});
-
-const keyboardSchema = new mongoose.Schema({
-  row: { type: Number, required: false, default: 1 },
-  label: { type: String, required: false },
-  command: { type: String, required: true },
-  content: { type: String, required: true },
 });
 
 const presetSchema = new mongoose.Schema({
@@ -139,7 +122,6 @@ const botSchema = new mongoose.Schema(
       },
     ],
     menus: [menuSchema],
-    keyboards: [keyboardSchema],
     session: {
       type: String,
       trim: true,
