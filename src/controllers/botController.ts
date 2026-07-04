@@ -18,6 +18,8 @@ import { getBotInfoWithGramjs } from '../utils/getBotInfoWithGramjs';
 import { getBotInfoByToken } from '../utils/getBotInfo';
 import { startClientAndGetSession } from '../bot/services/gramClient';
 import GroupMessage from '../models/groupMessage';
+import ChannelPost from '../models/channelPost';
+import ChannelPostHistory from '../models/channelPostHistory';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -788,116 +790,100 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
 /**
  * 立即发送频道消息
  */
-const sendChannelPost = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { url, channels, title, content, medias, menus } = req.body;
+const sendChannelPost = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { id } = req.params;
+    const { url, channel, title, content, medias, menus } = req.body;
 
-  const botManager = await Bot.findById(id).populate('groups');
+    const botManager = await Bot.findById(id).populate('groups');
 
-  if (!botManager) {
-    res.status(404);
-    throw new Error('机器人不存在');
-  }
+    if (!botManager) {
+      res.status(404);
+      throw new Error('机器人不存在');
+    }
 
-  // 获取目标频道列表
-  const channelTargets: (string | number)[] = [];
+    // 获取目标频道
+    let channelTarget: any;
+    let channelGroup: any;
 
-  // 优先使用 channels 数组（新版本）
-  if (channels && Array.isArray(channels) && channels.length > 0) {
-    // channels 是 Group 的 _id 数组，需要从 bot.groups 中找到对应的 Telegram ID
-    const botGroups = botManager.groups as any[];
-    for (const channelId of channels) {
-      const group = botGroups.find(
-        (g: any) => g._id.toString() === channelId.toString(),
+    if (channel) {
+      // channel 是 Group 的 _id，需要从 bot.groups 中找到对应的 Telegram ID
+      const botGroups = botManager.groups as any[];
+      channelGroup = botGroups.find(
+        (g: any) => g._id.toString() === channel.toString(),
       );
-      if (group && group.id) {
-        channelTargets.push(group.id);
+      if (channelGroup && channelGroup.id) {
+        channelTarget = channelGroup.id;
+      }
+    } else if (url) {
+      // 兼容旧版本：从频道URL中提取频道ID或用户名
+      channelTarget = extractChannelTarget(url);
+    }
+
+    if (!channelTarget) {
+      res.status(400);
+      throw new Error('请选择至少一个频道，或提供有效的频道链接');
+    }
+
+    const telegramBot = setupBot(botManager.token);
+
+    // 先保存 ChannelPost 记录，获取真实的 menu._id 用于 callback_data
+    let menusWithIds = menus;
+    if (
+      Array.isArray(menus) &&
+      menus.some((m: any) => m?.type === 'callback')
+    ) {
+      try {
+        const saved = await ChannelPost.create({
+          ...req.body,
+          bot: id,
+          proxy: req.user._id,
+          sendType: 'immediate',
+          isOnline: false,
+        });
+        menusWithIds = saved.menus;
+      } catch (e) {
+        // 保存失败不影响发送，降级用原始 menus
       }
     }
-  } else if (url) {
-    // 兼容旧版本：从频道URL中提取频道ID或用户名
-    const channelTarget = extractChannelTarget(url);
-    if (channelTarget) {
-      channelTargets.push(channelTarget);
+
+    // 构建消息内容
+    let messageContent = title ? `<b>${title}</b>` : '';
+    if (content) {
+      messageContent += messageContent ? `\n\n${content}` : content;
     }
-  }
 
-  if (channelTargets.length === 0) {
-    res.status(400);
-    throw new Error('请选择至少一个频道，或提供有效的频道链接');
-  }
+    // 构建菜单 InlineKeyboard
+    const replyMarkup = buildInlineKeyboard(menusWithIds);
 
-  const telegramBot = setupBot(botManager.token);
-
-  // 构建消息内容
-  let messageContent = title ? `<b>${title}</b>` : '';
-  if (content) {
-    messageContent += messageContent ? `\n\n${content}` : content;
-  }
-
-  // 构建内联键盘
-  const replyMarkup = buildInlineKeyboard(menus);
-
-  try {
-    // 向每个频道发送消息
-    const results: {
-      channel: string | number;
-      success: boolean;
-      error?: string;
-    }[] = [];
-
-    for (const channelTarget of channelTargets) {
-      try {
-        // 发送消息到频道
-        if (medias && Array.isArray(medias) && medias.length > 0) {
-          await sendMediaMessage(telegramBot.api, channelTarget, medias, {
-            caption: messageContent,
-            reply_markup: replyMarkup,
-          });
-        } else {
-          // 发送纯文本消息
-          await telegramBot.api.sendMessage(channelTarget, messageContent, {
-            parse_mode: 'HTML',
-            ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-          });
-        }
-
-        results.push({ channel: channelTarget, success: true });
-      } catch (sendError: any) {
-        console.error(
-          `[sendChannelPost] 发送到频道 ${channelTarget} 失败:`,
-          sendError,
-        );
-        results.push({
-          channel: channelTarget,
-          success: false,
-          error: sendError?.description || sendError?.message,
+    try {
+      if (medias && Array.isArray(medias) && medias.length > 0) {
+        await sendMediaMessage(telegramBot.api, channelTarget, medias, {
+          caption: messageContent,
+          reply_markup: replyMarkup,
+        });
+      } else {
+        // 发送纯文本消息
+        await telegramBot.api.sendMessage(channelTarget, messageContent, {
+          parse_mode: 'HTML',
+          ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
         });
       }
-    }
 
-    const successCount = results.filter((r) => r.success).length;
-    const failCount = results.filter((r) => !r.success).length;
-
-    if (successCount === 0) {
+      res.json({
+        success: true,
+        message: '频道消息发送成功',
+      });
+    } catch (error) {
+      console.error(
+        `[sendChannelPost] 发送到频道 ${channelTarget} 失败:`,
+        error,
+      );
       res.status(500);
-      throw new Error('所有频道发送失败');
+      throw new Error('频道消息发送失败');
     }
-
-    res.json({
-      success: true,
-      message:
-        failCount > 0
-          ? `频道消息发送完成，成功 ${successCount} 个，失败 ${failCount} 个`
-          : '频道消息发送成功',
-      results,
-    });
-  } catch (error: any) {
-    console.error('[sendChannelPost] 发送频道消息失败:', error);
-    res.status(500);
-    throw new Error(error?.description || error?.message || '发送频道消息失败');
-  }
-});
+  },
+);
 
 /**
  * 内部接口：触发指定 Bot 设置 Webhook（供 bot 内部调用，不需鉴权）

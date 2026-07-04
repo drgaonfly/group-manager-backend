@@ -23,6 +23,7 @@ import reloadComposer from './commands/user/reload';
 import GroupMessage from '../models/groupMessage';
 import GroupWelcome from '../models/groupWelcome';
 import ReplyRule from '../models/replyRule';
+import ChannelPost from '../models/channelPost';
 
 import createDebug from 'debug';
 
@@ -147,6 +148,14 @@ export const setupBot = (token: string) => {
           { 'menus.$': 1 },
         );
         callbackText = rr?.menus?.[0]?.callback;
+      }
+
+      if (!callbackText) {
+        const cp = await ChannelPost.findOne(
+          { 'menus._id': data },
+          { 'menus.$': 1 },
+        );
+        callbackText = (cp?.menus?.[0] as any)?.callback;
       }
 
       if (callbackText) {

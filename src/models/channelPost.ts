@@ -2,27 +2,25 @@ import mongoose, { Document } from 'mongoose';
 import { IUser } from './user';
 import { IBot } from './bot';
 import { IGroup } from './group';
+import { IMenu, menuSchema } from './groupMessage';
 
 // 频道推广接口定义
 export interface IChannelPost extends Document {
   channel: mongoose.Schema.Types.ObjectId | IGroup; // 关联的频道 Group
+  proxy: mongoose.Schema.Types.ObjectId | IUser;
+  bot: mongoose.Schema.Types.ObjectId | IBot;
   content: string;
   medias: string[]; // 媒体文件（图片、视频等）
-  menus: {
-    name: string;
-    url: string;
-    row?: number;
-  }[];
+  menus: IMenu[];
   weight: number;
   interval: number; // 发送间隔时间（单位：分钟）
   lastPostTime?: Date; // 上次发送时间
   lastPostMessageId?: number; // 上次发送的消息ID
   isClearLastPost: boolean; // 是否清除上一条消息
   isOnline: boolean; // 是否启用定时发送
+  sendType: 'immediate' | 'scheduled'; // 发送类型
   startAt?: Date; // 发送时间窗口开始
   endAt?: Date; // 发送时间窗口结束
-  proxy: mongoose.Schema.Types.ObjectId | IUser;
-  bot: mongoose.Schema.Types.ObjectId | IBot;
 }
 
 // 频道推广 Schema
@@ -52,13 +50,7 @@ const channelPostSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    menus: [
-      {
-        name: String,
-        url: String,
-        row: { type: Number, default: 0 },
-      },
-    ],
+    menus: [menuSchema],
     weight: {
       type: Number,
       default: 0,
@@ -82,6 +74,12 @@ const channelPostSchema = new mongoose.Schema(
     isOnline: {
       type: Boolean,
       default: true,
+    },
+    sendType: {
+      type: String,
+      enum: ['immediate', 'scheduled'],
+      required: false,
+      default: 'scheduled',
     },
     startAt: {
       type: Date,

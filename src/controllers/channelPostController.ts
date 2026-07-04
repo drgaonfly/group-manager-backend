@@ -138,23 +138,9 @@ export const getChannelPostById = handleAsync(
 
 export const addChannelPost = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { bot: botId, ...channelPostData } = req.body;
-
-    // 验证机器人是否存在且属于当前用户
-    const bot = await Bot.findOne({
-      _id: botId,
-      user: req.user._id,
-    });
-
-    if (!bot) {
-      res.status(400);
-      throw new Error('机器人不存在或无权限');
-    }
-
     const channelPost = new ChannelPost({
-      ...channelPostData,
+      ...req.body,
       proxy: req.user._id,
-      bot: botId,
     });
 
     const savedChannelPost = await channelPost.save();

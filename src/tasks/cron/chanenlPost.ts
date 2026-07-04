@@ -1,275 +1,225 @@
-import Bot from '../../models/bot';
+import User from '../../models/user';
 import ChannelPost from '../../models/channelPost';
 import ChannelPostHistory from '../../models/channelPostHistory';
-import { findBotProxy } from '../../bot/services/findBotProxy';
-import { PermissionChecker } from '../../bot/utils/permissionChecker';
-import { setupBot } from '../../bot/botSetup';
-import { InlineKeyboard } from 'grammy';
-import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
+import { IGroup } from '../../models/group';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
+import { setupBot } from '../../bot/botSetup';
 import { sendMediaMessage } from '../../utils/sendMultiMedia';
+import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
 
 /**
- * 定时发送频道消息到指定频道
+ * 定时发送频道消息任务
  */
 export async function channelPost() {
   try {
-    // 查询所有开启频道发送且在线的机器人
-    const bots = await Bot.find({
+    console.log('[channelPost] 开始处理频道推广...');
+
+    const currentTime = new Date();
+
+    // 查询所有在线的频道推广（仅定时发送），关联 bot、channel
+    const channelPosts = await ChannelPost.find({
       isOnline: true,
-    }).populate('groups');
+      sendType: 'scheduled',
+    })
+      .populate({
+        path: 'bot',
+        populate: { path: 'user groups' },
+      })
+      .populate('channel')
+      .sort({ weight: 1 });
 
-    console.log(`查询到 ${bots.length} 个开启频道发送的在线机器人`);
+    console.log(`[channelPost] 查询到 ${channelPosts.length} 条频道推广`);
 
-    for (const bot of bots) {
+    const stats = {
+      processed: 0,
+      sent: 0,
+      skipped: 0,
+      noPermission: 0,
+      errors: 0,
+    };
+
+    for (const post of channelPosts) {
       try {
-        console.log(`处理机器人: ${bot.botName}`);
+        const bot = post.bot as any;
+        const channel = post.channel as IGroup | undefined;
 
-        const { proxyUser } = await findBotProxy(bot);
-
-        if (!PermissionChecker.canUseChannelPost(proxyUser, bot)) {
-          console.log(`机器人 ${bot.botName} 无权限发送频道消息，跳过`);
+        if (!bot || !channel) {
+          console.warn(
+            `[channelPost] 推广 ${post._id} 缺少 bot 或 channel，跳过`,
+          );
+          stats.skipped++;
           continue;
         }
 
-        // 查询该机器人的所有启用的频道推广，并 populate channel
-        const allChannelPosts = await ChannelPost.find({
-          bot: bot._id,
-          isOnline: true,
-        })
-          .populate('channel')
-          .sort({ weight: 1, createdAt: -1 });
-
-        if (!allChannelPosts || allChannelPosts.length === 0) {
-          console.log(`机器人 ${bot.botName} 未配置启用的频道推广，跳过`);
+        // 检查代理用户权限
+        const proxyUser = await User.findById(post.proxy);
+        if (!proxyUser?.channelPost) {
+          console.warn(
+            `[channelPost] 机器人 ${bot.botName} 代理用户无频道推广权限，跳过`,
+          );
+          stats.noPermission++;
           continue;
         }
 
-        // 筛选出需要发送的频道推广（检查间隔时间和时间窗口）
-        const postsToSend = allChannelPosts.filter((post) => {
-          // 先检查时间窗口
-          if (!isWithinTimeWindow(post.startAt, post.endAt)) {
-            console.log(
-              `频道推广 ${post._id} 不在发送时间窗口内 (${formatTimeWindow(
-                post.startAt,
-                post.endAt,
-              )})，跳过`,
-            );
-            return false;
-          }
-          // 再检查发送间隔
-          return checkChannelSendInterval(post);
+        // 检查时间窗口
+        if (!isWithinTimeWindow(post.startAt, post.endAt)) {
+          console.log(
+            `[channelPost] 推广 ${
+              post._id
+            } 不在发送时间窗口内 (${formatTimeWindow(
+              post.startAt,
+              post.endAt,
+            )})，跳过`,
+          );
+          stats.skipped++;
+          continue;
+        }
+
+        // 检查间隔时间
+        const history = await ChannelPostHistory.findOne({
+          channel: channel._id,
         });
+        const intervalTimeInMs = post.interval * 60 * 1000;
 
-        if (postsToSend.length === 0) {
-          console.log(`机器人 ${bot.botName} 没有到达发送间隔的频道推广，跳过`);
-          continue;
-        }
-
-        console.log(
-          `机器人 ${bot.botName} 找到 ${postsToSend.length} 个需要发送的频道推广`,
-        );
-
-        // 设置机器人实例
-        const telegramBot = setupBot(bot.token);
-
-        // 处理每个频道推广
-        for (const post of postsToSend) {
-          try {
-            // 获取所有目标频道
-            const channelTargets = getChannelTargets(post);
-
-            if (channelTargets.length === 0) {
-              console.log(`频道推广 ${post._id} 未配置有效的频道目标，跳过`);
-              continue;
-            }
-
-            // 为每个目标频道发送消息
-            for (const channelTarget of channelTargets) {
-              try {
-                // 构建消息内容和键盘
-                const { messageContent, keyboard } = buildChannelMessage(
-                  bot,
-                  post,
-                );
-
-                // 发送消息到频道
-                let sentMessage;
-
-                // 检查是否有媒体文件
-                if (
-                  post.medias &&
-                  Array.isArray(post.medias) &&
-                  post.medias.length > 0
-                ) {
-                  const result = await sendMediaMessage(
-                    telegramBot.api,
-                    channelTarget,
-                    post.medias,
-                    {
-                      caption: messageContent,
-                      reply_markup: keyboard,
-                    },
-                  );
-                  sentMessage = result.message_id
-                    ? { message_id: result.message_id }
-                    : result.media_group_messages?.[0];
-                } else {
-                  // 发送纯文本消息
-                  sentMessage = await telegramBot.api.sendMessage(
-                    channelTarget,
-                    messageContent,
-                    {
-                      parse_mode: 'HTML',
-                      reply_markup: keyboard,
-                    },
-                  );
-                }
-
-                console.log(
-                  `成功发送消息到频道 (${channelTarget}) 使用机器人 ${bot.botName}, 消息ID: ${sentMessage.message_id}`,
-                );
-
-                // 记录发送成功历史
-                const channelGroup = findChannelGroup(post, channelTarget);
-                await ChannelPostHistory.create({
-                  channelPost: post._id,
-                  bot: bot._id,
-                  proxy: proxyUser._id,
-                  channel: channelGroup?._id,
-                  channelId: channelTarget,
-                  messageId: sentMessage.message_id,
-                  content: messageContent,
-                  medias: post.medias || [],
-                  status: 'success',
-                  sentAt: new Date(),
-                });
-              } catch (sendError: any) {
-                console.error(
-                  `[channelPost] 向频道 ${channelTarget} 发送消息时出错:`,
-                  sendError,
-                );
-
-                // 记录发送失败历史
-                const channelGroup = findChannelGroup(post, channelTarget);
-                await ChannelPostHistory.create({
-                  channelPost: post._id,
-                  bot: bot._id,
-                  proxy: proxyUser._id,
-                  channel: channelGroup?._id,
-                  channelId: channelTarget,
-                  content: post.content || '',
-                  medias: post.medias || [],
-                  status: 'failed',
-                  errorMessage: sendError?.message || String(sendError),
-                  sentAt: new Date(),
-                });
-
-                // 继续处理下一个频道
-              }
-            }
-
-            // 更新频道推广的最后发送时间
-            await ChannelPost.findByIdAndUpdate(post._id, {
-              lastPostTime: new Date(),
-            });
-          } catch (postError) {
-            console.error(
-              `[channelPost] 处理频道推广 ${post._id} 时出错:`,
-              postError,
+        if (history) {
+          const timeSinceLastSent =
+            Date.now() - new Date(history.sentAt).getTime();
+          if (timeSinceLastSent < intervalTimeInMs) {
+            console.log(
+              `[channelPost] 频道 ${channel.id} 距上次发送 ${(
+                timeSinceLastSent / 60000
+              ).toFixed(2)} 分钟，不足 ${post.interval} 分钟，跳过`,
             );
+            stats.skipped++;
             continue;
           }
         }
-      } catch (botError) {
-        console.error(
-          `[channelPost] 处理机器人 ${bot.botName} 时出错:`,
-          botError,
+
+        stats.processed++;
+
+        // 从 bot.groups 中查找 channel 对应的 Telegram ID
+        const botGroups = bot.groups as any[];
+        const channelGroup = botGroups.find(
+          (g: any) => g._id.toString() === channel._id.toString(),
         );
-        continue;
+        const channelTarget = channelGroup?.id;
+
+        if (!channelTarget) {
+          console.warn(
+            `[channelPost] 频道 ${channel._id} 未在 bot.groups 中找到对应的 Telegram ID，跳过`,
+          );
+          stats.skipped++;
+          continue;
+        }
+
+        const telegramBot = setupBot(bot.token);
+
+        const replyMarkup = buildInlineKeyboard(post.menus);
+
+        let sentMessageId: number | undefined;
+        try {
+          // 自动删除上一条
+          if (post.isClearLastPost && history?.messageId) {
+            try {
+              await telegramBot.api.deleteMessage(
+                channelTarget,
+                history.messageId,
+              );
+              console.log(
+                `[autoDelete] 频道 ${channelTarget} 已删除上一条消息 ${history.messageId}`,
+              );
+            } catch (delErr: any) {
+              console.warn(
+                `[autoDelete] 删除消息失败（忽略）:`,
+                delErr?.message,
+              );
+            }
+          }
+
+          const messageContent =
+            post.content || bot.purchasing_introduction || '📺 频道推荐';
+
+          if (Array.isArray(post.medias) && post.medias.length > 0) {
+            const result = await sendMediaMessage(
+              telegramBot.api,
+              channelTarget,
+              post.medias,
+              {
+                caption: messageContent,
+                reply_markup: replyMarkup,
+              },
+            );
+            sentMessageId =
+              (result as any).message_id ||
+              (result as any).media_group_messages?.[0]?.message_id;
+          } else {
+            const result = await telegramBot.api.sendMessage(
+              channelTarget,
+              messageContent,
+              {
+                parse_mode: 'HTML',
+                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+              },
+            );
+            sentMessageId = result.message_id;
+          }
+
+          await ChannelPostHistory.create({
+            channelPost: post._id,
+            bot: bot._id,
+            proxy: post.proxy,
+            channel: channel._id,
+            channelId: channelTarget,
+            messageId: sentMessageId,
+            content: post.content,
+            medias: post.medias || [],
+            status: 'success',
+            sentAt: new Date(),
+          });
+
+          await ChannelPost.findByIdAndUpdate(post._id, {
+            lastPostTime: new Date(),
+          });
+
+          stats.sent++;
+          console.log(
+            `[channelPost] 频道 ${channelTarget} 推广 ${post._id} 发送成功`,
+          );
+        } catch (sendErr: any) {
+          await ChannelPostHistory.create({
+            channelPost: post._id,
+            bot: bot._id,
+            proxy: post.proxy,
+            channel: channel._id,
+            channelId: channelTarget,
+            content: post.content,
+            medias: post.medias || [],
+            status: 'failed',
+            errorMessage: sendErr?.message || String(sendErr),
+            sentAt: new Date(),
+          });
+          console.error(
+            `[channelPost] 向频道 ${channelTarget} 发送消息失败:`,
+            sendErr,
+          );
+          stats.errors++;
+        }
+      } catch (err) {
+        console.error(`[channelPost] 处理推广时出错:`, err);
+        stats.errors++;
       }
     }
 
-    console.log('[channelPost] 频道消息发送任务完成');
+    const taskDuration = (new Date().getTime() - currentTime.getTime()) / 1000;
+    console.log('\n========== 频道推广任务统计 ==========');
+    console.log(`[统计信息] 处理条数: ${stats.processed}`);
+    console.log(`[统计信息] 发送成功: ${stats.sent}`);
+    console.log(`[统计信息] 无权限跳过: ${stats.noPermission}`);
+    console.log(`[统计信息] 其他跳过: ${stats.skipped}`);
+    console.log(`[统计信息] 错误数: ${stats.errors}`);
+    console.log(`[统计信息] 总耗时: ${taskDuration.toFixed(2)}秒`);
+    console.log('========== 频道推广任务完成 ==========');
   } catch (error) {
-    console.error('[channelPost] 发送消息到频道失败:', error);
+    console.error('[channelPost] 处理频道推广时出错:', error);
   }
-}
-
-/**
- * 获取频道目标（channel.id）
- */
-function getChannelTargets(post: any): (string | number)[] {
-  if (post.channel?.id) {
-    return [post.channel.id];
-  }
-  return [];
-}
-
-/**
- * 为频道推广构建消息内容和键盘
- */
-function buildChannelMessage(
-  bot: any,
-  post: any,
-): { messageContent: string; keyboard: InlineKeyboard } {
-  // 构建消息内容
-  const messageContent =
-    post.content || bot.purchasing_introduction || '📺 频道推荐';
-
-  const keyboard = buildInlineKeyboard(post.menus) || new InlineKeyboard();
-
-  // 添加机器人的客服和机器人链接（如果有的话）
-  if (bot.customer_service_link) {
-    keyboard.url('📱 联系客服', bot.customer_service_link).row();
-  }
-  if (bot.url) {
-    keyboard.url('🤖 访问机器人', bot.url).row();
-  }
-
-  return { messageContent, keyboard };
-}
-
-/**
- * 检查频道推广是否到了发送间隔时间
- */
-function checkChannelSendInterval(post: any): boolean {
-  const now = new Date();
-  const intervalMinutes = post.interval || 0;
-
-  // 如果间隔设置为0，表示禁用发送
-  if (intervalMinutes === 0) {
-    console.log(`频道推广 ${post._id} 间隔设置为0，禁用发送`);
-    return false;
-  }
-
-  // 如果没有上次发送时间，说明是第一次发送，允许发送
-  if (!post.lastPostTime) {
-    console.log(`频道推广 ${post._id} 首次发送，允许发送`);
-    return true;
-  }
-
-  // 计算时间差（毫秒）
-  const timeDiff = now.getTime() - new Date(post.lastPostTime).getTime();
-  const timeDiffMinutes = timeDiff / (1000 * 60);
-
-  console.log(
-    `频道推广 ${post._id} 上次发送时间: ${
-      post.lastPostTime
-    }, 间隔设置: ${intervalMinutes}分钟, 实际间隔: ${timeDiffMinutes.toFixed(
-      2,
-    )}分钟`,
-  );
-
-  return timeDiffMinutes >= intervalMinutes;
-}
-
-/**
- * 根据频道目标查找对应的 Group 对象
- */
-function findChannelGroup(post: any, channelTarget: string | number): any {
-  if (post.channel?.id === channelTarget) {
-    return post.channel;
-  }
-  return null;
 }
