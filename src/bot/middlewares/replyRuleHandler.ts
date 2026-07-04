@@ -1,7 +1,6 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import ReplyRule from '../../models/replyRule';
-import { generateSignedUrl } from '../../utils/generateSignedUrl';
 import { replaceVariables, MemberInfo } from '../../utils/replaceVariables';
 import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
 import {
@@ -9,6 +8,7 @@ import {
   getGroupUserRankingList,
 } from '../../services/rankingService';
 import { ITEMS_PER_PAGE } from '../../constants';
+import { sendMediaMessageWithContext } from '../../utils/sendMultiMedia';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:replyRule');
@@ -244,53 +244,23 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     // 检查是否有媒体文件
     if (matchedRule.medias && matchedRule.medias.length > 0) {
-      // 获取本地URL
-      const mediaUrls = await Promise.all(
-        matchedRule.medias.map((media) => generateSignedUrl(media)),
-      );
+      const result = await sendMediaMessageWithContext(
+        ctx,
+        matchedRule.medias,
+        {
+          caption: content,
+          parse_mode: 'HTML',
 
-      if (mediaUrls.length === 1) {
-        // 单个媒体文件
-        const mediaUrl = mediaUrls[0];
-        const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(mediaUrl);
-
-        if (isVideo) {
-          sentMessage = await ctx.replyWithVideo(mediaUrl, {
-            caption: content,
-            ...replyOptions,
-          });
-        } else {
-          sentMessage = await ctx.replyWithPhoto(mediaUrl, {
-            caption: content,
-            ...replyOptions,
-          });
-        }
-      } else {
-        // 多个媒体文件 - 使用媒体组
-        const mediaGroup = mediaUrls.map((url, index) => {
-          const isVideo = /\.(mp4|mov|avi|mkv|webm)$/i.test(url);
-          return {
-            type: isVideo ? 'video' : 'photo',
-            media: url,
-            caption: index === 0 ? content : undefined,
-            parse_mode: index === 0 ? 'HTML' : undefined,
-          };
-        }) as any;
-
-        const messages = await ctx.replyWithMediaGroup(mediaGroup, {
+          reply_markup:
+            inlineButtons.length > 0
+              ? { inline_keyboard: inlineButtons }
+              : undefined,
           reply_to_message_id: matchedRule.replyToMessage
             ? ctx.message.message_id
             : undefined,
-        });
-        sentMessage = messages[0];
-
-        // 如果有内联键盘，需要单独发送
-        if (matchedRule.menus && matchedRule.menus.length > 0) {
-          await ctx.reply('👆 点击上方按钮', {
-            reply_markup: buildInlineKeyboard(matchedRule.menus),
-          });
-        }
-      }
+        },
+      );
+      sentMessage = { message_id: result.message_id };
     } else {
       // 纯文本回复
       sentMessage = await ctx.reply(content, replyOptions);

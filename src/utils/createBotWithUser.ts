@@ -91,7 +91,6 @@ export async function createBotWithUser(
       clonedFrom: currentBot?._id ?? null,
       creator: botUser?._id ?? null,
       owner: botUser?._id ?? null, // 克隆者自动成为 owner
-      ownerPassword: plainPassword, // 明文密码，供 /start 构造自动登录链接
       isOnline: true,
       type: 'private',
       ...(botInfo && {
@@ -120,9 +119,34 @@ export async function createBotWithUser(
       );
     }
 
+    // 7. 用新 bot token 获取 JWT，生成自动登录链接
+    let jwtToken: string;
+    try {
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:5007';
+      const res = await axios.post(`${backendUrl}/api/auth/bot-login`, {
+        botToken: token,
+      });
+      jwtToken = res.data?.token ?? null;
+    } catch (e: any) {
+      debug('[createBotWithUser] 获取 JWT 失败:', e?.message);
+    }
+
+    const adminUrl = process.env.ADMIN_URL || '';
+    const redirect = encodeURIComponent(`/bots/${newBot._id}`);
+    const loginUrl = jwtToken
+      ? `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+          jwtToken,
+        )}&redirect=${redirect}`
+      : null;
+
     return {
       success: true,
-      account: { email, password: plainPassword, newBot_id: newBot._id },
+      account: {
+        email,
+        password: plainPassword,
+        newBot_id: newBot._id,
+        loginUrl,
+      },
     };
   } catch (e: any) {
     debug('[createBotWithUser] 发生异常:', e);

@@ -13,7 +13,6 @@ export interface IBot extends Document {
   user: mongoose.Schema.Types.ObjectId | IUser;
   message: string;
   userName: string;
-  menus: IMenu[];
   isOnline: boolean;
   botUsers: mongoose.Schema.Types.ObjectId[] | IBotUser[];
   session?: string;
@@ -30,7 +29,6 @@ export interface IBot extends Document {
   preExpirationNotified?: boolean; // 是否已发送过期提醒，默认 false
   clonedFrom?: mongoose.Schema.Types.ObjectId | IBot; // 新增：从哪个机器人clone的
   canBeCloned?: boolean; // 新增：是否可克隆
-  ownerPassword?: string; // 克隆时生成的明文密码，供 /start 构造自动登录链接用
   fee: number; // 闪兑费率
   auto_exchange_address: string; // 自动兑换地址
   private_key: string; // 私钥
@@ -39,47 +37,14 @@ export interface IBot extends Document {
   webhook_url: string; // webhook url
   multi_image: string;
   multi_content: string;
-  presets: Ipreset[];
   groupMessages: mongoose.Schema.Types.ObjectId[] | IGroupMessage[]; // 虚拟字段
   botUserMessages: mongoose.Schema.Types.ObjectId[] | IBotUserMessage[]; // 虚拟字段
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
 
-  // 定时频道 — cron job 用作查询过滤，保留
-  canOpenChannelPost: boolean;
-
   // 名称变更播报 — cron job 用作查询过滤，保留
   canReportMemberNameUpdated: boolean;
 }
-
-export interface IMenu extends Document {
-  name: string;
-  url: string;
-}
-
-export interface Ipreset extends Document {
-  keyword: string;
-  response: string;
-}
-
-const menuSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  url: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function (v: string): boolean {
-        return /^(http|https):\/\/.*/.test(v);
-      },
-      message: (props: any): string => `${props.value} 不是一个有效的 URL!`,
-    },
-  },
-});
-
-const presetSchema = new mongoose.Schema({
-  keyword: { type: String, required: false },
-  response: { type: String, required: false },
-});
 
 const botSchema = new mongoose.Schema(
   {
@@ -121,7 +86,6 @@ const botSchema = new mongoose.Schema(
         ref: 'BotUser',
       },
     ],
-    menus: [menuSchema],
     session: {
       type: String,
       trim: true,
@@ -183,11 +147,6 @@ const botSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     }, // 是否可克隆
-    ownerPassword: {
-      type: String,
-      trim: true,
-      select: false, // 不在普通查询中返回，需要显式 select('+ownerPassword')
-    }, // 克隆时生成的明文密码
     fee: {
       type: Number,
       default: 0,
@@ -222,10 +181,6 @@ const botSchema = new mongoose.Schema(
       type: String,
       trim: false,
     }, // 新增：抽奖描述
-    presets: {
-      type: [presetSchema],
-      default: [],
-    },
     intervalTime: {
       type: Number,
       required: false,
@@ -237,12 +192,6 @@ const botSchema = new mongoose.Schema(
     },
 
     // 功能开关（仅保留作为 cron 查询过滤条件的字段）
-
-    canOpenChannelPost: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
 
     canReportMemberNameUpdated: {
       type: Boolean,

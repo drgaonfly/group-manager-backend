@@ -60,26 +60,30 @@ async function cloneBotConversation(
   const result2 = await createBotWithUser(token, ctx.currentBot, botUser);
 
   if (result2.success) {
-    const { email, password, newBot_id } = result2.account!;
-    const adminUrl = `${
-      process.env.ADMIN_URL
-    }/bots/${newBot_id}?email=${encodeURIComponent(
-      email,
-    )}&password=${encodeURIComponent(password)}`;
-    await ctx.reply(
-      [
-        '✅ <b>克隆成功！</b>',
-        '',
-        '您的后台管理账号已自动创建，请妥善保存：',
-        '',
-        `📧 <b>账号（邮箱）：</b><code>${email}</code>`,
-        `🔑 <b>密码：</b><code>${password}</code>`,
-        `🌐 <b>后台地址：</b>${adminUrl}`,
-        '',
-        '💡 机器人正在初始化，稍后即可正常使用。',
-      ].join('\n'),
-      { parse_mode: 'HTML' },
-    );
+    const { loginUrl } = result2.account!;
+    if (loginUrl) {
+      await ctx.reply(
+        [
+          '✅ <b>克隆成功！</b>',
+          '',
+          '您的专属机器人已创建完成，点击下方按钮即可直接登录管理后台：',
+          '',
+          `🌐 <a href="${loginUrl}">🖥️ 登录管理后台</a>`,
+          '',
+          '� 机器人正在初始化，稍后即可正常使用。',
+        ].join('\n'),
+        { parse_mode: 'HTML' },
+      );
+    } else {
+      await ctx.reply(
+        [
+          '✅ <b>克隆成功！</b>',
+          '',
+          '您的专属机器人已创建完成，但登录链接生成失败，请联系管理员。',
+        ].join('\n'),
+        { parse_mode: 'HTML' },
+      );
+    }
   } else {
     await ctx.reply(`❌ 克隆失败：${result2.message || '请稍后再试'}`);
   }
