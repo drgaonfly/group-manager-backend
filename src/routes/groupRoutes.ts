@@ -9,6 +9,7 @@ import {
   deleteGroup,
   deleteMultipleGroups,
   verifyRequiredChannel,
+  getGroupMembers,
 } from '../controllers/groupController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -28,6 +29,9 @@ router.get('/getByBotId', protect, checkPermission, getGroupsByBotId);
 
 // 检查机器人在指定群组中是否为管理员 - 必须在 /:id 路由之前
 router.get('/checkBotAdmin', protect, checkPermission, checkBotAdmin);
+
+// 获取群组成员列表
+router.get('/:id/members', protect, checkPermission, getGroupMembers);
 
 router
   .route('/:id')

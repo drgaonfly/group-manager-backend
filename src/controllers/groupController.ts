@@ -8,6 +8,48 @@ import { RequestCustom } from '../types/user';
 import { setupBot } from '../bot/botSetup';
 import { extractChatUsername } from '../utils/extractChannelTarget';
 
+/**
+ * 获取群组成员列表
+ */
+export const getGroupMembers = handleAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { current = '1', pageSize = '20' } = req.query;
+
+    const group = await Group.findById(id).populate({
+      path: 'botUsers',
+      select: 'id userName firstName lastName createdAt',
+    });
+
+    if (!group) {
+      res.status(404);
+      throw new Error('群组不存在');
+    }
+
+    const botUsers = group.botUsers || [];
+    const total = botUsers.length;
+    const start = (+current - 1) * +pageSize;
+    const end = start + +pageSize;
+    const paginatedMembers = botUsers.slice(start, end);
+
+    res.json({
+      success: true,
+      data: {
+        group: {
+          _id: group._id,
+          title: group.title,
+          username: group.username,
+          type: group.type,
+        },
+        members: paginatedMembers,
+      },
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
+
 // 验证必须加入的频道（要求机器人必须是管理员）
 export const verifyRequiredChannelCore = async (
   link: string,
