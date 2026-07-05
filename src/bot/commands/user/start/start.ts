@@ -77,12 +77,12 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       const redirect = encodeURIComponent(
         `/bots/${bot._id}/${encodeURIComponent(username)}`,
       );
-      const loginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+      const loginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
         jwt,
       )}&redirect=${redirect}`;
       inlineKeyboard
         .row()
-        .url('🖥️ 访问管理后台', loginUrl)
+        .webApp('🖥️ 访问管理后台', loginUrl)
         .row()
         .text('🤖 克隆专属机器人', 'clone_start');
     }
@@ -98,10 +98,10 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       const jwt = await getBotJwt(bot.token);
       if (jwt) {
         const redirect = encodeURIComponent(`/bots/${bot._id}`);
-        const loginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+        const loginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
           jwt,
         )}&redirect=${redirect}`;
-        inlineKeyboard.row().url('🖥️ 登录管理后台', loginUrl);
+        inlineKeyboard.row().webApp('🖥️ 登录管理后台', loginUrl);
       }
     }
     // 非 owner 不显示任何额外按钮
