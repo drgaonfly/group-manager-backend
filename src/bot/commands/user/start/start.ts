@@ -4,10 +4,7 @@ import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
-import { handlePromotion } from './handlePromotion';
-import { handleMySuccess } from './handleMySuccess';
-import { findBotProxy } from '../../../services/findBotProxy';
-import { PermissionChecker } from '../../../utils/permissionChecker';
+
 import createDebug from 'debug';
 
 const startCommand = new Composer<MyContext>();
