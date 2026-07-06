@@ -2,7 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import axios from 'axios';
 import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
-import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
+import { checkInBot } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
 
 import createDebug from 'debug';
@@ -27,7 +27,7 @@ async function getBotJwt(botToken: string): Promise<string | null> {
   }
 }
 
-startCommand.command('start', checkStartAllowedChats, async (ctx) => {
+startCommand.command('start', checkInBot, async (ctx) => {
   debug('start');
 
   const bot = ctx.currentBot;
