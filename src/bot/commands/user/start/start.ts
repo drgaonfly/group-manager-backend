@@ -77,12 +77,16 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       const redirect = encodeURIComponent(
         `/bots/${bot._id}/${encodeURIComponent(username)}`,
       );
-      const loginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+      const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+        jwt,
+      )}&redirect=${redirect}`;
+      const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
         jwt,
       )}&redirect=${redirect}`;
       inlineKeyboard
         .row()
-        .webApp('🖥️ 访问管理后台', loginUrl)
+        .webApp('🖥️ 访问管理后台(WebApp)', webappLoginUrl)
+        .url('🌐 访问管理后台(URL)', urlLoginUrl)
         .row()
         .text('🤖 克隆专属机器人', 'clone_start');
     }
@@ -98,10 +102,16 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       const jwt = await getBotJwt(bot.token);
       if (jwt) {
         const redirect = encodeURIComponent(`/bots/${bot._id}`);
-        const loginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+        const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
           jwt,
         )}&redirect=${redirect}`;
-        inlineKeyboard.row().webApp('🖥️ 登录管理后台', loginUrl);
+        const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+          jwt,
+        )}&redirect=${redirect}`;
+        inlineKeyboard
+          .row()
+          .webApp('🖥️ 登录管理后台(WebApp)', webappLoginUrl)
+          .url('🌐 登录管理后台(URL)', urlLoginUrl);
       }
     }
     // 非 owner 不显示任何额外按钮
