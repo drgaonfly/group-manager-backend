@@ -83,6 +83,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
         jwt,
       )}&redirect=${redirect}`;
+      debug('[start] webappLoginUrl:', webappLoginUrl);
+      debug('[start] urlLoginUrl:', urlLoginUrl);
       inlineKeyboard
         .row()
         .webApp('🖥️ 访问管理后台(WebApp)', webappLoginUrl)
@@ -108,6 +110,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
           jwt,
         )}&redirect=${redirect}`;
+        debug('[start] webappLoginUrl:', webappLoginUrl);
+        debug('[start] urlLoginUrl:', urlLoginUrl);
         inlineKeyboard
           .row()
           .webApp('🖥️ 登录管理后台(WebApp)', webappLoginUrl)
