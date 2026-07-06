@@ -2,7 +2,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import axios from 'axios';
 import { MyContext } from '../../../types';
 import { startClientAndGetSession } from '../../../services/gramClient';
-import { checkInBot } from '../../../middlewares/checkInBot';
+import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
 
 import createDebug from 'debug';
@@ -27,12 +27,13 @@ async function getBotJwt(botToken: string): Promise<string | null> {
   }
 }
 
-startCommand.command('start', checkInBot, async (ctx) => {
+startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   debug('start');
 
   const bot = ctx.currentBot;
   const startParam = ctx.match as string;
   const adminUrl = process.env.ADMIN_URL || '';
+  const chatType = ctx.chat?.type;
 
   // ── deep link 参数处理 ─────────────────────────────────────────────────────
 
@@ -42,6 +43,21 @@ startCommand.command('start', checkInBot, async (ctx) => {
       await handleJoinLottery(ctx, code);
       return;
     }
+  }
+
+  // ── 群组中显示提示消息 ─────────────────────────────────────────────────────
+  if (chatType === 'group' || chatType === 'supergroup') {
+    const messageText = [`请前往机器人聊天页面呼出设置，避免后台链接泄露`].join(
+      '\n',
+    );
+
+    const inlineKeyboard = new InlineKeyboard().url(
+      '🔗 转跳私聊设置',
+      `https://t.me/${bot.userName}`,
+    );
+
+    await ctx.reply(messageText, { reply_markup: inlineKeyboard });
+    return;
   }
 
   // ── 初始化 session ─────────────────────────────────────────────────────────
