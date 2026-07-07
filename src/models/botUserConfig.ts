@@ -1,5 +1,5 @@
 import mongoose, { Document } from 'mongoose';
-import { ISubscription, SubscriptionPlan } from './subscription';
+import { ISubscription } from './subscription';
 import { IBotUser } from './botUser';
 import { IBot } from './bot';
 import { IUser } from './user';
@@ -21,7 +21,7 @@ export interface IBotUserConfig extends Document {
   status: UserStatus;
   trialEndDate?: Date;
   subscriptionEndDate?: Date;
-  currentPlan?: SubscriptionPlan;
+  currentPlan?: string;
   isAutoRenew: boolean;
   usdt_balance: number; // 用户余额
   trx_balance: number; // 用户余额
@@ -65,7 +65,6 @@ const botUserConfigSchema = new mongoose.Schema(
     },
     currentPlan: {
       type: String,
-      enum: ['pending', 'paid', 'expired', 'timeout'],
       required: false,
     },
     subscription: {

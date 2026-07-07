@@ -2,7 +2,6 @@ import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
 import { useUserProfile } from '../../../../utils/useEjsMessage';
 import { checkInBot } from '../../../../bot/middlewares/checkInBot';
-import { renewalOptions } from '../../../../models/subscription';
 import dayjs from 'dayjs';
 import profile from '../../../menus/inline/profile';
 import createDebug from 'debug';
@@ -40,9 +39,7 @@ async function sendUserProfile(ctx: MyContext) {
 
   // 获取当前套餐的 label
   let currentPlanLabel = '无';
-  if (botUserConfig.currentPlan && renewalOptions[botUserConfig.currentPlan]) {
-    currentPlanLabel = renewalOptions[botUserConfig.currentPlan].label;
-  } else if (botUserConfig.currentPlan) {
+  if (botUserConfig.currentPlan) {
     currentPlanLabel = botUserConfig.currentPlan;
   }
 

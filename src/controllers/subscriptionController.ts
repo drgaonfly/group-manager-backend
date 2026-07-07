@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Subscription, { renewalOptions } from '../models/subscription';
+import Subscription from '../models/subscription';
 import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
@@ -11,11 +11,6 @@ const buildQuery = (queryParams: any): any => {
   // status
   if (queryParams.status) {
     query.status = queryParams.status;
-  }
-
-  // plan
-  if (queryParams.plan) {
-    query.plan = queryParams.plan;
   }
 
   // botUser 搜索
@@ -102,13 +97,6 @@ const getSubscriptionById = handleAsync(async (req: Request, res: Response) => {
 //     return;
 //   }
 
-//   // 获取订阅计划配置
-//   const planConfig = renewalOptions[plan];
-//   if (!planConfig) {
-//     res.status(400);
-//     throw new Error('Invalid subscription plan');
-//   }
-
 //   // 生成唯一金额（基础价格 + 随机尾数，避免金额冲突）
 //   const tail = Math.floor(Math.random() * 99 + 1) / 100;
 //   const uniqueAmount = Math.round((planConfig.price + tail) * 100) / 100;
@@ -122,9 +110,8 @@ const getSubscriptionById = handleAsync(async (req: Request, res: Response) => {
 //     id: newId,
 //     botUser: botUserId,
 //     bot: botId,
-//     plan,
 //     amount: uniqueAmount,
-//     days: planConfig.days,
+//     days: days,
 //     toAddress: bot.receiveAddress,
 //     orderExpiredAt,
 //     status: 'pending',

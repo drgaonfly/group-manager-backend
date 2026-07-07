@@ -1,11 +1,15 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import Subscription from '../../../../models/subscription';
-import { renewalOptions } from '../../../../models/subscription';
 import { sendPaymentCard, ORDER_TIMEOUT_MINUTES } from './helpers';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:subscription:pay');
+
+const plans = [
+  { months: 1, price: 15, label: '一个月' },
+  { months: 876, price: 400, label: '永久' },
+];
 
 const payCallback = new Composer<MyContext>();
 
@@ -35,12 +39,12 @@ payCallback.callbackQuery('subscription_pay', async (ctx) => {
   const text = `💳 <b>选择订阅套餐</b>\n\n<b>请选择订阅时长：</b>`;
 
   const keyboard = new InlineKeyboard();
-  Object.entries(renewalOptions).forEach(([key, option], index) => {
+  plans.forEach((plan, index) => {
     keyboard.text(
-      `${option.label} ${option.price}U`,
-      `subscription_plan_${key}`,
+      `${plan.label} ${plan.price}U`,
+      `subscription_plan_${plan.months}`,
     );
-    if (index < Object.keys(renewalOptions).length - 1) {
+    if (index < plans.length - 1) {
       keyboard.row();
     }
   });
@@ -68,8 +72,10 @@ payCallback.callbackQuery(/^subscription_plan_/, async (ctx) => {
 
   if (!bot || !botUser) return;
 
-  const plan = ctx.callbackQuery.data.replace('subscription_plan_', '');
-  const planConfig = renewalOptions[plan];
+  const months = parseInt(
+    ctx.callbackQuery.data.replace('subscription_plan_', ''),
+  );
+  const planConfig = plans.find((p) => p.months === months);
 
   if (!planConfig) {
     await ctx.reply('❌ 无效的订阅计划');
@@ -102,9 +108,8 @@ payCallback.callbackQuery(/^subscription_plan_/, async (ctx) => {
     const newSubscription = new Subscription({
       botUser: botUser._id,
       bot: bot._id,
-      plan,
       amount: uniqueAmount,
-      days: planConfig.days,
+      months: planConfig.months,
       toAddress: bot.trx20_address,
       orderExpiredAt,
       status: 'pending',

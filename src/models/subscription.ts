@@ -9,48 +9,15 @@ export type SubscriptionStatus =
   | 'expired' // 订阅已到期
   | 'timeout'; // 订单超时未付款
 
-export interface RenewalOption {
-  days: number;
-  price: number;
-  type: string;
-  label: string;
-}
-
-export const renewalOptions: Record<string, RenewalOption> = {
-  biweekly: {
-    days: 15,
-    price: 30,
-    type: 'subscribe:biweekly',
-    label: '15天',
-  },
-  monthly: {
-    days: 30,
-    price: 50,
-    type: 'subscribe:monthly',
-    label: '一个月',
-  },
-  quarterly: {
-    days: 90,
-    price: 120,
-    type: 'subscribe:quarterly',
-    label: '三个月',
-  },
-};
-
-export type SubscriptionPlan = keyof typeof renewalOptions;
-
 export interface ISubscription extends Document {
   botUser: mongoose.Types.ObjectId | IBotUser;
   bot: mongoose.Types.ObjectId | IBot;
 
-  /** 订阅计划（包月/季度等） */
-  plan: SubscriptionPlan;
-
   /** 应付金额（USDT） */
   amount: number;
 
-  /** 订阅天数 */
-  days: number;
+  /** 订阅月数 */
+  months: number;
 
   /** 收款地址（创建时快照） */
   toAddress: string;
@@ -100,16 +67,11 @@ const subscriptionSchema = new mongoose.Schema<ISubscription>(
       ref: 'Bot',
       required: true,
     },
-    plan: {
-      type: String,
-      enum: Object.keys(renewalOptions),
-      required: true,
-    },
     amount: {
       type: Number,
       required: true,
     },
-    days: {
+    months: {
       type: Number,
       required: true,
     },

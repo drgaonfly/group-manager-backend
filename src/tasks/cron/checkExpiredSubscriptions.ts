@@ -1,5 +1,5 @@
 import BotUserConfig, { UserStatus } from '../../models/botUserConfig';
-import Subscription, { renewalOptions } from '../../models/subscription';
+import Subscription from '../../models/subscription';
 import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
 import { IBotUser } from '../../models/botUser';
@@ -65,17 +65,12 @@ export async function checkExpiredSubscriptions() {
       // 发送详细的订阅过期通知
       const telegramBot = setupBot(bot.token);
       try {
-        // 获取订阅类型详细信息
-        let planLabel = subscription.plan;
-        if (renewalOptions[subscription.plan]) {
-          planLabel = renewalOptions[subscription.plan].label;
-        }
         const endDateStr = subscription.endDate
           ? subscription.endDate.toLocaleString('zh-CN', { hour12: false })
           : '';
         let msg =
           `⚠️ 您的订阅已到期。\n\n` +
-          `订阅类型: <b>${planLabel}</b>\n` +
+          `订阅月数: <b>${subscription.months} 个月</b>\n` +
           `到期时间: <code>${endDateStr}</code>\n\n` +
           `如需继续使用服务，请及时续费。`;
 

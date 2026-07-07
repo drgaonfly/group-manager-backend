@@ -2,7 +2,6 @@ import { InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import Subscription from '../../../../models/subscription';
 import BotUserConfig from '../../../../models/botUserConfig';
-import { renewalOptions } from '../../../../models/subscription';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:subscription');
@@ -39,15 +38,12 @@ export async function sendStatusCard(
   let text = '💎 <b>订阅服务</b>\n\n';
 
   if (activeSubscription && activeSubscription.endDate) {
-    const planConfig = renewalOptions[activeSubscription.plan];
     text += `✅ 当前状态：<b>已订阅</b>\n`;
     text += `📅 到期时间：<code>${activeSubscription.endDate.toLocaleString(
       'zh-CN',
       { hour12: false },
     )}</code>\n`;
-    text += `📦 订阅计划：<b>${
-      planConfig?.label || activeSubscription.plan
-    }</b>\n\n`;
+    text += `📦 订阅月数：<b>${activeSubscription.months} 个月</b>\n\n`;
   } else {
     text += `⚠️ 当前状态：<b>未订阅</b>\n\n`;
     if (
@@ -93,11 +89,9 @@ export async function sendPaymentCard(
     Math.round((expiredAt.getTime() - Date.now()) / 60000),
   );
 
-  const planConfig = renewalOptions[subscription.plan];
-
   const text =
     `💳 <b>订阅支付</b>\n\n` +
-    `📦 订阅计划：<b>${planConfig?.label || subscription.plan}</b>\n` +
+    `📦 订阅月数：<b>${subscription.months} 个月</b>\n` +
     `💰 支付金额：<b>${subscription.amount} USDT</b>\n` +
     `⏰ 剩余时间：<b>${remaining} 分钟</b>\n\n` +
     `📍 收款地址（TRC20）：\n` +

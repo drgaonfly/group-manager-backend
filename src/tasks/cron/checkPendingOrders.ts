@@ -1,10 +1,10 @@
 import Subscription from '../../models/subscription';
-import { renewalOptions } from '../../models/subscription';
 import { IBotUser } from '../../models/botUser';
 import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
 import BotUserConfig, { UserStatus } from '../../models/botUserConfig';
 import { getUSDTTransfers } from '../../services/checkUsdt';
+import { formatBeijingDate } from '../../utils/formatBeijingDate';
 
 /**
  * 检查所有 pending 的 subscription，只有当 bot.trx20_address 收到正确金额，才激活订阅
@@ -77,7 +77,7 @@ export async function checkPendingOrders() {
       }
 
       // 生成订阅起止时间
-      const days = subscription.days;
+      const months = subscription.months;
 
       // 先查找当前 BotUserConfig，获取原有的 subscriptionEndDate
       const userConfig = await BotUserConfig.findOne({
@@ -97,7 +97,7 @@ export async function checkPendingOrders() {
         isRenewal = true; // 续费类型
       }
       const expiredAt = new Date(
-        baseDate.getTime() + days * 24 * 60 * 60 * 1000,
+        baseDate.getTime() + months * 30 * 24 * 60 * 60 * 1000,
       );
 
       // 更新订阅记录
@@ -117,24 +117,20 @@ export async function checkPendingOrders() {
         {
           status: UserStatus.AUTHORIZED,
           subscriptionEndDate: expiredAt,
-          currentPlan: subscription.plan,
+          currentPlan: subscription.months.toString(),
         },
         { new: true },
       );
 
       // 发送支付成功通知
       const telegramBot = setupBot(bot.token);
-      const planConfig = renewalOptions[subscription.plan];
 
       try {
         await telegramBot.api.sendMessage(
           botUser.id,
           `✅ 支付成功！\n\n` +
-            `订阅类型: ${planConfig?.label || subscription.plan}\n` +
-            `订阅时长: ${days}天\n` +
-            `到期时间: ${expiredAt.toLocaleString('zh-CN', {
-              hour12: false,
-            })}\n\n` +
+            `订阅月数: ${months}个月\n` +
+            `到期时间: ${formatBeijingDate(expiredAt)}\n\n` +
             `本次为${isRenewal ? '续费' : '新订阅'}。\n` +
             `感谢您的订阅！`,
           { parse_mode: 'HTML' },

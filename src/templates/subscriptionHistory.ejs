@@ -7,42 +7,17 @@
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
-  // 导入订阅计划选项
-  const renewalOptions = {
-    biweekly: {
-      days: 15,
-      price: 60,
-      type: 'subscribe:biweekly',
-      label: '15天',
-    },
-    monthly: {
-      days: 30,
-      price: 100,
-      type: 'subscribe:monthly',
-      label: '一个月',
-    },
-    quarterly: {
-      days: 90,
-      price: 230,
-      type: 'subscribe:quarterly',
-      label: '三个月',
-    },
-  };
-  
   sortedSubs.forEach((sub, index) => {
     const status = sub.status === 'active' ? '✅ 有效' : '❌ 已过期';
     const autoRenew = sub.isAutoRenew ? '🔄 自动续费' : '❌ 不自动续费';
     const isRenewal = sub.isRenewal ? '(续费)' : '(首次)';
     
-    // 获取计划详情
-    const planInfo = renewalOptions[sub.plan] || { label: sub.plan, days: '未知' };
-    
     // 格式化日期
     const createdDate = new Date(sub.createdAt).toLocaleDateString('zh-CN');
-    const expiredDate = new Date(sub.expiredAt).toLocaleDateString('zh-CN');
+    const expiredDate = new Date(sub.endDate).toLocaleDateString('zh-CN');
   %>
 <b>订阅 #<%= sub.id %></b> <%= isRenewal %>
-🔗 计划: <%= planInfo.label %> (<%= planInfo.days %>天)
+🔗 订阅月数: <%= sub.months %>个月
 📆 创建时间: <%= createdDate %>
 ⏱ 到期时间: <%= expiredDate %>
 📌 状态: <%= status %>
