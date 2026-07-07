@@ -6,6 +6,7 @@ const debug = createDebug('bot:checkBotExpired');
 /**
  * 检查机器人是否已过期，如果过期则阻止功能使用
  * 订阅相关命令允许通过，以便用户可以续费
+ * 仅对 private 类型机器人生效，public 机器人不受影响
  */
 export const checkBotExpired = async (
   ctx: MyContext,
@@ -14,6 +15,11 @@ export const checkBotExpired = async (
   const bot = ctx.currentBot;
 
   if (!bot) {
+    return await next();
+  }
+
+  // public 机器人不需要过期检查
+  if (bot.type === 'public') {
     return await next();
   }
 
@@ -27,8 +33,7 @@ export const checkBotExpired = async (
     // 允许订阅相关命令通过，以便用户可以续费
     const isSubscriptionCommand =
       ctx.callbackQuery?.data?.startsWith('subscription_') ||
-      ctx.message?.text?.startsWith('/subscription') ||
-      ctx.message?.text?.includes('订阅');
+      ctx.message?.text?.startsWith('/subscription') 
 
     if (isSubscriptionCommand) {
       debug('订阅相关命令，允许通过');

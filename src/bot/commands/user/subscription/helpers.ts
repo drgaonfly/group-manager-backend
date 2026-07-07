@@ -1,8 +1,8 @@
 import { InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import Subscription from '../../../../models/subscription';
-import createDebug from 'debug';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
+import createDebug from 'debug';
 
 const debug = createDebug('bot:subscription');
 
@@ -18,6 +18,33 @@ export async function sendStatusCard(
 
   if (!bot || !botUser) return;
 
+  // public 机器人不需要订阅功能
+  if (bot.type === 'public') {
+    const message = [
+      `💎 <b>订阅服务</b>`,
+      ``,
+      `✅ 当前状态：<b>公共机器人</b>`,
+      `📅 状态：<b>永久有效</b>`,
+    ];
+    const text = message.join('\n');
+
+    const keyboard = new InlineKeyboard().text('❌ 关闭', 'close');
+
+    try {
+      if (edit) {
+        await ctx.editMessageText(text, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.reply(text, { parse_mode: 'HTML', reply_markup: keyboard });
+      }
+    } catch (err: any) {
+      debug('发送状态卡片失败:', err?.message);
+    }
+    return;
+  }
+
   const now = new Date();
 
   // 查询当前活跃订阅
@@ -31,8 +58,8 @@ export async function sendStatusCard(
 
   let text = '💎 <b>订阅服务</b>\n\n';
 
-  // 判断机器人是否已过期
-  const isExpired = bot.disabledAt && bot.disabledAt < now;
+  // 判断机器人是否已过期（仅针对 private 类型机器人）
+  const isExpired = bot.type === 'private' && bot.disabledAt && bot.disabledAt < now;
 
   if (!isExpired) {
     // 机器人未过期（永久或订阅中）

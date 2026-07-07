@@ -16,6 +16,13 @@ checkCallback.callbackQuery('subscription_check', async (ctx) => {
 
   if (!bot || !botUser) return;
 
+  // public 机器人不需要订阅功能
+  if (bot.type === 'public') {
+    await ctx.answerCallbackQuery('❌ 公共机器人不需要订阅');
+    await sendStatusCard(ctx, false);
+    return;
+  }
+
   // 查询最新的 pending 订单
   const pendingOrder = await Subscription.findOne({
     bot: bot._id,

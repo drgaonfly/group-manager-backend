@@ -21,6 +21,12 @@ payCallback.callbackQuery('subscription_pay', async (ctx) => {
 
   if (!bot || !botUser) return;
 
+  // public 机器人不需要订阅功能
+  if (bot.type === 'public') {
+    await ctx.answerCallbackQuery('❌ 公共机器人不需要订阅');
+    return;
+  }
+
   const ownerIdStr = bot.owner?.toString();
   const currentBotUserIdStr = botUser._id?.toString();
   const isOwner =
