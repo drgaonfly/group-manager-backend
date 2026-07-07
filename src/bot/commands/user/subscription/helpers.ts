@@ -1,8 +1,8 @@
 import { InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import Subscription from '../../../../models/subscription';
-import BotUserConfig from '../../../../models/botUserConfig';
 import createDebug from 'debug';
+import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 
 const debug = createDebug('bot:subscription');
 
@@ -25,36 +25,47 @@ export async function sendStatusCard(
     bot: bot._id,
     botUser: botUser._id,
     status: 'paid',
-    endDate: { $gt: now },
   })
-    .sort('-endDate')
+    .sort('-createdAt')
     .lean();
-
-  const userConfig = await BotUserConfig.findOne({
-    bot: bot._id,
-    botUser: botUser._id,
-  }).lean();
 
   let text = '💎 <b>订阅服务</b>\n\n';
 
-  if (activeSubscription && activeSubscription.endDate) {
-    text += `✅ 当前状态：<b>已订阅</b>\n`;
-    text += `📅 到期时间：<code>${activeSubscription.endDate.toLocaleString(
-      'zh-CN',
-      { hour12: false },
-    )}</code>\n`;
-    text += `📦 订阅月数：<b>${activeSubscription.months} 个月</b>\n\n`;
-  } else {
-    text += `⚠️ 当前状态：<b>未订阅</b>\n\n`;
-    if (
-      userConfig?.subscriptionEndDate &&
-      userConfig.subscriptionEndDate < now
-    ) {
-      text += `您的订阅已于 ${userConfig.subscriptionEndDate.toLocaleString(
-        'zh-CN',
-        { hour12: false },
-      )} 过期\n\n`;
+  // 判断机器人是否已过期
+  const isExpired = bot.disabledAt && bot.disabledAt < now;
+
+  if (!isExpired) {
+    // 机器人未过期（永久或订阅中）
+    const message = [`✅ 当前状态：<b>已订阅</b>`];
+
+    if (activeSubscription) {
+      message.push(`📦 订阅月数：<b>${activeSubscription.months} 个月</b>`);
+      message.push(`💰 支付金额：<b>${activeSubscription.amount} USDT</b>`);
+      if (activeSubscription.createdAt) {
+        message.push(
+          `📅 订阅时间：<code>${formatBeijingDate(
+            activeSubscription.createdAt,
+          )}</code>`,
+        );
+      }
+    } else {
+      // 没有订阅记录但机器人未过期（可能是手动设置的永久）
+      if (bot.disabledAt) {
+        message.push(
+          `📅 到期时间：<code>${formatBeijingDate(bot.disabledAt)}</code>`,
+        );
+      } else {
+        message.push(`📅 状态：<b>永久有效</b>`);
+      }
     }
+
+    text += message.join('\n') + '\n\n';
+  } else {
+    // 机器人已过期
+    text += `⚠️ 当前状态：<b>未订阅</b>\n\n`;
+    text += `⚠️ 机器人已于 ${formatBeijingDate(
+      bot.disabledAt,
+    )} 过期，请及时续费\n\n`;
   }
 
   const keyboard = new InlineKeyboard()
@@ -89,15 +100,20 @@ export async function sendPaymentCard(
     Math.round((expiredAt.getTime() - Date.now()) / 60000),
   );
 
-  const text =
-    `💳 <b>订阅支付</b>\n\n` +
-    `📦 订阅月数：<b>${subscription.months} 个月</b>\n` +
-    `💰 支付金额：<b>${subscription.amount} USDT</b>\n` +
-    `⏰ 剩余时间：<b>${remaining} 分钟</b>\n\n` +
-    `📍 收款地址（TRC20）：\n` +
-    `<code>${subscription.toAddress}</code>\n\n` +
-    `⚠️ 请务必使用 <b>TRC20 网络</b> 转账准确金额！\n` +
-    `✅ 支付后系统将自动确认并开通服务。`;
+  const message = [
+    `💳 <b>订阅支付</b>`,
+    ``,
+    `📦 订阅月数：<b>${subscription.months} 个月</b>`,
+    `💰 支付金额：<b>${subscription.amount} USDT</b>`,
+    `⏰ 订单剩余时间：<b>${remaining} 分钟</b>`,
+    ``,
+    `📍 收款地址（TRC20）：`,
+    `<code>${subscription.toAddress}</code>`,
+    ``,
+    `⚠️ 请务必使用 <b>TRC20 网络</b> 转账准确金额！`,
+    `✅ 支付后系统将自动确认并开通服务。`,
+  ];
+  const text = message.join('\n');
 
   const keyboard = new InlineKeyboard()
     .text('🔍 查询到账', 'subscription_check')
