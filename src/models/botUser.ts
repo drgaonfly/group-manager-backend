@@ -48,12 +48,6 @@ botUserSchema.virtual('transactions', {
   foreignField: 'botUser',
 });
 
-botUserSchema.virtual('payments', {
-  ref: 'Payment',
-  localField: '_id',
-  foreignField: 'botUser',
-});
-
 botUserSchema.virtual('subscriptions', {
   ref: 'Subscription',
   localField: '_id',

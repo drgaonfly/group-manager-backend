@@ -54,11 +54,11 @@ export async function checkExpiredSubscriptions() {
           { new: true },
         );
         console.log(
-          `[checkExpiredSubscriptions] 订阅 ${subscription.id} 状态已更新为 expired，用户 ${botUser.id} 的 BotUserConfig 状态已更新为 SUBSCRIPTION_EXPIRED`,
+          `[checkExpiredSubscriptions] 订阅 ${subscription._id} 状态已更新为 expired，用户 ${botUser.id} 的 BotUserConfig 状态已更新为 SUBSCRIPTION_EXPIRED`,
         );
       } else {
         console.log(
-          `[checkExpiredSubscriptions] 订阅 ${subscription.id} 状态已更新为 expired，用户 ${botUser.id} 仍有其他有效订阅，BotUserConfig 状态不变`,
+          `[checkExpiredSubscriptions] 订阅 ${subscription._id} 状态已更新为 expired，用户 ${botUser.id} 仍有其他有效订阅，BotUserConfig 状态不变`,
         );
       }
 
@@ -76,8 +76,7 @@ export async function checkExpiredSubscriptions() {
         let msg =
           `⚠️ 您的订阅已到期。\n\n` +
           `订阅类型: <b>${planLabel}</b>\n` +
-          `到期时间: <code>${endDateStr}</code>\n` +
-          `订阅ID: <code>${subscription.id}</code>\n\n` +
+          `到期时间: <code>${endDateStr}</code>\n\n` +
           `如需继续使用服务，请及时续费。`;
 
         if (!stillActive) {

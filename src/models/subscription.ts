@@ -40,7 +40,6 @@ export const renewalOptions: Record<string, RenewalOption> = {
 export type SubscriptionPlan = keyof typeof renewalOptions;
 
 export interface ISubscription extends Document {
-  id: string;
   botUser: mongoose.Types.ObjectId | IBotUser;
   bot: mongoose.Types.ObjectId | IBot;
 
@@ -68,6 +67,9 @@ export interface ISubscription extends Document {
   /** 付款确认时间 */
   paidAt?: Date;
 
+  /** 交易时间（链上时间） */
+  transactionAt?: Date;
+
   /** 订单超时时间（pending 状态下超过此时间则自动 timeout） */
   orderExpiredAt: Date;
 
@@ -88,11 +90,6 @@ export interface ISubscription extends Document {
 
 const subscriptionSchema = new mongoose.Schema<ISubscription>(
   {
-    id: {
-      type: String,
-      required: true,
-      unique: true,
-    },
     botUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
@@ -134,6 +131,9 @@ const subscriptionSchema = new mongoose.Schema<ISubscription>(
       type: Number,
     },
     paidAt: {
+      type: Date,
+    },
+    transactionAt: {
       type: Date,
     },
     orderExpiredAt: {

@@ -75,7 +75,7 @@ export async function checkPendingExchanges() {
         continue;
       }
 
-      // 检查 payment 是否已经有 txHash，防止重复处理
+      // 检查 exchange 是否已经有 txHash，防止重复处理
       if (exchange.hash && exchange.hash === matchedTransfer.trade_id) {
         console.log(
           `[checkPendingExchanges] 兑换记录 ${exchange.id} 已处理过该转账哈希，跳过`,

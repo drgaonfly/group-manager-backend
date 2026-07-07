@@ -1,7 +1,7 @@
 // src/menus/inline/exampleInlineMenu.ts
 import { InlineKeyboard } from 'grammy';
 
-import { chargeOptions } from '../../../models/payment';
+import { chargeOptions } from '../../../models/recharge';
 
 const charger = new InlineKeyboard();
 

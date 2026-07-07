@@ -103,8 +103,7 @@ export async function sendPaymentCard(
     `📍 收款地址（TRC20）：\n` +
     `<code>${subscription.toAddress}</code>\n\n` +
     `⚠️ 请务必使用 <b>TRC20 网络</b> 转账准确金额！\n` +
-    `✅ 支付后系统将自动确认并开通服务。\n\n` +
-    `订单号：<code>${subscription.id}</code>`;
+    `✅ 支付后系统将自动确认并开通服务。`;
 
   const keyboard = new InlineKeyboard()
     .text('🔍 查询到账', 'subscription_check')

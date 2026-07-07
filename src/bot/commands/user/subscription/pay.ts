@@ -3,7 +3,6 @@ import { MyContext } from '../../../types';
 import Subscription from '../../../../models/subscription';
 import { renewalOptions } from '../../../../models/subscription';
 import { sendPaymentCard, ORDER_TIMEOUT_MINUTES } from './helpers';
-import axios from 'axios';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:subscription:pay');
@@ -91,28 +90,32 @@ payCallback.callbackQuery(/^subscription_plan_/, async (ctx) => {
   }
 
   try {
-    // 调用后台 API 创建订阅订单
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5010';
+    // 生成唯一金额（基础价格 + 随机尾数，避免金额冲突）
+    const tail = Math.floor(Math.random() * 99 + 1) / 100;
+    const uniqueAmount = Math.round((planConfig.price + tail) * 100) / 100;
 
-    const response = await axios.post(`${backendUrl}/api/subscriptions`, {
-      botId: bot._id,
-      botUserId: botUser._id,
+    const orderExpiredAt = new Date();
+    orderExpiredAt.setMinutes(
+      orderExpiredAt.getMinutes() + ORDER_TIMEOUT_MINUTES,
+    );
+
+    const newSubscription = new Subscription({
+      botUser: botUser._id,
+      bot: bot._id,
       plan,
-      timeoutMinutes: ORDER_TIMEOUT_MINUTES,
+      amount: uniqueAmount,
+      days: planConfig.days,
+      toAddress: bot.trx20_address,
+      orderExpiredAt,
+      status: 'pending',
     });
 
-    const subscription = response.data?.data;
-
-    if (!subscription) {
-      throw new Error('创建订阅订单失败');
-    }
-
-    await sendPaymentCard(ctx, subscription, true);
+    const savedSubscription = await newSubscription.save();
+    await sendPaymentCard(ctx, savedSubscription, true);
   } catch (error: any) {
     debug('创建订阅订单失败:', error);
     await ctx.reply(
-      '❌ <b>创建订单失败</b>\n\n' +
-        (error?.response?.data?.message || error?.message || '未知错误'),
+      '❌ <b>创建订单失败</b>\n\n' + (error?.message || '未知错误'),
       { parse_mode: 'HTML' },
     );
   }
