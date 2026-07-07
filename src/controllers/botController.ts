@@ -134,27 +134,10 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const bots = await Bot.find(query)
     .populate('user')
-    .populate('botUsers')
-    .populate('groups')
     .populate('owner')
     .populate('authorized_users')
     .populate('clonedFrom')
     .populate('creator')
-    .populate('channel_posts')
-    .populate({
-      path: 'botUserConfigs',
-      populate: [
-        {
-          path: 'botUser',
-          select: 'id userName firstName lastName',
-        },
-        {
-          path: 'bot',
-          select: 'botName userName',
-        },
-      ],
-    })
-    .populate('adRemovals')
     .sort('-createdAt')
     .select('-private_key')
     .skip((+current - 1) * +pageSize)
@@ -289,7 +272,6 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
         select: 'id userName firstName lastName',
       },
     })
-    .populate('botUsers')
     .populate('owner')
     .populate('botUserConfigs');
 
