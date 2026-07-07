@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import Subscription from '../models/subscription';
-import Bot from '../models/bot';
+import BotUser from '../models/botUser';
 import handleAsync from '../utils/handleAsync';
-import { IdGen } from '../utils/idGen';
 
 // 构建查询参数
-const buildQuery = (queryParams: any): any => {
+const buildQuery = async (queryParams: any): Promise<any> => {
   const query: any = {};
 
   // status
@@ -13,9 +12,13 @@ const buildQuery = (queryParams: any): any => {
     query.status = queryParams.status;
   }
 
-  // botUser 搜索
+  // botUser 搜索（支持按用户名模糊搜索）
   if (queryParams.botUser) {
-    query.botUser = queryParams.botUser;
+    const botUsers = await BotUser.find({
+      userName: { $regex: queryParams.botUser, $options: 'i' },
+    });
+    query.botUser =
+      botUsers.length > 0 ? { $in: botUsers.map((u) => u._id) } : null;
   }
 
   return query;
@@ -25,7 +28,7 @@ const buildQuery = (queryParams: any): any => {
 const getSubscriptions = handleAsync(async (req: Request, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
-  const query = buildQuery(req.query);
+  const query = await buildQuery(req.query);
 
   const subscriptions = await Subscription.find(query)
     .populate('botUser')
