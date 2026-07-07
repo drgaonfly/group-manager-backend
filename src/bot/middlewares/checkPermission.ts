@@ -1,9 +1,9 @@
 import { IBotUser } from '../../models/botUser';
 import { IBotUserConfig } from '../../models/botUserConfig';
-import { MyContext } from '../types';
-import createDebug from 'debug';
 import { IGroup } from '../../models/group';
 import { IBot } from '../../models/bot';
+import { MyContext } from '../types';
+import createDebug from 'debug';
 
 const debug = createDebug('bot:checkPermission');
 
@@ -33,13 +33,13 @@ export function isBotExpired(bot: IBot): boolean {
   }
 
   // 如果没有设置到期时间，或者明确标记未过期，则未到期
-  if (!bot.expireAt || !bot.isExpired) {
+  if (!bot.disabledAt || !bot.isExpired) {
     return false;
   }
 
   // 检查是否已到期
   const now = new Date();
-  if (bot.isExpired || (bot.expireAt && now > new Date(bot.expireAt))) {
+  if (bot.isExpired || (bot.disabledAt && now > new Date(bot.disabledAt))) {
     return true;
   }
 

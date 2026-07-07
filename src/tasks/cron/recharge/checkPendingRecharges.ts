@@ -11,7 +11,7 @@ import createDebug from 'debug';
 const debug = createDebug('cron:checkPendingRecharges');
 
 /**
- * 检查所有 pending 的充值订单，只有当 bot.trx20_address 收到正确金额，才为用户充值
+ * 检查所有 pending 的充值订单，只有当环境变量 TRX20_ADDRESS 或 bot.trx20_address 收到正确金额，才为用户充值
  */
 export async function checkPendingRecharges() {
   try {
@@ -29,13 +29,13 @@ export async function checkPendingRecharges() {
     );
 
     for (const recharge of pendingRecharges) {
-      // 检查 bot 是否有 trx20_address
+      // 使用环境变量 TRX20_ADDRESS
       const botUser = recharge.botUser as IBotUser;
       const bot = recharge.bot as IBot;
-      const receiveAddress = bot.trx20_address || recharge.to;
+      const receiveAddress = process.env.TRX20_ADDRESS || recharge.to;
       if (!receiveAddress) {
         console.warn(
-          `[checkPendingRecharges] 订单 ${recharge.id} 的机器人未设置收款地址，跳过`,
+          `[checkPendingRecharges] 订单 ${recharge.id} 环境变量 TRX20_ADDRESS 未配置，跳过`,
         );
         continue;
       }

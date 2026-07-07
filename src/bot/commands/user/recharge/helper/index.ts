@@ -38,7 +38,7 @@ export async function handleRechargeRequest(
 
   debug('开始处理充值请求', { userId: botUser._id, amount });
 
-  const address = bot.trx20_address;
+  const address = process.env.TRX20_ADDRESS;
   if (!address) {
     debug('未设置收款地址');
     await ctx.reply('机器人还未设置收款地址');

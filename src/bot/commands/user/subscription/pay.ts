@@ -31,7 +31,7 @@ payCallback.callbackQuery('subscription_pay', async (ctx) => {
     return;
   }
 
-  if (!bot.trx20_address) {
+  if (!process.env.TRX20_ADDRESS) {
     await ctx.reply('❌ 收款地址未配置，请联系管理员设置 TRC20 地址后再续费。');
     return;
   }
@@ -110,7 +110,7 @@ payCallback.callbackQuery(/^subscription_plan_/, async (ctx) => {
       bot: bot._id,
       amount: uniqueAmount,
       months: planConfig.months,
-      toAddress: bot.trx20_address,
+      toAddress: process.env.TRX20_ADDRESS,
       orderExpiredAt,
       status: 'pending',
     });

@@ -7,7 +7,7 @@ import { getUSDTTransfers } from '../../services/checkUsdt';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 
 /**
- * 检查所有 pending 的 subscription，只有当 bot.trx20_address 收到正确金额，才激活订阅
+ * 检查所有 pending 的 subscription，只有当环境变量 TRX20_ADDRESS 或 bot.trx20_address 收到正确金额，才激活订阅
  */
 export async function checkPendingOrders() {
   try {

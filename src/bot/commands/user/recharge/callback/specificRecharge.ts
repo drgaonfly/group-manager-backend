@@ -12,7 +12,7 @@ specificRechargeCallback.callbackQuery(/^charge_(\d+)$/, async (ctx) => {
 
   await ctx.conversation.exitAll();
 
-  if (!ctx.currentBot.trx20_address) {
+  if (!process.env.TRX20_ADDRESS) {
     await ctx.reply('请先设置 TRX 地址');
     return;
   }
@@ -38,7 +38,7 @@ specificRechargeCallback.callbackQuery(/recharge:again/, async (ctx) => {
 
   await ctx.conversation.exitAll();
 
-  if (!ctx.currentBot.trx20_address) {
+  if (!process.env.TRX20_ADDRESS) {
     await ctx.reply('请先设置 TRX 地址');
     return;
   }
