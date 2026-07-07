@@ -4,6 +4,8 @@ import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
 import BotUser from '../models/botUser';
 import BotUserMessage from '../models/botUserMessage';
+import Group from '../models/group';
+import BotUserConfig from '../models/botUserConfig';
 import { printWebhookInfo, setupBot } from '../bot/botSetup';
 import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
@@ -144,9 +146,20 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .limit(+pageSize)
     .exec();
 
-  const botsWithSignedUrls = await Promise.all(
+  // 添加 botUserConfigs 数量、groups 数量和处理 signed URL
+  const botsWithCountsAndUrls = await Promise.all(
     bots.map(async (bot) => {
       const botObj = bot.toObject ? bot.toObject() : bot;
+
+      // 获取 botUserConfigs 数量
+      const botUserConfigsCount = await BotUserConfig.countDocuments({
+        bot: bot._id,
+      });
+      (botObj as any).botUserConfigsCount = botUserConfigsCount;
+
+      // 获取 groups 数量
+      const groupsCount = await Group.countDocuments({ bot: bot._id });
+      (botObj as any).groupsCount = groupsCount;
 
       // 处理 multi_image
       if (botObj.multi_image) {
@@ -164,7 +177,7 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
 
   res.json({
     success: true,
-    data: botsWithSignedUrls,
+    data: botsWithCountsAndUrls,
     total,
     current: +current,
     pageSize: +pageSize,
