@@ -214,6 +214,46 @@ module.exports = {
       retain: 7,
       compress: true,
     },
+    // 机器人过期检查任务 - 每天早上9点执行，检查即将过期和已过期的机器人
+    {
+      name: 'manager-bot-expiration',
+      script: 'dist/tasks/botExpiration.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      error_file: './logs/bot-expiration-error.log',
+      out_file: './logs/bot-expiration-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
+    // 订阅任务 - 每30秒执行一次，检查待处理订阅订单和过期订阅
+    {
+      name: 'manager-subscription',
+      script: 'dist/tasks/subscription.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      error_file: './logs/subscription-error.log',
+      out_file: './logs/subscription-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
   ],
 };
 
