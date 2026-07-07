@@ -86,6 +86,11 @@ export async function createBotWithUser(
     }
 
     // 4. 创建新 Bot，绑定到新 User，类型固定为 private（克隆产物，不可再克隆）
+    // 设置默认免费使用时间（从环境变量读取，默认30天）
+    const defaultFreeDays = parseInt(process.env.DEFAULT_FREE_DAYS || '30', 10);
+    const disabledAt = new Date();
+    disabledAt.setDate(disabledAt.getDate() + defaultFreeDays);
+
     const newBot = new Bot({
       token,
       user: newUser._id,
@@ -94,6 +99,7 @@ export async function createBotWithUser(
       owner: botUser?._id ?? null, // 克隆者自动成为 owner
       isOnline: true,
       type: 'private',
+      disabledAt,
       ...(botInfo && {
         userName: botInfo.username || '',
         botName: botInfo.firstName || botInfo.username || '',

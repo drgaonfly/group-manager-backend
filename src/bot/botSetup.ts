@@ -6,6 +6,7 @@ import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
 import botUserResolver from './middlewares/botUserResolver';
 import groupResolver from './middlewares/groupResolver';
+import { checkBotExpired } from './middlewares/checkBotExpired';
 import replyRuleHandler from './middlewares/replyRuleHandler';
 import { rankingPaginationHandler } from './middlewares/rankingPaginationHandler';
 import { privateCommandsList, groupCommandsList } from './commandsList';
@@ -99,6 +100,9 @@ export const setupBot = (token: string) => {
 
   // /reload 在广告过滤之前独立处理，避免错误冒泡导致 next already called
   bot.use(reloadComposer.middleware());
+
+  // 检查机器人是否过期（在所有功能命令之前）
+  bot.use(checkBotExpired);
 
   // 处理广告的优先级高于一般消息处理
   bot.use(adRemovalResolver);

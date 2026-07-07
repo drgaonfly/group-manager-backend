@@ -23,7 +23,8 @@ export interface IBot extends Document {
   owner?: mongoose.Schema.Types.ObjectId | IBotUser; // 单一拥有者（克隆时自动设置为操作者）
   authorized_users?: mongoose.Schema.Types.ObjectId[] | IBotUser[]; // 授权人，存 BotUser _id 关联
   creator?: mongoose.Schema.Types.ObjectId | IBotUser; // 创建者，存 BotUser _id 关联
-  expireAt?: Date; // 到期时间
+  /** 机器人禁用时间（到期时间） */
+  disabledAt?: Date;
   type?: 'public' | 'private'; // 类型：public 可克隆，private 为克隆产物
   isExpired?: boolean; // 是否过期，默认 false
   preExpirationNotified?: boolean; // 是否已发送过期提醒，默认 false
@@ -41,9 +42,6 @@ export interface IBot extends Document {
   botUserMessages: mongoose.Schema.Types.ObjectId[] | IBotUserMessage[]; // 虚拟字段
   intervalTime: number;
   botUser: mongoose.Schema.Types.ObjectId | IBotUser;
-
-  // 名称变更播报 — cron job 用作查询过滤，保留
-  canReportMemberNameUpdated: boolean;
 }
 
 const botSchema = new mongoose.Schema(
@@ -121,7 +119,8 @@ const botSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
     }, // 创建者，存 BotUser _id 关联
-    expireAt: {
+    /** 机器人禁用时间（到期时间） */
+    disabledAt: {
       type: Date,
     },
     type: {
@@ -189,14 +188,6 @@ const botSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: 'BotUser',
       required: false,
-    },
-
-    // 功能开关（仅保留作为 cron 查询过滤条件的字段）
-
-    canReportMemberNameUpdated: {
-      type: Boolean,
-      required: false,
-      default: false,
     },
   },
   {

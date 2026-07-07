@@ -8,9 +8,9 @@ export const updateBotExpiration = async () => {
     const now = new Date();
     console.log(now.toLocaleString('zh-CN', { hour12: false }));
 
-    // Find all bots that have expired but isExpired is false, and expireAt must exist
+    // Find all bots that have expired but isExpired is false, and disabledAt must exist
     const expiredBots = await Bot.find({
-      expireAt: { $exists: true, $lt: now },
+      disabledAt: { $exists: true, $lt: now },
       isExpired: false,
       type: 'private',
     }).populate('owner');
@@ -36,7 +36,7 @@ export const updateBotExpiration = async () => {
             await botInstance.api.sendMessage(
               owner.id,
               `⚠️ 机器人 <b>${bot.botName}</b> (@${bot.userName}) 已过期\n` +
-                `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
+                `到期时间: ${bot.disabledAt?.toLocaleString()}\n` +
                 `请及时续费以继续使用服务。`,
               { parse_mode: 'HTML' },
             );
@@ -61,7 +61,7 @@ export const updateBotExpiration = async () => {
               await botInstance.api.sendMessage(
                 user.id,
                 `⚠️ 您使用的机器人 <b>${bot.botName}</b> (@${bot.userName}) 已过期\n` +
-                  `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
+                  `到期时间: ${bot.disabledAt?.toLocaleString()}\n` +
                   `请联系机器人管理员进行续费。`,
                 { parse_mode: 'HTML' },
               );

@@ -1,6 +1,6 @@
 import Subscription from '../../models/subscription';
 import { IBotUser } from '../../models/botUser';
-import { IBot } from '../../models/bot';
+import Bot, { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
 import BotUserConfig, { UserStatus } from '../../models/botUserConfig';
 import { getUSDTTransfers } from '../../services/checkUsdt';
@@ -79,23 +79,36 @@ export async function checkPendingOrders() {
       // 生成订阅起止时间
       const months = subscription.months;
 
-      // 先查找当前 BotUserConfig，获取原有的 subscriptionEndDate
-      const userConfig = await BotUserConfig.findOne({
-        bot: bot._id,
-        botUser: botUser._id,
-      });
+      // 先查找当前 Bot，获取原有的 disabledAt
+      const currentBot = await Bot.findById(bot._id);
 
       let baseDate = new Date();
       let isRenewal = false;
+
+      // 优先使用机器人的 disabledAt 作为基准
       if (
-        userConfig &&
-        userConfig.subscriptionEndDate &&
-        userConfig.subscriptionEndDate > baseDate
+        currentBot &&
+        currentBot.disabledAt &&
+        currentBot.disabledAt > baseDate
       ) {
-        // 如果原有订阅还没过期，则从原有订阅结束时间顺延
-        baseDate = userConfig.subscriptionEndDate;
+        baseDate = currentBot.disabledAt;
         isRenewal = true; // 续费类型
+      } else {
+        // 如果机器人已过期或没有设置，使用 BotUserConfig 的 subscriptionEndDate
+        const userConfig = await BotUserConfig.findOne({
+          bot: bot._id,
+          botUser: botUser._id,
+        });
+        if (
+          userConfig &&
+          userConfig.subscriptionEndDate &&
+          userConfig.subscriptionEndDate > baseDate
+        ) {
+          baseDate = userConfig.subscriptionEndDate;
+          isRenewal = true;
+        }
       }
+
       const expiredAt = new Date(
         baseDate.getTime() + months * 30 * 24 * 60 * 60 * 1000,
       );
@@ -118,6 +131,17 @@ export async function checkPendingOrders() {
           status: UserStatus.AUTHORIZED,
           subscriptionEndDate: expiredAt,
           currentPlan: subscription.months.toString(),
+        },
+        { new: true },
+      );
+
+      // 同步更新 Bot 的 disabledAt（延长机器人禁用时间）
+      await Bot.findByIdAndUpdate(
+        bot._id,
+        {
+          disabledAt: expiredAt,
+          isExpired: false, // 重置过期状态
+          preExpirationNotified: false, // 重置提醒状态
         },
         { new: true },
       );

@@ -46,6 +46,15 @@ const buildQuery = async (
     query.isExpired = queryParams.isExpired === 'true';
   }
 
+  // disabledAt - 支持按禁用时间筛选
+  if (queryParams.disabledAt) {
+    if (queryParams.disabledAt === 'null') {
+      query.disabledAt = { $exists: false };
+    } else if (queryParams.disabledAt === 'notnull') {
+      query.disabledAt = { $exists: true };
+    }
+  }
+
   if (queryParams.botName) {
     query.botName = { $regex: queryParams.botName, $options: 'i' };
   }

@@ -8,7 +8,7 @@ const debug = createDebug('bot:subscription:pay');
 
 const plans = [
   { months: 1, price: 15, label: '一个月' },
-  { months: 876, price: 400, label: '永久' },
+  { months: 900, price: 400, label: '永久' },
 ];
 
 const payCallback = new Composer<MyContext>();

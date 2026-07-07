@@ -12,9 +12,13 @@ export const notifyBotExpiration = async () => {
     const threeDaysLater = new Date(now);
     threeDaysLater.setDate(now.getDate() + 3);
 
+    // Calculate the date 1 day from now
+    const oneDayLater = new Date(now);
+    oneDayLater.setDate(now.getDate() + 1);
+
     // Find all bots that will expire in 3 days and haven't been notified
     const expiringBots = await Bot.find({
-      expireAt: {
+      disabledAt: {
         $exists: true,
         $gt: now,
         $lte: threeDaysLater,
@@ -32,6 +36,30 @@ export const notifyBotExpiration = async () => {
     for (const bot of expiringBots) {
       console.log(`[notifyBotExpiration] 正在处理机器人: ${bot.botName}`);
 
+      // 计算剩余天数
+      const remainingDays = Math.ceil(
+        (bot.disabledAt!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      // 如果剩余天数 <= 3，改为提前 1 天提醒
+      if (remainingDays <= 3) {
+        const oneDayCheck = await Bot.findOne({
+          _id: bot._id,
+          disabledAt: {
+            $exists: true,
+            $gt: now,
+            $lte: oneDayLater,
+          },
+          preExpirationNotified: { $ne: true },
+        });
+        if (!oneDayCheck) {
+          console.log(
+            `[notifyBotExpiration] 机器人 ${bot.botName} 剩余 ${remainingDays} 天，跳过提前3天提醒，将在1天前提醒`,
+          );
+          continue;
+        }
+      }
+
       // 获取机器人实例
       const botInstance = setupBot(bot.token);
 
@@ -42,8 +70,8 @@ export const notifyBotExpiration = async () => {
           try {
             await botInstance.api.sendMessage(
               owner.id,
-              `⚠️ 提醒：机器人 <b>${bot.botName}</b> (@${bot.userName}) 将在3天后过期\n` +
-                `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
+              `⚠️ 提醒：机器人 <b>${bot.botName}</b> (@${bot.userName}) 将在${remainingDays}天后过期\n` +
+                `到期时间: ${bot.disabledAt?.toLocaleString()}\n` +
                 `请及时续费以继续使用服务。`,
               { parse_mode: 'HTML' },
             );
@@ -67,8 +95,8 @@ export const notifyBotExpiration = async () => {
             try {
               await botInstance.api.sendMessage(
                 user.id,
-                `⚠️ 提醒：您使用的机器人 <b>${bot.botName}</b> (@${bot.userName}) 将在3天后过期\n` +
-                  `到期时间: ${bot.expireAt?.toLocaleString()}\n` +
+                `⚠️ 提醒：您使用的机器人 <b>${bot.botName}</b> (@${bot.userName}) 将在${remainingDays}天后过期\n` +
+                  `到期时间: ${bot.disabledAt?.toLocaleString()}\n` +
                   `请联系机器人管理员进行续费。`,
                 { parse_mode: 'HTML' },
               );
