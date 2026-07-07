@@ -1,8 +1,5 @@
 import BotUserConfig, { UserStatus } from '../../models/botUserConfig';
-import Subscription, {
-  SubscriptionStatus,
-  renewalOptions,
-} from '../../models/subscription';
+import Subscription, { renewalOptions } from '../../models/subscription';
 import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
 import { IBotUser } from '../../models/botUser';
@@ -15,11 +12,11 @@ import { IBotUser } from '../../models/botUser';
 export async function checkExpiredSubscriptions() {
   try {
     console.log('[checkExpiredSubscriptions] 开始检查过期订阅...');
-    // 查询所有已过期但状态仍为 active 的订阅
+    // 查询所有已过期但状态仍为 paid 的订阅
     const now = new Date();
     const expiredSubscriptions = await Subscription.find({
-      status: SubscriptionStatus.Active,
-      expiredAt: { $lte: now },
+      status: 'paid',
+      endDate: { $lte: now },
     })
       .populate('botUser')
       .populate('bot');
@@ -33,15 +30,15 @@ export async function checkExpiredSubscriptions() {
       const bot = subscription.bot as IBot;
 
       // 更新订阅状态为 expired
-      subscription.status = SubscriptionStatus.Expired;
+      subscription.status = 'expired';
       await subscription.save();
 
-      // 检查该用户在该 bot 下是否还有其他 active 且未过期的订阅
+      // 检查该用户在该 bot 下是否还有其他 paid 且未过期的订阅
       const stillActive = await Subscription.findOne({
         bot: bot._id,
         botUser: botUser._id,
-        status: SubscriptionStatus.Active,
-        expiredAt: { $gt: now },
+        status: 'paid',
+        endDate: { $gt: now },
       });
 
       if (!stillActive) {
@@ -73,13 +70,13 @@ export async function checkExpiredSubscriptions() {
         if (renewalOptions[subscription.plan]) {
           planLabel = renewalOptions[subscription.plan].label;
         }
-        const expiredAtStr = subscription.expiredAt
-          ? subscription.expiredAt.toLocaleString('zh-CN', { hour12: false })
+        const endDateStr = subscription.endDate
+          ? subscription.endDate.toLocaleString('zh-CN', { hour12: false })
           : '';
         let msg =
           `⚠️ 您的订阅已到期。\n\n` +
           `订阅类型: <b>${planLabel}</b>\n` +
-          `到期时间: <code>${expiredAtStr}</code>\n` +
+          `到期时间: <code>${endDateStr}</code>\n` +
           `订阅ID: <code>${subscription.id}</code>\n\n` +
           `如需继续使用服务，请及时续费。`;
 

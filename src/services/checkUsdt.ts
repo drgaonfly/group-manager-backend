@@ -23,14 +23,14 @@ interface TransferResponse {
  * @param address 查询的地址
  * @param minutes 查询的分钟数（默认15分钟）
  * @param maxPages 最大分页数，防止死循环（默认3页）
- * @param pageSize 每页条数（默认100，最大300）
+ * @param pageSize 每页条数（默认50，最大300）
  * @param minIntervalMs 每次请求间隔，防止频率过高（默认500ms）
  */
 export async function getUSDTTransfers(
   address: string,
-  minutes: number = process.env.NODE_ENV === 'development' ? 5 * 24 * 60 : 15,
+  minutes: number = process.env.NODE_ENV === 'development' ? 30 * 24 * 60 : 15,
   maxPages: number = 3,
-  pageSize: number = 100,
+  pageSize: number = 50,
   minIntervalMs: number = 500,
 ): Promise<Transfer[]> {
   const result: Transfer[] = [];
@@ -125,6 +125,3 @@ export async function getUSDTTransfers(
   console.log(`[getUSDTTransfers] 共获取到 ${result.length} 条有效转账记录`);
   return result;
 }
-
-// 调用用例
-// getUSDTTransfers('TT7uDJS5gtDya3hfSHPcSEUFHaPLhsxVtf');

@@ -107,7 +107,7 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     }
   } else if (bot.type === 'private') {
     // ── private bot ────────────────────────────────────────────────────────
-    // 只有 owner 才能看到登录按钮
+    // 只有 owner 才能看到登录按钮和订阅按钮
     const ownerIdStr = bot.owner?.toString();
     const currentBotUserIdStr = ctx.currentBotUser?._id?.toString();
     const isOwner =
@@ -128,7 +128,9 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         inlineKeyboard
           .row()
           .webApp('🖥️ 登录管理后台(WebApp)', webappLoginUrl)
-          .url('🌐 登录管理后台(URL)', urlLoginUrl);
+          .url('🌐 登录管理后台(URL)', urlLoginUrl)
+          .row()
+          .text('💎 订阅服务', 'subscription_start');
       }
     }
     // 非 owner 不显示任何额外按钮

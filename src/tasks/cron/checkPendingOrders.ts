@@ -1,5 +1,5 @@
 import Payment from '../../models/payment';
-import Subscription, { SubscriptionStatus } from '../../models/subscription';
+import Subscription from '../../models/subscription';
 import { IBotUser } from '../../models/botUser';
 import { IBot } from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
@@ -123,10 +123,9 @@ export async function checkPendingOrders() {
         botUser: botUser._id,
         bot: bot._id,
         plan: payment.subscriptionInfo.type,
-        status: SubscriptionStatus.Active,
-        expiredAt,
+        status: 'paid',
+        endDate: expiredAt,
         payment: payment._id,
-        isRenewal, // 是否续费类型
       });
 
       await subscription.save();

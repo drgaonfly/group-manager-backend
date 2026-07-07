@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import {
   getSubscriptions,
   getSubscriptionById,
-  addSubscription,
+  // addSubscription,
   updateSubscription,
   deleteSubscription,
   deleteMultipleSubscriptions,
@@ -14,7 +14,7 @@ const router: Router = express.Router();
 router
   .route('/')
   .get(protect, checkPermission, getSubscriptions)
-  .post(protect, checkPermission, addSubscription)
+  // .post(protect, checkPermission, addSubscription)
   .delete(protect, checkPermission, deleteMultipleSubscriptions);
 
 router
