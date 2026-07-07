@@ -234,7 +234,6 @@ const updateUserProfile = handleAsync(
       groupWelcome,
       groupVerify,
       channelPost,
-      reportGroupMemberNameUpdated,
       replyRule,
       availableBotCount,
       checkinRule,
@@ -304,9 +303,6 @@ const updateUserProfile = handleAsync(
       }
       if (typeof groupVerify !== 'undefined') {
         updateData.groupVerify = groupVerify;
-      }
-      if (typeof reportGroupMemberNameUpdated !== 'undefined') {
-        updateData.reportGroupMemberNameUpdated = reportGroupMemberNameUpdated;
       }
       if (typeof replyRule !== 'undefined') {
         updateData.replyRule = replyRule;

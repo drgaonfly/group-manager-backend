@@ -2,8 +2,6 @@ import { Middleware } from 'grammy';
 import BotUser from '../../models/botUser';
 import { findBotProxy } from '../services/findBotProxy';
 import { MyContext } from '../types';
-import { PermissionChecker } from '../utils/permissionChecker';
-import { checkMemberNameUpdated } from '../../utils/checkMemberNameUpdated';
 
 const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
   if (!ctx.currentBot) {
@@ -36,24 +34,6 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
     },
     { new: true, upsert: true },
   ).populate('subscriptions');
-
-  // 检测用户信息变更并报告到群组
-  if (
-    existingUser &&
-    ctx.chat &&
-    ctx.chat.type !== 'private' &&
-    PermissionChecker.canReportMemberNameUpdated(proxyUser, ctx.currentBot)
-  ) {
-    const message = checkMemberNameUpdated(existingUser, {
-      id,
-      username,
-      first_name,
-      last_name,
-    });
-    if (message) {
-      await ctx.reply(message);
-    }
-  }
 
   // 将当前用户添加到机器人的用户列表中
   await ctx.currentBot.updateOne({

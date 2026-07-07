@@ -34,7 +34,6 @@ export interface IUser extends Document {
   groupWelcome: boolean; // 欢迎进群
   groupVerify: boolean;
   channelPost: boolean; // 频道推广
-  reportGroupMemberNameUpdated: boolean; // 报道群内用户的名字变更
   replyRule: boolean; // 关键词回复
   checkinRule: boolean;
   lotteryRule: boolean;
@@ -99,7 +98,6 @@ const userSchema = new mongoose.Schema(
     groupWelcome: { type: Boolean, default: false }, // 欢迎进群
     groupVerify: { type: Boolean, default: false },
     channelPost: { type: Boolean, default: false }, // 频道推广
-    reportGroupMemberNameUpdated: { type: Boolean, default: false }, // 报道群内用户的名字变更
     replyRule: { type: Boolean, default: false }, // 关键词回复
     checkinRule: { type: Boolean, default: false },
     lotteryRule: { type: Boolean, default: false },

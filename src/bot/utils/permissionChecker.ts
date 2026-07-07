@@ -34,13 +34,6 @@ export class PermissionChecker {
     return !!proxyUser?.groupVerify;
   }
 
-  static canReportMemberNameUpdated(
-    proxyUser: IUser | null,
-    _bot?: IBot,
-  ): boolean {
-    return !!proxyUser?.reportGroupMemberNameUpdated;
-  }
-
   static canUseAdRemoval(proxyUser: IUser | null, _bot?: IBot): boolean {
     return !!proxyUser?.adRemoval;
   }
