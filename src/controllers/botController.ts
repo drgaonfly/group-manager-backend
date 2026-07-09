@@ -155,11 +155,8 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
       const botUserConfigsCount = await BotUserConfig.countDocuments({
         bot: bot._id,
       });
-      (botObj as any).botUserConfigsCount = botUserConfigsCount;
 
-      // 获取 groups 数量
-      const groupsCount = await Group.countDocuments({ bot: bot._id });
-      (botObj as any).groupsCount = groupsCount;
+      (botObj as any).botUserConfigsCount = botUserConfigsCount;
 
       // 处理 multi_image
       if (botObj.multi_image) {
