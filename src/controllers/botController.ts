@@ -21,7 +21,6 @@ import { getBotInfoByToken } from '../utils/getBotInfo';
 import { startClientAndGetSession } from '../bot/services/gramClient';
 import GroupMessage from '../models/groupMessage';
 import ChannelPost from '../models/channelPost';
-import ChannelPostHistory from '../models/channelPostHistory';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -140,6 +139,7 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('authorized_users')
     .populate('clonedFrom')
     .populate('creator')
+    .populate('groups')
     .sort('-createdAt')
     .select('-private_key')
     .skip((+current - 1) * +pageSize)
