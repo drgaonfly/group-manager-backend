@@ -13,10 +13,6 @@ export class PermissionChecker {
     return !!proxyUser?.speech_static;
   }
 
-  static canUseFreeKeyboard(proxyUser: IUser | null, _bot?: IBot): boolean {
-    return !!proxyUser?.keyboardConfig;
-  }
-
   static canUseGroupMessaging(proxyUser: IUser | null, _bot?: IBot): boolean {
     return !!proxyUser?.groupMessage;
   }
@@ -29,13 +25,32 @@ export class PermissionChecker {
     return !!proxyUser?.channelPost;
   }
 
-  /** 配置有效性在 resolver 层按群组检查 */
   static canUseGroupVerify(proxyUser: IUser | null, _bot?: IBot): boolean {
     return !!proxyUser?.groupVerify;
   }
 
+  static canUseReplyRule(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.replyRule;
+  }
+
+  static canUseCheckinRule(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.checkinRule;
+  }
+
+  static canUseLotteryRule(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.lotteryRule;
+  }
+
+  static canUseAuctionRule(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.auctionRule;
+  }
+
   static canUseAdRemoval(proxyUser: IUser | null, _bot?: IBot): boolean {
     return !!proxyUser?.adRemoval;
+  }
+
+  static canUseServiceMessage(proxyUser: IUser | null, _bot?: IBot): boolean {
+    return !!proxyUser?.serviceMessage;
   }
 
   static canUseSuccess(proxyUser: IUser | null, _bot?: IBot): boolean {
@@ -50,12 +65,17 @@ export class PermissionChecker {
   static getAllPermissions(proxyUser: IUser | null, _bot?: IBot) {
     return {
       speechStatic: this.canUseSpeechStatic(proxyUser),
-      freeKeyboard: this.canUseFreeKeyboard(proxyUser),
       groupMessaging: this.canUseGroupMessaging(proxyUser),
       groupWelcome: this.canUseGroupWelcome(proxyUser),
       channelPost: this.canUseChannelPost(proxyUser),
       groupVerify: this.canUseGroupVerify(proxyUser),
+      replyRule: this.canUseReplyRule(proxyUser),
+      checkinRule: this.canUseCheckinRule(proxyUser),
+      lotteryRule: this.canUseLotteryRule(proxyUser),
+      auctionRule: this.canUseAuctionRule(proxyUser),
       adRemoval: this.canUseAdRemoval(proxyUser),
+      serviceMessage: this.canUseServiceMessage(proxyUser),
+      success: this.canUseSuccess(proxyUser),
       redPacket: this.canUseRedPacket(proxyUser),
     };
   }

@@ -29,7 +29,6 @@ export interface IUser extends Document {
   function_disabledAt: Date; // 功能禁用时间，给代理角色的
 
   groupMessage: boolean; // 群发
-  keyboardConfig: boolean; // 菜单配置
   speech_static: boolean; // 群组内发言统计
   groupWelcome: boolean; // 欢迎进群
   groupVerify: boolean;
@@ -39,7 +38,7 @@ export interface IUser extends Document {
   lotteryRule: boolean;
   auctionRule: boolean;
   adRemoval: boolean; // 广告移除
-  recharge: boolean;
+  serviceMessage: boolean; // 服务消息配置
   success: boolean;
   redPacket: boolean; // 红包
 }
@@ -92,20 +91,19 @@ const userSchema = new mongoose.Schema(
 
     function_disabledAt: { type: Date, default: null }, // 功能禁用时间
 
-    groupMessage: { type: Boolean, default: false }, // 群发
-    keyboardConfig: { type: Boolean, default: false }, // 菜单配置
-    speech_static: { type: Boolean, default: false }, // 群组内发言统计
-    groupWelcome: { type: Boolean, default: false }, // 欢迎进群
-    groupVerify: { type: Boolean, default: false },
-    channelPost: { type: Boolean, default: false }, // 频道推广
-    replyRule: { type: Boolean, default: false }, // 关键词回复
-    checkinRule: { type: Boolean, default: false },
-    lotteryRule: { type: Boolean, default: false },
-    auctionRule: { type: Boolean, default: false },
-    adRemoval: { type: Boolean, default: false }, // 广告移除
-    recharge: { type: Boolean, default: false },
-    success: { type: Boolean, default: false },
-    redPacket: { type: Boolean, default: false }, // 红包
+    groupMessage: { type: Boolean, default: true }, // 群发
+    speech_static: { type: Boolean, default: true }, // 群组内发言统计
+    groupWelcome: { type: Boolean, default: true }, // 欢迎进群
+    groupVerify: { type: Boolean, default: true },
+    channelPost: { type: Boolean, default: true }, // 频道推广
+    replyRule: { type: Boolean, default: true }, // 关键词回复
+    checkinRule: { type: Boolean, default: true },
+    lotteryRule: { type: Boolean, default: true },
+    auctionRule: { type: Boolean, default: true },
+    adRemoval: { type: Boolean, default: true }, // 广告移除
+    serviceMessage: { type: Boolean, default: true }, // 服务消息配置
+    success: { type: Boolean, default: true },
+    redPacket: { type: Boolean, default: true }, // 红包
   },
   { timestamps: true },
 );

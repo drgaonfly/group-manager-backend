@@ -14,6 +14,7 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import proxyResolver from './middlewares/proxyResolver';
 import { adRemovalResolver } from './middlewares/adRemovalResolver';
+import { serviceMessageDeleter } from './middlewares/serviceMessageDeleter';
 import { MyContext } from './types';
 import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
@@ -106,6 +107,9 @@ export const setupBot = (token: string) => {
 
   // 处理广告的优先级高于一般消息处理
   bot.use(adRemovalResolver);
+
+  // 服务消息删除（在 logger 之前，避免记录已删除的消息）
+  bot.use(serviceMessageDeleter);
 
   bot.use(logger);
   bot.use(rankingPaginationHandler);
