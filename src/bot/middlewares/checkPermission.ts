@@ -27,23 +27,19 @@ const checkUserPermission = (
  * @returns {boolean} true 表示已到期，false 表示未到期
  */
 export function isBotExpired(bot: IBot): boolean {
-  // 仅 custom 类型 bot 需要检查过期
+  // 仅 private 类型 bot 需要检查过期
   if (bot.type !== 'private') {
     return false;
   }
 
-  // 如果没有设置到期时间，或者明确标记未过期，则未到期
-  if (!bot.disabledAt || !bot.isExpired) {
+  // 如果没有设置到期时间，则未到期
+  if (!bot.disabledAt) {
     return false;
   }
 
   // 检查是否已到期
   const now = new Date();
-  if (bot.isExpired || (bot.disabledAt && now > new Date(bot.disabledAt))) {
-    return true;
-  }
-
-  return false;
+  return bot.disabledAt < now;
 }
 
 export const checkPermission = async (

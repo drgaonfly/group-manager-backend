@@ -33,22 +33,22 @@ import cron from 'node-cron';
     },
   );
 
-  // 每天早上 9 点检查已过期的机器人并标记
+  // 每天早上 9 点检查已过期的机器人并发送通知
   cron.schedule(
     '0 9 * * *',
     async () => {
       try {
         console.log(
-          '[botExpiration] 开始执行过期状态更新任务:',
+          '[botExpiration] 开始执行过期通知任务:',
           new Date().toISOString(),
         );
         await updateBotExpiration();
         console.log(
-          '[botExpiration] 过期状态更新任务完成:',
+          '[botExpiration] 过期通知任务完成:',
           new Date().toISOString(),
         );
       } catch (err) {
-        console.error('[botExpiration] 过期状态更新任务执行失败:', err);
+        console.error('[botExpiration] 过期通知任务执行失败:', err);
       }
     },
     {

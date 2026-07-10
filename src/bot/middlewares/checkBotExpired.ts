@@ -1,3 +1,4 @@
+import { InlineKeyboard } from 'grammy';
 import { MyContext } from '../types';
 import createDebug from 'debug';
 
@@ -25,7 +26,7 @@ export const checkBotExpired = async (
 
   // 检查机器人是否已过期
   const now = new Date();
-  const isExpired = bot.isExpired || (bot.disabledAt && bot.disabledAt < now);
+  const isExpired = bot.disabledAt && bot.disabledAt < now;
 
   if (isExpired) {
     debug('机器人已过期，功能已禁用');
@@ -33,7 +34,7 @@ export const checkBotExpired = async (
     // 允许订阅相关命令通过，以便用户可以续费
     const isSubscriptionCommand =
       ctx.callbackQuery?.data?.startsWith('subscription_') ||
-      ctx.message?.text?.startsWith('/subscription') 
+      ctx.message?.text?.startsWith('/subscription');
 
     if (isSubscriptionCommand) {
       debug('订阅相关命令，允许通过');
@@ -47,10 +48,18 @@ export const checkBotExpired = async (
         show_alert: true,
       });
     } else {
-      await ctx.reply(
-        '❌ 机器人已过期，功能已禁用\n\n' +
-          '请通过订阅服务续费以继续使用机器人功能。',
-      );
+      const msg = [
+        '❌ 机器人已过期，功能已禁用',
+        '',
+        '请通过订阅服务续费以继续使用机器人功能.',
+      ].join('\n');
+
+      await ctx.reply(msg, {
+        reply_markup: new InlineKeyboard().text(
+          '💎 订阅服务',
+          'subscription_start',
+        ),
+      });
     }
     return;
   }

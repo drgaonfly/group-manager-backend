@@ -42,11 +42,6 @@ const buildQuery = async (
     query.id = { $regex: queryParams.id, $options: 'i' };
   }
 
-  // isExpired
-  if (queryParams.isExpired) {
-    query.isExpired = queryParams.isExpired === 'true';
-  }
-
   // disabledAt - 支持按禁用时间筛选
   if (queryParams.disabledAt) {
     if (queryParams.disabledAt === 'null') {

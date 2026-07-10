@@ -26,7 +26,6 @@ export interface IBot extends Document {
   /** 机器人禁用时间（到期时间） */
   disabledAt?: Date;
   type?: 'public' | 'private'; // 类型：public 可克隆，private 为克隆产物
-  isExpired?: boolean; // 是否过期，默认 false
   preExpirationNotified?: boolean; // 是否已发送过期提醒，默认 false
   clonedFrom?: mongoose.Schema.Types.ObjectId | IBot; // 新增：从哪个机器人clone的
   canBeCloned?: boolean; // 新增：是否可克隆
@@ -129,10 +128,6 @@ const botSchema = new mongoose.Schema(
       default: 'private',
       trim: true,
     },
-    isExpired: {
-      type: Boolean,
-      default: false,
-    }, // 是否过期，默认 false
     preExpirationNotified: {
       type: Boolean,
       default: false,

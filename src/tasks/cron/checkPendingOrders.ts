@@ -140,8 +140,7 @@ export async function checkPendingOrders() {
         bot._id,
         {
           disabledAt: expiredAt,
-          isExpired: false, // 重置过期状态
-          preExpirationNotified: false, // 重置提醒状态
+          preExpirationNotified: false, // 重置过期提醒状态
         },
         { new: true },
       );

@@ -8,22 +8,19 @@ export const updateBotExpiration = async () => {
     const now = new Date();
     console.log(now.toLocaleString('zh-CN', { hour12: false }));
 
-    // Find all bots that have expired but isExpired is false, and disabledAt must exist
+    // Find all bots that have expired and were pre-notified
     const expiredBots = await Bot.find({
       disabledAt: { $exists: true, $lt: now },
-      isExpired: false,
       type: 'private',
+      preExpirationNotified: true,
     }).populate('owner');
 
     console.log(
-      `[updateBotExpiration] 查询到 ${expiredBots.length} 个待处理的过期机器人`,
+      `[updateBotExpiration] 查询到 ${expiredBots.length} 个已过期的机器人`,
     );
 
     for (const bot of expiredBots) {
       console.log(`[updateBotExpiration] 正在处理机器人: ${bot.botName}`);
-
-      // Update bot status
-      await Bot.updateOne({ _id: bot._id }, { $set: { isExpired: true } });
 
       // 获取机器人实例
       const botInstance = setupBot(bot.token);
@@ -52,33 +49,7 @@ export const updateBotExpiration = async () => {
         }
       }
 
-      // 通知所有授权用户
-      if (bot.authorized_users && bot.authorized_users.length > 0) {
-        for (const userId of bot.authorized_users) {
-          const user = await BotUser.findById(userId);
-          if (user?.id) {
-            try {
-              await botInstance.api.sendMessage(
-                user.id,
-                `⚠️ 您使用的机器人 <b>${bot.botName}</b> (@${bot.userName}) 已过期\n` +
-                  `到期时间: ${bot.disabledAt?.toLocaleString()}\n` +
-                  `请联系机器人管理员进行续费。`,
-                { parse_mode: 'HTML' },
-              );
-              console.log(
-                `[updateBotExpiration] 已通知授权用户 ${user.id} 机器人过期`,
-              );
-            } catch (msgErr) {
-              console.error(
-                `[updateBotExpiration] 通知授权用户 ${user.id} 失败:`,
-                msgErr,
-              );
-            }
-          }
-        }
-      }
-
-      console.log(`[updateBotExpiration] 机器人 ${bot.botName} 已标记为过期`);
+      console.log(`[updateBotExpiration] 机器人 ${bot.botName} 已发送过期通知`);
     }
 
     console.log('[updateBotExpiration] 过期机器人处理完成');
