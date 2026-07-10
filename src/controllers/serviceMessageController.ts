@@ -161,27 +161,20 @@ export const createServiceMessage = handleAsync(
 export const updateServiceMessage = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const body = req.body;
-
-    const doc = await ServiceMessage.findById(id);
-    if (!doc) {
-      res.status(404);
-      throw new Error('服务消息配置不存在');
-    }
 
     // 不允许修改 bot、group、proxy
-    delete body.bot;
-    delete body.group;
-    delete body.proxy;
-
-    const updated = await ServiceMessage.findByIdAndUpdate(
-      id,
-      { $set: body },
-      { new: true, runValidators: true },
-    )
+    const updated = await ServiceMessage.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    })
       .populate('bot', 'botName userName')
       .populate('group', 'title username id')
       .populate('proxy', 'name');
+
+    if (!updated) {
+      res.status(404);
+      throw new Error('服务消息配置不存在');
+    }
 
     res.json({ success: true, data: updated, message: '服务消息配置更新成功' });
   },

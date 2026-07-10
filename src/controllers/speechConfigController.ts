@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import SpeechConfig from '../models/speechConfig';
 import Bot from '../models/bot';
 import Group from '../models/group';
@@ -166,48 +166,22 @@ const createSpeechConfig = handleAsync(
  * PUT /api/speech-configs/:id
  * 更新一条配置
  */
-const updateSpeechConfig = handleAsync(
-  async (req: RequestCustom, res: Response) => {
-    const {
-      minSpeechLength,
-      allowPureNumberSpeech,
-      enableActivityReward,
-      activityRewardCycle,
-      activityRewardTopN,
-      activityRewardPoints,
-      enableSpeechReward,
-      speechRewardCycle,
-      speechRewardPoints,
-      speechRewardMaxTimes,
-    } = req.body;
+const updateSpeechConfig = handleAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    const config = await SpeechConfig.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          ...(minSpeechLength !== undefined && { minSpeechLength }),
-          ...(allowPureNumberSpeech !== undefined && { allowPureNumberSpeech }),
-          ...(enableActivityReward !== undefined && { enableActivityReward }),
-          ...(activityRewardCycle !== undefined && { activityRewardCycle }),
-          ...(activityRewardTopN !== undefined && { activityRewardTopN }),
-          ...(activityRewardPoints !== undefined && { activityRewardPoints }),
-          ...(enableSpeechReward !== undefined && { enableSpeechReward }),
-          ...(speechRewardCycle !== undefined && { speechRewardCycle }),
-          ...(speechRewardPoints !== undefined && { speechRewardPoints }),
-          ...(speechRewardMaxTimes !== undefined && { speechRewardMaxTimes }),
-        },
-      },
-      { new: true, runValidators: true },
-    ).populate('group', 'title username id');
+  // 不允许修改 bot、group、proxy
+  const config = await SpeechConfig.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  }).populate('group', 'title username id');
 
-    if (!config) {
-      res.status(404);
-      throw new Error('配置不存在');
-    }
+  if (!config) {
+    res.status(404);
+    throw new Error('配置不存在');
+  }
 
-    res.json({ success: true, data: config });
-  },
-);
+  res.json({ success: true, data: config });
+});
 
 /**
  * DELETE /api/speech-configs/:id

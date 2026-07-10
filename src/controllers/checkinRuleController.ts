@@ -123,7 +123,7 @@ const addCheckinRule = handleAsync(
 
 const updateCheckinRule = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-
+  // 不允许修改 bot、group、proxy
   const checkinRule = await CheckinRule.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,

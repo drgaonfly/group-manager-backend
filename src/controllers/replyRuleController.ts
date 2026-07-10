@@ -141,25 +141,8 @@ const addReplyRule = handleAsync(async (req: RequestCustom, res: Response) => {
 
 const updateReplyRule = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { medias, group, ...otherFields } = req.body;
 
-  const updates: any = { ...otherFields };
-
-  // group 必填，有值才允许更新
-  if (group) {
-    updates.group = group;
-  }
-
-  if (medias !== undefined && Array.isArray(medias)) {
-    updates.medias = medias.filter(
-      (media) => media === '' || (media && !media.startsWith('http')),
-    );
-    if (updates.medias.length === 0) {
-      delete updates.medias;
-    }
-  }
-
-  const updatedReplyRule = await ReplyRule.findByIdAndUpdate(id, updates, {
+  const updatedReplyRule = await ReplyRule.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   }).exec();

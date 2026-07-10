@@ -117,28 +117,23 @@ const createGroupVerify = handleAsync(
  */
 const updateGroupVerify = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { question, asks, isActive } = req.body;
 
-  const groupVerify = await GroupVerify.findById(id);
+  // 不允许修改 bot、group、proxy
+  const groupVerify = await GroupVerify.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  })
+    .populate('group')
+    .populate('bot');
 
   if (!groupVerify) {
     res.status(404);
     throw new Error('群验证配置不存在');
   }
 
-  if (question !== undefined) groupVerify.question = question;
-  if (asks !== undefined) groupVerify.asks = asks;
-  if (isActive !== undefined) groupVerify.isActive = isActive;
-
-  await groupVerify.save();
-
-  const populated = await GroupVerify.findById(id)
-    .populate('group')
-    .populate('bot');
-
   res.json({
     success: true,
-    data: populated,
+    data: groupVerify,
     message: '群验证配置更新成功',
   });
 });

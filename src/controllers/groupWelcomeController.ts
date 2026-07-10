@@ -169,36 +169,19 @@ export const createGroupWelcome = handleAsync(
 export const updateGroupWelcome = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const body = req.body;
 
-    const doc = await GroupWelcome.findById(id);
-    if (!doc) {
+    // 不允许修改 bot、group、proxy
+    const updated = await GroupWelcome.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    }).populate('group', 'title username id');
+
+    if (!updated) {
       res.status(404);
       throw new Error('群欢迎配置不存在');
     }
 
-    const updated = await GroupWelcome.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          contents: Array.isArray(body.contents) ? body.contents : doc.contents,
-          caption: body.caption ?? doc.caption,
-          medias: Array.isArray(body.medias) ? body.medias : doc.medias,
-          menus: Array.isArray(body.menus) ? body.menus : doc.menus,
-          deleteAfterSeconds:
-            typeof body.deleteAfterSeconds === 'number'
-              ? body.deleteAfterSeconds
-              : doc.deleteAfterSeconds,
-          pinNewMember:
-            typeof body.pinNewMember === 'boolean'
-              ? body.pinNewMember
-              : doc.pinNewMember,
-        },
-      },
-      { new: true, runValidators: true },
-    ).populate('group', 'title username id');
-
-    const obj = updated!.toObject();
+    const obj = updated.toObject();
     await processMedias(obj);
 
     res.json({ success: true, data: obj, message: '群欢迎配置更新成功' });
