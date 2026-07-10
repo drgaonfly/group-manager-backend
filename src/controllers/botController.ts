@@ -681,7 +681,7 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
       botUsers: botManager.botUsers,
       intervalTime,
       menus,
-      proxy: req.user._id,
+      proxy: req.proxyUser._id,
     });
   }
 
@@ -835,7 +835,7 @@ const sendChannelPost = handleAsync(
         const saved = await ChannelPost.create({
           ...req.body,
           bot: id,
-          proxy: req.user._id,
+          proxy: req.proxyUser._id,
           sendType: 'immediate',
           isOnline: false,
         });

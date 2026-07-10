@@ -128,7 +128,7 @@ const addReplyRule = handleAsync(async (req: RequestCustom, res: Response) => {
   const newReplyRule = new ReplyRule({
     ...body,
     keyword: Array.isArray(body.keyword) ? body.keyword : [body.keyword],
-    proxy: req.user._id,
+    proxy: req.proxyUser._id,
   });
 
   const savedReplyRule = await newReplyRule.save();

@@ -2,6 +2,7 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/user';
+import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import { ROLES } from '../constants';
 import { RequestCustom } from '../types/user';
@@ -61,6 +62,26 @@ const protect = handleAsync(
         }
 
         req.user = user;
+
+        // 设置 proxyUser：默认使用当前用户，如果是管理员操作代理用户的 bot，则使用 bot 的 owner
+        req.proxyUser = user;
+
+        // 如果是管理员，且请求中有 bot/botId 参数，从 bot 获取真正的 owner
+        if (user.isAdmin) {
+          const botId = req.body?.bot || req.query?.botId;
+          if (botId) {
+            try {
+              const bot = await Bot.findById(botId).select('user');
+              if (bot?.user) {
+                req.proxyUser = bot.user as any;
+              }
+            } catch (err) {
+              // 如果获取 bot 失败，继续使用默认的 user
+              console.error('Failed to resolve proxyUser from bot:', err);
+            }
+          }
+        }
+
         next();
       } catch (error) {
         console.error(error);

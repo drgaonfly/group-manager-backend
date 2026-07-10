@@ -138,7 +138,10 @@ export const createServiceMessage = handleAsync(
       throw new Error('该群组已存在服务消息配置，请直接编辑');
     }
 
-    const doc = await ServiceMessage.create({ ...body, proxy: req.user._id });
+    const doc = await ServiceMessage.create({
+      ...body,
+      proxy: req.proxyUser._id,
+    });
     const populated = await ServiceMessage.findById(doc._id)
       .populate('bot', 'botName userName')
       .populate('group', 'title username id')

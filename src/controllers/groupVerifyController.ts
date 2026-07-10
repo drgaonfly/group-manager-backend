@@ -97,6 +97,7 @@ const createGroupVerify = handleAsync(
       question,
       asks,
       isActive,
+      proxy: req.proxyUser._id,
     });
 
     const populated = await GroupVerify.findById(groupVerify._id)

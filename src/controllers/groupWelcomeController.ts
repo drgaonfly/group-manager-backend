@@ -147,7 +147,7 @@ export const createGroupWelcome = handleAsync(
 
     const doc = await GroupWelcome.create({
       ...req.body,
-      proxy: req.user._id,
+      proxy: req.proxyUser._id,
     });
 
     const populated = await GroupWelcome.findById(doc._id).populate(

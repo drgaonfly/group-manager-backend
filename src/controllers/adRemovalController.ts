@@ -101,7 +101,7 @@ export const addAdRemoval = handleAsync(
     }
     const adRemoval = new AdRemoval({
       bot,
-      proxy: req.user._id, // 自动关联当前登录的代理账号
+      proxy: req.proxyUser._id, // 自动关联真正的数据归属用户
       ...rest,
     });
     const savedAdRemoval = await adRemoval.save();

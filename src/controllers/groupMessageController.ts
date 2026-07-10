@@ -135,7 +135,7 @@ const addGroupMessage = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const newGroupMessage = new GroupMessage({
       ...req.body,
-      proxy: req.user._id,
+      proxy: req.proxyUser._id,
     });
 
     const savedGroupMessage = await newGroupMessage.save();

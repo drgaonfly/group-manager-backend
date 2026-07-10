@@ -140,7 +140,7 @@ export const addChannelPost = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const channelPost = new ChannelPost({
       ...req.body,
-      proxy: req.user._id,
+      proxy: req.proxyUser._id,
     });
 
     const savedChannelPost = await channelPost.save();

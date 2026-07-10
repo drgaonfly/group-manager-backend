@@ -104,7 +104,7 @@ const addCheckinRule = handleAsync(
 
     const checkinRule = new CheckinRule({
       ...req.body,
-      proxy: req.user._id,
+      proxy: req.proxyUser._id,
     });
 
     await checkinRule.save();
