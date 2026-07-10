@@ -4,22 +4,43 @@ import Bot from '../models/bot';
 import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
+
+/**
+ * 构建查询参数
+ */
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
+  const query: any = {};
+
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  }
+
+  // 支持 groupId 精确查询
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
 
 /**
  * 获取服务消息配置列表
  */
 export const getServiceMessages = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { botId, groupId, current = '1', pageSize = '50' } = req.query;
+    const { current = '1', pageSize = '50' } = req.query;
 
-    const query: any = {};
-    if (botId) query.bot = botId;
-    if (groupId) query.group = groupId;
-
-    // 多租户隔离
-    if (req.user && !req.user.isAdmin) {
-      query.proxy = req.user._id;
-    }
+    const query = await buildQuery(req.query, req);
 
     const total = await ServiceMessage.countDocuments(query);
     const data = await ServiceMessage.find(query)
@@ -123,13 +144,11 @@ export const createServiceMessage = handleAsync(
       .populate('group', 'title username id')
       .populate('proxy', 'name');
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: populated,
-        message: '服务消息配置创建成功',
-      });
+    res.status(201).json({
+      success: true,
+      data: populated,
+      message: '服务消息配置创建成功',
+    });
   },
 );
 

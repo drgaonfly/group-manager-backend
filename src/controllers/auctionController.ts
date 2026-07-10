@@ -13,18 +13,44 @@ import {
 import { convertToTelegramHtml } from '../bot/utils/telegramHtml';
 import { InlineKeyboard } from 'grammy';
 import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
 
-// 获取竞拍列表
-export const getAuctions = async (req: Request, res: Response) => {
-  const { botId, status, current = 1, pageSize = 10 } = req.query;
+/**
+ * 构建查询参数
+ */
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
-  if (botId) {
-    query.bot = botId;
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
   }
-  if (status) {
-    query.status = status;
+
+  // 支持 groupId 精确查询
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
   }
+
+  if (queryParams.status) {
+    query.status = queryParams.status;
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
+
+// 获取竞拍列表
+export const getAuctions = async (req: RequestCustom, res: Response) => {
+  const { current = 1, pageSize = 10 } = req.query;
+
+  const query = await buildQuery(req.query, req);
 
   const total = await Auction.countDocuments(query);
   const data = await Auction.find(query)

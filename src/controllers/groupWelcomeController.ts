@@ -5,6 +5,34 @@ import Group from '../models/group';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
+
+/**
+ * 构建查询参数
+ */
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
+  const query: any = {};
+
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  }
+
+  // 支持 groupId 精确查询
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
 
 /**
  * 处理 groupWelcome 中 medias 的 signed URL
@@ -25,12 +53,10 @@ const processMedias = async (welcomeObj: any) => {
  * 获取群欢迎配置列表（按 botId 查询）
  */
 export const getGroupWelcomes = handleAsync(
-  async (req: Request, res: Response) => {
-    const { botId, groupId, current = '1', pageSize = '50' } = req.query;
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '50' } = req.query;
 
-    const query: any = {};
-    if (botId) query.bot = botId;
-    if (groupId) query.group = groupId;
+    const query = await buildQuery(req.query, req);
 
     const total = await GroupWelcome.countDocuments(query);
     const data = await GroupWelcome.find(query)
@@ -121,6 +147,7 @@ export const createGroupWelcome = handleAsync(
 
     const doc = await GroupWelcome.create({
       ...req.body,
+      proxy: req.user._id,
     });
 
     const populated = await GroupWelcome.findById(doc._id).populate(

@@ -2,34 +2,51 @@ import { Request, Response } from 'express';
 import AdRemoval from '../models/adRemoval';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
+
+/**
+ * 构建查询参数
+ */
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
+  const query: any = {};
+
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  }
+
+  // 支持 groupId 精确查询
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
+  }
+
+  if (queryParams.name) {
+    query.name = { $regex: queryParams.name, $options: 'i' };
+  }
+
+  if (queryParams.isOnline !== undefined && queryParams.isOnline !== '') {
+    query.isOnline = queryParams.isOnline === 'true';
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
 
 /**
  * 获取所有去除广告规则（支持分页和过滤）
  */
 export const getAdRemovals = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { current = '1', pageSize = '10', name, isOnline, botId } = req.query;
-    const query: any = {
-      proxy: req.user._id, // 限制只能查看自己的规则库
-    };
+    const { current = '1', pageSize = '10' } = req.query;
 
-    if (name) {
-      query.name = { $regex: name, $options: 'i' };
-    }
-
-    if (isOnline !== undefined && isOnline !== '') {
-      query.isOnline = isOnline === 'true';
-    }
-
-    // 如果传了 botId，则只看关联到该机器人的规则
-    if (botId) {
-      query.bot = botId;
-    }
-
-    // 如果传了 groupId，精确过滤到该群组的规则
-    if (req.query.groupId) {
-      query.group = req.query.groupId;
-    }
+    const query = await buildQuery(req.query, req);
 
     const adRemovals = await AdRemoval.find(query)
       .populate('group', 'title username')

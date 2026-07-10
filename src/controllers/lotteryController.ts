@@ -14,23 +14,47 @@ import { convertToTelegramHtml } from '../bot/utils/telegramHtml';
 import { replaceLotteryVariables } from '../utils/replaceVariables';
 import { formatBeijingDate } from '../utils/formatBeijingDate';
 import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
+
 // 生成短唯一码
 const generateCode = () => uuidv4().replace(/-/g, '').slice(0, 10);
 
-// 获取抽奖列表
-export const getLotteries = async (req: Request, res: Response) => {
-  const { botId, groupId, status, current = 1, pageSize = 10 } = req.query;
+/**
+ * 构建查询参数
+ */
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
-  if (botId) {
-    query.bot = botId;
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
   }
-  if (groupId) {
-    query.group = groupId;
+
+  // 支持 groupId 精确查询
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
   }
-  if (status) {
-    query.status = status;
+
+  if (queryParams.status) {
+    query.status = queryParams.status;
   }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
+
+// 获取抽奖列表
+export const getLotteries = async (req: RequestCustom, res: Response) => {
+  const { current = 1, pageSize = 10 } = req.query;
+
+  const query = await buildQuery(req.query, req);
 
   const total = await Lottery.countDocuments(query);
   const data = await Lottery.find(query)

@@ -2,47 +2,69 @@ import { Request, Response } from 'express';
 import handleAsync from '../utils/handleAsync';
 import GroupVerify from '../models/groupVerify';
 import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
+
+/**
+ * 构建查询参数
+ */
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
+  const query: any = {};
+
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  }
+
+  // 支持 groupId 精确查询
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
 
 /**
  * 获取群验证列表
  */
-const getGroupVerifies = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '10', botId, groupId } = req.query;
+const getGroupVerifies = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '10' } = req.query;
 
-  const query: any = {};
+    const query = await buildQuery(req.query, req);
 
-  if (botId) {
-    query.bot = botId;
-  }
+    const groupVerifies = await GroupVerify.find(query)
+      .populate({
+        path: 'group',
+        select: 'id title username type',
+      })
+      .populate({
+        path: 'bot',
+        select: 'botName userName',
+      })
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .exec();
 
-  if (groupId) {
-    query.group = groupId;
-  }
+    const total = await GroupVerify.countDocuments(query).exec();
 
-  const groupVerifies = await GroupVerify.find(query)
-    .populate({
-      path: 'group',
-      select: 'id title username type',
-    })
-    .populate({
-      path: 'bot',
-      select: 'botName userName',
-    })
-    .sort('-createdAt')
-    .skip((+current - 1) * +pageSize)
-    .limit(+pageSize)
-    .exec();
-
-  const total = await GroupVerify.countDocuments(query).exec();
-
-  res.json({
-    success: true,
-    data: groupVerifies,
-    total,
-    current: +current,
-    pageSize: +pageSize,
-  });
-});
+    res.json({
+      success: true,
+      data: groupVerifies,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
 
 /**
  * 创建群验证配置
@@ -58,6 +80,12 @@ const createGroupVerify = handleAsync(
 
     // 检查该群组是否已有验证配置
     const existingVerify = await GroupVerify.findOne({ bot, group });
+
+    if (existingVerify) {
+      res.status(400);
+      throw new Error('该群组已有验证配置，请编辑现有配置');
+    }
+
     if (existingVerify) {
       res.status(400);
       throw new Error('该群组已有验证配置，请先删除或编辑现有配置');

@@ -11,10 +11,12 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
+  // 支持 botId 精确查询
   if (queryParams.botId) {
     query.bot = queryParams.botId;
   }
 
+  // 支持 groupId 精确查询
   if (queryParams.groupId) {
     query.group = queryParams.groupId;
   }

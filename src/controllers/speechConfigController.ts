@@ -5,6 +5,34 @@ import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { findBotProxy } from '../bot/services/findBotProxy';
 import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
+
+/**
+ * 构建查询参数
+ */
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
+  const query: any = {};
+
+  // 支持 botId 精确查询
+  if (queryParams.botId) {
+    query.bot = queryParams.botId;
+  }
+
+  // 支持 groupId 精确查询
+  if (queryParams.groupId) {
+    query.group = queryParams.groupId;
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
 
 /**
  * GET /api/speech-configs?botId=xxx
@@ -12,17 +40,14 @@ import { RequestCustom } from '../types/user';
  */
 const getSpeechConfigs = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const { botId, groupId, current = 1, pageSize = 50 } = req.query;
+    const { current = 1, pageSize = 50 } = req.query;
 
-    if (!botId) {
+    if (!req.query.botId) {
       res.status(400);
       throw new Error('botId 不能为空');
     }
 
-    const filter: any = { bot: botId };
-    if (groupId) {
-      filter.group = groupId;
-    }
+    const filter = await buildQuery(req.query, req);
 
     const total = await SpeechConfig.countDocuments(filter);
     const data = await SpeechConfig.find(filter)
