@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Group from '../models/group';
 import Bot from '../models/bot';
+import BotUserConfig from '../models/botUserConfig';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import { isProxy } from '../middlewares/authMiddleware';
@@ -42,6 +43,120 @@ export const getGroupMembers = handleAsync(
           type: group.type,
         },
         members: paginatedMembers,
+      },
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
+
+/**
+ * 获取群组成员列表（包含积分余额）
+ * GET /groups/:id/members-with-balance?botId=xxx&current=1&pageSize=20
+ */
+export const getGroupMembersWithBalance = handleAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { botId, current = '1', pageSize } = req.query;
+
+    if (!botId) {
+      res.status(400);
+      throw new Error('缺少机器人ID参数');
+    }
+
+    console.log('req.query', req.query);
+
+    // 1. 获取群组及成员列表
+    const group = await Group.findById(id).populate({
+      path: 'botUsers',
+      select: 'id userName firstName lastName createdAt',
+    });
+
+    if (!group) {
+      res.status(404);
+      throw new Error('群组不存在');
+    }
+
+    const botUsers = (group.botUsers || []) as any[];
+    const total = botUsers.length;
+
+    // 2. 分页处理
+    const start = (+current - 1) * +pageSize;
+    const end = start + +pageSize;
+    const paginatedBotUsers = botUsers.slice(start, end);
+
+    // 3. 如果当前页没有成员，直接返回
+    if (paginatedBotUsers.length === 0) {
+      res.json({
+        success: true,
+        data: {
+          group: {
+            _id: group._id,
+            title: group.title,
+            username: group.username,
+            type: group.type,
+          },
+          members: [],
+        },
+        total,
+        current: +current,
+        pageSize: +pageSize,
+      });
+      return;
+    }
+
+    // 4. 提取当前页成员的 _id 列表
+    const botUserIds = paginatedBotUsers
+      .map((user) => user._id)
+      .filter(Boolean);
+
+    // 5. 批量查询 BotUserConfig（包含 usdt_balance）
+    const botUserConfigs = await BotUserConfig.find({
+      bot: botId,
+      botUser: { $in: botUserIds },
+    })
+      .select('botUser usdt_balance')
+      .lean()
+      .exec();
+
+    // 6. 创建 botUserId -> usdt_balance 的映射
+    const balanceMap = new Map<string, number>();
+    botUserConfigs.forEach((config) => {
+      const botUserId = config.botUser.toString();
+      balanceMap.set(botUserId, config.usdt_balance);
+    });
+
+    // 7. 合并数据：将 usdt_balance 添加到每个成员对象
+    const enrichedMembers = paginatedBotUsers.map((user) => {
+      const userId = user._id.toString();
+      const usdt_balance = balanceMap.get(userId);
+
+      return {
+        _id: user._id,
+        id: user.id,
+        userName: user.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        usdt_balance:
+          usdt_balance !== undefined && usdt_balance !== null
+            ? usdt_balance
+            : 0,
+        createdAt: user.createdAt,
+      };
+    });
+
+    // 8. 返回结果
+    res.json({
+      success: true,
+      data: {
+        group: {
+          _id: group._id,
+          title: group.title,
+          username: group.username,
+          type: group.type,
+        },
+        members: enrichedMembers,
       },
       total,
       current: +current,

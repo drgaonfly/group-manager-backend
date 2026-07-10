@@ -10,6 +10,7 @@ import {
   deleteMultipleGroups,
   verifyRequiredChannel,
   getGroupMembers,
+  getGroupMembersWithBalance,
 } from '../controllers/groupController';
 import { protect, checkPermission } from '../middlewares/authMiddleware';
 
@@ -32,6 +33,14 @@ router.get('/checkBotAdmin', protect, checkPermission, checkBotAdmin);
 
 // 获取群组成员列表
 router.get('/:id/members', protect, checkPermission, getGroupMembers);
+
+// 获取群组成员列表（包含积分余额）
+router.get(
+  '/:id/members-with-balance',
+  protect,
+  checkPermission,
+  getGroupMembersWithBalance,
+);
 
 router
   .route('/:id')
