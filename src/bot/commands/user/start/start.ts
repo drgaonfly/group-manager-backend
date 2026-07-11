@@ -1,9 +1,10 @@
-import { Composer, InlineKeyboard } from 'grammy';
 import axios from 'axios';
 import { MyContext } from '../../../types';
+import { Composer, InlineKeyboard } from 'grammy';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
+import Bot from '../../../../models/bot';
 
 import createDebug from 'debug';
 
@@ -132,11 +133,27 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           .row()
           .text('💎 订阅服务', 'subscription_start');
       }
+    } else {
+      const message = [
+        `此机器人为他人专属克隆机器人，您无法使用。`,
+        '',
+        `请点击下方按钮前往主机器人可免费克隆自己的专属机器人。`,
+        '',
+      ].join('\n');
+
+      // 公共机器人
+      const public_bot = await Bot.findOne({ type: 'public' });
+
+      await ctx.reply(message, {
+        parse_mode: 'HTML',
+        reply_markup: new InlineKeyboard().text(
+          '【🤖免费克隆专属机器人】转跳到我们的主机器人`',
+          `https://t.me/${public_bot.userName}`,
+        ),
+      });
     }
     // 非 owner 不显示任何额外按钮
   }
-
-  await ctx.reply(messageText, { reply_markup: inlineKeyboard });
 });
 
 export default startCommand;
