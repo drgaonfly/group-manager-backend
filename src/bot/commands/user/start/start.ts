@@ -106,55 +106,55 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         .row()
         .text('🤖 克隆专属机器人', 'clone_start');
     }
-  }
+  } else if (bot.type === 'private') {
+    // ── private bot ────────────────────────────────────────────────────────
+    // 只有 owner 才能看到登录按钮和订阅按钮
+    const ownerIdStr = bot.owner?.toString();
+    const currentBotUserIdStr = ctx.currentBotUser?._id?.toString();
+    const isOwner =
+      ownerIdStr && currentBotUserIdStr && ownerIdStr === currentBotUserIdStr;
 
-  // ── private bot ────────────────────────────────────────────────────────
-  // 只有 owner 才能看到登录按钮和订阅按钮
-  const ownerIdStr = bot.owner?.toString();
-  const currentBotUserIdStr = ctx.currentBotUser?._id?.toString();
-  const isOwner =
-    ownerIdStr && currentBotUserIdStr && ownerIdStr === currentBotUserIdStr;
+    if (!isOwner) {
+      // 非 owner 显示错误消息
+      const message = [
+        `此机器人为他人专属克隆机器人，您无法使用。`,
+        ``,
+        `请点击下方按钮前往主机器人可免费克隆自己的专属机器人。`,
+        ``,
+      ].join('\n');
 
-  if (!isOwner) {
-    // 非 owner 显示错误消息
-    const message = [
-      `此机器人为他人专属克隆机器人，您无法使用。`,
-      ``,
-      `请点击下方按钮前往主机器人可免费克隆自己的专属机器人。`,
-      ``,
-    ].join('\n');
+      // 公共机器人
+      const public_bot = await Bot.findOne({ type: 'public' });
 
-    // 公共机器人
-    const public_bot = await Bot.findOne({ type: 'public' });
+      await ctx.reply(message, {
+        parse_mode: 'HTML',
+        reply_markup: new InlineKeyboard().url(
+          '【🤖免费克隆专属机器人】转跳到我们的主机器人',
+          `https://t.me/${public_bot.userName}`,
+        ),
+      });
+      return;
+    }
 
-    await ctx.reply(message, {
-      parse_mode: 'HTML',
-      reply_markup: new InlineKeyboard().url(
-        '【🤖免费克隆专属机器人】转跳到我们的主机器人',
-        `https://t.me/${public_bot.userName}`,
-      ),
-    });
-    return;
-  }
-
-  // owner 显示登录和订阅按钮
-  const jwt = await getBotJwt(bot.token);
-  if (jwt) {
-    const redirect = encodeURIComponent(`/bots/${bot._id}`);
-    const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
-      jwt,
-    )}&redirect=${redirect}`;
-    const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
-      jwt,
-    )}&redirect=${redirect}`;
-    debug('[start] webappLoginUrl:', webappLoginUrl);
-    debug('[start] urlLoginUrl:', urlLoginUrl);
-    inlineKeyboard
-      .row()
-      .webApp('🖥️ 登录管理后台(WebApp)', webappLoginUrl)
-      .url('🌐 登录管理后台(URL)', urlLoginUrl)
-      .row()
-      .text('💎 订阅服务', 'subscription_start');
+    // owner 显示登录和订阅按钮
+    const jwt = await getBotJwt(bot.token);
+    if (jwt) {
+      const redirect = encodeURIComponent(`/bots/${bot._id}`);
+      const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+        jwt,
+      )}&redirect=${redirect}`;
+      const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+        jwt,
+      )}&redirect=${redirect}`;
+      debug('[start] webappLoginUrl:', webappLoginUrl);
+      debug('[start] urlLoginUrl:', urlLoginUrl);
+      inlineKeyboard
+        .row()
+        .webApp('🖥️ 登录管理后台(WebApp)', webappLoginUrl)
+        .url('🌐 登录管理后台(URL)', urlLoginUrl)
+        .row()
+        .text('💎 订阅服务', 'subscription_start');
+    }
   }
 
   // 发送欢迎消息
