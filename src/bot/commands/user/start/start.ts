@@ -129,7 +129,7 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       await ctx.reply(message, {
         parse_mode: 'HTML',
         reply_markup: new InlineKeyboard().url(
-          '【🤖免费克隆专属机器人】',
+          '🤖免费克隆专属机器人',
           `https://t.me/${public_bot.userName}`,
         ),
       });
