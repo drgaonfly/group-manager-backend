@@ -70,11 +70,11 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
 
   // ── 构建回复 ───────────────────────────────────────────────────────────────
   const messageText = [
-    `嗨！ ${bot.botName} 能幫助你方便地安全管理你的群組，是 TG 上最完善的機器人！`,
+    `嗨！ ${bot.botName} 能帮助你方便地安全管理你的群组，是 TG 上最完善的机器人！`,
     ``,
-    `將我添加到超級群組並授予管理員權限，這樣我才能進行操作！`,
+    `将我添加到超级群组并授予管理员权限，这样我才能进行操作！`,
     ``,
-    `點擊 /help 查看所有指令及使用方法。`,
+    `点击 /help 查看所有指令及使用方法。`,
   ].join('\n');
 
   const inlineKeyboard = new InlineKeyboard().url(
@@ -101,8 +101,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       debug('[start] urlLoginUrl:', urlLoginUrl);
       inlineKeyboard
         .row()
-        .webApp('🖥️ 访问管理后台(WebApp)', webappLoginUrl)
-        .url('🌐 访问管理后台(URL)', urlLoginUrl)
+        .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+        .url('🌐 网页后台设置', urlLoginUrl)
         .row()
         .text('🤖 克隆专属机器人', 'clone_start');
     }
@@ -150,8 +150,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       debug('[start] urlLoginUrl:', urlLoginUrl);
       inlineKeyboard
         .row()
-        .webApp('🖥️ 登录管理后台(WebApp)', webappLoginUrl)
-        .url('🌐 登录管理后台(URL)', urlLoginUrl)
+        .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+        .url('🌐 网页后台设置', urlLoginUrl)
         .row()
         .text('💎 订阅服务', 'subscription_start');
     }
