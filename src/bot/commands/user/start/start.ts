@@ -46,6 +46,21 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     }
   }
 
+  // ── 群组中显示提示消息 ─────────────────────────────────────────────────────
+  if (chatType === 'group' || chatType === 'supergroup') {
+    const messageText = [`请前往机器人聊天页面呼出设置，避免后台链接泄露`].join(
+      '\n',
+    );
+
+    const inlineKeyboard = new InlineKeyboard().url(
+      '🔗 转跳私聊设置',
+      `https://t.me/${bot.userName}`,
+    );
+
+    await ctx.reply(messageText, { reply_markup: inlineKeyboard });
+    return;
+  }
+
   // ── 初始化 session ─────────────────────────────────────────────────────────
   if (!bot.session) {
     const session = await startClientAndGetSession(bot.token);
