@@ -15,7 +15,6 @@ import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import proxyResolver from './middlewares/proxyResolver';
 import { adRemovalResolver } from './middlewares/adRemovalResolver';
 import { serviceMessageDeleter } from './middlewares/serviceMessageDeleter';
-import { groupAdminPrompt } from './middlewares/groupAdminPrompt';
 import { MyContext } from './types';
 import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
@@ -97,7 +96,6 @@ export const setupBot = (token: string) => {
   bot.use(botUserResolver);
   bot.use(botUserConfigResolver);
   bot.use(groupResolver);
-  bot.use(groupAdminPrompt);
   bot.use(proxyResolver);
   bot.use(errorHandler);
 
