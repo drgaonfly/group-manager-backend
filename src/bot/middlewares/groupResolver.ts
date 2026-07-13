@@ -165,7 +165,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         debug(`✅ 已创建频道记录: ${chatTitle} (${chatId})`);
         // 频道中不发送欢迎消息，因为机器人通常没有发送权限
       } else {
-        await ctx.reply('感谢您把我添加到贵群!');
+        await ctx.reply('请把我添加为管理员才能正常使用!');
       }
     } else {
       // 处理群组升级事件
