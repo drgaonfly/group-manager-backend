@@ -2,7 +2,7 @@ import { Composer } from 'grammy';
 import { createConversation, Conversation } from '@grammyjs/conversations';
 import { MyContext } from '../../../types';
 import { cancelKeyboard } from '../../../menus/inline/cacel';
-import BotUser from '../../../../models/botUser';
+import { IBotUser } from '../../../../models/botUser';
 import { createBotWithUser } from '../../../../utils/createBotWithUser';
 import createDebug from 'debug';
 
@@ -13,6 +13,7 @@ const TIMEOUT = 5 * 60 * 1000;
 async function cloneBotConversation(
   conversation: Conversation<MyContext>,
   ctx: MyContext,
+  { botUser }: { botUser: IBotUser },
 ) {
   debug('等待用户输入token或取消');
 
@@ -44,18 +45,11 @@ async function cloneBotConversation(
       ].join('\n'),
       { parse_mode: 'HTML', reply_markup: cancelKeyboard },
     );
-    return await cloneBotConversation(conversation, ctx);
+    return await cloneBotConversation(conversation, ctx, { botUser });
   }
 
   debug('收到用户token:', token);
   await ctx.reply('✅ 已收到您的机器人Token，正在为您处理，请稍候...');
-
-  // 获取操作者 BotUser（conversation 内 ctx 可能丢失，补查一次）
-  const botUser =
-    ctx.currentBotUser ||
-    (await BotUser.findOne({
-      id: ctx.from?.id?.toString(),
-    }));
 
   const result2 = await createBotWithUser(token, ctx.currentBot, botUser);
 
@@ -127,7 +121,9 @@ cloneConversationComposer.callbackQuery('clone_start', async (ctx) => {
     { parse_mode: 'HTML', reply_markup: cancelKeyboard },
   );
 
-  await ctx.conversation.enter('cloneBotConversation');
+  await ctx.conversation.enter('cloneBotConversation', {
+    botUser: ctx.currentBotUser,
+  });
   await ctx.answerCallbackQuery();
 });
 
