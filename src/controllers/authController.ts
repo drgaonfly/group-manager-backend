@@ -187,12 +187,22 @@ const refreshToken = handleAsync(async (req: Request, res: Response) => {
     const decoded = jwt.verify(
       refreshToken,
       process.env.REFRESH_JWT_SECRET as string,
-    ) as DecodedToken;
-    const newRefreshToken = generateRefreshToken(decoded.sub);
+    ) as jwt.JwtPayload;
+
+    // 续签时把授权标记字段带回新 token
+    const extra =
+      decoded.authorizedBotUserId && decoded.grantedBotId
+        ? {
+            authorizedBotUserId: decoded.authorizedBotUserId,
+            grantedBotId: decoded.grantedBotId,
+          }
+        : undefined;
+
+    const newRefreshToken = generateRefreshToken(decoded.sub, 'user', extra);
 
     res.json({
       success: true,
-      token: generateToken(decoded.sub),
+      token: generateToken(decoded.sub, 'user', extra),
       refreshToken: newRefreshToken,
     });
   } catch (err) {
@@ -430,7 +440,7 @@ const botLogin = handleAsync(async (req: Request, res: Response) => {
     : undefined;
 
   const token = generateToken(user._id, 'user', extra);
-  const refreshToken = generateRefreshToken(user._id.toString());
+  const refreshToken = generateRefreshToken(user._id.toString(), 'user', extra);
 
   res.json({
     success: true,

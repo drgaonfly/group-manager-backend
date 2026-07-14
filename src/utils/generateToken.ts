@@ -22,8 +22,17 @@ const generateToken = (
   });
 };
 
-const generateRefreshToken = (id: string, type: TokenType = 'user'): string => {
-  const payload = { sub: id, iat: Math.floor(Date.now() / 1000), type };
+const generateRefreshToken = (
+  id: string,
+  type: TokenType = 'user',
+  extra?: Record<string, any>,
+): string => {
+  const payload = {
+    sub: id,
+    iat: Math.floor(Date.now() / 1000),
+    type,
+    ...extra,
+  };
 
   return jwt.sign(payload, process.env.REFRESH_JWT_SECRET as string, {
     expiresIn: process.env.REFRESH_JWT_EXPIRE,
