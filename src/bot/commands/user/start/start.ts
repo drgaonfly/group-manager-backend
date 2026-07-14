@@ -153,7 +153,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         .webApp('🖥️ 小程序后台设置', webappLoginUrl)
         .url('🌐 网页后台设置', urlLoginUrl)
         .row()
-        .text('💎 订阅服务', 'subscription_start');
+        .text('💎 订阅服务', 'subscription_start')
+        .text('🔐 授权他人管理', `authorize_${ctx.currentBot._id}`);
     }
   }
 

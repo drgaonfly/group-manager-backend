@@ -1,5 +1,6 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
+import { isBotOwner } from '../../../middlewares/checkBotOwner';
 import Subscription from '../../../../models/subscription';
 import { sendPaymentCard, ORDER_TIMEOUT_MINUTES } from './helpers';
 import createDebug from 'debug';
@@ -13,7 +14,7 @@ const plans = [
 
 const payCallback = new Composer<MyContext>();
 
-payCallback.callbackQuery('subscription_pay', async (ctx) => {
+payCallback.callbackQuery('subscription_pay', isBotOwner, async (ctx) => {
   await ctx.answerCallbackQuery();
 
   const bot = ctx.currentBot;
@@ -24,16 +25,6 @@ payCallback.callbackQuery('subscription_pay', async (ctx) => {
   // public 机器人不需要订阅功能
   if (bot.type === 'public') {
     await ctx.answerCallbackQuery('❌ 公共机器人不需要订阅');
-    return;
-  }
-
-  const ownerIdStr = bot.owner?.toString();
-  const currentBotUserIdStr = botUser._id?.toString();
-  const isOwner =
-    ownerIdStr && currentBotUserIdStr && ownerIdStr === currentBotUserIdStr;
-
-  if (!isOwner) {
-    await ctx.answerCallbackQuery('❌ 只有机器人所有者可以使用此功能');
     return;
   }
 
