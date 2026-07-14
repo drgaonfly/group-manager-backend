@@ -63,6 +63,20 @@ const protect = handleAsync(
 
         req.user = user;
 
+        // authorizer 登录校验：token 里有 authorizedBotUserId 说明是被授权人
+        // 每次请求实时查库，确认授权是否还有效
+        if (decoded.authorizedBotUserId && decoded.grantedBotId) {
+          const grantedBot = await Bot.findById(decoded.grantedBotId).select(
+            'authorized_users',
+          );
+          const stillAuthorized = grantedBot?.authorized_users?.some(
+            (id: any) => id.toString() === decoded.authorizedBotUserId,
+          );
+          if (!stillAuthorized) {
+            throw new Error('授权已被撤销，请联系机器人拥有者重新授权');
+          }
+        }
+
         // 设置 proxyUser：默认使用当前用户，如果是管理员操作代理用户的 bot，则使用 bot 的 owner
         req.proxyUser = user;
 

@@ -13,13 +13,17 @@ const debug = createDebug('bot:start');
 
 /**
  * 用 Bot Token 换取后台 JWT
- * 在 Bot 端（可信环境）调用，不对外暴露
+ * authorizedBotUserId: 被授权人的 BotUser._id，传入时生成带授权标记的 token
  */
-async function getBotJwt(botToken: string): Promise<string | null> {
+async function getBotJwt(
+  botToken: string,
+  authorizedBotUserId?: string,
+): Promise<string | null> {
   try {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:5010';
     const res = await axios.post(`${backendUrl}/api/auth/bot-login`, {
       botToken,
+      ...(authorizedBotUserId ? { authorizedBotUserId } : {}),
     });
     return res.data?.token ?? null;
   } catch (e: any) {
@@ -111,11 +115,58 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     // 只有 owner 才能看到登录按钮和订阅按钮
     const ownerIdStr = bot.owner?.toString();
     const currentBotUserIdStr = ctx.currentBotUser?._id?.toString();
+
     const isOwner =
       ownerIdStr && currentBotUserIdStr && ownerIdStr === currentBotUserIdStr;
 
-    if (!isOwner) {
+    const jwt = await getBotJwt(bot.token);
+
+    if (isOwner) {
       // 非 owner 显示错误消息
+
+      // owner 显示登录和订阅按钮
+      if (jwt) {
+        const redirect = encodeURIComponent(`/bots/${bot._id}`);
+        const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+          jwt,
+        )}&redirect=${redirect}`;
+        const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+          jwt,
+        )}&redirect=${redirect}`;
+        debug('[start] webappLoginUrl:', webappLoginUrl);
+        debug('[start] urlLoginUrl:', urlLoginUrl);
+        inlineKeyboard
+          .row()
+          .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+          .url('🌐 网页后台设置', urlLoginUrl)
+          .row()
+          .text('💎 订阅服务', 'subscription_start')
+          .text('🔐 授权他人管理', `authorize_${ctx.currentBot._id}`);
+      }
+    } else if (
+      ctx.currentBot.authorized_users.some(
+        (id: any) => id.toString() === ctx.currentBotUser._id.toString(),
+      )
+    ) {
+      // 是不是 authorizer，传入 authorizedBotUserId 生成带授权标记的 token
+      const jwt = await getBotJwt(bot.token, ctx.currentBotUser._id.toString());
+      if (jwt) {
+        const redirect = encodeURIComponent(`/bots/${bot._id}`);
+        const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+          jwt,
+        )}&redirect=${redirect}`;
+        const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+          jwt,
+        )}&redirect=${redirect}`;
+        debug('[start] webappLoginUrl:', webappLoginUrl);
+        debug('[start] urlLoginUrl:', urlLoginUrl);
+        inlineKeyboard
+          .row()
+          .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+          .url('🌐 网页后台设置', urlLoginUrl)
+          .row();
+      }
+    } else {
       const message = [
         `此机器人为他人专属克隆机器人，您无法使用。`,
         ``,
@@ -134,27 +185,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         ),
       });
       return;
-    }
-
-    // owner 显示登录和订阅按钮
-    const jwt = await getBotJwt(bot.token);
-    if (jwt) {
-      const redirect = encodeURIComponent(`/bots/${bot._id}`);
-      const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
-        jwt,
-      )}&redirect=${redirect}`;
-      const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
-        jwt,
-      )}&redirect=${redirect}`;
-      debug('[start] webappLoginUrl:', webappLoginUrl);
-      debug('[start] urlLoginUrl:', urlLoginUrl);
-      inlineKeyboard
-        .row()
-        .webApp('🖥️ 小程序后台设置', webappLoginUrl)
-        .url('🌐 网页后台设置', urlLoginUrl)
-        .row()
-        .text('💎 订阅服务', 'subscription_start')
-        .text('🔐 授权他人管理', `authorize_${ctx.currentBot._id}`);
     }
   }
 

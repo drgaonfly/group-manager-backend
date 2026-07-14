@@ -398,9 +398,13 @@ export const disable2FA = handleAsync(
  * POST /api/auth/bot-login
  * 用 Bot Token 换取后台 JWT，供 Telegram Bot /start 构造自动登录链接用。
  * 无需密码，凭 Bot Token 验证身份（Bot Token 本身就是可信凭证，只有 bot.user 才持有）。
+ *
+ * body.authorizedBotUserId: 可选，被授权人的 BotUser._id（MongoDB）
+ *   - 不传：owner 登录，JWT 无额外限制
+ *   - 传入：authorizer 登录，JWT 里带上身份标记，后端每次请求实时校验授权是否还有效
  */
 const botLogin = handleAsync(async (req: Request, res: Response) => {
-  const { botToken } = req.body;
+  const { botToken, authorizedBotUserId } = req.body;
 
   if (!botToken) {
     res.status(400);
@@ -420,7 +424,12 @@ const botLogin = handleAsync(async (req: Request, res: Response) => {
     throw new Error('对应后台账号不存在或已禁用');
   }
 
-  const token = generateToken(user._id);
+  // authorizer 登录：JWT payload 里带上身份标记，供 protect 实时校验
+  const extra = authorizedBotUserId
+    ? { authorizedBotUserId, grantedBotId: bot._id.toString() }
+    : undefined;
+
+  const token = generateToken(user._id, 'user', extra);
   const refreshToken = generateRefreshToken(user._id.toString());
 
   res.json({

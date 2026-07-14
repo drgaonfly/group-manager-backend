@@ -4,8 +4,17 @@ import jwt from 'jsonwebtoken';
 type TokenType = 'user' | 'customer';
 
 // 用户和客户使用不同的加密算法
-const generateToken = (id: string, type: TokenType = 'user'): string => {
-  const payload = { sub: id, iat: Math.floor(Date.now() / 1000), type };
+const generateToken = (
+  id: string,
+  type: TokenType = 'user',
+  extra?: Record<string, any>,
+): string => {
+  const payload = {
+    sub: id,
+    iat: Math.floor(Date.now() / 1000),
+    type,
+    ...extra,
+  };
 
   return jwt.sign(payload, process.env.JWT_SECRET as string, {
     expiresIn: process.env.JWT_EXPIRE,
