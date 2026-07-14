@@ -5,6 +5,7 @@ import { cancelKeyboard } from '../../../menus/inline/cacel';
 import { IBot } from '../../../../models/bot';
 import { IBotUser } from '../../../../models/botUser';
 import { createBotWithUser } from '../../../../utils/createBotWithUser';
+import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:clone');
@@ -55,13 +56,17 @@ async function cloneBotConversation(
   const result2 = await createBotWithUser(token, bot, botUser);
 
   if (result2.success) {
-    const { loginUrl } = result2.account!;
+    const { loginUrl, userName, disabledAt } = result2.account!;
     if (loginUrl) {
       await ctx.reply(
         [
           '✅ <b>克隆成功！</b>',
           '',
-          '您的专属机器人已创建完成，点击下方按钮即可直接登录管理后台：',
+          `您的专属机器人已创建完成, 已赠送${process.env.DEFAULT_FREE_DAYS}天试用期效, 请点击下方用户名打开您的机器人并添加至群组设置为管理员来管理您的群组！`,
+          '',
+          `您的机器人：${userName}`,
+          '',
+          `有效期: ${formatBeijingDate(disabledAt)}`,
           '',
           `🌐 <a href="${loginUrl}">🖥️ 登录管理后台</a>`,
           '',

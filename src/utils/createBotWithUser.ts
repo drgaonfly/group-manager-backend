@@ -153,6 +153,8 @@ export async function createBotWithUser(
         password: plainPassword,
         newBot_id: newBot._id,
         loginUrl,
+        userName: newBot.userName,
+        disabledAt: newBot.disabledAt,
       },
     };
   } catch (e: any) {
