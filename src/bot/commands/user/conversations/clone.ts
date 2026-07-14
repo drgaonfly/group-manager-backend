@@ -64,7 +64,7 @@ async function cloneBotConversation(
           '',
           `您的专属机器人已创建完成, 已赠送${process.env.DEFAULT_FREE_DAYS}天试用期效, 请点击下方用户名打开您的机器人并添加至群组设置为管理员来管理您的群组！`,
           '',
-          `您的机器人：${userName}`,
+          `您的机器人：@${userName}`,
           '',
           `有效期: ${formatBeijingDate(disabledAt)}`,
           '',
