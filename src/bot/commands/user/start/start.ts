@@ -4,6 +4,7 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { startClientAndGetSession } from '../../../services/gramClient';
 import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
+import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import Bot from '../../../../models/bot';
 
 import createDebug from 'debug';
@@ -77,6 +78,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     `嗨！ ${bot.botName} 能帮助你方便地安全管理你的群组，是 TG 上最完善的机器人！`,
     ``,
     `将我添加到超级群组并授予管理员权限，这样我才能进行操作！`,
+    ``,
+    `有效期截至 ${formatBeijingDate(bot.disabledAt)}`,
     ``,
     `点击 /help 查看所有指令及使用方法。`,
   ].join('\n');

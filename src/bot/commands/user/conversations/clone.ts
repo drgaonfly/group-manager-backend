@@ -2,8 +2,10 @@ import { Composer } from 'grammy';
 import { createConversation, Conversation } from '@grammyjs/conversations';
 import { MyContext } from '../../../types';
 import { cancelKeyboard } from '../../../menus/inline/cacel';
-import BotUser from '../../../../models/botUser';
+import { IBot } from '../../../../models/bot';
+import { IBotUser } from '../../../../models/botUser';
 import { createBotWithUser } from '../../../../utils/createBotWithUser';
+import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:clone');
@@ -13,6 +15,7 @@ const TIMEOUT = 5 * 60 * 1000;
 async function cloneBotConversation(
   conversation: Conversation<MyContext>,
   ctx: MyContext,
+  { bot, botUser }: { bot: IBot; botUser: IBotUser },
 ) {
   debug('等待用户输入token或取消');
 
@@ -44,29 +47,26 @@ async function cloneBotConversation(
       ].join('\n'),
       { parse_mode: 'HTML', reply_markup: cancelKeyboard },
     );
-    return await cloneBotConversation(conversation, ctx);
+    return await cloneBotConversation(conversation, ctx, { bot, botUser });
   }
 
   debug('收到用户token:', token);
   await ctx.reply('✅ 已收到您的机器人Token，正在为您处理，请稍候...');
 
-  // 获取操作者 BotUser（conversation 内 ctx 可能丢失，补查一次）
-  const botUser =
-    ctx.currentBotUser ||
-    (await BotUser.findOne({
-      id: ctx.from?.id?.toString(),
-    }));
-
-  const result2 = await createBotWithUser(token, ctx.currentBot, botUser);
+  const result2 = await createBotWithUser(token, bot, botUser);
 
   if (result2.success) {
-    const { loginUrl } = result2.account!;
+    const { loginUrl, userName, disabledAt } = result2.account!;
     if (loginUrl) {
       await ctx.reply(
         [
           '✅ <b>克隆成功！</b>',
           '',
-          '您的专属机器人已创建完成，点击下方按钮即可直接登录管理后台：',
+          `您的专属机器人已创建完成, 已赠送${process.env.DEFAULT_FREE_DAYS}天试用期效, 请点击下方用户名打开您的机器人并添加至群组设置为管理员来管理您的群组！`,
+          '',
+          `您的机器人：@${userName}`,
+          '',
+          `有效期: ${formatBeijingDate(disabledAt)}`,
           '',
           `🌐 <a href="${loginUrl}">🖥️ 登录管理后台</a>`,
           '',
@@ -127,7 +127,10 @@ cloneConversationComposer.callbackQuery('clone_start', async (ctx) => {
     { parse_mode: 'HTML', reply_markup: cancelKeyboard },
   );
 
-  await ctx.conversation.enter('cloneBotConversation');
+  await ctx.conversation.enter('cloneBotConversation', {
+    bot: ctx.currentBot,
+    botUser: ctx.currentBotUser,
+  });
   await ctx.answerCallbackQuery();
 });
 
