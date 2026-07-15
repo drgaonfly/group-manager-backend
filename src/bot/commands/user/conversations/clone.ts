@@ -17,75 +17,127 @@ async function cloneBotConversation(
   ctx: MyContext,
   { bot, botUser }: { bot: IBot; botUser: IBotUser },
 ) {
-  debug('等待用户输入token或取消');
+  debug('进入克隆机器人流程');
 
-  const result = await conversation.waitFor(
-    ['message:text', 'callback_query:data'],
-    { maxMilliseconds: TIMEOUT },
-  );
+  while (true) {
+    let result;
 
-  // 处理取消
-  if (
-    (result.message && result.message.text === '取消') ||
-    (result.callbackQuery &&
-      (result.callbackQuery.data === 'close' ||
-        result.callbackQuery.data === 'cancel'))
-  ) {
-    await ctx.reply('已取消克隆操作。');
-    return;
-  }
+    try {
+      debug('等待用户输入token或取消');
 
-  // 校验 token 格式
-  const token = result.message?.text?.trim();
-  if (!token || !/^\d{8,}:[A-Za-z0-9_-]{35,}$/.test(token)) {
-    await ctx.reply(
-      [
-        '❗ <b>请输入正确的机器人Token格式</b>，例如：',
-        '<code>6422100000:AAFMTBWko3t7gA3mN5SRYp5FuYcxxxxxxxxx</code>',
-        '',
-        '如需取消，请点击下方按钮。',
-      ].join('\n'),
-      { parse_mode: 'HTML', reply_markup: cancelKeyboard },
-    );
-    return await cloneBotConversation(conversation, ctx, { bot, botUser });
-  }
-
-  debug('收到用户token:', token);
-  await ctx.reply('✅ 已收到您的机器人Token，正在为您处理，请稍候...');
-
-  const result2 = await createBotWithUser(token, bot, botUser);
-
-  if (result2.success) {
-    const { loginUrl, userName, disabledAt } = result2.account!;
-    if (loginUrl) {
-      await ctx.reply(
-        [
-          '✅ <b>克隆成功！</b>',
-          '',
-          `您的专属机器人已创建完成, 已赠送${process.env.DEFAULT_FREE_DAYS}天试用期效, 请点击下方用户名打开您的机器人并添加至群组设置为管理员来管理您的群组！`,
-          '',
-          `您的机器人：@${userName}`,
-          '',
-          `有效期: ${formatBeijingDate(disabledAt)}`,
-          '',
-          `🌐 <a href="${loginUrl}">🖥️ 登录管理后台</a>`,
-          '',
-          '� 机器人正在初始化，稍后即可正常使用。',
-        ].join('\n'),
-        { parse_mode: 'HTML' },
+      result = await conversation.waitFor(
+        ['message:text', 'callback_query:data'],
+        { maxMilliseconds: TIMEOUT },
       );
-    } else {
-      await ctx.reply(
-        [
-          '✅ <b>克隆成功！</b>',
-          '',
-          '您的专属机器人已创建完成，但登录链接生成失败，请联系管理员。',
-        ].join('\n'),
-        { parse_mode: 'HTML' },
-      );
+    } catch (e: any) {
+      debug('等待输入超时:', e);
+
+      await ctx.reply('⏰ 克隆操作已超时，请重新开始。');
+      return;
     }
-  } else {
-    await ctx.reply(`❌ 克隆失败：${result2.message || '请稍后再试'}`);
+
+    // ==========================
+    // 处理取消
+    // ==========================
+    if (result.callbackQuery?.data === 'close') {
+      await ctx.reply('已取消克隆操作。');
+      return;
+    }
+
+    // ==========================
+    // 获取 token
+    // ==========================
+    const token = result.message?.text?.trim();
+
+    // ==========================
+    // token格式验证
+    // ==========================
+    if (!token || !/^\d{8,}:[A-Za-z0-9_-]{35,}$/.test(token)) {
+      await ctx.reply(
+        [
+          '❗ <b>请输入正确的机器人Token格式</b>',
+          '',
+          '例如：',
+          '<code>6422100000:AAFMTBWko3t7gA3mN5SRYp5FuYcxxxxxxxxx</code>',
+          '',
+          '如需取消，请点击下方按钮。',
+        ].join('\n'),
+        {
+          parse_mode: 'HTML',
+          reply_markup: cancelKeyboard,
+        },
+      );
+
+      // 继续等待下一次输入
+      continue;
+    }
+
+    debug('收到用户token:', token);
+
+    await ctx.reply('✅ 已收到您的机器人Token，正在为您处理，请稍候...');
+
+    // ==========================
+    // 创建机器人
+    // ==========================
+    let result2;
+
+    try {
+      result2 = await createBotWithUser(token, bot, botUser);
+    } catch (e: any) {
+      debug('createBotWithUser异常:', e);
+
+      await ctx.reply(`❌ 克隆失败：${e.message || '未知错误'}`);
+
+      return;
+    }
+
+    // ==========================
+    // 创建成功
+    // ==========================
+    if (result2.success) {
+      const { loginUrl, userName, disabledAt } = result2.account!;
+
+      if (loginUrl) {
+        await ctx.reply(
+          [
+            '✅ <b>克隆成功！</b>',
+            '',
+            `您的专属机器人已创建完成，已赠送 ${process.env.DEFAULT_FREE_DAYS} 天试用期。`,
+            '',
+            '请点击下方用户名打开您的机器人，并添加至群组设置为管理员。',
+            '',
+            `您的机器人：@${userName}`,
+            '',
+            `有效期：${formatBeijingDate(disabledAt)}`,
+            '',
+            `🌐 <a href="${loginUrl}">🖥️ 登录管理后台</a>`,
+            '',
+            '🤖 机器人正在初始化，稍后即可正常使用。',
+          ].join('\n'),
+          {
+            parse_mode: 'HTML',
+          },
+        );
+      } else {
+        await ctx.reply(
+          [
+            '✅ <b>克隆成功！</b>',
+            '',
+            '您的专属机器人已创建完成。',
+            '',
+            '但是登录链接生成失败，请联系管理员。',
+          ].join('\n'),
+          {
+            parse_mode: 'HTML',
+          },
+        );
+      }
+    } else {
+      await ctx.reply(`❌ 克隆失败：${result2.message || '请稍后再试'}`);
+    }
+
+    // 完成退出conversation
+    return;
   }
 }
 
