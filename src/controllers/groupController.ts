@@ -2,12 +2,54 @@ import { Request, Response } from 'express';
 import Group from '../models/group';
 import Bot from '../models/bot';
 import BotUserConfig from '../models/botUserConfig';
+import BotUser from '../models/botUser';
 import handleAsync from '../utils/handleAsync';
 import { IdGen } from '../utils/idGen';
 import { isProxy } from '../middlewares/authMiddleware';
 import { RequestCustom } from '../types/user';
 import { setupBot } from '../bot/botSetup';
 import { extractChatUsername } from '../utils/extractChannelTarget';
+
+// 构建查询参数
+const buildQuery = (queryParams: any, req: RequestCustom): any => {
+  const query: any = {};
+
+  // title（用于 Group 查询）
+  if (queryParams.title) {
+    query.title = queryParams.title;
+  }
+
+  // isOnline（用于 Group 查询）
+  if (queryParams.isOnline) {
+    query.isOnline = queryParams.isOnline;
+  }
+
+  // keyword 模糊搜索（用于 BotUser 查询）
+  if (
+    queryParams.keyword &&
+    typeof queryParams.keyword === 'string' &&
+    queryParams.keyword.trim()
+  ) {
+    const kw = queryParams.keyword.trim();
+    query.$or = [
+      { userName: { $regex: kw, $options: 'i' } },
+      { firstName: { $regex: kw, $options: 'i' } },
+      { lastName: { $regex: kw, $options: 'i' } },
+    ];
+  }
+
+  // groupBotUsers（用于 BotUser 查询，限定查询范围）
+  if (queryParams.groupBotUsers && Array.isArray(queryParams.groupBotUsers)) {
+    query._id = { $in: queryParams.groupBotUsers };
+  }
+
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
+  return query;
+};
 
 /**
  * 获取群组成员列表
@@ -53,12 +95,12 @@ export const getGroupMembers = handleAsync(
 
 /**
  * 获取群组成员列表（包含积分余额）
- * GET /groups/:id/members-with-balance?botId=xxx&current=1&pageSize=20
+ * GET /groups/:id/members-with-balance?botId=xxx&current=1&pageSize=20&keyword=xxx
  */
 export const getGroupMembersWithBalance = handleAsync(
-  async (req: Request, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
-    const { botId, current = '1', pageSize } = req.query;
+    const { botId, current = '1', pageSize, keyword } = req.query;
 
     if (!botId) {
       res.status(400);
@@ -67,26 +109,36 @@ export const getGroupMembersWithBalance = handleAsync(
 
     console.log('req.query', req.query);
 
-    // 1. 获取群组及成员列表
-    const group = await Group.findById(id).populate({
-      path: 'botUsers',
-      select: 'id userName firstName lastName createdAt',
-    });
+    // 1. 获取群组基本信息（不 populate）
+    const group = await Group.findById(id).select(
+      'botUsers title username type',
+    );
 
     if (!group) {
       res.status(404);
       throw new Error('群组不存在');
     }
 
-    const botUsers = (group.botUsers || []) as any[];
-    const total = botUsers.length;
+    // 2. 构造查询条件（使用统一的 buildQuery）
+    const query = buildQuery(
+      {
+        groupBotUsers: group.botUsers,
+        keyword,
+      },
+      req,
+    );
 
-    // 2. 分页处理
-    const start = (+current - 1) * +pageSize;
-    const end = start + +pageSize;
-    const paginatedBotUsers = botUsers.slice(start, end);
+    // 3. 查询总数
+    const total = await BotUser.countDocuments(query);
 
-    // 3. 如果当前页没有成员，直接返回
+    // 4. 分页查询
+    const paginatedBotUsers = await BotUser.find(query)
+      .select('id userName firstName lastName createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .lean();
+
+    // 5. 如果当前页没有成员，直接返回
     if (paginatedBotUsers.length === 0) {
       res.json({
         success: true,
@@ -106,12 +158,12 @@ export const getGroupMembersWithBalance = handleAsync(
       return;
     }
 
-    // 4. 提取当前页成员的 _id 列表
+    // 6. 提取当前页成员的 _id 列表
     const botUserIds = paginatedBotUsers
-      .map((user) => user._id)
+      .map((user: any) => user._id)
       .filter(Boolean);
 
-    // 5. 批量查询 BotUserConfig（包含 usdt_balance）
+    // 7. 批量查询 BotUserConfig（包含 usdt_balance）
     const botUserConfigs = await BotUserConfig.find({
       bot: botId,
       botUser: { $in: botUserIds },
@@ -120,15 +172,15 @@ export const getGroupMembersWithBalance = handleAsync(
       .lean()
       .exec();
 
-    // 6. 创建 botUserId -> usdt_balance 的映射
+    // 8. 创建 botUserId -> usdt_balance 的映射
     const balanceMap = new Map<string, number>();
-    botUserConfigs.forEach((config) => {
+    botUserConfigs.forEach((config: any) => {
       const botUserId = config.botUser.toString();
       balanceMap.set(botUserId, config.usdt_balance);
     });
 
-    // 7. 合并数据：将 usdt_balance 添加到每个成员对象
-    const enrichedMembers = paginatedBotUsers.map((user) => {
+    // 9. 合并数据：将 usdt_balance 添加到每个成员对象
+    const enrichedMembers = paginatedBotUsers.map((user: any) => {
       const userId = user._id.toString();
       const usdt_balance = balanceMap.get(userId);
 
@@ -146,7 +198,7 @@ export const getGroupMembersWithBalance = handleAsync(
       };
     });
 
-    // 8. 返回结果
+    // 10. 返回结果
     res.json({
       success: true,
       data: {
@@ -239,28 +291,6 @@ export const verifyRequiredChannelCore = async (
       message: `验证失败: ${error.message || '未知错误'}`,
     };
   }
-};
-
-// 构建查询参数
-const buildQuery = (queryParams: any, req: RequestCustom): any => {
-  const query: any = {};
-
-  // title
-  if (queryParams.title) {
-    query.title = queryParams.title;
-  }
-
-  // isOnline
-  if (queryParams.isOnline) {
-    query.isOnline = queryParams.isOnline;
-  }
-
-  // 代理用户只看自己的；管理员可跨代理查看
-  if (isProxy(req.user) && !req.user.isAdmin) {
-    query.proxy = req.user._id;
-  }
-
-  return query;
 };
 
 // 获取所有群组
