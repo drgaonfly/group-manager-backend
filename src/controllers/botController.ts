@@ -301,16 +301,34 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
   const botObj = bot.toObject ? bot.toObject() : bot;
 
-  // 有 tgUserId 时，只返回该用户是 creator 或 operator 的群组
+  // 有 tgUserId 时，根据机器人类型和用户身份过滤群组
   if (tgUserId) {
-    (botObj as any).groups = (botObj.groups || []).filter((g: any) => {
-      const creatorId =
-        typeof g.creator === 'object' ? g.creator?.id : g.creator?.toString();
-      const operatorIds = (g.operators || []).map((op: any) =>
-        typeof op === 'object' ? op?.id : op?.toString(),
-      );
-      return creatorId === tgUserId || operatorIds.includes(tgUserId);
-    });
+    // 获取 owner 的 Telegram ID
+    let ownerId: string | undefined;
+    if (bot.owner) {
+      if (typeof bot.owner === 'object' && 'id' in bot.owner) {
+        // bot.owner 是 populated IBotUser 对象
+        ownerId = (bot.owner as any).id;
+      } else {
+        // bot.owner 是 ObjectId，无法获取 Telegram ID，跳过 owner 检查
+        ownerId = undefined;
+      }
+    }
+
+    // 如果是 Owner，显示所有群组（专属机器人）
+    if (bot.type === 'private' && ownerId && ownerId === tgUserId) {
+      // Owner 可以看所有群组，不过滤
+    } else {
+      // 非 Owner 或公共机器人：只显示该用户是 creator 或 operator 的群组
+      (botObj as any).groups = (botObj.groups || []).filter((g: any) => {
+        const creatorId =
+          typeof g.creator === 'object' ? g.creator?.id : g.creator?.toString();
+        const operatorIds = (g.operators || []).map((op: any) =>
+          typeof op === 'object' ? op?.id : op?.toString(),
+        );
+        return creatorId === tgUserId || operatorIds.includes(tgUserId);
+      });
+    }
   }
   // 有 username 时，找到对应 BotUser._id，过滤群组
   else if (username) {

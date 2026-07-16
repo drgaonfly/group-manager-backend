@@ -403,6 +403,7 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     }
 
     // ── 处理管理员提升/撤销事件 ────────────────────────────────────────────
+    // 统一逻辑：无论公共还是专属机器人，都基于群组管理员权限
     // 用户被提升为管理员
     const isPromotedToAdmin =
       oldStatus === 'member' &&
@@ -435,45 +436,19 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         }
 
         if (isPromotedToAdmin) {
-          // 根据机器人类型，更新不同的字段
-          if (ctx.currentBot.type === 'public') {
-            // 公用机器人：添加到 Group.operators
-            await Group.updateOne(
-              { _id: ctx.currentGroup._id },
-              { $addToSet: { operators: botUser._id } },
-            );
-            debug(
-              `✅ 用户 ${memberId} 被提升为管理员，已添加到 Group.operators (公用机器人)`,
-            );
-          } else if (ctx.currentBot.type === 'private') {
-            // 专属机器人：添加到 Bot.authorized_users
-            await ctx.currentBot.updateOne({
-              $addToSet: { authorized_users: botUser._id },
-            });
-            debug(
-              `✅ 用户 ${memberId} 被提升为管理员，已添加到 Bot.authorized_users (专属机器人)`,
-            );
-          }
+          // 统一添加到 Group.operators（公共和专属机器人都使用）
+          await Group.updateOne(
+            { _id: ctx.currentGroup._id },
+            { $addToSet: { operators: botUser._id } },
+          );
+          debug(`✅ 用户 ${memberId} 被提升为管理员，已添加到 Group.operators`);
         } else if (isDemotedFromAdmin) {
-          // 根据机器人类型，更新不同的字段
-          if (ctx.currentBot.type === 'public') {
-            // 公用机器人：从 Group.operators 移除
-            await Group.updateOne(
-              { _id: ctx.currentGroup._id },
-              { $pull: { operators: botUser._id } },
-            );
-            debug(
-              `✅ 用户 ${memberId} 被撤销管理员，已从 Group.operators 移除 (公用机器人)`,
-            );
-          } else if (ctx.currentBot.type === 'private') {
-            // 专属机器人：从 Bot.authorized_users 移除
-            await ctx.currentBot.updateOne({
-              $pull: { authorized_users: botUser._id },
-            });
-            debug(
-              `✅ 用户 ${memberId} 被撤销管理员，已从 Bot.authorized_users 移除 (专属机器人)`,
-            );
-          }
+          // 统一从 Group.operators 移除
+          await Group.updateOne(
+            { _id: ctx.currentGroup._id },
+            { $pull: { operators: botUser._id } },
+          );
+          debug(`✅ 用户 ${memberId} 被撤销管理员，已从 Group.operators 移除`);
         }
       } catch (error) {
         debug('Error processing admin promotion/demotion:', error);

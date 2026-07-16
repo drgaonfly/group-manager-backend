@@ -5,6 +5,8 @@ import speakeasy from 'speakeasy'; // 新增speakeasy
 import QRCode from 'qrcode'; // 新增qrcode
 import User from '../models/user';
 import Bot from '../models/bot';
+import Group from '../models/group';
+import BotUser from '../models/botUser';
 import { generateToken, generateRefreshToken } from '../utils/generateToken';
 import handleAsync from '../utils/handleAsync';
 import { exclude } from '../utils/handleData';
@@ -409,12 +411,13 @@ export const disable2FA = handleAsync(
  * 用 Bot Token 换取后台 JWT，供 Telegram Bot /start 构造自动登录链接用。
  * 无需密码，凭 Bot Token 验证身份（Bot Token 本身就是可信凭证，只有 bot.user 才持有）。
  *
- * body.authorizedBotUserId: 可选，被授权人的 BotUser._id（MongoDB）
- *   - 不传：owner 登录，JWT 无额外限制
- *   - 传入：authorizer 登录，JWT 里带上身份标记，后端每次请求实时校验授权是否还有效
+ * 注意：authorizedBotUserId 参数已废弃，保留仅为兼容性。
+ * 新的权限控制通过 URL 参数 tgUserId 和 Group.operators 实现。
+ *
+ * body.tgUserId: 可选，Telegram 用户 ID（用于专属机器人的权限校验）
  */
 const botLogin = handleAsync(async (req: Request, res: Response) => {
-  const { botToken, authorizedBotUserId } = req.body;
+  const { botToken, tgUserId } = req.body;
 
   if (!botToken) {
     res.status(400);
@@ -422,7 +425,10 @@ const botLogin = handleAsync(async (req: Request, res: Response) => {
   }
 
   // 通过 token 找到 bot，再找到对应的后台 User
-  const bot = await Bot.findOne({ token: botToken }).select('user');
+  const bot = await Bot.findOne({ token: botToken })
+    .select('user type owner')
+    .populate('owner');
+
   if (!bot) {
     res.status(404);
     throw new Error('Bot 不存在');
@@ -434,9 +440,46 @@ const botLogin = handleAsync(async (req: Request, res: Response) => {
     throw new Error('对应后台账号不存在或已禁用');
   }
 
-  // authorizer 登录：JWT payload 里带上身份标记，供 protect 实时校验
-  const extra = authorizedBotUserId
-    ? { authorizedBotUserId, grantedBotId: bot._id.toString() }
+  // 专属机器人权限检查：如果有 tgUserId，检查用户是否有权限
+  if (bot.type === 'private' && tgUserId) {
+    // 检查是否是 Owner
+    await bot.populate('owner');
+    const ownerId = (bot.owner as any)?.id;
+    const isOwner = ownerId === tgUserId;
+
+    if (!isOwner) {
+      // 不是 Owner，需要查询该用户对应的 BotUser，然后检查是否是任何群的 creator 或 operator
+      const botUserDoc = await BotUser.findOne({ id: tgUserId });
+
+      if (!botUserDoc) {
+        res.status(403);
+        throw new Error(
+          '您没有权限访问此机器人。请联系机器人拥有者或在群组中获得管理员权限。',
+        );
+      }
+
+      // 检查是否是任何群的 creator 或 operator
+      const groupCount = await Group.countDocuments({
+        bot: bot._id,
+        $or: [{ creator: botUserDoc._id }, { operators: botUserDoc._id }],
+      });
+
+      if (groupCount === 0) {
+        res.status(403);
+        throw new Error(
+          '您没有权限访问此机器人。请联系机器人拥有者或在群组中获得管理员权限。',
+        );
+      }
+    }
+  }
+
+  // 在 JWT 中包含机器人类型和 tgUserId，用于后续权限检查
+  const extra = tgUserId
+    ? {
+        botType: bot.type,
+        tgUserId,
+        botId: bot._id.toString(),
+      }
     : undefined;
 
   const token = generateToken(user._id, 'user', extra);

@@ -1,8 +1,10 @@
 // middlewares/authMiddleware.ts
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User, { IUser } from '../models/user';
 import Bot from '../models/bot';
+import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { ROLES } from '../constants';
 import { RequestCustom } from '../types/user';
@@ -63,17 +65,55 @@ const protect = handleAsync(
 
         req.user = user;
 
-        // authorizer 登录校验：token 里有 authorizedBotUserId 说明是被授权人
-        // 每次请求实时查库，确认授权是否还有效
-        if (decoded.authorizedBotUserId && decoded.grantedBotId) {
-          const grantedBot = await Bot.findById(decoded.grantedBotId).select(
-            'authorized_users',
-          );
-          const stillAuthorized = grantedBot?.authorized_users?.some(
-            (id: any) => id.toString() === decoded.authorizedBotUserId,
-          );
-          if (!stillAuthorized) {
-            throw new Error('授权已被撤销，请联系机器人拥有者重新授权');
+        // 持续权限验证：如果 JWT 中包含 tgUserId（专属机器人非 Owner 或公共机器人用户）
+        // 需要验证用户是否仍然有权限访问
+        if (
+          decoded.tgUserId &&
+          decoded.botId &&
+          decoded.botType === 'private'
+        ) {
+          try {
+            const bot = await Bot.findById(decoded.botId)
+              .select('owner')
+              .populate('owner');
+
+            if (!bot) {
+              throw new Error('机器人不存在');
+            }
+
+            // 检查是否是 Owner
+            const ownerId = (bot.owner as any)?.id;
+            const isOwner = ownerId === decoded.tgUserId;
+
+            if (!isOwner) {
+              // 不是 Owner，需要验证是否仍然是任何群组的 creator 或 operator
+              const BotUser = mongoose.model('BotUser');
+              const botUserDoc = await BotUser.findOne({
+                id: decoded.tgUserId,
+              });
+
+              if (!botUserDoc) {
+                throw new Error('您的权限已被撤销，请重新登录');
+              }
+
+              const groupCount = await Group.countDocuments({
+                bot: bot._id,
+                $or: [
+                  { creator: botUserDoc._id },
+                  { operators: botUserDoc._id },
+                ],
+              });
+
+              if (groupCount === 0) {
+                throw new Error('您的权限已被撤销，请重新登录');
+              }
+            }
+          } catch (err) {
+            console.error('Permission validation failed:', err);
+            res.status(403).send({
+              message: err.message || '您没有权限访问此资源，请重新登录',
+            });
+            return;
           }
         }
 

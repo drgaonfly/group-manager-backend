@@ -5,7 +5,6 @@ import { startClientAndGetSession } from '../../../services/gramClient';
 import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
-import Bot from '../../../../models/bot';
 
 import createDebug from 'debug';
 
@@ -14,17 +13,18 @@ const debug = createDebug('bot:start');
 
 /**
  * 用 Bot Token 换取后台 JWT
- * authorizedBotUserId: 被授权人的 BotUser._id，传入时生成带授权标记的 token
+ * @param botToken Bot Token
+ * @param tgUserId Telegram 用户 ID（可选）
  */
 async function getBotJwt(
   botToken: string,
-  authorizedBotUserId?: string,
+  tgUserId?: string,
 ): Promise<string | null> {
   try {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:5010';
     const res = await axios.post(`${backendUrl}/api/auth/bot-login`, {
       botToken,
-      ...(authorizedBotUserId ? { authorizedBotUserId } : {}),
+      ...(tgUserId ? { tgUserId } : {}),
     });
     return res.data?.token ?? null;
   } catch (e: any) {
@@ -92,9 +92,9 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   if (bot.type === 'public') {
     // ── public bot ─────────────────────────────────────────────────────────
     // 传递 Telegram 用户 ID 用于后端过滤群组
-    const publicJwt = await getBotJwt(bot.token);
+    const telegramUserId = ctx.from?.id?.toString() || '';
+    const publicJwt = await getBotJwt(bot.token, telegramUserId);
     if (publicJwt) {
-      const telegramUserId = ctx.from?.id?.toString() || '';
       const redirect = encodeURIComponent(
         `/bots/${bot._id}?tgUserId=${telegramUserId}`,
       );
@@ -115,19 +115,17 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     }
   } else if (bot.type === 'private') {
     // ── private bot ────────────────────────────────────────────────────────
-    // 只有 owner 才能看到登录按钮和订阅按钮
+    // Owner 可以看所有功能
+    // 其他用户：需要在群里是管理员才能管理对应的群（统一逻辑）
     const ownerIdStr = bot.owner?.toString();
     const currentBotUserIdStr = ctx.currentBotUser?._id?.toString();
 
     const isOwner =
       ownerIdStr && currentBotUserIdStr && ownerIdStr === currentBotUserIdStr;
 
-    const jwt = await getBotJwt(bot.token);
-
     if (isOwner) {
-      // 非 owner 显示错误消息
-
-      // owner 显示登录和订阅按钮
+      // Owner 显示登录和订阅按钮
+      const jwt = await getBotJwt(bot.token);
       if (jwt) {
         const redirect = encodeURIComponent(`/bots/${bot._id}`);
         const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
@@ -143,51 +141,29 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           .webApp('🖥️ 小程序后台设置', webappLoginUrl)
           .url('🌐 网页后台设置', urlLoginUrl)
           .row()
-          .text('💎 订阅服务', 'subscription_start')
-          .text('🔐 授权他人管理', `authorize_${ctx.currentBot._id}`);
-      }
-    } else if (
-      ctx.currentBot.authorized_users.some(
-        (id: any) => id.toString() === ctx.currentBotUser._id.toString(),
-      )
-    ) {
-      // 是不是 authorizer，传入 authorizedBotUserId 生成带授权标记的 token
-      const jwt = await getBotJwt(bot.token, ctx.currentBotUser._id.toString());
-      if (jwt) {
-        const redirect = encodeURIComponent(`/bots/${bot._id}`);
-        const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
-          jwt,
-        )}&redirect=${redirect}`;
-        const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
-          jwt,
-        )}&redirect=${redirect}`;
-        debug('[start] webappLoginUrl:', webappLoginUrl);
-        debug('[start] urlLoginUrl:', urlLoginUrl);
-        inlineKeyboard
-          .row()
-          .webApp('🖥️ 小程序后台设置', webappLoginUrl)
-          .url('🌐 网页后台设置', urlLoginUrl)
-          .row();
+          .text('💎 订阅服务', 'subscription_start');
       }
     } else {
-      const message = [
-        `此机器人为他人专属克隆机器人，您无法使用。`,
-        ``,
-        `请点击下方按钮前往主机器人可免费克隆自己的专属机器人。`,
-        ``,
-      ].join('\n');
-
-      // 公共机器人
-      const public_bot = await Bot.findOne({ type: 'public' });
-
-      await ctx.reply(message, {
-        parse_mode: 'HTML',
-        reply_markup: new InlineKeyboard().url(
-          '🤖免费克隆专属机器人',
-          `https://t.me/${public_bot.userName}`,
-        ),
-      });
-      return;
+      // 非 Owner：提供登录入口，后台会根据群组权限过滤和校验
+      const telegramUserId = ctx.from?.id?.toString() || '';
+      const jwt = await getBotJwt(bot.token, telegramUserId);
+      if (jwt) {
+        const redirect = encodeURIComponent(
+          `/bots/${bot._id}?tgUserId=${telegramUserId}`,
+        );
+        const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+          jwt,
+        )}&redirect=${redirect}`;
+        const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+          jwt,
+        )}&redirect=${redirect}`;
+        debug('[start] webappLoginUrl:', webappLoginUrl);
+        debug('[start] urlLoginUrl:', urlLoginUrl);
+        inlineKeyboard
+          .row()
+          .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+          .url('🌐 网页后台设置', urlLoginUrl);
+      }
     }
   }
 
