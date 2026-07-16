@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import Bot, { IBot } from '../models/bot';
 import handleAsync from '../utils/handleAsync';
 import User from '../models/user';
@@ -12,7 +13,6 @@ import { isProxy } from '../middlewares/authMiddleware';
 import { getUserByUsername } from '../bot/commands/user/operator/add';
 import { encrypt } from '../services/encrypt';
 import { generateSignedUrl } from '../utils/generateSignedUrl';
-import { transformDocumentImage } from '../utils/transformUtils';
 import { buildInlineKeyboard } from '../utils/buildInlineKeyboard';
 import { sendMediaMessage } from '../utils/sendMultiMedia';
 import { extractChannelTarget } from '../utils/extractChannelTarget';
@@ -268,10 +268,28 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
 const getBotById = handleAsync(async (req: Request, res: Response) => {
   // 支持 ?username=xxx 过滤群组（public bot 场景，只返回该用户参与的群）
   // 支持 ?tgUserId=xxx 过滤群组（public bot 场景，只返回该用户是 creator 或 operator 的群）
-  const { username, tgUserId } = req.query as {
+  const { username, tgUserId: urlTgUserId } = req.query as {
     username?: string;
     tgUserId?: string;
   };
+
+  // 从 JWT 中获取 tgUserId（优先使用 JWT 中的，防止用户篡改 URL 参数）
+  const token = req.headers.authorization?.split(' ')[1];
+  let jwtTgUserId: string | undefined;
+  if (token) {
+    try {
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET as string,
+      ) as any;
+      jwtTgUserId = decoded.tgUserId;
+    } catch (err) {
+      // JWT 解析失败，忽略
+    }
+  }
+
+  // 优先使用 JWT 中的 tgUserId，如果没有则使用 URL 参数
+  const tgUserId = jwtTgUserId || urlTgUserId;
 
   const bot = await Bot.findById(req.params.id)
     .populate({
