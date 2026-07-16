@@ -267,15 +267,29 @@ const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
 
 const getBotById = handleAsync(async (req: Request, res: Response) => {
   // 支持 ?username=xxx 过滤群组（public bot 场景，只返回该用户参与的群）
-  const { username } = req.query as { username?: string };
+  // 支持 ?tgUserId=xxx 过滤群组（public bot 场景，只返回该用户是 creator 或 operator 的群）
+  const { username, tgUserId } = req.query as {
+    username?: string;
+    tgUserId?: string;
+  };
 
   const bot = await Bot.findById(req.params.id)
     .populate({
       path: 'groups',
-      populate: {
-        path: 'botUsers',
-        select: 'id userName firstName lastName',
-      },
+      populate: [
+        {
+          path: 'botUsers',
+          select: 'id userName firstName lastName',
+        },
+        {
+          path: 'creator',
+          select: 'id userName firstName lastName',
+        },
+        {
+          path: 'operators',
+          select: 'id userName firstName lastName',
+        },
+      ],
     })
     .populate('owner')
     .populate('botUserConfigs');
@@ -287,8 +301,19 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
 
   const botObj = bot.toObject ? bot.toObject() : bot;
 
+  // 有 tgUserId 时，只返回该用户是 creator 或 operator 的群组
+  if (tgUserId) {
+    (botObj as any).groups = (botObj.groups || []).filter((g: any) => {
+      const creatorId =
+        typeof g.creator === 'object' ? g.creator?.id : g.creator?.toString();
+      const operatorIds = (g.operators || []).map((op: any) =>
+        typeof op === 'object' ? op?.id : op?.toString(),
+      );
+      return creatorId === tgUserId || operatorIds.includes(tgUserId);
+    });
+  }
   // 有 username 时，找到对应 BotUser._id，过滤群组
-  if (username) {
+  else if (username) {
     const cleanUsername = username.replace(/^@/, '');
     const botUser = await BotUser.findOne({ userName: cleanUsername }).select(
       '_id',

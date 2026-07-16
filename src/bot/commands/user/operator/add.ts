@@ -6,10 +6,71 @@ import { isGroupCreator } from '../../../middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import { createTelegramClient } from '../../../services/gramClient';
 import { Api } from 'telegram';
-import { checkPermission } from '../../../middlewares/checkPermission';
 
 const addOperatorCommand = new Composer<MyContext>();
 const debug = createDebug('bot:addOperator');
+
+// 处理 @username 类型提及
+export async function processUsernameMentions(ctx: MyContext, mentions: any[]) {
+  const resolvedUsers = [];
+
+  if (!ctx.currentBotSession) {
+    await ctx.reply('session 不存在，请先使用 /start 命令初始化 session');
+    return [];
+  }
+
+  for (const entity of mentions) {
+    const mentionText = ctx.message.text.substring(
+      entity.offset,
+      entity.offset + entity.length,
+    );
+    const mentionUsername = mentionText.replace('@', '').trim();
+
+    try {
+      const user = await getUserByUsername(
+        ctx.currentBotSession,
+        mentionUsername,
+      );
+      if (user) {
+        resolvedUsers.push(user);
+      }
+    } catch (error) {
+      // 获取用户信息失败时跳过该用户
+      debug('获取用户信息失败，跳过:', mentionUsername, error);
+      continue;
+    }
+  }
+
+  return resolvedUsers;
+}
+
+// 处理文本中的用户名
+export async function processTextUsernames(
+  ctx: MyContext,
+  usernames: string[],
+) {
+  const resolvedUsers = [];
+
+  if (!ctx.currentBotSession) {
+    await ctx.reply('session 不存在，请先使用 /start 命令初始化 session');
+    return [];
+  }
+
+  for (const username of usernames) {
+    try {
+      const user = await getUserByUsername(ctx.currentBotSession, username);
+      if (user) {
+        resolvedUsers.push(user);
+      }
+    } catch (error) {
+      // 获取用户信息失败时跳过该用户
+      debug('获取用户信息失败，跳过:', username, error);
+      continue;
+    }
+  }
+
+  return resolvedUsers;
+}
 
 // 通过 username 获取用户信息
 export async function getUserByUsername(session: any, username: string) {
@@ -41,7 +102,6 @@ export async function getUserByUsername(session: any, username: string) {
 addOperatorCommand.hears(
   /(设置操作人|设置为操作人|添加操作人|设置操作员|添加操作员|设置为操作员)/,
   checkGroup,
-  checkPermission,
   isGroupCreator,
   async (ctx) => {
     const currentGroup = ctx.currentGroup;
@@ -121,67 +181,5 @@ addOperatorCommand.hears(
     );
   },
 );
-
-// 处理 @username 类型提及
-export async function processUsernameMentions(ctx: MyContext, mentions: any[]) {
-  const resolvedUsers = [];
-
-  if (!ctx.currentBotSession) {
-    await ctx.reply('session 不存在，请先使用 /start 命令初始化 session');
-    return [];
-  }
-
-  for (const entity of mentions) {
-    const mentionText = ctx.message.text.substring(
-      entity.offset,
-      entity.offset + entity.length,
-    );
-    const mentionUsername = mentionText.replace('@', '').trim();
-
-    try {
-      const user = await getUserByUsername(
-        ctx.currentBotSession,
-        mentionUsername,
-      );
-      if (user) {
-        resolvedUsers.push(user);
-      }
-    } catch (error) {
-      // 获取用户信息失败时跳过该用户
-      debug('获取用户信息失败，跳过:', mentionUsername, error);
-      continue;
-    }
-  }
-
-  return resolvedUsers;
-}
-
-// 处理文本中的用户名
-export async function processTextUsernames(
-  ctx: MyContext,
-  usernames: string[],
-) {
-  const resolvedUsers = [];
-
-  if (!ctx.currentBotSession) {
-    await ctx.reply('session 不存在，请先使用 /start 命令初始化 session');
-    return [];
-  }
-
-  for (const username of usernames) {
-    try {
-      const user = await getUserByUsername(ctx.currentBotSession, username);
-      if (user) {
-        resolvedUsers.push(user);
-      }
-    } catch (error) {
-      // 获取用户信息失败时跳过该用户
-      debug('获取用户信息失败，跳过:', username, error);
-      continue;
-    }
-  }
-
-  return resolvedUsers;
-}
 
 export default addOperatorCommand;

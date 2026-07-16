@@ -11,7 +11,10 @@ import { setupBot } from '../bot/botSetup';
 import { extractChatUsername } from '../utils/extractChannelTarget';
 
 // 构建查询参数
-const buildQuery = (queryParams: any, req: RequestCustom): any => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
   // title（用于 Group 查询）
@@ -41,6 +44,21 @@ const buildQuery = (queryParams: any, req: RequestCustom): any => {
   // groupBotUsers（用于 BotUser 查询，限定查询范围）
   if (queryParams.groupBotUsers && Array.isArray(queryParams.groupBotUsers)) {
     query._id = { $in: queryParams.groupBotUsers };
+  }
+
+  // 公共机器人：根据 Telegram 用户 ID 过滤（只显示该用户是 creator 或 operator 的群组）
+  if (queryParams.tgUserId) {
+    const botUser = await BotUser.findOne({
+      id: queryParams.tgUserId.toString(),
+    });
+
+    if (botUser) {
+      // 只显示该用户是创建者或操作员的群组
+      query.$or = [{ creator: botUser._id }, { operators: botUser._id }];
+    } else {
+      // 如果找不到该用户，返回空结果
+      query._id = null;
+    }
   }
 
   // 代理用户只看自己的；管理员可跨代理查看
@@ -120,7 +138,7 @@ export const getGroupMembersWithBalance = handleAsync(
     }
 
     // 2. 构造查询条件（使用统一的 buildQuery）
-    const query = buildQuery(
+    const query = await buildQuery(
       {
         groupBotUsers: group.botUsers,
         keyword,

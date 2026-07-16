@@ -91,12 +91,12 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
 
   if (bot.type === 'public') {
     // ── public bot ─────────────────────────────────────────────────────────
-    // 用 bot token 换 JWT，redirect 带上 username 过滤该用户的群
+    // 传递 Telegram 用户 ID 用于后端过滤群组
     const publicJwt = await getBotJwt(bot.token);
     if (publicJwt) {
-      const username = ctx.currentBotUser?.userName || '';
+      const telegramUserId = ctx.from?.id?.toString() || '';
       const redirect = encodeURIComponent(
-        `/bots/${bot._id}/${encodeURIComponent(username)}`,
+        `/bots/${bot._id}?tgUserId=${telegramUserId}`,
       );
       const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
         publicJwt,

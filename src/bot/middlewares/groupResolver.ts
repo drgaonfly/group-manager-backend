@@ -401,6 +401,84 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         debug('Error processing member update:', error);
       }
     }
+
+    // ── 处理管理员提升/撤销事件 ────────────────────────────────────────────
+    // 用户被提升为管理员
+    const isPromotedToAdmin =
+      oldStatus === 'member' &&
+      (newStatus === 'administrator' || newStatus === 'creator');
+
+    // 用户被撤销管理员
+    const isDemotedFromAdmin =
+      (oldStatus === 'administrator' || oldStatus === 'creator') &&
+      newStatus === 'member';
+
+    if (isPromotedToAdmin || isDemotedFromAdmin) {
+      try {
+        // 查找或创建 BotUser
+        let botUser = await BotUser.findOne({
+          id: memberId.toString(),
+          proxy: proxyUser._id,
+        });
+
+        if (!botUser) {
+          botUser = new BotUser({
+            id: memberId.toString(),
+            userName: memberUser.username || '',
+            firstName: memberUser.first_name,
+            lastName: memberUser.last_name || '',
+            bot: ctx.currentBot._id,
+            proxy: proxyUser._id,
+          });
+          await botUser.save();
+          debug(`✅ 创建新 BotUser: ${memberId}`);
+        }
+
+        if (isPromotedToAdmin) {
+          // 根据机器人类型，更新不同的字段
+          if (ctx.currentBot.type === 'public') {
+            // 公用机器人：添加到 Group.operators
+            await Group.updateOne(
+              { _id: ctx.currentGroup._id },
+              { $addToSet: { operators: botUser._id } },
+            );
+            debug(
+              `✅ 用户 ${memberId} 被提升为管理员，已添加到 Group.operators (公用机器人)`,
+            );
+          } else if (ctx.currentBot.type === 'private') {
+            // 专属机器人：添加到 Bot.authorized_users
+            await ctx.currentBot.updateOne({
+              $addToSet: { authorized_users: botUser._id },
+            });
+            debug(
+              `✅ 用户 ${memberId} 被提升为管理员，已添加到 Bot.authorized_users (专属机器人)`,
+            );
+          }
+        } else if (isDemotedFromAdmin) {
+          // 根据机器人类型，更新不同的字段
+          if (ctx.currentBot.type === 'public') {
+            // 公用机器人：从 Group.operators 移除
+            await Group.updateOne(
+              { _id: ctx.currentGroup._id },
+              { $pull: { operators: botUser._id } },
+            );
+            debug(
+              `✅ 用户 ${memberId} 被撤销管理员，已从 Group.operators 移除 (公用机器人)`,
+            );
+          } else if (ctx.currentBot.type === 'private') {
+            // 专属机器人：从 Bot.authorized_users 移除
+            await ctx.currentBot.updateOne({
+              $pull: { authorized_users: botUser._id },
+            });
+            debug(
+              `✅ 用户 ${memberId} 被撤销管理员，已从 Bot.authorized_users 移除 (专属机器人)`,
+            );
+          }
+        }
+      } catch (error) {
+        debug('Error processing admin promotion/demotion:', error);
+      }
+    }
   }
 
   // 处理新成员加入群组的欢迎消息和验证
