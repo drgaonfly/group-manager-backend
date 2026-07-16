@@ -276,20 +276,25 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
   // 从 JWT 中获取 tgUserId（优先使用 JWT 中的，防止用户篡改 URL 参数）
   const token = req.headers.authorization?.split(' ')[1];
   let jwtTgUserId: string | undefined;
+  let hasJwtTgUserId = false; // 标记 JWT 中是否明确包含了 tgUserId 字段
   if (token) {
     try {
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET as string,
       ) as any;
-      jwtTgUserId = decoded.tgUserId;
+      if ('tgUserId' in decoded) {
+        jwtTgUserId = decoded.tgUserId;
+        hasJwtTgUserId = true;
+      }
     } catch (err) {
       // JWT 解析失败，忽略
     }
   }
 
-  // 优先使用 JWT 中的 tgUserId，如果没有则使用 URL 参数
-  const tgUserId = jwtTgUserId || urlTgUserId;
+  // 如果 JWT 中有 tgUserId 字段（即使是 undefined），就使用 JWT 的值，忽略 URL 参数
+  // 如果 JWT 中没有 tgUserId 字段（老版本或 Owner），才使用 URL 参数
+  const tgUserId = hasJwtTgUserId ? jwtTgUserId : urlTgUserId;
 
   const bot = await Bot.findById(req.params.id)
     .populate({
