@@ -1,4 +1,6 @@
 import axios from 'axios';
+import Bot from '../../../../models/bot';
+import Group from '../../../../models/group';
 import { MyContext } from '../../../types';
 import { Composer, InlineKeyboard } from 'grammy';
 import { startClientAndGetSession } from '../../../services/gramClient';
@@ -141,28 +143,56 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           .webApp('🖥️ 小程序后台设置', webappLoginUrl)
           .url('🌐 网页后台设置', urlLoginUrl)
           .row()
-          .text('💎 订阅服务', 'subscription_start');
+          .text('💎 订阅服务', 'subscription_start')
+          .text('👥 授权他人管理', 'how_to_grant_admin');
       }
     } else {
-      // 非 Owner：提供登录入口，后台会根据群组权限过滤和校验
+      // 非 owner：检查是否是该 bot 下任意群的 operator
       const telegramUserId = ctx.from?.id?.toString() || '';
-      const jwt = await getBotJwt(bot.token, telegramUserId);
-      if (jwt) {
-        const redirect = encodeURIComponent(
-          `/bots/${bot._id}?tgUserId=${telegramUserId}`,
-        );
-        const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
-          jwt,
-        )}&redirect=${redirect}`;
-        const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
-          jwt,
-        )}&redirect=${redirect}`;
-        debug('[start] webappLoginUrl:', webappLoginUrl);
-        debug('[start] urlLoginUrl:', urlLoginUrl);
-        inlineKeyboard
-          .row()
-          .webApp('🖥️ 小程序后台设置', webappLoginUrl)
-          .url('🌐 网页后台设置', urlLoginUrl);
+      const botUserDoc = ctx.currentBotUser;
+
+      const isOperator = botUserDoc
+        ? (await Group.countDocuments({
+            bot: bot._id,
+            operators: botUserDoc._id,
+          })) > 0
+        : false;
+
+      if (isOperator) {
+        const jwt = await getBotJwt(bot.token, telegramUserId);
+        if (jwt) {
+          const redirect = encodeURIComponent(
+            `/bots/${bot._id}?tgUserId=${telegramUserId}`,
+          );
+          const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+            jwt,
+          )}&redirect=${redirect}`;
+          const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+            jwt,
+          )}&redirect=${redirect}`;
+          inlineKeyboard
+            .row()
+            .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+            .url('🌐 网页后台设置', urlLoginUrl);
+        }
+      } else {
+        const message = [
+          `此机器人为他人专属克隆机器人，您无法使用。`,
+          ``,
+          `请点击下方按钮前往主机器人可免费克隆自己的专属机器人。`,
+          ``,
+        ].join('\n');
+
+        const public_bot = await Bot.findOne({ type: 'public' });
+
+        await ctx.reply(message, {
+          parse_mode: 'HTML',
+          reply_markup: new InlineKeyboard().url(
+            '🤖免费克隆专属机器人',
+            `https://t.me/${public_bot.userName}`,
+          ),
+        });
+        return;
       }
     }
   }
