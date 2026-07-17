@@ -81,7 +81,9 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     ``,
     `将我添加到超级群组并授予管理员权限，这样我才能进行操作！`,
     ``,
-    `有效期截至 ${formatBeijingDate(bot.disabledAt)}`,
+    bot.type === 'private'
+      ? `有效期截至 ${formatBeijingDate(bot.disabledAt)}`
+      : '',
     ``,
     `点击 /help 查看所有指令及使用方法。`,
   ].join('\n');
