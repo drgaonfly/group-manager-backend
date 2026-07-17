@@ -404,15 +404,29 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
 
     // ── 处理管理员提升/撤销事件 ────────────────────────────────────────────
     // 统一逻辑：无论公共还是专属机器人，都基于群组管理员权限
+    //
+    // 注意：Telegram 普通 group（非 supergroup）中，提升管理员时
+    // old/new status 都是 'member'，需要通过 can_manage_chat 权限字段来判断
+    const oldCanManage =
+      (chatMemberUpdate.old_chat_member as any).can_manage_chat === true;
+    const newCanManage =
+      (chatMemberUpdate.new_chat_member as any).can_manage_chat === true;
+
     // 用户被提升为管理员
+    // supergroup: member -> administrator/creator
+    // 普通 group: can_manage_chat false -> true
     const isPromotedToAdmin =
-      oldStatus === 'member' &&
-      (newStatus === 'administrator' || newStatus === 'creator');
+      (oldStatus === 'member' &&
+        (newStatus === 'administrator' || newStatus === 'creator')) ||
+      (!oldCanManage && newCanManage && newStatus === 'member');
 
     // 用户被撤销管理员
+    // supergroup: administrator/creator -> member
+    // 普通 group: can_manage_chat true -> false
     const isDemotedFromAdmin =
-      (oldStatus === 'administrator' || oldStatus === 'creator') &&
-      newStatus === 'member';
+      ((oldStatus === 'administrator' || oldStatus === 'creator') &&
+        newStatus === 'member') ||
+      (oldCanManage && !newCanManage && oldStatus === 'member');
 
     if (isPromotedToAdmin || isDemotedFromAdmin) {
       try {
