@@ -113,12 +113,20 @@ export const getGroupMembers = handleAsync(
 
 /**
  * 获取群组成员列表（包含积分余额）
- * GET /groups/:id/members-with-balance?botId=xxx&current=1&pageSize=20&keyword=xxx
+ * GET /groups/:id/members-with-balance?current=1&pageSize=20&keyword=xxx
+ *
+ * 多租户说明：
+ * - 管理员：从 req.query.botId 或 req.body.bot 获取 botId
+ * - 非管理员：强制使用 req.tenant（从 JWT 提取）
  */
 export const getGroupMembersWithBalance = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
-    const { botId, current = '1', pageSize, keyword } = req.query;
+    const { current = '1', pageSize, keyword } = req.query;
+
+    // 多租户：非管理员强制使用 JWT 中的 botId
+    const botId =
+      req.tenant || (req.query.botId as string) || (req.body.bot as string);
 
     if (!botId) {
       res.status(400);
@@ -362,11 +370,24 @@ const getGroupById = handleAsync(async (req: Request, res: Response) => {
 });
 
 // 添加新群组
+/**
+ * 多租户说明：
+ * - 管理员：从 req.body.bot 获取 botId
+ * - 非管理员：强制使用 req.tenant（从 JWT 提取）
+ */
 const addGroup = handleAsync(async (req: RequestCustom, res: Response) => {
   const newId = await IdGen.next(Group, 'id', 6);
 
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || req.body.bot;
+
+  if (!botId) {
+    res.status(400);
+    throw new Error('机器人ID是必填项');
+  }
+
   // 获取机器人信息，判断是否为公共机器人
-  const bot = await Bot.findById(req.body.bot);
+  const bot = await Bot.findById(botId);
   if (!bot) {
     res.status(404);
     throw new Error('机器人不存在');
@@ -379,6 +400,7 @@ const addGroup = handleAsync(async (req: RequestCustom, res: Response) => {
 
   const newGroup = new Group({
     ...req.body,
+    bot: botId,
     id: newId,
     proxy,
   });

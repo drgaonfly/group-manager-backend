@@ -50,9 +50,12 @@ const buildQuery = async (
     query.channel = queryParams.groupId;
   }
 
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.botId;
+
   // 支持 botId 精确查询
-  if (queryParams.botId) {
-    query.bot = queryParams.botId;
+  if (botId) {
+    query.bot = botId;
   } else if (queryParams.bot) {
     let searchText: string;
     try {

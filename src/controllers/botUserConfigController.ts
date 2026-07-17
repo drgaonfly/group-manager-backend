@@ -12,8 +12,13 @@ import { sendMediaMessage } from '../utils/sendMultiMedia';
 const buildQuery = async (queryParams: any, req: RequestCustom) => {
   const query: any = {};
 
-  if (queryParams.bot) {
-    // 先去 bot 里找出来吧，要用正则 i
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.bot;
+
+  if (botId) {
+    query.bot = botId;
+  } else if (queryParams.bot) {
+    // 如果不是多租户模式且有 bot 参数，则进行模糊搜索
     const botDocs = await Bot.find({
       $or: [
         { botName: { $regex: queryParams.bot, $options: 'i' } },

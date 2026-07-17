@@ -14,11 +14,20 @@ import { sendMediaMessage } from '../utils/sendMultiMedia';
 
 // ─── 查询构建 ──────────────────────────────────────────────────────────────────
 
-const buildQuery = async (queryParams: any): Promise<any> => {
+import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
+
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
-  if (queryParams.botId) {
-    query.bot = queryParams.botId;
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.botId;
+
+  if (botId) {
+    query.bot = botId;
   } else if (queryParams.bot) {
     const bots = await Bot.find({
       botName: { $regex: queryParams.bot, $options: 'i' },
@@ -43,16 +52,21 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     query.status = queryParams.status;
   }
 
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
   return query;
 };
 
 // ─── 红包列表 ──────────────────────────────────────────────────────────────────
 
 export const getRedPackets = handleAsync(
-  async (req: Request, res: Response) => {
+  async (req: RequestCustom, res: Response) => {
     const { current = '1', pageSize = '10' } = req.query;
 
-    const query = await buildQuery(req.query);
+    const query = await buildQuery(req.query, req);
 
     const data = await RedPacket.find(query)
       .sort('-createdAt')

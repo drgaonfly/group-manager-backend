@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import PromotionLink from '../models/promotionLink';
 import handleAsync from '../utils/handleAsync';
 import { generatePromotionCode } from '../utils/generatePromotionCode';
+import { RequestCustom } from '../types/user';
 
 // 构建查询参数
 const buildQuery = (queryParams: any): any => {
@@ -81,9 +82,17 @@ export const getPromotionLinkById = handleAsync(
 );
 
 // 添加推广链接
+/**
+ * 多租户说明：
+ * - 管理员：从 req.body.bot 获取 botId
+ * - 非管理员：强制使用 req.tenant（从 JWT 提取）
+ */
 export const addPromotionLink = handleAsync(
-  async (req: Request, res: Response) => {
-    if (!req.body.bot) {
+  async (req: RequestCustom, res: Response) => {
+    // 多租户：非管理员强制使用 JWT 中的 botId
+    const botId = req.tenant || req.body.bot;
+
+    if (!botId) {
       res.status(400);
       throw new Error('机器人是必填项');
     }
@@ -94,6 +103,7 @@ export const addPromotionLink = handleAsync(
 
     const newPromotionLink = new PromotionLink({
       ...req.body,
+      bot: botId,
       code,
     });
 

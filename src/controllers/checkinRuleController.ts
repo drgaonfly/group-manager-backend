@@ -11,9 +11,12 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.botId;
+
   // 支持 botId 精确查询
-  if (queryParams.botId) {
-    query.bot = queryParams.botId;
+  if (botId) {
+    query.bot = botId;
   }
 
   // 支持 groupId 精确查询
@@ -179,22 +182,23 @@ const deleteMultipleCheckinRules = handleAsync(
 
 /**
  * 获取签到记录（按 botId 或 groupId 过滤）
+ *
+ * 多租户说明：
+ * - 管理员：从 req.query.botId 获取 botId
+ * - 非管理员：强制使用 req.tenant（从 JWT 提取）
  */
 const getCheckinHistories = handleAsync(
   async (req: RequestCustom, res: Response) => {
-    const {
-      current = '1',
-      pageSize = '20',
-      botId,
-      groupId,
-      botUserId,
-    } = req.query;
+    const { current = '1', pageSize = '20', groupId, botUserId } = req.query;
 
     const query: any = {};
 
     if (isProxy(req.user) && !req.user.isAdmin) {
       query.proxy = req.user._id;
     }
+
+    // 多租户：非管理员强制使用 JWT 中的 botId
+    const botId = req.tenant || req.query.botId;
 
     if (botId) query.bot = botId;
     if (groupId) query.group = groupId;

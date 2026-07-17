@@ -21,9 +21,13 @@ const buildQuery = async (queryParams: any, req: RequestCustom) => {
   if (queryParams.lastName) {
     query.lastName = { $regex: queryParams.lastName, $options: 'i' };
   }
-  if (queryParams.bot) {
-    query.bot = queryParams.bot;
+
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.bot;
+  if (botId) {
+    query.bot = botId;
   }
+
   // isAuthorized
   if (queryParams.isAuthorized) {
     query.isAuthorized = queryParams.isAuthorized;

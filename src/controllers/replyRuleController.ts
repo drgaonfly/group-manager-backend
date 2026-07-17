@@ -12,8 +12,11 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
-  if (queryParams.botId) {
-    query.bot = queryParams.botId;
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.botId;
+
+  if (botId) {
+    query.bot = botId;
   } else if (queryParams.bot) {
     const botData = await Bot.find({
       botName: {

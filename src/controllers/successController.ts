@@ -9,7 +9,8 @@ const buildQuery = async (queryParams: any): Promise<any> => {
 
   // 支持直接传 botId（精确）或 bot（botName 模糊）
   if (queryParams.botId) {
-    query.bot = queryParams.botId;
+    const botId = req.tenant || queryParams.botId;
+    if (botId) query.bot = botId;
   } else if (queryParams.bot) {
     const botData = await Bot.find({
       botName: { $regex: queryParams.bot, $options: 'i' },

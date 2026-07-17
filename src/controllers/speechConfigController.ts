@@ -16,9 +16,12 @@ const buildQuery = async (
 ): Promise<any> => {
   const query: any = {};
 
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.botId;
+
   // 支持 botId 精确查询
-  if (queryParams.botId) {
-    query.bot = queryParams.botId;
+  if (botId) {
+    query.bot = botId;
   }
 
   // 支持 groupId 精确查询
@@ -37,12 +40,19 @@ const buildQuery = async (
 /**
  * GET /api/speech-configs?botId=xxx
  * 获取指定 bot 下所有群组的发言统计配置列表
+ *
+ * 多租户说明：
+ * - 管理员：从 req.query.botId 获取 botId
+ * - 非管理员：强制使用 req.tenant（从 JWT 提取）
  */
 const getSpeechConfigs = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { current = 1, pageSize = 50 } = req.query;
 
-    if (!req.query.botId) {
+    // 多租户：非管理员强制使用 JWT 中的 botId
+    const botId = req.tenant || req.query.botId;
+
+    if (!botId) {
       res.status(400);
       throw new Error('botId 不能为空');
     }
@@ -89,11 +99,14 @@ const getSpeechConfig = handleAsync(
 /**
  * POST /api/speech-configs
  * 为指定 bot+group 创建一条配置
+ *
+ * 多租户说明：
+ * - 管理员：从 req.body.botId 获取 botId
+ * - 非管理员：强制使用 req.tenant（从 JWT 提取）
  */
 const createSpeechConfig = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const {
-      botId,
       groupId,
       minSpeechLength,
       allowPureNumberSpeech,
@@ -106,6 +119,9 @@ const createSpeechConfig = handleAsync(
       speechRewardPoints,
       speechRewardMaxTimes,
     } = req.body;
+
+    // 多租户：非管理员强制使用 JWT 中的 botId
+    const botId = req.tenant || req.body.botId;
 
     if (!botId || !groupId) {
       res.status(400);

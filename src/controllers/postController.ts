@@ -2,12 +2,20 @@ import { Request, Response } from 'express';
 import Post from '../models/post';
 import Bot from '../models/bot';
 import handleAsync from '../utils/handleAsync';
+import { RequestCustom } from '../types/user';
+import { isProxy } from '../middlewares/authMiddleware';
 
-const buildQuery = async (queryParams: any): Promise<any> => {
+const buildQuery = async (
+  queryParams: any,
+  req: RequestCustom,
+): Promise<any> => {
   const query: any = {};
 
-  if (queryParams.botId) {
-    query.bot = queryParams.botId;
+  // 多租户：非管理员强制使用 JWT 中的 botId
+  const botId = req.tenant || queryParams.botId;
+
+  if (botId) {
+    query.bot = botId;
   } else if (queryParams.bot) {
     const bots = await Bot.find({
       botName: { $regex: queryParams.bot, $options: 'i' },
@@ -27,34 +35,41 @@ const buildQuery = async (queryParams: any): Promise<any> => {
     query.title = { $regex: queryParams.title, $options: 'i' };
   }
 
+  // 代理用户只看自己的；管理员可跨代理查看
+  if (isProxy(req.user) && !req.user.isAdmin) {
+    query.proxy = req.user._id;
+  }
+
   return query;
 };
 
-export const getPosts = handleAsync(async (req: Request, res: Response) => {
-  const { current = '1', pageSize = '20' } = req.query;
+export const getPosts = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { current = '1', pageSize = '20' } = req.query;
 
-  const query = await buildQuery(req.query);
+    const query = await buildQuery(req.query, req);
 
-  const data = await Post.find(query)
-    .sort('-createdAt')
-    .skip((+current - 1) * +pageSize)
-    .limit(+pageSize)
-    .populate('bot', 'botName userName')
-    .populate('source', 'title username id')
-    .populate('proxy', 'name email')
-    .lean()
-    .exec();
+    const data = await Post.find(query)
+      .sort('-createdAt')
+      .skip((+current - 1) * +pageSize)
+      .limit(+pageSize)
+      .populate('bot', 'botName userName')
+      .populate('source', 'title username id')
+      .populate('proxy', 'name email')
+      .lean()
+      .exec();
 
-  const total = await Post.countDocuments(query).exec();
+    const total = await Post.countDocuments(query).exec();
 
-  res.json({
-    success: true,
-    data,
-    total,
-    current: +current,
-    pageSize: +pageSize,
-  });
-});
+    res.json({
+      success: true,
+      data,
+      total,
+      current: +current,
+      pageSize: +pageSize,
+    });
+  },
+);
 
 export const getPostById = handleAsync(async (req: Request, res: Response) => {
   const record = await Post.findById(req.params.id)

@@ -65,6 +65,9 @@ const protect = handleAsync(
 
         req.user = user;
 
+        // 提取租户上下文（tenant）：非管理员用户的 botId
+        req.tenant = !user.isAdmin && decoded.botId ? decoded.botId : null;
+
         // 持续权限验证：如果 JWT 中包含 tgUserId（专属机器人非 Owner 或公共机器人用户）
         // 需要验证用户是否仍然有权限访问
         if (
