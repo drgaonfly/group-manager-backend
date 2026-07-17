@@ -86,13 +86,17 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     `点击 /help 查看所有指令及使用方法。`,
   ].join('\n');
 
-  const inlineKeyboard = new InlineKeyboard().url(
-    '➕ 把我加到群组',
-    `https://t.me/${bot.userName}?startgroup=start`,
-  );
+  // 默认的 "把我加到群组" 按钮（Owner 和 Public Bot 用户可以看到）
+  const inlineKeyboard = new InlineKeyboard();
 
   if (bot.type === 'public') {
     // ── public bot ─────────────────────────────────────────────────────────
+    // 公共机器人：所有用户都能添加到群组
+    inlineKeyboard.url(
+      '➕ 把我加到群组',
+      `https://t.me/${bot.userName}?startgroup=start`,
+    );
+
     // 传递 Telegram 用户 ID 用于后端过滤群组
     const telegramUserId = ctx.from?.id?.toString() || '';
     const publicJwt = await getBotJwt(bot.token, telegramUserId);
@@ -126,7 +130,12 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       ownerIdStr && currentBotUserIdStr && ownerIdStr === currentBotUserIdStr;
 
     if (isOwner) {
-      // Owner 显示登录和订阅按钮
+      // Owner：可以添加到群组 + 显示登录和订阅按钮
+      inlineKeyboard.url(
+        '➕ 把我加到群组',
+        `https://t.me/${bot.userName}?startgroup=start`,
+      );
+
       const telegramUserId = ctx.from?.id?.toString() || '';
       const jwt = await getBotJwt(bot.token, telegramUserId);
       if (jwt) {
@@ -160,6 +169,7 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         : false;
 
       if (isOperator) {
+        // Operator：只显示后台登录按钮，不能添加到群组
         const jwt = await getBotJwt(bot.token, telegramUserId);
         if (jwt) {
           const redirect = encodeURIComponent(
@@ -173,8 +183,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           )}&redirect=${redirect}`;
           inlineKeyboard
             .row()
-            .webApp('🖥️ 小程序后台设置', webappLoginUrl)
-            .url('🌐 网页后台设置', urlLoginUrl);
+            .webApp('🖥️ 小程序后台管理', webappLoginUrl)
+            .url('🌐 网页后台管理', urlLoginUrl);
         }
       } else {
         const message = [
