@@ -117,6 +117,18 @@ const protect = handleAsync(
           }
         }
 
+        // 非管理员且 JWT 中有 botId：验证请求的 botId 必须匹配
+        if (!user.isAdmin && decoded.botId) {
+          const requestedBotId =
+            req.query.botId || req.body.bot || req.params.id;
+          if (requestedBotId && requestedBotId !== decoded.botId) {
+            res.status(403).send({
+              message: '您没有权限访问此机器人的数据',
+            });
+            return;
+          }
+        }
+
         // 设置 proxyUser：默认使用当前用户，如果是管理员操作代理用户的 bot，则使用 bot 的 owner
         req.proxyUser = user;
 
