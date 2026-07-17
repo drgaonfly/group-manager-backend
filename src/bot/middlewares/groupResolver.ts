@@ -144,6 +144,32 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       isBotAddedToChat;
 
     if (shouldCreateGroup) {
+      // 专属机器人：只有 Owner 才能添加机器人到群组
+      if (ctx.currentBot.type === 'private') {
+        const botOwnerId = ctx.currentBot.owner?.toString();
+        const currentBotUserId = ctx.currentBotUser?._id?.toString();
+
+        if (botOwnerId !== currentBotUserId) {
+          // 不是 Owner 添加的，拒绝创建群组记录并退出
+          await ctx.reply(
+            '⚠️ 此机器人为专属机器人，只有机器人拥有者才能将其添加到群组。\n\n机器人将自动退出此群组。',
+          );
+
+          // 让机器人主动退出群组
+          try {
+            await ctx.api.leaveChat(chatId);
+            debug(
+              `🚫 非 Owner 添加专属机器人到群组，已自动退出: ${chatTitle} (${chatId})`,
+            );
+          } catch (err) {
+            debug(`❌ 退出群组失败: ${err}`);
+          }
+
+          ctx.currentGroup = null;
+          return await next();
+        }
+      }
+
       // 如果群组不存在且为群组创建事件，创建新群组记录
       const newGroup = new Group({
         id: chatId,
