@@ -127,7 +127,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
 
     if (isOwner) {
       // Owner 显示登录和订阅按钮
-      const jwt = await getBotJwt(bot.token);
+      const telegramUserId = ctx.from?.id?.toString() || '';
+      const jwt = await getBotJwt(bot.token, telegramUserId);
       if (jwt) {
         const redirect = encodeURIComponent(`/bots/${bot._id}`);
         const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(

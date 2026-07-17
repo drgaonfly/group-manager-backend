@@ -219,11 +219,28 @@ const getUserProfile = handleAsync(
     // 当前机器人数量从数据库动态查询
     const botCount = await Bot.countDocuments({ user: req.user._id });
 
+    // 从 JWT 中解析 botId / tgUserId（非管理员 bot 用户登录时携带）
+    let jwtBotId: any;
+    let jwtTgUserId: any;
+    try {
+      const token = req.headers.authorization?.split(' ')[1];
+      if (token) {
+        const decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET as string,
+        ) as jwt.JwtPayload;
+        jwtBotId = decoded.botId;
+        jwtTgUserId = decoded.tgUserId;
+      }
+    } catch (_) {}
+
     res.json({
       success: true,
       data: {
         ...exclude(req.user.toObject(), 'password'),
-        botCount, // 从数据库查询的当前机器人数量
+        botCount,
+        ...(jwtBotId ? { botId: jwtBotId } : {}),
+        ...(jwtTgUserId ? { tgUserId: jwtTgUserId } : {}),
         avatar:
           'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png',
       },
