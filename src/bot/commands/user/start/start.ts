@@ -181,10 +181,24 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
             jwt,
           )}&redirect=${redirect}`;
+
+          // 查找公共机器人，提供克隆入口
+          const public_bot = await Bot.findOne({ type: 'public' });
+
           inlineKeyboard
             .row()
             .webApp('🖥️ 小程序后台管理', webappLoginUrl)
             .url('🌐 网页后台管理', urlLoginUrl);
+
+          // 如果有公共机器人，添加克隆按钮
+          if (public_bot) {
+            inlineKeyboard
+              .row()
+              .url(
+                '🤖 克隆自己的专属机器人',
+                `https://t.me/${public_bot.userName}`,
+              );
+          }
         }
       } else {
         const message = [
