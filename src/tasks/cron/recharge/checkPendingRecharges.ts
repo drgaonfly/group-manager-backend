@@ -1,6 +1,7 @@
 import Recharge from '../../../models/recharge';
 import BotUser, { IBotUser } from '../../../models/botUser';
 import { IBot } from '../../../models/bot';
+import Setting from '../../../models/setting';
 import { setupBot } from '../../../bot/botSetup';
 import { fetchTrc20Transactions } from '../../../utils/fetchTransactions';
 import { formatBeijingDate } from '../../../utils/formatBeijingDate';
@@ -29,13 +30,14 @@ export async function checkPendingRecharges() {
     );
 
     for (const recharge of pendingRecharges) {
-      // 使用环境变量 TRX20_ADDRESS
+      // 从数据库获取系统设置
       const botUser = recharge.botUser as IBotUser;
       const bot = recharge.bot as IBot;
-      const receiveAddress = process.env.TRX20_ADDRESS || recharge.to;
+      const setting = await Setting.findOne();
+      const receiveAddress = setting?.trx20Address || process.env.TRX20_ADDRESS;
       if (!receiveAddress) {
         console.warn(
-          `[checkPendingRecharges] 订单 ${recharge.id} 环境变量 TRX20_ADDRESS 未配置，跳过`,
+          `[checkPendingRecharges] 订单 ${recharge.id} 系统设置未配置收款地址，跳过`,
         );
         continue;
       }

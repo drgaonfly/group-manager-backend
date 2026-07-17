@@ -3,6 +3,7 @@ import axios from 'axios';
 import Bot, { IBot } from '../models/bot';
 import User from '../models/user';
 import Role from '../models/role';
+import Setting from '../models/setting';
 import { getBotInfoWithGramjs } from './getBotInfoWithGramjs';
 import { IdGen } from './idGen';
 import { generateUserInviteCode } from './generateUserInviteCode';
@@ -86,10 +87,11 @@ export async function createBotWithUser(
     }
 
     // 4. 创建新 Bot，绑定到新 User，类型固定为 private（克隆产物，不可再克隆）
-    // 设置默认免费使用时间（从环境变量读取，默认30天）
-    const defaultFreeDays = parseInt(process.env.DEFAULT_FREE_DAYS || '30', 10);
+    // 从数据库读取默认免费使用天数
+    const setting = await Setting.findOne();
+
     const disabledAt = new Date();
-    disabledAt.setDate(disabledAt.getDate() + defaultFreeDays);
+    disabledAt.setDate(disabledAt.getDate() + (setting?.defaultFreeDays ?? 3));
 
     const newBot = new Bot({
       token,

@@ -4,6 +4,7 @@ import { MyContext } from '../../../types';
 import { cancelKeyboard } from '../../../menus/inline/cacel';
 import { IBot } from '../../../../models/bot';
 import { IBotUser } from '../../../../models/botUser';
+import Setting from '../../../../models/setting';
 import { createBotWithUser } from '../../../../utils/createBotWithUser';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
 import createDebug from 'debug';
@@ -97,12 +98,17 @@ async function cloneBotConversation(
     if (result2.success) {
       const { loginUrl, userName, disabledAt } = result2.account!;
 
+      // 获取系统设置中的免费天数
+      const setting = await Setting.findOne();
+
       if (loginUrl) {
         await ctx.reply(
           [
             '✅ <b>克隆成功！</b>',
             '',
-            `您的专属机器人已创建完成，已赠送 ${process.env.DEFAULT_FREE_DAYS} 天试用期。`,
+            `您的专属机器人已创建完成，已赠送 ${
+              setting?.defaultFreeDays ?? 3
+            } 天试用期。`,
             '',
             '请点击下方用户名打开您的机器人，并添加至群组设置为管理员。',
             '',

@@ -1,5 +1,6 @@
 import { MyContext } from '../../../../types';
 import Recharge from '../../../../../models/recharge';
+import Setting from '../../../../../models/setting';
 import { IdGen } from '../../../../../utils/idGen';
 import { findBotProxy } from '../../../../services/findBotProxy';
 import * as QRCode from 'qrcode';
@@ -38,7 +39,9 @@ export async function handleRechargeRequest(
 
   debug('开始处理充值请求', { userId: botUser._id, amount });
 
-  const address = process.env.TRX20_ADDRESS;
+  // 从数据库获取系统设置
+  const setting = await Setting.findOne();
+  const address = setting?.trx20Address;
   if (!address) {
     debug('未设置收款地址');
     await ctx.reply('机器人还未设置收款地址');

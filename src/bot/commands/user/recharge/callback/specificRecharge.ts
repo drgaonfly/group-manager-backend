@@ -1,5 +1,6 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../../types';
+import Setting from '../../../../../models/setting';
 import { handleRechargeRequest } from '../helper';
 import { handleChargingBalance } from '../chargingBalance';
 import createDebug from 'debug';
@@ -12,7 +13,9 @@ specificRechargeCallback.callbackQuery(/^charge_(\d+)$/, async (ctx) => {
 
   await ctx.conversation.exitAll();
 
-  if (!process.env.TRX20_ADDRESS) {
+  // 从数据库获取系统设置
+  const setting = await Setting.findOne();
+  if (!setting?.trx20Address) {
     await ctx.reply('请先设置 TRX 地址');
     return;
   }
@@ -38,7 +41,9 @@ specificRechargeCallback.callbackQuery(/recharge:again/, async (ctx) => {
 
   await ctx.conversation.exitAll();
 
-  if (!process.env.TRX20_ADDRESS) {
+  // 从数据库获取系统设置
+  const setting = await Setting.findOne();
+  if (!setting?.trx20Address) {
     await ctx.reply('请先设置 TRX 地址');
     return;
   }

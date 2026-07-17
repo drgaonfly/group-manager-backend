@@ -2,15 +2,11 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { MyContext } from '../../../types';
 import { isBotOwner } from '../../../middlewares/checkBotOwner';
 import Subscription from '../../../../models/subscription';
-import { sendPaymentCard, ORDER_TIMEOUT_MINUTES } from './helpers';
+import Setting from '../../../../models/setting';
+import { sendPaymentCard } from './helpers';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:subscription:pay');
-
-const plans = [
-  { months: 1, price: 15, label: '一个月' },
-  { months: 900, price: 400, label: '永久' },
-];
 
 const payCallback = new Composer<MyContext>();
 
@@ -28,20 +24,28 @@ payCallback.callbackQuery('subscription_pay', isBotOwner, async (ctx) => {
     return;
   }
 
-  if (!process.env.TRX20_ADDRESS) {
-    await ctx.reply('❌ 收款地址未配置，请联系管理员设置 TRC20 地址后再续费。');
+  // 从数据库获取系统设置
+  const setting = await Setting.findOne();
+
+  if (!setting.trx20Address) {
+    await ctx.reply('❌ 收款地址未配置，请等待管理员配置TRC20地址');
+    return;
+  }
+
+  if (!setting.subscriptionPlans) {
+    await ctx.reply('❌ 订阅计划未配置，请等待管理员配置订阅计划');
     return;
   }
 
   const text = `💳 <b>选择订阅套餐</b>\n\n<b>请选择订阅时长：</b>`;
 
   const keyboard = new InlineKeyboard();
-  plans.forEach((plan, index) => {
+  setting.subscriptionPlans.forEach((plan, index) => {
     keyboard.text(
       `${plan.label} ${plan.price}U`,
       `subscription_plan_${plan.months}`,
     );
-    if (index < plans.length - 1) {
+    if (index < setting.subscriptionPlans.length - 1) {
       keyboard.row();
     }
   });
@@ -72,7 +76,15 @@ payCallback.callbackQuery(/^subscription_plan_/, async (ctx) => {
   const months = parseInt(
     ctx.callbackQuery.data.replace('subscription_plan_', ''),
   );
-  const planConfig = plans.find((p) => p.months === months);
+
+  // 从数据库获取系统设置
+  const setting = await Setting.findOne();
+  if (!setting) {
+    await ctx.reply('❌ 系统设置未配置，请联系管理员');
+    return;
+  }
+
+  const planConfig = setting.subscriptionPlans.find((p) => p.months === months);
 
   if (!planConfig) {
     await ctx.reply('❌ 无效的订阅计划');
@@ -99,7 +111,7 @@ payCallback.callbackQuery(/^subscription_plan_/, async (ctx) => {
 
     const orderExpiredAt = new Date();
     orderExpiredAt.setMinutes(
-      orderExpiredAt.getMinutes() + ORDER_TIMEOUT_MINUTES,
+      orderExpiredAt.getMinutes() + setting.orderTimeoutMinutes,
     );
 
     const newSubscription = new Subscription({
@@ -107,7 +119,7 @@ payCallback.callbackQuery(/^subscription_plan_/, async (ctx) => {
       bot: bot._id,
       amount: uniqueAmount,
       months: planConfig.months,
-      toAddress: process.env.TRX20_ADDRESS,
+      toAddress: setting.trx20Address,
       orderExpiredAt,
       status: 'pending',
     });

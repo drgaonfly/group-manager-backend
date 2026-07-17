@@ -6,8 +6,6 @@ import createDebug from 'debug';
 
 const debug = createDebug('bot:subscription');
 
-export const ORDER_TIMEOUT_MINUTES = 30;
-
 /** 展示订阅状态总览卡片 */
 export async function sendStatusCard(
   ctx: MyContext,
@@ -59,7 +57,8 @@ export async function sendStatusCard(
   let text = '💎 <b>订阅服务</b>\n\n';
 
   // 判断机器人是否已过期（仅针对 private 类型机器人）
-  const isExpired = bot.type === 'private' && bot.disabledAt && bot.disabledAt < now;
+  const isExpired =
+    bot.type === 'private' && bot.disabledAt && bot.disabledAt < now;
 
   if (!isExpired) {
     // 机器人未过期（永久或订阅中）
