@@ -67,13 +67,13 @@ export async function sendStatusCard(
     if (activeSubscription) {
       message.push(`📦 订阅月数：<b>${activeSubscription.months} 个月</b>`);
       message.push(`💰 支付金额：<b>${activeSubscription.amount} USDT</b>`);
-      if (activeSubscription.createdAt) {
-        message.push(
-          `📅 订阅时间：<code>${formatBeijingDate(
-            activeSubscription.createdAt,
-          )}</code>`,
-        );
-      }
+      // if (activeSubscription.createdAt) {
+      //   message.push(
+      //     `📅 订阅时间：<code>${formatBeijingDate(
+      //       activeSubscription.createdAt,
+      //     )}</code>`,
+      //   );
+      // }
     } else {
       // 没有订阅记录但机器人未过期（可能是手动设置的永久）
       if (bot.disabledAt) {
