@@ -5,6 +5,7 @@ import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
+import { getCache } from '../utils/cache';
 
 /**
  * 构建查询参数
@@ -165,6 +166,12 @@ export const updateServiceMessage = handleAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
 
+    const doc = await ServiceMessage.findById(id);
+    if (!doc) {
+      res.status(404);
+      throw new Error('服务消息配置不存在');
+    }
+
     // 不允许修改 bot、group、proxy
     const updated = await ServiceMessage.findByIdAndUpdate(id, req.body, {
       new: true,
@@ -174,9 +181,13 @@ export const updateServiceMessage = handleAsync(
       .populate('group', 'title username id')
       .populate('proxy', 'name');
 
-    if (!updated) {
-      res.status(404);
-      throw new Error('服务消息配置不存在');
+    // 清除缓存
+    try {
+      const cache = getCache();
+      const cacheKey = `serviceMsg:${doc.bot}:${doc.group}`;
+      await cache.del(cacheKey);
+    } catch (err) {
+      console.error('清除缓存失败:', err);
     }
 
     res.json({ success: true, data: updated, message: '服务消息配置更新成功' });
@@ -195,6 +206,16 @@ export const deleteServiceMessage = handleAsync(
     }
 
     await ServiceMessage.findByIdAndDelete(req.params.id);
+
+    // 清除缓存
+    try {
+      const cache = getCache();
+      const cacheKey = `serviceMsg:${doc.bot}:${doc.group}`;
+      await cache.del(cacheKey);
+    } catch (err) {
+      console.error('清除缓存失败:', err);
+    }
+
     res.json({ success: true, message: '服务消息配置删除成功' });
   },
 );
@@ -211,7 +232,22 @@ export const deleteMultipleServiceMessages = handleAsync(
       throw new Error('请提供要删除的配置 ID');
     }
 
+    // 先查询所有要删除的配置，用于清除缓存
+    const docs = await ServiceMessage.find({ _id: { $in: ids } });
+
     const result = await ServiceMessage.deleteMany({ _id: { $in: ids } });
+
+    // 清除缓存
+    try {
+      const cache = getCache();
+      for (const doc of docs) {
+        const cacheKey = `serviceMsg:${doc.bot}:${doc.group}`;
+        await cache.del(cacheKey);
+      }
+    } catch (err) {
+      console.error('清除缓存失败:', err);
+    }
+
     res.json({
       success: true,
       message: `成功删除 ${result.deletedCount} 条配置`,

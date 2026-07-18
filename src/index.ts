@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import http from 'http';
 import { setupRedis } from './utils/redis';
+import { setupCache } from './utils/cache';
 import setupDB from './utils/db';
 import initExecutor from 'express-command-executor';
 // import { startTaskScheduler } from './tasks';
@@ -138,6 +139,7 @@ app.use('/api/static', express.static(path.join(process.cwd(), 'tmp')));
 
 setupDB();
 setupRedis();
+setupCache();
 // 初始化 Socket.IO
 
 console.log('Socket.IO server initialized');

@@ -1,6 +1,7 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
-import ServiceMessage from '../../models/serviceMessage';
+import ServiceMessage, { IServiceMessage } from '../../models/serviceMessage';
+import { getCache } from '../../utils/cache';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:service-message-deleter');
@@ -55,17 +56,37 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
   }
 
   try {
-    const config = await ServiceMessage.findOne({
-      bot: ctx.currentBot._id,
-      group: ctx.currentGroup._id,
-      isActive: true,
-    });
+    // 使用缓存键：serviceMsg:{botId}:{groupId}
+    const cacheKey = `serviceMsg:${ctx.currentBot._id}:${ctx.currentGroup._id}`;
+    const cache = getCache();
 
-    debug(
-      `查询配置: bot=${ctx.currentBot._id}, group=${
-        ctx.currentGroup._id
-      }, found=${!!config}`,
-    );
+    // 尝试从缓存获取配置
+    let config = await cache.get<IServiceMessage>(cacheKey);
+
+    if (!config) {
+      // 缓存未命中，从数据库查询
+      config = await ServiceMessage.findOne({
+        bot: ctx.currentBot._id,
+        group: ctx.currentGroup._id,
+        isActive: true,
+      });
+
+      debug(
+        `数据库查询配置: bot=${ctx.currentBot._id}, group=${
+          ctx.currentGroup._id
+        }, found=${!!config}`,
+      );
+
+      if (config) {
+        // 存入缓存，TTL 5分钟
+        await cache.set(cacheKey, config, 300000);
+      } else {
+        // 即使没有配置也缓存（避免缓存穿透），TTL 1分钟
+        await cache.set(cacheKey, null, 60000);
+      }
+    } else {
+      debug(`缓存命中: ${cacheKey}`);
+    }
 
     if (!config) {
       debug('未找到服务消息配置，跳过');
