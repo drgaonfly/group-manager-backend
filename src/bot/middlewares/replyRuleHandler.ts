@@ -40,21 +40,6 @@ const isKeywordMatch = (
   return messageText === keyword;
 };
 
-// 检查用户是否是管理员
-const isUserAdmin = async (ctx: MyContext): Promise<boolean> => {
-  if (!ctx.chat || ctx.chat.type === 'private') {
-    return false;
-  }
-
-  try {
-    const member = await ctx.getChatMember(ctx.from!.id);
-    return ['creator', 'administrator'].includes(member.status);
-  } catch (error) {
-    debug('Error checking admin status:', error);
-    return false;
-  }
-};
-
 // 延迟删除消息
 const scheduleMessageDeletion = (
   ctx: MyContext,

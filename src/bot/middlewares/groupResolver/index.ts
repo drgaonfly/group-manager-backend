@@ -6,6 +6,7 @@ import { groupMigrationHandler } from './groupMigrationHandler';
 import { memberJoinLeaveHandler } from './memberJoinLeaveHandler';
 import { channelSubscriptionHandler } from './channelSubscriptionHandler';
 import { adminManagementHandler } from './adminChangedHandler';
+import { botAdminPromptHandler } from './botAdminPromptHandler';
 import { groupVerifyHandler } from './groupVerifyHandler';
 import { groupWelcomeHandler } from './groupWelcomeHandler';
 import { groupUpdateHandler } from './groupUpdateHandler';
@@ -20,9 +21,10 @@ import { groupUpdateHandler } from './groupUpdateHandler';
  * 4. memberJoinLeaveHandler - 成员加入/离开处理
  * 5. channelSubscriptionHandler - 频道订阅处理
  * 6. adminManagementHandler - 管理员提升/撤销处理、群主转移处理
- * 7. groupVerifyHandler - 群组验证处理（新成员）
- * 8. groupWelcomeHandler - 群组欢迎处理（新成员）
- * 9. groupUpdateHandler - 群组更新处理（维护 botUsers 列表）
+ * 7. botAdminPromptHandler - Bot 被提升为管理员提示
+ * 8. groupVerifyHandler - 群组验证处理（新成员）
+ * 9. groupWelcomeHandler - 群组欢迎处理（新成员）
+ * 10. groupUpdateHandler - 群组更新处理（维护 botUsers 列表）
  */
 const groupResolver = new Composer<MyContext>();
 
@@ -33,6 +35,7 @@ groupResolver.use(groupMigrationHandler);
 groupResolver.use(memberJoinLeaveHandler);
 groupResolver.use(channelSubscriptionHandler);
 groupResolver.use(adminManagementHandler);
+groupResolver.use(botAdminPromptHandler);
 groupResolver.use(groupVerifyHandler);
 groupResolver.use(groupWelcomeHandler);
 groupResolver.use(groupUpdateHandler);

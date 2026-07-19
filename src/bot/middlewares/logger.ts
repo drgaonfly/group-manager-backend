@@ -80,7 +80,7 @@ const logger: Middleware = async (ctx: MyContext, next) => {
   }
 
   // 获取代理用户权限
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // 处理所有消息类型（非拥有者的消息）
   if (!ctx.callbackQuery && message) {

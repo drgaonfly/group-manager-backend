@@ -15,7 +15,6 @@ import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import proxyResolver from './middlewares/proxyResolver';
 import { adRemovalResolver } from './middlewares/adRemovalResolver';
 import { serviceMessageDeleter } from './middlewares/serviceMessageDeleter';
-import { groupAdminPromptHandler } from './middlewares/groupAdminPrompt';
 import { MyContext } from './types';
 import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
@@ -175,25 +174,6 @@ export const setupBot = (token: string) => {
       // 查询失败时继续走后续 handler
     }
     return next();
-  });
-
-  // 监听机器人自身的群身份/权限变更事件
-  bot.on('my_chat_member', async (ctx) => {
-    const chatType = ctx.chat.type;
-
-    // 只处理群组和超大群
-    if (chatType === 'group' || chatType === 'supergroup') {
-      const newStatus = ctx.myChatMember.new_chat_member.status;
-
-      // 判断机器人的新状态是否变成了管理员（administrator）
-      if (newStatus === 'administrator' || newStatus === 'creator') {
-        log(`机器人已被设为群管理员，群组 ID: ${ctx.chat.id}`);
-
-        // 触发你的 groupAdminPrompt 中间件或逻辑
-        // 注意：你需要确保 groupAdminPrompt 能够处理 'my_chat_member' 类型的上下文
-        groupAdminPromptHandler(ctx);
-      }
-    }
   });
 
   bot.catch((err) => {
