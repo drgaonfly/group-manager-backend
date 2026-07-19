@@ -254,6 +254,26 @@ module.exports = {
       retain: 7,
       compress: true,
     },
+    // BotMessage 清理任务 - 每天凌晨2点执行，清理超过本月的发言记录
+    {
+      name: 'manager-cleanup-botmessages',
+      script: 'dist/tasks/cleanupBotMessages.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      error_file: './logs/cleanup-botmessages-error.log',
+      out_file: './logs/cleanup-botmessages-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
   ],
 };
 

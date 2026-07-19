@@ -10,6 +10,7 @@ import { botAdminPromptHandler } from './botAdminPromptHandler';
 import { groupVerifyHandler } from './groupVerifyHandler';
 import { groupWelcomeHandler } from './groupWelcomeHandler';
 import { groupUpdateHandler } from './groupUpdateHandler';
+import { groupSpeechStatistics } from './groupSpeechStatistics';
 
 /**
  * 群组解析器 - 组合所有群组相关中间件
@@ -25,6 +26,7 @@ import { groupUpdateHandler } from './groupUpdateHandler';
  * 8. groupVerifyHandler - 群组验证处理（新成员）
  * 9. groupWelcomeHandler - 群组欢迎处理（新成员）
  * 10. groupUpdateHandler - 群组更新处理（维护 botUsers 列表）
+ * 11. groupSpeechStatistics - 群组发言统计记录
  */
 const groupResolver = new Composer<MyContext>();
 
@@ -39,5 +41,6 @@ groupResolver.use(botAdminPromptHandler);
 groupResolver.use(groupVerifyHandler);
 groupResolver.use(groupWelcomeHandler);
 groupResolver.use(groupUpdateHandler);
+groupResolver.use(groupSpeechStatistics);
 
 export default groupResolver;

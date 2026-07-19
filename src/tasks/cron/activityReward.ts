@@ -1,66 +1,58 @@
 import SpeechConfig from '../../models/speechConfig';
 import BotMessage from '../../models/botMessage';
 import BotUserConfig from '../../models/botUserConfig';
-
-type Cycle = 'daily' | 'weekly' | 'monthly';
+import {
+  getPeriodStart,
+  getPeriodEnd,
+  type Period,
+} from '../../utils/dateHelper';
+import dayjs from 'dayjs';
 
 /**
  * 计算指定周期的统计窗口（已结束的上一个周期）
  */
-function getPreviousCycleRange(cycle: Cycle): {
+function getPreviousCycleRange(cycle: Period): {
   startDate: Date;
   endDate: Date;
   label: string;
 } {
-  const now = new Date();
+  const now = dayjs();
 
   if (cycle === 'daily') {
-    const endDate = new Date(now);
-    endDate.setHours(0, 0, 0, 0);
-    const startDate = new Date(endDate);
-    startDate.setDate(startDate.getDate() - 1);
-    const label = startDate.toLocaleDateString('zh-CN');
-    return { startDate, endDate, label };
+    const yesterday = now.subtract(1, 'day');
+    return {
+      startDate: getPeriodStart(cycle, yesterday.toDate()),
+      endDate: getPeriodEnd(cycle, yesterday.toDate()),
+      label: yesterday.format('YYYY-MM-DD'),
+    };
   }
 
   if (cycle === 'weekly') {
-    const thisMondayStart = new Date(now);
-    const day = thisMondayStart.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    thisMondayStart.setDate(thisMondayStart.getDate() + diff);
-    thisMondayStart.setHours(0, 0, 0, 0);
-
-    const endDate = new Date(thisMondayStart);
-    const startDate = new Date(thisMondayStart);
-    startDate.setDate(startDate.getDate() - 7);
-    const label = `${startDate.toLocaleDateString('zh-CN')} ~ ${new Date(
-      endDate.getTime() - 1,
-    ).toLocaleDateString('zh-CN')}`;
-    return { startDate, endDate, label };
+    const lastWeek = now.subtract(1, 'week');
+    const startDate = getPeriodStart(cycle, lastWeek.toDate());
+    const endDate = getPeriodEnd(cycle, lastWeek.toDate());
+    return {
+      startDate,
+      endDate,
+      label: `${dayjs(startDate).format('YYYY-MM-DD')} ~ ${dayjs(endDate)
+        .subtract(1, 'millisecond')
+        .format('YYYY-MM-DD')}`,
+    };
   }
 
   // monthly
-  const endDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  const startDate = new Date(
-    now.getFullYear(),
-    now.getMonth() - 1,
-    1,
-    0,
-    0,
-    0,
-    0,
-  );
-  const label = startDate.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-  });
-  return { startDate, endDate, label };
+  const lastMonth = now.subtract(1, 'month');
+  return {
+    startDate: getPeriodStart(cycle, lastMonth.toDate()),
+    endDate: getPeriodEnd(cycle, lastMonth.toDate()),
+    label: lastMonth.format('YYYY年MM月'),
+  };
 }
 
 /**
  * 判断当前时间是否是指定周期的结算时间点
  */
-function isSettlementTime(cycle: Cycle): boolean {
+function isSettlementTime(cycle: Period): boolean {
   const now = new Date();
   const hour = now.getHours();
   const minute = now.getMinutes();
@@ -91,7 +83,7 @@ async function settleActivityReward(config: any): Promise<void> {
   const botName = bot.botName || botId;
   const groupId = group?._id || group;
   const groupTitle = group?.title || groupId;
-  const cycle: Cycle = activityRewardCycle || 'daily';
+  const cycle: Period = activityRewardCycle || 'daily';
   const topN: number = activityRewardTopN || 3;
   const rewardPoints: number = activityRewardPoints || 10;
 
@@ -178,7 +170,7 @@ export async function processActivityRewards(): Promise<void> {
         continue;
       }
 
-      const cycle: Cycle = config.activityRewardCycle || 'daily';
+      const cycle = config.activityRewardCycle || 'daily';
 
       if (!isSettlementTime(cycle)) {
         continue;

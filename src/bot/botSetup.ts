@@ -10,6 +10,7 @@ import { checkBotExpired } from './middlewares/checkBotExpired';
 import replyRuleHandler from './middlewares/replyRuleHandler';
 import { rankingPaginationHandler } from './middlewares/rankingPaginationHandler';
 import { inlineMenuCallbackHandler } from './middlewares/inlineMenuCallbackHandler';
+import { speechRewardHandler } from './middlewares/speechRewardHandler';
 import { privateCommandsList, groupCommandsList } from './commandsList';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
@@ -109,6 +110,7 @@ export const setupBot = (token: string) => {
   bot.use(serviceMessageDeleter);
 
   bot.use(logger);
+  bot.use(speechRewardHandler);
   bot.use(rankingPaginationHandler);
   bot.use(replyRuleHandler);
   bot.use(userComposer.middleware());
