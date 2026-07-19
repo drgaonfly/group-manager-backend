@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import { syncGroupAdministrators } from '../../services/syncGroupAdministrators';
 import Group from '../../../models/group';
 import createDebug from 'debug';
@@ -46,7 +45,7 @@ export const botJoinLeaveHandler: Middleware<MyContext> = async (ctx, next) => {
     ) &&
     ['left', 'kicked'].includes(myChatMemberUpdate.new_chat_member.status);
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // 处理 Bot 被移除
   if (isBotRemovedFromChat) {

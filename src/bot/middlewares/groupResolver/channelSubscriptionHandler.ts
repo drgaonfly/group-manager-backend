@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import Group from '../../../models/group';
 import BotUser from '../../../models/botUser';
 import createDebug from 'debug';
@@ -38,7 +37,7 @@ export const channelSubscriptionHandler: Middleware<MyContext> = async (
   const newStatus = chatMemberUpdate.new_chat_member.status;
   const user = chatMemberUpdate.new_chat_member.user;
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // 用户订阅频道
   const isChannelSubscribed =

@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import Group from '../../../models/group';
 import createDebug from 'debug';
 
@@ -13,6 +12,8 @@ const debug = createDebug('bot:group:basic');
  * 2. 查询或创建群组记录
  * 3. 更新群组基本信息（title, type, username）
  * 4. 将 currentGroup 挂载到 ctx
+ *
+ * 注意：依赖 proxyResolver 先执行，设置 ctx.currentProxyUser
  */
 export const basicResolver: Middleware<MyContext> = async (ctx, next) => {
   const chat = ctx.chat || ctx.myChatMember?.chat || ctx.chatMember?.chat;
@@ -28,7 +29,7 @@ export const basicResolver: Middleware<MyContext> = async (ctx, next) => {
   const chatType = chat.type;
   const chatUsername = (chat as any).username ?? '';
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // 查询数据库中的群组信息
   let currentGroup = await Group.findOne({

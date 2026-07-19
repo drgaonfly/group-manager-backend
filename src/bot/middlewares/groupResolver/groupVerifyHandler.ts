@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import { PermissionChecker } from '../../utils/permissionChecker';
 import { sendGroupVerifyMessage } from '../../../services/sendGroupVerifyMessage';
 import GroupVerify from '../../../models/groupVerify';
@@ -23,7 +22,7 @@ export const groupVerifyHandler: Middleware<MyContext> = async (ctx, next) => {
     return await next();
   }
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // 检查是否启用验证功能
   if (!PermissionChecker.canUseGroupVerify(proxyUser, ctx.currentBot)) {

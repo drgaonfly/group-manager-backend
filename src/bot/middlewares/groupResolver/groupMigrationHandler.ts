@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import Group from '../../../models/group';
 import createDebug from 'debug';
 
@@ -24,7 +23,7 @@ export const groupMigrationHandler: Middleware<MyContext> = async (
   const chatTitle = (chat as any)?.title;
   const chatType = chat?.type;
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // ── 方式 1: 通过 migrate_from_chat_id 事件直接更新 ──────────────────
   const oldChatId = ctx.message?.migrate_from_chat_id;

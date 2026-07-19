@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import { PermissionChecker } from '../../utils/permissionChecker';
 import { sendGroupWelcomeMessage } from '../../../services/sendGroupWelcomeMessage';
 import GroupWelcome from '../../../models/groupWelcome';
@@ -30,7 +29,7 @@ export const groupWelcomeHandler: Middleware<MyContext> = async (ctx, next) => {
     return await next();
   }
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // 检查是否启用欢迎功能
   if (!PermissionChecker.canUseGroupWelcome(proxyUser, ctx.currentBot)) {

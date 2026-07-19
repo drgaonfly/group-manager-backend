@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import Group from '../../../models/group';
 import BotUser from '../../../models/botUser';
 import createDebug from 'debug';
@@ -41,7 +40,7 @@ export const adminManagementHandler: Middleware<MyContext> = async (
   const memberUser = chatMemberUpdate.new_chat_member.user;
   const memberId = memberUser.id;
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // ── 判断管理员提升/撤销 ───────────────────────────────────────────────
   // 注意：Telegram 普通 group（非 supergroup）中，提升管理员时

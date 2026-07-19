@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import { findBotProxy } from '../../services/findBotProxy';
 import Group from '../../../models/group';
 import BotUser from '../../../models/botUser';
 import createDebug from 'debug';
@@ -33,7 +32,7 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
   }
 
   const chatMemberUpdate = ctx.chatMember;
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // ── 处理成员离开 ──────────────────────────────────────────────────────
   const isMemberLeft =

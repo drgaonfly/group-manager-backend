@@ -96,8 +96,8 @@ export const setupBot = (token: string) => {
   bot.use(botResolver);
   bot.use(botUserResolver);
   bot.use(botUserConfigResolver);
-  bot.use(groupResolver);
   bot.use(proxyResolver);
+  bot.use(groupResolver);
   bot.use(errorHandler);
 
   // /reload 在广告过滤之前独立处理，避免错误冒泡导致 next already called
