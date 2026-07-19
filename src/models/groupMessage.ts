@@ -59,6 +59,8 @@ export interface IGroupMessage extends Document {
   isOnline: boolean;
   autoDeletePrevious: boolean;
   isPinned: boolean;
+  lastSentTime?: Date;
+  lastSentMessageId?: number;
   startAt: Date;
   endAt: Date;
   createdAt: Date;
@@ -124,6 +126,14 @@ const groupMessageSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: false,
+    },
+    lastSentTime: {
+      type: Date,
+      required: false,
+    },
+    lastSentMessageId: {
+      type: Number,
+      required: false,
     },
     startAt: {
       type: Date,

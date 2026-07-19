@@ -1,6 +1,5 @@
 import User from '../../models/user';
 import ChannelPost from '../../models/channelPost';
-import ChannelPostHistory from '../../models/channelPostHistory';
 import { IGroup } from '../../models/group';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
@@ -75,15 +74,12 @@ export async function channelPost() {
           continue;
         }
 
-        // 检查间隔时间
-        const history = await ChannelPostHistory.findOne({
-          channel: channel._id,
-        });
-        const intervalTimeInMs = post.interval * 60 * 1000;
-
-        if (history) {
+        // 检查间隔时间（使用 ChannelPost 自身的 lastPostTime）
+        if (post.lastPostTime) {
           const timeSinceLastSent =
-            Date.now() - new Date(history.sentAt).getTime();
+            Date.now() - new Date(post.lastPostTime).getTime();
+          const intervalTimeInMs = post.interval * 60 * 1000;
+
           if (timeSinceLastSent < intervalTimeInMs) {
             console.log(
               `[channelPost] 频道 ${channel.id} 距上次发送 ${(
@@ -118,21 +114,18 @@ export async function channelPost() {
 
         let sentMessageId: number | undefined;
         try {
-          // 自动删除上一条
-          if (post.isClearLastPost && history?.messageId) {
+          // 自动删除上一条（使用 ChannelPost 自身的 lastPostMessageId）
+          if (post.isClearLastPost && post.lastPostMessageId) {
             try {
-              // 查询上一条消息是否设置了置顶
-              const lastPost = await ChannelPost.findById(history.channelPost);
-
               // 如果上一条消息设置了置顶，先取消置顶
-              if (lastPost?.isPinned) {
+              if (post.isPinned) {
                 try {
                   await telegramBot.api.unpinChatMessage(
                     channelTarget,
-                    history.messageId,
+                    post.lastPostMessageId,
                   );
                   console.log(
-                    `[autoDelete] 频道 ${channelTarget} 已取消置顶消息 ${history.messageId}`,
+                    `[autoDelete] 频道 ${channelTarget} 已取消置顶消息 ${post.lastPostMessageId}`,
                   );
                 } catch (unpinErr: any) {
                   console.warn(
@@ -145,10 +138,10 @@ export async function channelPost() {
               // 删除消息
               await telegramBot.api.deleteMessage(
                 channelTarget,
-                history.messageId,
+                post.lastPostMessageId,
               );
               console.log(
-                `[autoDelete] 频道 ${channelTarget} 已删除上一条消息 ${history.messageId}`,
+                `[autoDelete] 频道 ${channelTarget} 已删除上一条消息 ${post.lastPostMessageId}`,
               );
             } catch (delErr: any) {
               console.warn(
@@ -207,21 +200,9 @@ export async function channelPost() {
             }
           }
 
-          await ChannelPostHistory.create({
-            channelPost: post._id,
-            bot: bot._id,
-            proxy: post.proxy,
-            channel: channel._id,
-            channelId: channelTarget,
-            messageId: sentMessageId,
-            content: post.content,
-            medias: post.medias || [],
-            status: 'success',
-            sentAt: new Date(),
-          });
-
           await ChannelPost.findByIdAndUpdate(post._id, {
             lastPostTime: new Date(),
+            lastPostMessageId: sentMessageId,
           });
 
           stats.sent++;
@@ -229,18 +210,6 @@ export async function channelPost() {
             `[channelPost] 频道 ${channelTarget} 推广 ${post._id} 发送成功`,
           );
         } catch (sendErr: any) {
-          await ChannelPostHistory.create({
-            channelPost: post._id,
-            bot: bot._id,
-            proxy: post.proxy,
-            channel: channel._id,
-            channelId: channelTarget,
-            content: post.content,
-            medias: post.medias || [],
-            status: 'failed',
-            errorMessage: sendErr?.message || String(sendErr),
-            sentAt: new Date(),
-          });
           console.error(
             `[channelPost] 向频道 ${channelTarget} 发送消息失败:`,
             sendErr,

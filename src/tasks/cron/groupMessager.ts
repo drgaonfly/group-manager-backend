@@ -1,7 +1,6 @@
 import User from '../../models/user';
 import GroupMessage from '../../models/groupMessage';
 import { IGroup } from '../../models/group';
-import GroupMessageHistory from '../../models/groupMessageHistory';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
@@ -80,13 +79,12 @@ export async function sendGroupMessages() {
           continue;
         }
 
-        // 检查间隔时间
-        const history = await GroupMessageHistory.findOne({ group: group._id });
-        const intervalTimeInMs = msg.intervalTime * 60 * 1000;
-
-        if (history) {
+        // 检查间隔时间（使用 GroupMessage 自身的 lastSentTime）
+        if (msg.lastSentTime) {
           const timeSinceLastSent =
-            Date.now() - new Date(history.sentAt).getTime();
+            Date.now() - new Date(msg.lastSentTime).getTime();
+          const intervalTimeInMs = msg.intervalTime * 60 * 1000;
+
           if (timeSinceLastSent < intervalTimeInMs) {
             console.log(
               `[sendGroupMessages] 群 ${group.id} 距上次发送 ${(
@@ -107,22 +105,17 @@ export async function sendGroupMessages() {
         let sentMessageId: number | undefined;
         try {
           // 自动删除上一条
-          if (msg.autoDeletePrevious && history?.lastSentMessageId) {
+          if (msg.autoDeletePrevious && msg.lastSentMessageId) {
             try {
-              // 查询上一条消息是否设置了置顶
-              const lastMessage = await GroupMessage.findById(
-                history.lastSentMessage,
-              );
-
               // 如果上一条消息设置了置顶，先取消置顶
-              if (lastMessage?.isPinned) {
+              if (msg.isPinned) {
                 try {
                   await telegramBot.api.unpinChatMessage(
                     group.id,
-                    history.lastSentMessageId,
+                    msg.lastSentMessageId,
                   );
                   console.log(
-                    `[autoDelete] 群 ${group.id} 已取消置顶消息 ${history.lastSentMessageId}`,
+                    `[autoDelete] 群 ${group.id} 已取消置顶消息 ${msg.lastSentMessageId}`,
                   );
                 } catch (unpinErr: any) {
                   console.warn(
@@ -135,10 +128,10 @@ export async function sendGroupMessages() {
               // 删除消息
               await telegramBot.api.deleteMessage(
                 group.id,
-                history.lastSentMessageId,
+                msg.lastSentMessageId,
               );
               console.log(
-                `[autoDelete] 群 ${group.id} 已删除上一条消息 ${history.lastSentMessageId}`,
+                `[autoDelete] 群 ${group.id} 已删除上一条消息 ${msg.lastSentMessageId}`,
               );
             } catch (delErr: any) {
               console.warn(
@@ -187,7 +180,7 @@ export async function sendGroupMessages() {
           if (msg.isPinned && sentMessageId) {
             try {
               await telegramBot.api.pinChatMessage(group.id, sentMessageId, {
-                disable_notification: true, // 静默置顶，不通知群成员
+                disable_notification: true,
               });
               console.log(
                 `[pinMessage] 群 ${group.id} 消息 ${sentMessageId} 已置顶`,
@@ -200,15 +193,11 @@ export async function sendGroupMessages() {
             }
           }
 
-          await GroupMessageHistory.findOneAndUpdate(
-            { group: group._id },
-            {
-              lastSentMessage: msg._id,
-              lastSentMessageId: sentMessageId,
-              sentAt: new Date(),
-            },
-            { upsert: true },
-          );
+          // 更新 GroupMessage 的最后发送时间和消息ID
+          await GroupMessage.findByIdAndUpdate(msg._id, {
+            lastSentTime: new Date(),
+            lastSentMessageId: sentMessageId,
+          });
 
           stats.sent++;
           console.log(
