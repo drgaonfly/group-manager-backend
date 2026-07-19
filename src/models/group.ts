@@ -17,12 +17,10 @@ export interface IGroup extends Document {
   fee_rate?: number;
   isOnline: boolean; // 是否在线，不用显示在后台
   botUsers: (mongoose.Schema.Types.ObjectId | IBotUser)[];
-  mutedUsers: number[]; // 被禁言的用户 Telegram ID 列表
-  pendingVerifyUsers: number[]; // 待验证的用户 Telegram ID 列表
+
   startAt?: Date;
   unit?: string;
-  message: string;
-  intervalTime: number; // 间隔时间
+
   updatedAt: Date;
   createdAt: Date;
 }
@@ -41,6 +39,11 @@ const groupSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
     },
     // 群组/频道用户名（公开链接用，如 @groupname）
     username: {
@@ -61,13 +64,13 @@ const groupSchema = new mongoose.Schema(
       ref: 'Bot',
       required: true,
     },
-    // 认证者或创建者
+    // 群的owner
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BotUser',
       required: false,
     },
-    // 操作人
+    // 群的administrators
     operators: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -99,38 +102,12 @@ const groupSchema = new mongoose.Schema(
         ref: 'BotUser',
       },
     ],
-    // 被禁言的用户 Telegram ID 列表
-    mutedUsers: [
-      {
-        type: Number,
-      },
-    ],
-    // 待验证的用户 Telegram ID 列表
-    pendingVerifyUsers: [
-      {
-        type: Number,
-      },
-    ],
     startAt: {
       type: Date,
     },
     unit: {
       type: String,
       default: 'USD',
-    },
-    message: {
-      type: String,
-      required: false,
-    },
-    intervalTime: {
-      type: Number,
-      required: false,
-      default: 0,
-    },
-    proxy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: false,
     },
   },
   {

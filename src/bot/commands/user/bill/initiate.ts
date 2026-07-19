@@ -1,10 +1,10 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
-import createDebug from 'debug';
 import { isOperatorOrCreator } from '../../../../bot/middlewares/checkBotUser';
 import { checkGroup } from '../../../../bot/middlewares/checkGroup';
 import Transaction from '../../../../models/transaction';
 import { checkPermission } from '../../../middlewares/checkPermission';
+import createDebug from 'debug';
 
 const initiateCommand = new Composer<MyContext>();
 
