@@ -20,7 +20,7 @@ import { groupUpdateHandler } from './groupUpdateHandler';
  * 3. groupMigrationHandler - 群组升级处理
  * 4. memberJoinLeaveHandler - 成员加入/离开处理
  * 5. channelSubscriptionHandler - 频道订阅处理
- * 6. adminManagementHandler - 管理员提升/撤销处理、群主转移处理
+ * 6. adminChangedHandler - 管理员提升/撤销处理、群主转移处理
  * 7. botAdminPromptHandler - Bot 被提升为管理员提示
  * 8. groupVerifyHandler - 群组验证处理（新成员）
  * 9. groupWelcomeHandler - 群组欢迎处理（新成员）
