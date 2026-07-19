@@ -164,6 +164,27 @@ export async function channelPost() {
             sentMessageId = result.message_id;
           }
 
+          // 如果设置了置顶，则置顶消息
+          if (post.isPinned && sentMessageId) {
+            try {
+              await telegramBot.api.pinChatMessage(
+                channelTarget,
+                sentMessageId,
+                {
+                  disable_notification: true, // 静默置顶，不通知频道订阅者
+                },
+              );
+              console.log(
+                `[pinMessage] 频道 ${channelTarget} 消息 ${sentMessageId} 已置顶`,
+              );
+            } catch (pinErr: any) {
+              console.warn(
+                `[pinMessage] 置顶消息失败（忽略）:`,
+                pinErr?.message,
+              );
+            }
+          }
+
           await ChannelPostHistory.create({
             channelPost: post._id,
             bot: bot._id,

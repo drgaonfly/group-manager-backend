@@ -160,6 +160,23 @@ export async function sendGroupMessages() {
             sentMessageId = result.message_id;
           }
 
+          // 如果设置了置顶，则置顶消息
+          if (msg.isPinned && sentMessageId) {
+            try {
+              await telegramBot.api.pinChatMessage(group.id, sentMessageId, {
+                disable_notification: true, // 静默置顶，不通知群成员
+              });
+              console.log(
+                `[pinMessage] 群 ${group.id} 消息 ${sentMessageId} 已置顶`,
+              );
+            } catch (pinErr: any) {
+              console.warn(
+                `[pinMessage] 置顶消息失败（忽略）:`,
+                pinErr?.message,
+              );
+            }
+          }
+
           await GroupMessageRecord.create({
             groupMessage: msg._id,
             bot: bot._id,

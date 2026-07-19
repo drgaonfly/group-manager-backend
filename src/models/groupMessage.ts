@@ -58,6 +58,7 @@ export interface IGroupMessage extends Document {
   weight: number;
   isOnline: boolean;
   autoDeletePrevious: boolean;
+  isPinned: boolean;
   startAt: Date;
   endAt: Date;
   createdAt: Date;
@@ -115,6 +116,11 @@ const groupMessageSchema = new mongoose.Schema(
       default: true,
     },
     autoDeletePrevious: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    isPinned: {
       type: Boolean,
       required: false,
       default: false,

@@ -17,6 +17,7 @@ export interface IChannelPost extends Document {
   lastPostTime?: Date; // 上次发送时间
   lastPostMessageId?: number; // 上次发送的消息ID
   isClearLastPost: boolean; // 是否清除上一条消息
+  isPinned: boolean; // 是否置顶消息
   isOnline: boolean; // 是否启用定时发送
   sendType: 'immediate' | 'scheduled'; // 发送类型
   startAt?: Date; // 发送时间窗口开始
@@ -68,6 +69,10 @@ const channelPostSchema = new mongoose.Schema(
       required: false,
     },
     isClearLastPost: {
+      type: Boolean,
+      default: false,
+    },
+    isPinned: {
       type: Boolean,
       default: false,
     },

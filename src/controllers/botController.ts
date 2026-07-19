@@ -757,94 +757,131 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
 
 // group message
 // send message
-const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+const sendGroupMessage = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { id } = req.params;
 
-  const { content, medias, menus } = req.body;
+    const { content, medias, menus, isPinned } = req.body;
 
-  const botManager = await Bot.findById(id)
-    .populate('botUsers')
-    .populate('groups');
+    const botManager = await Bot.findById(id)
+      .populate('botUsers')
+      .populate('groups');
 
-  const bot_groups = botManager.groups;
+    const bot_groups = botManager.groups;
 
-  const req_groups = req.body.groups;
+    const req_groups = req.body.groups;
 
-  if (req_groups.length === 0) {
-    res.status(400);
-    throw new Error('群组列表不能为空，请选择群组');
-  }
-
-  // 从bot_groups中找到req_groups中存在的group
-  const processed_groups = bot_groups.filter((group: any) =>
-    req_groups.includes(String(group._id)),
-  );
-
-  if (!botManager) {
-    res.status(404);
-    throw new Error('机器人不存在');
-  }
-
-  const telegramBot = setupBot(botManager.token);
-
-  // 先保存 GroupMessage 记录，获取真实的 menu._id 用于 callback_data
-  let menusWithIds = menus;
-  if (Array.isArray(menus) && menus.some((m: any) => m?.type === 'callback')) {
-    try {
-      const saved = await GroupMessage.create({
-        ...req.body,
-        bot: id,
-        proxy: (req as RequestCustom).user?._id,
-        sendType: 'immediate',
-        isRealtime: true,
-      });
-      menusWithIds = saved.menus;
-    } catch (e) {
-      // 保存失败不影响发送，降级用原始 menus
+    if (req_groups.length === 0) {
+      res.status(400);
+      throw new Error('群组列表不能为空，请选择群组');
     }
-  }
 
-  // 构建菜单 InlineKeyboard
-  const replyMarkup = buildInlineKeyboard(menusWithIds);
+    // 从bot_groups中找到req_groups中存在的group
+    const processed_groups = bot_groups.filter((group: any) =>
+      req_groups.includes(String(group._id)),
+    );
 
-  // 保证catch时跳过，不影响其它的
-  await Promise.all(
-    processed_groups.map(async (group: any) => {
+    if (!botManager) {
+      res.status(404);
+      throw new Error('机器人不存在');
+    }
+
+    const telegramBot = setupBot(botManager.token);
+
+    // 先保存 GroupMessage 记录，获取真实的 menu._id 用于 callback_data
+    let menusWithIds = menus;
+    if (
+      Array.isArray(menus) &&
+      menus.some((m: any) => m?.type === 'callback')
+    ) {
       try {
-        if (!group) {
-          console.log(`[sendGroupMessage] 群组不存在: ${group}`);
+        const saved = await GroupMessage.create({
+          ...req.body,
+          bot: id,
+          proxy: req.user?._id,
+          sendType: 'immediate',
+          isRealtime: true,
+        });
+        menusWithIds = saved.menus;
+      } catch (e) {
+        // 保存失败不影响发送，降级用原始 menus
+      }
+    }
+
+    // 构建菜单 InlineKeyboard
+    const replyMarkup = buildInlineKeyboard(menusWithIds);
+
+    // 保证catch时跳过，不影响其它的
+    await Promise.all(
+      processed_groups.map(async (group: any) => {
+        try {
+          if (!group) {
+            console.log(`[sendGroupMessage] 群组不存在: ${group}`);
+            return;
+          }
+
+          let sentMessageId: number;
+
+          if (medias && Array.isArray(medias) && medias.length > 0) {
+            const result = await sendMediaMessage(
+              telegramBot.api,
+              group.id,
+              medias,
+              {
+                caption: content,
+                reply_markup: replyMarkup,
+              },
+            );
+            sentMessageId =
+              (result as any).message_id ||
+              (result as any).media_group_messages?.[0]?.message_id;
+          } else {
+            // 发送纯文本消息
+            const result = await telegramBot.api.sendMessage(
+              group.id,
+              content,
+              {
+                parse_mode: 'HTML',
+                ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+              },
+            );
+            sentMessageId = result.message_id;
+          }
+
+          // 如果设置了置顶，则置顶消息
+          if (isPinned && sentMessageId) {
+            try {
+              await telegramBot.api.pinChatMessage(group.id, sentMessageId, {
+                disable_notification: true, // 静默置顶，不通知群成员
+              });
+              console.log(
+                `[pinMessage] 群 ${group.id} 消息 ${sentMessageId} 已置顶`,
+              );
+            } catch (pinErr: any) {
+              console.warn(
+                `[pinMessage] 置顶消息失败（忽略）:`,
+                pinErr?.message,
+              );
+            }
+          }
+        } catch (error) {
+          // 捕获错误，输出日志，跳过本次，不影响其它群组
+          console.error(
+            `[sendGroupMessage] 向群组 ${group?.id} 发送消息失败:`,
+            error,
+          );
+          // 直接return跳过
           return;
         }
+      }),
+    );
 
-        if (medias && Array.isArray(medias) && medias.length > 0) {
-          await sendMediaMessage(telegramBot.api, group.id, medias, {
-            caption: content,
-            reply_markup: replyMarkup,
-          });
-        } else {
-          // 发送纯文本消息
-          await telegramBot.api.sendMessage(group.id, content, {
-            parse_mode: 'HTML',
-            ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-          });
-        }
-      } catch (error) {
-        // 捕获错误，输出日志，跳过本次，不影响其它群组
-        console.error(
-          `[sendGroupMessage] 向群组 ${group?.id} 发送消息失败:`,
-          error,
-        );
-        // 直接return跳过
-        return;
-      }
-    }),
-  );
-
-  res.json({
-    success: true,
-    message: '群发消息成功',
-  });
-});
+    res.json({
+      success: true,
+      message: '群发消息成功',
+    });
+  },
+);
 
 /**
  * 立即发送频道消息
@@ -852,36 +889,25 @@ const sendGroupMessage = handleAsync(async (req: Request, res: Response) => {
 const sendChannelPost = handleAsync(
   async (req: RequestCustom, res: Response) => {
     const { id } = req.params;
-    const { url, channel, title, content, medias, menus } = req.body;
+    const { channelId, title, content, medias, menus, isPinned } = req.body;
 
-    const botManager = await Bot.findById(id).populate('groups');
+    console.log('channel', channelId);
+
+    const botManager = await Bot.findById(id);
 
     if (!botManager) {
       res.status(404);
       throw new Error('机器人不存在');
     }
 
-    // 获取目标频道
-    let channelTarget: any;
-    let channelGroup: any;
+    const channel = await Group.findById(channelId);
 
-    if (channel) {
-      // channel 是 Group 的 _id，需要从 bot.groups 中找到对应的 Telegram ID
-      const botGroups = botManager.groups as any[];
-      channelGroup = botGroups.find(
-        (g: any) => g._id.toString() === channel.toString(),
-      );
-      if (channelGroup && channelGroup.id) {
-        channelTarget = channelGroup.id;
-      }
-    } else if (url) {
-      // 兼容旧版本：从频道URL中提取频道ID或用户名
-      channelTarget = extractChannelTarget(url);
-    }
+    // 获取目标频道 ID（可能是字符串或对象）
+    const channelTarget = channel.id;
 
     if (!channelTarget) {
       res.status(400);
-      throw new Error('请选择至少一个频道，或提供有效的频道链接');
+      throw new Error('请选择频道');
     }
 
     const telegramBot = setupBot(botManager.token);
@@ -896,7 +922,7 @@ const sendChannelPost = handleAsync(
         const saved = await ChannelPost.create({
           ...req.body,
           bot: id,
-          proxy: req.proxyUser._id,
+          proxy: req.proxyUser?._id,
           sendType: 'immediate',
           isOnline: false,
         });
@@ -916,17 +942,46 @@ const sendChannelPost = handleAsync(
     const replyMarkup = buildInlineKeyboard(menusWithIds);
 
     try {
+      let sentMessageId: number;
+
       if (medias && Array.isArray(medias) && medias.length > 0) {
-        await sendMediaMessage(telegramBot.api, channelTarget, medias, {
-          caption: messageContent,
-          reply_markup: replyMarkup,
-        });
+        const result = await sendMediaMessage(
+          telegramBot.api,
+          channelTarget,
+          medias,
+          {
+            caption: messageContent,
+            reply_markup: replyMarkup,
+          },
+        );
+        sentMessageId =
+          (result as any).message_id ||
+          (result as any).media_group_messages?.[0]?.message_id;
       } else {
         // 发送纯文本消息
-        await telegramBot.api.sendMessage(channelTarget, messageContent, {
-          parse_mode: 'HTML',
-          ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-        });
+        const result = await telegramBot.api.sendMessage(
+          channelTarget,
+          messageContent,
+          {
+            parse_mode: 'HTML',
+            ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+          },
+        );
+        sentMessageId = result.message_id;
+      }
+
+      // 如果设置了置顶，则置顶消息
+      if (isPinned && sentMessageId) {
+        try {
+          await telegramBot.api.pinChatMessage(channelTarget, sentMessageId, {
+            disable_notification: true, // 静默置顶，不通知频道订阅者
+          });
+          console.log(
+            `[pinMessage] 频道 ${channelTarget} 消息 ${sentMessageId} 已置顶`,
+          );
+        } catch (pinErr: any) {
+          console.warn(`[pinMessage] 置顶消息失败（忽略）:`, pinErr?.message);
+        }
       }
 
       res.json({
