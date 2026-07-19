@@ -121,6 +121,28 @@ export async function channelPost() {
           // 自动删除上一条
           if (post.isClearLastPost && history?.messageId) {
             try {
+              // 查询上一条消息是否设置了置顶
+              const lastPost = await ChannelPost.findById(history.channelPost);
+
+              // 如果上一条消息设置了置顶，先取消置顶
+              if (lastPost?.isPinned) {
+                try {
+                  await telegramBot.api.unpinChatMessage(
+                    channelTarget,
+                    history.messageId,
+                  );
+                  console.log(
+                    `[autoDelete] 频道 ${channelTarget} 已取消置顶消息 ${history.messageId}`,
+                  );
+                } catch (unpinErr: any) {
+                  console.warn(
+                    `[autoDelete] 取消置顶失败（忽略）:`,
+                    unpinErr?.message,
+                  );
+                }
+              }
+
+              // 删除消息
               await telegramBot.api.deleteMessage(
                 channelTarget,
                 history.messageId,

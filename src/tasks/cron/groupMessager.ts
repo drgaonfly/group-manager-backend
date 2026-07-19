@@ -2,7 +2,6 @@ import User from '../../models/user';
 import GroupMessage from '../../models/groupMessage';
 import { IGroup } from '../../models/group';
 import GroupMessageHistory from '../../models/groupMessageHistory';
-import GroupMessageRecord from '../../models/groupMessageRecord';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { setupBot } from '../../bot/botSetup';
@@ -110,6 +109,30 @@ export async function sendGroupMessages() {
           // 自动删除上一条
           if (msg.autoDeletePrevious && history?.lastSentMessageId) {
             try {
+              // 查询上一条消息是否设置了置顶
+              const lastMessage = await GroupMessage.findById(
+                history.lastSentMessage,
+              );
+
+              // 如果上一条消息设置了置顶，先取消置顶
+              if (lastMessage?.isPinned) {
+                try {
+                  await telegramBot.api.unpinChatMessage(
+                    group.id,
+                    history.lastSentMessageId,
+                  );
+                  console.log(
+                    `[autoDelete] 群 ${group.id} 已取消置顶消息 ${history.lastSentMessageId}`,
+                  );
+                } catch (unpinErr: any) {
+                  console.warn(
+                    `[autoDelete] 取消置顶失败（忽略）:`,
+                    unpinErr?.message,
+                  );
+                }
+              }
+
+              // 删除消息
               await telegramBot.api.deleteMessage(
                 group.id,
                 history.lastSentMessageId,
@@ -177,19 +200,6 @@ export async function sendGroupMessages() {
             }
           }
 
-          await GroupMessageRecord.create({
-            groupMessage: msg._id,
-            bot: bot._id,
-            proxy: msg.proxy,
-            group: group._id,
-            groupId: group.id,
-            messageId: sentMessageId,
-            content: msg.content,
-            medias: msg.medias || [],
-            status: 'success',
-            sentAt: new Date(),
-          });
-
           await GroupMessageHistory.findOneAndUpdate(
             { group: group._id },
             {
@@ -205,18 +215,6 @@ export async function sendGroupMessages() {
             `[sendGroupMessages] 群 ${group.id} 消息 ${msg._id} 发送成功`,
           );
         } catch (sendErr: any) {
-          await GroupMessageRecord.create({
-            groupMessage: msg._id,
-            bot: bot._id,
-            proxy: msg.proxy,
-            group: group._id,
-            groupId: group.id,
-            content: msg.content,
-            medias: msg.medias || [],
-            status: 'failed',
-            errorMessage: sendErr?.message || String(sendErr),
-            sentAt: new Date(),
-          });
           console.error(
             `[sendGroupMessages] 向群 ${group?.id} 发送消息失败:`,
             sendErr,
