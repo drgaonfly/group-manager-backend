@@ -4,11 +4,13 @@ import { findBotProxy } from '../services/findBotProxy';
 import { PermissionChecker } from '../utils/permissionChecker';
 import { sendGroupWelcomeMessage } from '../../services/sendGroupWelcomeMessage';
 import { sendGroupVerifyMessage } from '../../services/sendGroupVerifyMessage';
+import { syncGroupAdministrators } from '../commands/admin/syncAdmins';
 import Group from '../../models/group';
 import GroupVerify from '../../models/groupVerify';
 import GroupWelcome from '../../models/groupWelcome';
 import BotUser from '../../models/botUser';
 import createDebug from 'debug';
+
 
 const debug = createDebug('bot:group');
 
@@ -186,6 +188,21 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
       await newGroup.save();
       ctx.currentGroup = newGroup;
 
+      // 主动获取群组的真实管理员信息（异步执行，不阻塞主流程）
+      if (chatType !== 'channel') {
+        syncGroupAdministrators(ctx, newGroup, proxyUser)
+          .then((result) => {
+            if (result.success) {
+              debug(`✅ 已同步群组管理员信息: ${chatTitle}`);
+            } else {
+              debug(`⚠️ 同步群组管理员信息失败: ${result.message}`);
+            }
+          })
+          .catch((err) =>
+            debug(`❌ 同步群组管理员信息异常: ${err.message}`),
+          );
+      }
+
       // 频道和群组使用不同的欢迎消息
       if (chatType === 'channel') {
         debug(`✅ 已创建频道记录: ${chatTitle} (${chatId})`);
@@ -238,6 +255,23 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     }
 
     ctx.currentGroup = currentGroup;
+
+    // 如果是机器人被重新添加到群组，触发管理员同步
+    // 这样可以纠正之前可能错误的 creator 信息
+    if (isBotAddedToChat && chatType !== 'channel') {
+      debug('🔄 检测到机器人被重新添加，触发管理员同步');
+      syncGroupAdministrators(ctx, currentGroup, proxyUser)
+        .then((result) => {
+          if (result.success) {
+            debug(`✅ 重新同步群组管理员信息成功: ${chatTitle}`);
+          } else {
+            debug(`⚠️ 重新同步群组管理员信息失败: ${result.message}`);
+          }
+        })
+        .catch((err) =>
+          debug(`❌ 重新同步群组管理员信息异常: ${err.message}`),
+        );
+    }
   }
 
   // 如果没有群组记录，跳过后续处理
@@ -438,23 +472,25 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
     const newCanManage =
       (chatMemberUpdate.new_chat_member as any).can_manage_chat === true;
 
-    // 用户被提升为管理员
-    // supergroup: member -> administrator/creator
+    // 用户被提升为管理员（不包括群主）
+    // supergroup: member -> administrator (不包括 creator)
     // 普通 group: can_manage_chat false -> true
     const isPromotedToAdmin =
-      (oldStatus === 'member' &&
-        (newStatus === 'administrator' || newStatus === 'creator')) ||
+      (oldStatus === 'member' && newStatus === 'administrator') ||
       (!oldCanManage && newCanManage && newStatus === 'member');
 
+    // 用户被提升为群主
+    const isPromotedToCreator =
+      oldStatus === 'member' && newStatus === 'creator';
+
     // 用户被撤销管理员
-    // supergroup: administrator/creator -> member
+    // supergroup: administrator -> member (creator 不会被撤销)
     // 普通 group: can_manage_chat true -> false
     const isDemotedFromAdmin =
-      ((oldStatus === 'administrator' || oldStatus === 'creator') &&
-        newStatus === 'member') ||
+      (oldStatus === 'administrator' && newStatus === 'member') ||
       (oldCanManage && !newCanManage && oldStatus === 'member');
 
-    if (isPromotedToAdmin || isDemotedFromAdmin) {
+    if (isPromotedToAdmin || isPromotedToCreator || isDemotedFromAdmin) {
       try {
         // 查找或创建 BotUser
         let botUser = await BotUser.findOne({
@@ -476,14 +512,21 @@ const groupResolver: Middleware<MyContext> = async (ctx, next) => {
         }
 
         if (isPromotedToAdmin) {
-          // 统一添加到 Group.operators（公共和专属机器人都使用）
+          // 只有管理员（不包括群主）才添加到 Group.operators
           await Group.updateOne(
             { _id: ctx.currentGroup._id },
             { $addToSet: { operators: botUser._id } },
           );
           debug(`✅ 用户 ${memberId} 被提升为管理员，已添加到 Group.operators`);
+        } else if (isPromotedToCreator) {
+          // 群主只更新 creator 字段，不加入 operators
+          await Group.updateOne(
+            { _id: ctx.currentGroup._id },
+            { $set: { creator: botUser._id } },
+          );
+          debug(`👑 用户 ${memberId} 被提升为群主，已更新 Group.creator`);
         } else if (isDemotedFromAdmin) {
-          // 统一从 Group.operators 移除
+          // 从 Group.operators 移除
           await Group.updateOne(
             { _id: ctx.currentGroup._id },
             { $pull: { operators: botUser._id } },

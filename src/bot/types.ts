@@ -24,6 +24,16 @@ type BaseContext = CustomContext &
     currentProxyUser?: IUser;
     currentProxyBotUser?: IBotUser;
     currentProxyBotUserConfig?: IBotUserConfig;
+    // 新成员信息（由 memberJoinLeaveHandler 设置）
+    newMember?: {
+      id: number;
+      is_bot: boolean;
+      first_name: string;
+      last_name?: string;
+      username?: string;
+    };
+    // 新成员是否已被处理（由 verify/welcome handler 设置）
+    newMemberHandled?: boolean;
   };
 
 // 最终上下文类型

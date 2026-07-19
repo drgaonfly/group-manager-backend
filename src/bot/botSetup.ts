@@ -5,7 +5,7 @@ import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
 import botUserResolver from './middlewares/botUserResolver';
-import groupResolver from './middlewares/groupResolver';
+import groupResolver from './middlewares/groupResolver/index';
 import { checkBotExpired } from './middlewares/checkBotExpired';
 import replyRuleHandler from './middlewares/replyRuleHandler';
 import { rankingPaginationHandler } from './middlewares/rankingPaginationHandler';
