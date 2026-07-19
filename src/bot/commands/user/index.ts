@@ -20,7 +20,6 @@ import veryfiyComposer from './verify';
 import checkinComposer from './checkin';
 import lotteryComposer from './lottery';
 import auctionComposer from './auction';
-import operatorComposer from './operator';
 import conversationsComposer from './conversations';
 
 // import spreadComposer from './spread';
@@ -32,7 +31,6 @@ const userComposer = new Composer();
 
 // conversations 必须最先注册，确保 createConversation 在任何 enter() 调用前生效
 userComposer.use(conversationsComposer.middleware());
-userComposer.use(operatorComposer.middleware());
 userComposer.use(startComposer.middleware());
 userComposer.use(redpacketComposer.middleware());
 userComposer.use(rechargeComposer.middleware());
