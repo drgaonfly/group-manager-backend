@@ -1,4 +1,4 @@
-import { Middleware } from 'grammy';
+import { Middleware, GrammyError } from 'grammy';
 import { MyContext } from '../types';
 import ServiceMessage, { IServiceMessage } from '../../models/serviceMessage';
 import { getCache } from '../../utils/cache';
@@ -168,14 +168,41 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
     }
 
     if (shouldDelete) {
+      // 提前捕获所有需要的值，避免延迟后 ctx 失效
+      const chatId = ctx.chat!.id;
+      const messageId = msg.message_id;
+      const groupTitle = ctx.currentGroup.title;
+      const api = ctx.api;
+
       const deleteMessage = async () => {
-        try {
-          await ctx.deleteMessage();
-          debug(
-            `✅ 已删除服务消息 [${messageType}]: ${ctx.message?.message_id} (群组: ${ctx.currentGroup?.title})`,
-          );
-        } catch (e: any) {
-          debug(`❌ 删除服务消息失败 [${messageType}]: ${e.message}`);
+        const maxRetries = 3;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            await api.deleteMessage(chatId, messageId);
+            debug(
+              `✅ 已删除服务消息 [${messageType}]: ${messageId} (群组: ${groupTitle})`,
+            );
+            return;
+          } catch (e: any) {
+            // 处理 Telegram 限流（RetryAfter）
+            if (e instanceof GrammyError && e.error_code === 429) {
+              const retryAfter = (e.parameters?.retry_after ?? 5) as number;
+              debug(
+                `⚠️ 触发限流 [${messageType}] 第${attempt}次, ${retryAfter}秒后重试`,
+              );
+              if (attempt < maxRetries) {
+                await new Promise((r) =>
+                  setTimeout(r, (retryAfter + 1) * 1000),
+                );
+                continue;
+              }
+            }
+            debug(
+              `❌ 删除服务消息失败 [${messageType}] 第${attempt}次: ${e.message}`,
+            );
+            // 非限流错误或已达最大重试次数，不再重试
+            return;
+          }
         }
       };
 
