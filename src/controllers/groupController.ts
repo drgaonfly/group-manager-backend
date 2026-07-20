@@ -414,12 +414,15 @@ const addGroup = handleAsync(async (req: RequestCustom, res: Response) => {
 });
 
 // 更新群组
-const updateGroup = handleAsync(async (req: Request, res: Response) => {
+const updateGroup = handleAsync(async (req: RequestCustom, res: Response) => {
   const { id } = req.params;
+
+  // 排除不允许外部修改的字段，proxy 强制使用服务端解析的 proxyUser
+  const { proxy, bot, _id, ...safeBody } = req.body;
 
   const updatedGroup = await Group.findByIdAndUpdate(
     id,
-    { ...req.body },
+    { ...safeBody, proxy: req.proxyUser?._id },
     { new: true },
   ).exec();
 
