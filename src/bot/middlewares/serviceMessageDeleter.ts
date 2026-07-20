@@ -1,4 +1,4 @@
-import { Middleware, GrammyError } from 'grammy';
+import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import ServiceMessage, { IServiceMessage } from '../../models/serviceMessage';
 import { getCache } from '../../utils/cache';
@@ -175,34 +175,13 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
       const api = ctx.api;
 
       const deleteMessage = async () => {
-        const maxRetries = 3;
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            await api.deleteMessage(chatId, messageId);
-            debug(
-              `✅ 已删除服务消息 [${messageType}]: ${messageId} (群组: ${groupTitle})`,
-            );
-            return;
-          } catch (e: any) {
-            // 处理 Telegram 限流（RetryAfter）
-            if (e instanceof GrammyError && e.error_code === 429) {
-              const retryAfter = (e.parameters?.retry_after ?? 5) as number;
-              debug(
-                `⚠️ 触发限流 [${messageType}] 第${attempt}次, ${retryAfter}秒后重试`,
-              );
-              if (attempt < maxRetries) {
-                await new Promise((r) =>
-                  setTimeout(r, (retryAfter + 1) * 1000),
-                );
-                continue;
-              }
-            }
-            debug(
-              `❌ 删除服务消息失败 [${messageType}] 第${attempt}次: ${e.message}`,
-            );
-            // 非限流错误或已达最大重试次数，不再重试
-            return;
-          }
+        try {
+          await api.deleteMessage(chatId, messageId);
+          debug(
+            `✅ 已删除服务消息 [${messageType}]: ${messageId} (群组: ${groupTitle})`,
+          );
+        } catch (e: any) {
+          debug(`❌ 删除服务消息失败 [${messageType}]: ${e.message}`);
         }
       };
 
@@ -212,7 +191,8 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
         );
         setTimeout(deleteMessage, config.deleteDelay * 1000);
       } else {
-        await deleteMessage();
+        // fire-and-forget：不阻塞 update 处理，autoRetry 插件会自动处理限流重试
+        deleteMessage();
       }
     }
   } catch (error) {
