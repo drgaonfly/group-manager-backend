@@ -131,26 +131,26 @@ export const botJoinLeaveHandler: Middleware<MyContext> = async (ctx, next) => {
       `✅ 已创建${chatType === 'channel' ? '频道' : '群组'}记录: ${chatTitle}`,
     );
 
-    // 同步管理员信息（同步执行，确保初始化完整）
     if (chatType !== 'channel') {
-      const syncResult = await syncGroupAdministrators(
-        ctx,
-        newGroup,
-        proxyUser,
-      );
-
-      if (syncResult.success) {
-        debug(
-          `✅ 已同步群组管理员信息: ${chatTitle} (${
-            syncResult.data?.adminCount || 0
-          } 个管理员)`,
-        );
-      } else {
-        debug(`⚠️ 同步群组管理员信息失败: ${syncResult.message}`);
-      }
-
-      // 发送提示消息
+      // 先立即发送提示消息，不等管理员同步
       await ctx.reply('请把我添加为管理员才能正常使用!');
+
+      // 后台异步同步管理员信息，不阻塞
+      syncGroupAdministrators(ctx, newGroup, proxyUser)
+        .then((syncResult) => {
+          if (syncResult.success) {
+            debug(
+              `✅ 已同步群组管理员信息: ${chatTitle} (${
+                syncResult.data?.adminCount || 0
+              } 个管理员)`,
+            );
+          } else {
+            debug(`⚠️ 同步群组管理员信息失败: ${syncResult.message}`);
+          }
+        })
+        .catch((err) => {
+          debug(`❌ 同步群组管理员信息异常: ${err.message}`);
+        });
     }
   }
 
