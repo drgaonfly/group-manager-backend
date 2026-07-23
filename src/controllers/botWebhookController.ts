@@ -30,9 +30,14 @@ export const handleBotWebhook = async (
 
     const bot = setupBot(botManager.token);
 
-    // webhookCallback 是 grammY 官方推荐的 webhook 处理方式，
-    // 会自动调用 handleUpdate 并回复 200，无需手动调用
-    return webhookCallback(bot, 'express')(req, res);
+    // timeoutMilliseconds: 0 = 立即回复 200，异步处理 update。
+    // 默认行为是等整个中间件链跑完才回 200，上粉高峰时会导致 Telegram
+    // 推送积压（下一条要等上一条处理完），改为立即回复后 Telegram 可以
+    // 全速推送，积压问题消失。
+    return webhookCallback(bot, 'express', { timeoutMilliseconds: 0 })(
+      req,
+      res,
+    );
   } catch (err) {
     next(err);
   }
