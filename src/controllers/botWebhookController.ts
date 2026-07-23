@@ -34,10 +34,7 @@ export const handleBotWebhook = async (
     // 默认行为是等整个中间件链跑完才回 200，上粉高峰时会导致 Telegram
     // 推送积压（下一条要等上一条处理完），改为立即回复后 Telegram 可以
     // 全速推送，积压问题消失。
-    return webhookCallback(bot, 'express', { timeoutMilliseconds: 0 })(
-      req,
-      res,
-    );
+    return webhookCallback(bot, 'express')(req, res);
   } catch (err) {
     next(err);
   }
