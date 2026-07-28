@@ -155,22 +155,12 @@ const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { medias, ...otherFields } = req.body;
 
-  // 构建更新对象
-  const updates: any = {
-    ...otherFields,
-  };
+  const updates: any = { ...otherFields };
 
-  // 如果是已存在的URL（以http开头），则不更新，因为它已经在数据库中。
-
-  // 处理 medias 字段，只保留新的或空的媒体路径，否则保留原有的 medias
   if (Array.isArray(medias)) {
-    updates.medias = medias.filter(
-      (media) => media === '' || (media && !media.startsWith('http')),
-    );
-    // 如果全部都是已存在的URL，则保留原有 medias，不更新
-    if (updates.medias.length === 0) {
-      delete updates.medias;
-    }
+    // 直接使用前端传来的 medias（前端已经维护好了最终列表）
+    // 空数组表示用户删除了所有媒体，也要写入
+    updates.medias = medias;
   }
 
   const updatedGroupMessage = await GroupMessage.findByIdAndUpdate(
