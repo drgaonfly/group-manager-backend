@@ -8,13 +8,16 @@ const debug = createDebug('bot:service-message-deleter');
 
 /**
  * 服务消息删除中间件
- * 根据配置自动删除指定类型的服务消息
+ *
+ * 策略：立即发起单独的 deleteMessage 请求，不批量、不延迟
+ * - throttler 插件会自动排队和限流，确保不触发 Telegram 的 429
+ * - autoRetry 插件会处理偶发的限流错误
+ * - 这种方式删除速度最快，因为 throttler 会自动调整到最大允许速率
  */
 export const serviceMessageDeleter: Middleware<MyContext> = async (
   ctx,
   next,
 ) => {
-  // 只处理群组/超级群组中的消息
   if (!ctx.message || !ctx.currentGroup || !ctx.currentBot) {
     debug(
       `跳过: message=${!!ctx.message}, currentGroup=${!!ctx.currentGroup}, currentBot=${!!ctx.currentBot}`,
@@ -24,7 +27,6 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
 
   const msg = ctx.message;
 
-  // 只处理服务消息
   const hasServiceMessage =
     msg.new_chat_members ||
     msg.left_chat_member ||
@@ -47,41 +49,28 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
     msg.migrate_to_chat_id ||
     msg.migrate_from_chat_id;
 
-  debug(
-    `hasServiceMessage=${!!hasServiceMessage}, msg keys with service: new_chat_photo=${!!msg.new_chat_photo}`,
-  );
-
   if (!hasServiceMessage) {
     return await next();
   }
 
   try {
-    // 使用缓存键：serviceMsg:{botId}:{groupId}
     const cacheKey = `serviceMsg:${ctx.currentBot._id}:${ctx.currentGroup._id}`;
     const cache = getCache();
 
-    // 尝试从缓存获取配置
     let config = await cache.get<IServiceMessage>(cacheKey);
 
     if (!config) {
-      // 缓存未命中，从数据库查询
       config = await ServiceMessage.findOne({
         bot: ctx.currentBot._id,
         group: ctx.currentGroup._id,
         isActive: true,
       });
 
-      debug(
-        `数据库查询配置: bot=${ctx.currentBot._id}, group=${
-          ctx.currentGroup._id
-        }, found=${!!config}`,
-      );
+      debug(`数据库查询配置: found=${!!config}`);
 
       if (config) {
-        // 存入缓存，TTL 5分钟
         await cache.set(cacheKey, config, 300000);
       } else {
-        // 即使没有配置也缓存（避免缓存穿透），TTL 1分钟
         await cache.set(cacheKey, null, 60000);
       }
     } else {
@@ -89,7 +78,6 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
     }
 
     if (!config) {
-      debug('未找到服务消息配置，跳过');
       return await next();
     }
 
@@ -168,31 +156,29 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
     }
 
     if (shouldDelete) {
-      // 提前捕获所有需要的值，避免延迟后 ctx 失效
       const chatId = ctx.chat!.id;
       const messageId = msg.message_id;
-      const groupTitle = ctx.currentGroup.title;
       const api = ctx.api;
 
-      const deleteMessage = async () => {
-        try {
-          await api.deleteMessage(chatId, messageId);
-          debug(
-            `✅ 已删除服务消息 [${messageType}]: ${messageId} (群组: ${groupTitle})`,
-          );
-        } catch (e: any) {
-          debug(`❌ 删除服务消息失败 [${messageType}]: ${e.message}`);
-        }
-      };
-
       if (config.deleteDelay && config.deleteDelay > 0) {
+        // 延迟删除：使用 setTimeout
         debug(
-          `⏰ 将在 ${config.deleteDelay} 秒后删除服务消息 [${messageType}]`,
+          `⏰ 延迟 ${config.deleteDelay}s 删除 [${messageType}] ${messageId}`,
         );
-        setTimeout(deleteMessage, config.deleteDelay * 1000);
+        setTimeout(async () => {
+          try {
+            await api.deleteMessage(chatId, messageId);
+            debug(`✅ 延迟删除成功 [${messageType}] ${messageId}`);
+          } catch (e: any) {
+            debug(`❌ 延迟删除失败 [${messageType}]: ${e.message}`);
+          }
+        }, config.deleteDelay * 1000);
       } else {
-        // fire-and-forget：不阻塞 update 处理，autoRetry 插件会自动处理限流重试
-        deleteMessage();
+        // 立即删除：fire-and-forget，throttler 会自动排队限流
+        debug(`� 立即删除 [${messageType}] ${messageId}`);
+        api.deleteMessage(chatId, messageId).catch((e: any) => {
+          debug(`❌ 删除失败 [${messageType}] ${messageId}: ${e.message}`);
+        });
       }
     }
   } catch (error) {

@@ -1,5 +1,6 @@
 import { Bot, GrammyError, HttpError, session } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
+import { apiThrottler } from '@grammyjs/transformer-throttler';
 import logger from './middlewares/logger';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
@@ -143,6 +144,10 @@ export const setupBot = (token: string) => {
     }
   });
 
+  // API 转换器：顺序很重要！
+  // 1. throttler 主动限流（排队），避免触发 429
+  // 2. autoRetry 被动重试（如果还是触发了 429）
+  bot.api.config.use(apiThrottler());
   bot.api.config.use(autoRetry());
   bot.api.config.use(hydrateFiles(token));
 
