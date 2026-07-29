@@ -47,11 +47,19 @@ export const setupBot = (token: string) => {
     return botCache.get(token)!;
   }
 
-  const storage = new RedisAdapter({
-    instance: redis,
-    ttl: 10,
-    autoParseDates: true,
-  });
+  // 只在 Redis 连接正常时使用 RedisAdapter，否则用内存存储
+  const storage = redis
+    ? new RedisAdapter({
+        instance: redis,
+        ttl: 10,
+        autoParseDates: true,
+      })
+    : undefined;
+
+  if (!redis) {
+    console.warn('⚠️ Redis 未连接，使用内存存储');
+  }
+
   const SOCKS_PROXY_URL = process.env.SOCKS_PROXY_URL; // SOCKS 代理 URL，例如 'socks5://username:password@host:port'
 
   // 定义 bot 变量
