@@ -69,6 +69,13 @@ export const botJoinLeaveHandler: Middleware<MyContext> = async (ctx, next) => {
 
   // 处理 Bot 被添加（新群组或重新添加）
   if (isBotAddedToChat) {
+    // 如果是群组升级迁移场景（消息含 migrate_from_chat_id），
+    // groupMigrationHandler 会负责更新旧记录，这里不重复创建
+    if (ctx.message?.migrate_from_chat_id) {
+      debug('🔄 检测到迁移消息，跳过创建，交由 groupMigrationHandler 处理');
+      return await next();
+    }
+
     // 检查是否已有群组记录
     if (ctx.currentGroup) {
       // 重新添加到已存在的群组，同步管理员信息

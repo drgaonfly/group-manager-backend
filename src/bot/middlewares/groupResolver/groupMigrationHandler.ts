@@ -35,7 +35,7 @@ export const groupMigrationHandler: Middleware<MyContext> = async (
     const updatePayload = {
       id: newChatId,
       type: ctx.message?.chat.type || 'supergroup',
-      username: ctx.message?.chat.username ?? '',
+      username: (ctx.message?.chat as any)?.username ?? '',
     };
 
     const updatedGroup = await Group.findOneAndUpdate(
