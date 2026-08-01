@@ -6,47 +6,52 @@ const debug = createDebug('bot:distributed-deletion-queue');
 
 interface DeletionJob {
   chatId: number;
+  // 立即删除：messageIds 为空，从 Redis buffer 读取
+  // 延迟删除：messageIds 直接存在 Job 里（buffer 不可靠，TTL 会过期）
   messageIds: number[];
   messageTypes: string[];
   botToken: string;
+  /** 标记是否从 Redis buffer 读取数据（立即删除模式） */
+  useBuffer: boolean;
 }
 
 /**
  * 分布式消息删除队列（基于 Bull + Redis）
  *
- * 规模化删除策略：
- * - 使用 Redis List 作为滑动聚合窗口，将同一 chatId 500ms 内的消息合并
- * - 每个 chatId 同一时段只创建一个 Bull Job，避免海量 Job
- * - 批量调用 deleteMessages（最多 100 条/次），充分利用 Telegram API
- * - 依赖 apiThrottler + autoRetry 处理限流和失败重试
- * - 延迟删除使用 Bull delayed job，支持多实例 + 持久化
+ * 两种模式：
+ *
+ * 【立即删除 / 聚合模式】delayMs=0
+ *   - 消息写入 Redis List 缓冲（del-buf:{chatId}）
+ *   - 同一 chatId 在 500ms 窗口内只创建一个 Bull Job（jobId 去重）
+ *   - Job 触发时原子读取并清空缓冲，批量删除
+ *   - 1000 人入群 ≈ 200 条消息 → 2-4 个 Job → 2-4 次 deleteMessages API
+ *
+ * 【延迟删除模式】delayMs>0
+ *   - messageId 直接存入 Job payload（不依赖 buffer，TTL 安全）
+ *   - 使用 Bull delayed job，持久化，支持多实例，替代 setTimeout
+ *   - 同一 chatId + 同一延迟时间槽内去重合并
  */
 export class DistributedDeletionQueue {
   private queue: Bull.Queue<DeletionJob>;
   private readonly BATCH_SIZE = 100; // Telegram deleteMessages 单次上限
-  private readonly AGGREGATE_WINDOW_MS = 500; // 聚合窗口：500ms 内同一 chatId 的消息合并
-  private readonly PROCESS_CONCURRENCY = 5; // 并发处理作业数
+  private readonly AGGREGATE_WINDOW_MS = 500; // 立即删除聚合窗口
+  private readonly PROCESS_CONCURRENCY = 5;
 
   constructor() {
     if (!redis) {
       throw new Error('Redis 未连接，无法创建分布式队列');
     }
 
-    const redisConfig = {
-      host: process.env.REDIS_HOST,
-      port: Number(process.env.REDIS_PORT),
-      password: process.env.REDIS_PASSWORD,
-      db: Number(process.env.REDIS_DB),
-    };
-
     this.queue = new Bull<DeletionJob>('message-deletion', {
-      redis: redisConfig,
+      redis: {
+        host: process.env.REDIS_HOST,
+        port: Number(process.env.REDIS_PORT),
+        password: process.env.REDIS_PASSWORD,
+        db: Number(process.env.REDIS_DB),
+      },
       defaultJobOptions: {
         attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 2000,
-        },
+        backoff: { type: 'exponential', delay: 2000 },
         removeOnComplete: true,
         removeOnFail: 100,
       },
@@ -59,11 +64,9 @@ export class DistributedDeletionQueue {
   }
 
   /**
-   * 添加单条删除任务。
+   * 添加单条删除任务
    *
-   * 规模化关键：使用 Redis List 聚合同一 chatId 的消息，
-   * 在聚合窗口内只创建一个 Bull Job（通过 jobId 去重）。
-   * 大量用户入群时，200 条服务消息最终只会产生少量 Job。
+   * @param delayMs 0=立即删除（聚合模式），>0=延迟删除（payload 模式）
    */
   async add(
     chatId: number,
@@ -72,43 +75,83 @@ export class DistributedDeletionQueue {
     botToken: string,
     delayMs = 0,
   ): Promise<void> {
-    const bufferKey = `del-buf:${chatId}`;
+    if (delayMs > 0) {
+      // ── 延迟删除 ──
+      // buffer key 和 lock key 都带时间槽，与 Job 严格一一对应
+      const timeSlot = Math.floor(Date.now() / this.AGGREGATE_WINDOW_MS);
+      const bufferKey = `del-buf-delay:${chatId}:${delayMs}:${timeSlot}`;
+      const lockKey = `del-lock-delay:${chatId}:${delayMs}:${timeSlot}`;
 
-    // 将消息压入 Redis List 聚合缓冲
-    await redis!.rpush(bufferKey, JSON.stringify({ messageId, messageType }));
+      // 先写入 buffer，TTL = delayMs + 10s
+      await redis!.rpush(bufferKey, JSON.stringify({ messageId, messageType }));
+      await redis!.pexpire(bufferKey, delayMs + 10000);
 
-    // 聚合窗口到期后自动清理 key（窗口 + 处理余量）
-    await redis!.pexpire(bufferKey, this.AGGREGATE_WINDOW_MS + 5000);
-
-    // Job ID 基于 chatId + 窗口时间槽，同一时间槽内只创建一个 Job
-    const timeSlot = Math.floor(Date.now() / this.AGGREGATE_WINDOW_MS);
-    const jobId = `del:${chatId}:${timeSlot}`;
-
-    // Bull 的 jobId 唯一性保证：重复 add 同一 jobId 会被忽略（不重复入队）
-    try {
-      await this.queue.add(
-        {
-          chatId,
-          messageIds: [], // 实际 messageIds 在处理时从 Redis List 读取
-          messageTypes: [],
-          botToken,
-        },
-        {
-          jobId,
-          delay: delayMs > 0 ? delayMs : this.AGGREGATE_WINDOW_MS,
-          // 延迟至少等于聚合窗口，确保窗口内所有消息都已写入 Redis List
-        },
+      // SET NX：只有第一个请求能拿到锁并创建 Job，后续直接跳过
+      // lock TTL 略大于 delay，Job 执行后锁自然过期
+      const acquired = await redis!.set(
+        lockKey,
+        '1',
+        'PX',
+        delayMs + 15000,
+        'NX',
       );
-      debug(`📝 Job 已入队/去重 jobId=${jobId}, chatId=${chatId}`);
-    } catch (e: any) {
-      // Bull 在 jobId 重复时会抛出或静默忽略，具体行为取决于版本
-      // 这里捕获以防万一，不影响正常流程
-      debug(`ℹ️ Job 已存在（正常去重）jobId=${jobId}: ${e.message}`);
+      if (acquired === 'OK') {
+        const jobId = `del-delay:${chatId}:${delayMs}:${timeSlot}`;
+        await this.queue.add(
+          {
+            chatId,
+            messageIds: [],
+            messageTypes: [],
+            botToken,
+            useBuffer: true,
+          },
+          { jobId, delay: delayMs },
+        );
+        debug(`⏰ 延迟 Job 入队 jobId=${jobId}, delay=${delayMs}ms`);
+      } else {
+        debug(`ℹ️ 延迟 Job 已存在（锁命中），跳过创建 chatId=${chatId}`);
+      }
+    } else {
+      // ── 立即删除：聚合模式 ──
+      const timeSlot = Math.floor(Date.now() / this.AGGREGATE_WINDOW_MS);
+      const bufferKey = `del-buf:${chatId}:${timeSlot}`;
+      const lockKey = `del-lock:${chatId}:${timeSlot}`;
+
+      // 写入当前时间槽专属的 buffer，TTL = 聚合窗口 + 5s
+      await redis!.rpush(bufferKey, JSON.stringify({ messageId, messageType }));
+      await redis!.pexpire(bufferKey, this.AGGREGATE_WINDOW_MS + 5000);
+
+      // SET NX：同一时间槽只创建一个 Job
+      const acquired = await redis!.set(
+        lockKey,
+        '1',
+        'PX',
+        this.AGGREGATE_WINDOW_MS + 5000,
+        'NX',
+      );
+      if (acquired === 'OK') {
+        const jobId = `del:${chatId}:${timeSlot}`;
+        await this.queue.add(
+          {
+            chatId,
+            messageIds: [],
+            messageTypes: [],
+            botToken,
+            useBuffer: true,
+          },
+          { jobId, delay: this.AGGREGATE_WINDOW_MS },
+        );
+        debug(`📝 立即删除 Job 入队 jobId=${jobId}, chatId=${chatId}`);
+      } else {
+        debug(
+          `ℹ️ Job 已存在（锁命中），跳过创建 chatId=${chatId}, slot=${timeSlot}`,
+        );
+      }
     }
   }
 
   /**
-   * 直接批量添加（跳过聚合窗口，适用于已知大批量场景）
+   * 直接批量添加（已有完整 messageId 列表时使用）
    */
   async addBatch(
     chatId: number,
@@ -117,25 +160,18 @@ export class DistributedDeletionQueue {
     botToken: string,
     delayMs = 0,
   ): Promise<void> {
-    // 按 BATCH_SIZE 分片，避免单个 Job 过大
     for (let i = 0; i < messageIds.length; i += this.BATCH_SIZE) {
-      const batchIds = messageIds.slice(i, i + this.BATCH_SIZE);
-      const batchTypes = messageTypes.slice(i, i + this.BATCH_SIZE);
-
       await this.queue.add(
         {
           chatId,
-          messageIds: batchIds,
-          messageTypes: batchTypes,
+          messageIds: messageIds.slice(i, i + this.BATCH_SIZE),
+          messageTypes: messageTypes.slice(i, i + this.BATCH_SIZE),
           botToken,
+          useBuffer: false,
         },
-        {
-          delay: delayMs,
-          priority: 2,
-        },
+        { delay: delayMs },
       );
     }
-
     debug(
       `📦 批量入队 chatId=${chatId}, count=${
         messageIds.length
@@ -143,46 +179,55 @@ export class DistributedDeletionQueue {
     );
   }
 
-  /**
-   * 作业处理器：从 Redis List 读取聚合消息，分批删除
-   */
   private setupProcessor(): void {
     this.queue.process(
       this.PROCESS_CONCURRENCY,
       async (job: Bull.Job<DeletionJob>) => {
-        const { chatId, botToken } = job.data;
-
-        // 优先从 Redis List 读取聚合缓冲的消息（应对大规模入群）
+        const { chatId, botToken, useBuffer } = job.data;
         let messageIds = job.data.messageIds;
         let messageTypes = job.data.messageTypes;
 
-        const bufferKey = `del-buf:${chatId}`;
-        const buffered = await redis!.lrange(bufferKey, 0, -1);
+        if (useBuffer) {
+          // 从 jobId 推断用哪个 buffer key
+          // jobId 格式：del:{chatId}:{slot} 或 del-delay:{chatId}:{delayMs}:{slot}
+          const jobId = String(job.id);
+          const isDelayed = jobId.startsWith('del-delay:');
+          // jobId 和 bufferKey 命名规则完全对应，直接替换前缀即可
+          // del:{chatId}:{slot}             → del-buf:{chatId}:{slot}
+          // del-delay:{chatId}:{ms}:{slot}  → del-buf-delay:{chatId}:{ms}:{slot}
+          const bufferKey = isDelayed
+            ? jobId.replace('del-delay:', 'del-buf-delay:')
+            : jobId.replace('del:', 'del-buf:');
 
-        if (buffered.length > 0) {
-          // 原子性：读取后立即删除，防止多实例重复处理
-          await redis!.del(bufferKey);
+          // 原子读取并清空 buffer，防止多实例竞争
+          const buffered = (await redis!.eval(
+            `local d = redis.call('LRANGE', KEYS[1], 0, -1); redis.call('DEL', KEYS[1]); return d`,
+            1,
+            bufferKey,
+          )) as string[];
 
-          const parsed = buffered.map(
-            (s) => JSON.parse(s) as { messageId: number; messageType: string },
-          );
-          messageIds = parsed.map((p) => p.messageId);
-          messageTypes = parsed.map((p) => p.messageType);
-
-          debug(`📥 从缓冲读取 chatId=${chatId}, count=${messageIds.length}`);
+          if (buffered.length > 0) {
+            const parsed = buffered.map(
+              (s) =>
+                JSON.parse(s) as { messageId: number; messageType: string },
+            );
+            messageIds = parsed.map((p) => p.messageId);
+            messageTypes = parsed.map((p) => p.messageType);
+            debug(
+              `📥 从 buffer 读取 chatId=${chatId}, count=${messageIds.length}, key=${bufferKey}`,
+            );
+          }
         }
 
         if (messageIds.length === 0) {
-          debug(`⚠️ 空作业，跳过 jobId=${job.id}`);
+          debug(`⚠️ 空作业跳过 jobId=${job.id}`);
           return { success: true, deletedCount: 0 };
         }
 
         const { setupBot } = await import('../bot/botSetup');
         const bot = setupBot(botToken);
-
         let deletedCount = 0;
 
-        // 按 BATCH_SIZE 分片批量删除
         for (let i = 0; i < messageIds.length; i += this.BATCH_SIZE) {
           const batchIds = messageIds.slice(i, i + this.BATCH_SIZE);
           const batchTypes = messageTypes.slice(i, i + this.BATCH_SIZE);
@@ -194,14 +239,9 @@ export class DistributedDeletionQueue {
               await bot.api.deleteMessages(chatId, batchIds);
             }
             deletedCount += batchIds.length;
-            debug(
-              `✅ 批量删除 chatId=${chatId}, batch=${
-                i / this.BATCH_SIZE + 1
-              }, count=${batchIds.length}`,
-            );
+            debug(`✅ 删除 chatId=${chatId}, count=${batchIds.length}`);
           } catch (e: any) {
             if (e.description?.includes('method not found')) {
-              // 旧版 Telegram，回退逐个删除
               debug('⚠️ deleteMessages 不支持，回退逐个删除');
               for (let j = 0; j < batchIds.length; j++) {
                 try {
@@ -217,12 +257,10 @@ export class DistributedDeletionQueue {
               e.description?.includes('message to delete not found') ||
               e.description?.includes("message can't be deleted")
             ) {
-              // 消息已不存在或无权限，不计为失败
-              debug(`⚠️ 部分消息无法删除（已过期或无权限），继续处理`);
+              debug(`⚠️ 消息不存在或无权限，跳过本批`);
               deletedCount += batchIds.length;
             } else {
-              // 其他错误，交给 Bull 重试
-              throw e;
+              throw e; // 交给 Bull 重试
             }
           }
         }
@@ -235,7 +273,7 @@ export class DistributedDeletionQueue {
   private setupEventListeners(): void {
     this.queue.on('completed', (job: Bull.Job<DeletionJob>, result: any) => {
       debug(
-        `✨ 作业完成 jobId=${job.id}, chatId=${job.data.chatId}, deleted=${result.deletedCount}`,
+        `✨ 完成 jobId=${job.id}, chatId=${job.data.chatId}, deleted=${result.deletedCount}`,
       );
     });
 
@@ -244,14 +282,14 @@ export class DistributedDeletionQueue {
       (job: Bull.Job<DeletionJob> | undefined, err: Error) => {
         if (job) {
           debug(
-            `💥 作业失败 jobId=${job.id}, chatId=${job.data.chatId}, error=${err.message}, attempts=${job.attemptsMade}/${job.opts.attempts}`,
+            `💥 失败 jobId=${job.id}, chatId=${job.data.chatId}, error=${err.message}, attempts=${job.attemptsMade}/${job.opts.attempts}`,
           );
         }
       },
     );
 
     this.queue.on('stalled', (job: Bull.Job<DeletionJob>) => {
-      debug(`⏸️ 作业停滞 jobId=${job.id}, chatId=${job.data.chatId}`);
+      debug(`⏸️ 停滞 jobId=${job.id}, chatId=${job.data.chatId}`);
     });
 
     this.queue.on('error', (error: Error) => {
@@ -265,7 +303,6 @@ export class DistributedDeletionQueue {
   }
 }
 
-// 单例
 let queueInstance: DistributedDeletionQueue | null = null;
 
 export function getDistributedDeletionQueue(): DistributedDeletionQueue {
