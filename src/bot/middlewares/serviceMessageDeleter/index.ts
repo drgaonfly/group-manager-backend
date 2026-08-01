@@ -1,20 +1,21 @@
 import { Middleware } from 'grammy';
-import { MyContext } from '../types';
-import ServiceMessage, { IServiceMessage } from '../../models/serviceMessage';
-import { getCache } from '../../utils/cache';
-import { getDistributedDeletionQueue } from '../../utils/distributedDeletionQueue';
+import { MyContext } from '../../types';
+import ServiceMessage, {
+  IServiceMessage,
+} from '../../../models/serviceMessage';
+import { getCache } from '../../../utils/cache';
+import { getDeletionQueue } from './deletionQueue';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:service-message-deleter');
 
 /**
- * 服务消息删除中间件（分布式版本）
+ * 服务消息删除中间件
  *
- * 使用 Bull Queue + Redis 实现跨实例消息删除：
- * - 支持多实例部署
- * - 队列持久化到 Redis
- * - 自动重试和错误处理
- * - 批量删除 100 条/次
+ * 检测入群、离群、改标题等系统消息，根据配置决定是否删除。
+ * 删除操作通过 DeletionQueue 执行：
+ * - 立即删除：聚合同 chatId 的消息批量处理，规模化场景高效
+ * - 延迟删除：Bull delayed job，持久化，多实例安全
  */
 export const serviceMessageDeleter: Middleware<MyContext> = async (
   ctx,
@@ -55,23 +56,18 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
     return await next();
   }
 
-  // 获取删除配置
   const config = await getServiceMessageConfig(ctx);
   if (!config) {
     return await next();
   }
 
-  // 判断是否需要删除
   const messageType = getMessageType(msg, config);
   if (!messageType) {
     return await next();
   }
 
-  // 执行删除
   const chatId = ctx.chat!.id;
   const messageId = msg.message_id;
-  const api = ctx.api;
-
   const botToken = ctx.currentBot!.token;
   const delayMs =
     config.deleteDelay && config.deleteDelay > 0
@@ -79,10 +75,7 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
       : 0;
 
   try {
-    const queue = getDistributedDeletionQueue();
-    // 延迟删除和立即删除都走队列：
-    // - delayMs=0 时，聚合窗口（500ms）内同 chatId 的消息合并成一个 Job 批量删除
-    // - delayMs>0 时，使用 Bull delayed job，支持多实例 + 持久化（替代 setTimeout）
+    const queue = getDeletionQueue();
     await queue.add(chatId, messageId, messageType, botToken, delayMs);
     debug(
       `📥 已入队 [${messageType}] ${messageId}${
@@ -91,8 +84,8 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
     );
   } catch (e: any) {
     debug(`❌ 加入队列失败: ${e.message}`);
-    // 降级：直接删除（不阻塞 next）
-    api.deleteMessage(chatId, messageId).catch((err: any) => {
+    // 降级：直接删除，不阻塞中间件链
+    ctx.api.deleteMessage(chatId, messageId).catch((err: any) => {
       debug(`❌ 降级删除失败 [${messageType}]: ${err.message}`);
     });
   }
@@ -101,7 +94,7 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
 };
 
 /**
- * 获取服务消息删除配置
+ * 获取服务消息删除配置（带缓存）
  */
 async function getServiceMessageConfig(
   ctx: MyContext,
@@ -121,9 +114,9 @@ async function getServiceMessageConfig(
     debug(`数据库查询配置: found=${!!config}`);
 
     if (config) {
-      await cache.set(cacheKey, config, 300000);
+      await cache.set(cacheKey, config, 300000); // 缓存 5 分钟
     } else {
-      await cache.set(cacheKey, null, 60000);
+      await cache.set(cacheKey, null, 60000); // 未配置缓存 1 分钟
     }
   } else {
     debug(`缓存命中: ${cacheKey}`);
@@ -133,8 +126,7 @@ async function getServiceMessageConfig(
 }
 
 /**
- * 根据消息类型和配置判断是否需要删除
- * @returns 消息类型名称（如需要删除）或 null（不需要删除）
+ * 根据消息字段和配置判断消息类型，返回类型名称或 null（不需要删除）
  */
 function getMessageType(msg: any, config: IServiceMessage): string | null {
   const typeChecks = [

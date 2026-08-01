@@ -131,24 +131,28 @@ app.use('/api/settings', settingRoutes);
 
 app.use('/api/static', express.static(path.join(process.cwd(), 'tmp')));
 
-setupDB();
-setupRedis();
-setupCache();
-// 初始化 Socket.IO
-
-console.log('Socket.IO server initialized');
-
-// startTaskScheduler(); // 定时任务
-// authorized(); // 授权用户收益率生成
-// stacking(); // 质押用户收益率生成
-
-// process.env.NODE_ENV === 'production' && startWebHookBot();
-
 app.use(notFound);
 app.use(errorHandler);
-// telegramClient();
 
 const PORT: string | number = process.env.PORT || 5000;
-server.listen(PORT, () =>
-  console.log(`Server is running at http://localhost:${PORT}`),
-);
+
+// 确保 DB 和 Redis 连接就绪后再启动服务器
+// 避免服务器接收请求时 MongoDB 还未连接导致 MongoNotConnectedError
+(async () => {
+  try {
+    await setupDB();
+    await setupRedis();
+    setupCache();
+
+    console.log('Socket.IO server initialized');
+
+    // startTaskScheduler(); // 定时任务
+
+    server.listen(PORT, () =>
+      console.log(`Server is running at http://localhost:${PORT}`),
+    );
+  } catch (err) {
+    console.error('启动失败:', err);
+    process.exit(1);
+  }
+})();
