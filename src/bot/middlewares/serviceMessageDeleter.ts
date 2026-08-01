@@ -72,31 +72,29 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
   const messageId = msg.message_id;
   const api = ctx.api;
 
-  if (config.deleteDelay && config.deleteDelay > 0) {
-    // 延迟删除：使用 setTimeout（不推荐用于生产）
-    debug(`⏰ 延迟 ${config.deleteDelay}s 删除 [${messageType}] ${messageId}`);
-    setTimeout(async () => {
-      try {
-        await api.deleteMessage(chatId, messageId);
-        debug(`✅ 延迟删除成功 [${messageType}] ${messageId}`);
-      } catch (e: any) {
-        debug(`❌ 延迟删除失败 [${messageType}]: ${e.message}`);
-      }
-    }, config.deleteDelay * 1000);
-  } else {
-    // 立即删除：加入分布式队列
-    try {
-      const queue = getDistributedDeletionQueue();
-      // 需要传递 bot token 以便队列处理时创建 API 实例
-      const botToken = ctx.currentBot!.token;
-      await queue.add(chatId, messageId, messageType, botToken);
-    } catch (e: any) {
-      debug(`❌ 加入队列失败: ${e.message}`);
-      // 降级：直接删除
-      api.deleteMessage(chatId, messageId).catch((err: any) => {
-        debug(`❌ 降级删除失败 [${messageType}]: ${err.message}`);
-      });
-    }
+  const botToken = ctx.currentBot!.token;
+  const delayMs =
+    config.deleteDelay && config.deleteDelay > 0
+      ? config.deleteDelay * 1000
+      : 0;
+
+  try {
+    const queue = getDistributedDeletionQueue();
+    // 延迟删除和立即删除都走队列：
+    // - delayMs=0 时，聚合窗口（500ms）内同 chatId 的消息合并成一个 Job 批量删除
+    // - delayMs>0 时，使用 Bull delayed job，支持多实例 + 持久化（替代 setTimeout）
+    await queue.add(chatId, messageId, messageType, botToken, delayMs);
+    debug(
+      `📥 已入队 [${messageType}] ${messageId}${
+        delayMs ? ` 延迟${config.deleteDelay}s` : ''
+      }`,
+    );
+  } catch (e: any) {
+    debug(`❌ 加入队列失败: ${e.message}`);
+    // 降级：直接删除（不阻塞 next）
+    api.deleteMessage(chatId, messageId).catch((err: any) => {
+      debug(`❌ 降级删除失败 [${messageType}]: ${err.message}`);
+    });
   }
 
   await next();
