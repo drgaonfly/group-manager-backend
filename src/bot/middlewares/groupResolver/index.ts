@@ -32,8 +32,8 @@ const groupResolver = new Composer<MyContext>();
 
 // 按顺序注册中间件
 groupResolver.use(basicResolver);
+groupResolver.use(groupMigrationHandler); // 迁移处理必须在 botJoinLeave 之前，避免误建重复记录
 groupResolver.use(botJoinLeaveHandler);
-groupResolver.use(groupMigrationHandler);
 groupResolver.use(memberJoinLeaveHandler);
 groupResolver.use(channelSubscriptionHandler);
 groupResolver.use(adminManagementHandler);
