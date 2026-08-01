@@ -102,27 +102,33 @@ async function getServiceMessageConfig(
   const cacheKey = `serviceMsg:${ctx.currentBot!._id}:${ctx.currentGroup!._id}`;
   const cache = getCache();
 
-  let config = await cache.get<IServiceMessage>(cacheKey);
+  let config = await cache.get<IServiceMessage | 'NONE'>(cacheKey);
 
-  if (!config) {
-    config = await ServiceMessage.findOne({
+  if (config === undefined || config === null) {
+    const found = await ServiceMessage.findOne({
       bot: ctx.currentBot!._id,
       group: ctx.currentGroup!._id,
       isActive: true,
     });
 
-    debug(`数据库查询配置: found=${!!config}`);
+    debug(`数据库查询配置: found=${!!found}`);
 
-    if (config) {
-      await cache.set(cacheKey, config, 300000); // 缓存 5 分钟
+    if (found) {
+      await cache.set(cacheKey, found, 300000); // 缓存 5 分钟
+      return found;
     } else {
-      await cache.set(cacheKey, null, 60000); // 未配置缓存 1 分钟
+      await cache.set(cacheKey, 'NONE', 60000); // 用哨兵值代替 null，1 分钟
+      return null;
     }
-  } else {
-    debug(`缓存命中: ${cacheKey}`);
   }
 
-  return config;
+  if (config === 'NONE') {
+    debug(`缓存命中（无配置）: ${cacheKey}`);
+    return null;
+  }
+
+  debug(`缓存命中: ${cacheKey}`);
+  return config as IServiceMessage;
 }
 
 /**
