@@ -17,7 +17,13 @@ interface BatchDeletionConfig {
 
 /**
  * 批量删除队列管理器
- * 通用的消息批量删除队列，支持按 chatId 分组、自动批处理、失败重试
+ *
+ * 基于 Grammy.js 官方建议优化：
+ * - batchSize: 100（Telegram API 限制）
+ * - batchInterval: 200ms（不人为限流，给 throttler 缓冲）
+ * - 依赖 apiThrottler() 和 autoRetry() 处理速率限制
+ *
+ * 参考：https://grammy.dev/advanced/flood
  */
 export class BatchDeletionQueue {
   private queues = new Map<number, QueueItem[]>();
@@ -27,16 +33,10 @@ export class BatchDeletionQueue {
 
   constructor(config?: Partial<BatchDeletionConfig>) {
     this.config = {
-      batchSize: parseInt(process.env.SERVICE_MSG_BATCH_SIZE || '10', 10),
-      batchInterval: parseInt(
-        process.env.SERVICE_MSG_BATCH_INTERVAL || '1000',
-        10,
-      ),
-      maxQueueSize: parseInt(
-        process.env.SERVICE_MSG_MAX_QUEUE_SIZE || '10000',
-        10,
-      ),
-      cleanupInterval: 300000, // 5分钟
+      batchSize: 100,
+      batchInterval: 200,
+      maxQueueSize: 10000,
+      cleanupInterval: 300000,
       ...config,
     };
 
@@ -209,36 +209,6 @@ export class BatchDeletionQueue {
         );
       }
     }
-  }
-
-  /**
-   * 获取队列状态
-   */
-  getStatus() {
-    const status: {
-      totalQueues: number;
-      totalPendingMessages: number;
-      queues: {
-        chatId: number;
-        pendingCount: number;
-        oldestMessage: number;
-      }[];
-    } = {
-      totalQueues: this.queues.size,
-      totalPendingMessages: 0,
-      queues: [],
-    };
-
-    for (const [chatId, queue] of this.queues.entries()) {
-      status.totalPendingMessages += queue.length;
-      status.queues.push({
-        chatId,
-        pendingCount: queue.length,
-        oldestMessage: queue.length > 0 ? Date.now() - queue[0].timestamp : 0,
-      });
-    }
-
-    return status;
   }
 
   /**

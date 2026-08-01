@@ -2,17 +2,19 @@ import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import ServiceMessage, { IServiceMessage } from '../../models/serviceMessage';
 import { getCache } from '../../utils/cache';
-import { BatchDeletionQueue } from '../../utils/batchDeletionQueue';
+import { getDistributedDeletionQueue } from '../../utils/distributedDeletionQueue';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:service-message-deleter');
 
-// 全局批量删除队列实例
-const deletionQueue = new BatchDeletionQueue();
-
 /**
- * 服务消息删除中间件
- * 批量删除服务消息（入群、离群等），提高删除效率和成功率
+ * 服务消息删除中间件（分布式版本）
+ *
+ * 使用 Bull Queue + Redis 实现跨实例消息删除：
+ * - 支持多实例部署
+ * - 队列持久化到 Redis
+ * - 自动重试和错误处理
+ * - 批量删除 100 条/次
  */
 export const serviceMessageDeleter: Middleware<MyContext> = async (
   ctx,
@@ -71,7 +73,7 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
   const api = ctx.api;
 
   if (config.deleteDelay && config.deleteDelay > 0) {
-    // 延迟删除：使用 setTimeout
+    // 延迟删除：使用 setTimeout（不推荐用于生产）
     debug(`⏰ 延迟 ${config.deleteDelay}s 删除 [${messageType}] ${messageId}`);
     setTimeout(async () => {
       try {
@@ -82,8 +84,19 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
       }
     }, config.deleteDelay * 1000);
   } else {
-    // 立即删除：加入批量删除队列
-    deletionQueue.add(chatId, messageId, messageType, api);
+    // 立即删除：加入分布式队列
+    try {
+      const queue = getDistributedDeletionQueue();
+      // 需要传递 bot token 以便队列处理时创建 API 实例
+      const botToken = ctx.currentBot!.token;
+      await queue.add(chatId, messageId, messageType, botToken);
+    } catch (e: any) {
+      debug(`❌ 加入队列失败: ${e.message}`);
+      // 降级：直接删除
+      api.deleteMessage(chatId, messageId).catch((err: any) => {
+        debug(`❌ 降级删除失败 [${messageType}]: ${err.message}`);
+      });
+    }
   }
 
   await next();
@@ -232,10 +245,3 @@ function getMessageType(msg: any, config: IServiceMessage): string | null {
 
   return null;
 }
-
-/**
- * 获取删除队列状态（用于监控和调试）
- */
-export const getQueueStatus = () => {
-  return deletionQueue.getStatus();
-};
