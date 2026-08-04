@@ -166,6 +166,18 @@ export class DeletionQueue {
               // 消息不存在或无权限，不算失败
               debug(`⚠️ 消息不存在或无权限，跳过本批`);
               deletedCount += batchIds.length;
+            } else if (
+              e.description?.includes('bot was kicked') ||
+              e.description?.includes('bot is not a member') ||
+              e.description?.includes('chat not found') ||
+              e.error_code === 403 ||
+              e.error_code === 400
+            ) {
+              // bot 已被踢出或群不存在，不重试，直接放弃整个 Job
+              debug(
+                `⚠️ bot 无法访问群 chatId=${chatId}，跳过 Job: ${e.description}`,
+              );
+              return { success: true, deletedCount: 0, skipped: true };
             } else {
               throw e; // 交给 Bull 重试
             }
