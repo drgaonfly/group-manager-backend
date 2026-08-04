@@ -170,7 +170,48 @@ export const setupBot = (token: string) => {
  */
 export const evictBotCache = (token: string) => {
   botCache.delete(token);
+  lightBotCache.delete(token);
   log(`已清除 token 缓存: ${token.slice(0, 10)}...`);
+};
+
+// 轻量 bot 实例缓存（不挂 throttler，供删除队列等后台任务专用）
+const lightBotCache = new Map<string, Bot>();
+
+/**
+ * 创建轻量 Bot 实例，仅挂 autoRetry，不挂 apiThrottler。
+ *
+ * 用途：删除队列等后台批量操作，避免与主 bot 共享限流器，
+ * 防止批量删除任务抢占私聊/命令响应的 API 配额。
+ */
+export const setupLightBot = (token: string): Bot => {
+  if (lightBotCache.has(token)) {
+    return lightBotCache.get(token)!;
+  }
+
+  const SOCKS_PROXY_URL = process.env.SOCKS_PROXY_URL;
+  let bot: Bot;
+
+  if (SOCKS_PROXY_URL) {
+    const socksAgent = new SocksProxyAgent(SOCKS_PROXY_URL);
+    bot = new Bot(token, {
+      client: {
+        baseFetchConfig: {
+          agent: socksAgent,
+          compress: true,
+        },
+      },
+    });
+  } else {
+    bot = new Bot(token);
+  }
+
+  // 只挂 autoRetry（被动处理 429/503），不挂 throttler，不干扰主 bot 限流
+  bot.api.config.use(autoRetry());
+
+  lightBotCache.set(token, bot);
+  log(`✅ 轻量 Bot 已创建: ${token.slice(0, 10)}...`);
+
+  return bot;
 };
 
 /**

@@ -7,7 +7,9 @@ import createDebug from 'debug';
 const debug = createDebug('bot:service-message-deleter:queue');
 
 const BATCH_SIZE = 100; // Telegram deleteMessages 单次上限
-const PROCESS_CONCURRENCY = 5;
+// 每个群最多同时处理 N 个删除 Job，提高多群并发吞吐
+// 注：使用 setupLightBot（无 throttler），依赖 autoRetry 处理 429，不与主 bot 抢限流配额
+const PROCESS_CONCURRENCY = 20;
 
 interface DeletionJob {
   chatId: number;
@@ -127,8 +129,8 @@ export class DeletionQueue {
           return { success: true, deletedCount: 0 };
         }
 
-        const { setupBot } = await import('../../botSetup');
-        const bot = setupBot(botToken);
+        const { setupLightBot } = await import('../../botSetup');
+        const bot = setupLightBot(botToken);
         let deletedCount = 0;
 
         for (let i = 0; i < messageIds.length; i += BATCH_SIZE) {
