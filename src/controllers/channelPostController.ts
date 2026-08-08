@@ -157,9 +157,15 @@ export const addChannelPost = handleAsync(
 
 export const updateChannelPost = handleAsync(
   async (req: Request, res: Response) => {
+    const updates: any = {
+      ...req.body,
+      lastSentTime: null,
+      lastSentMessageId: null,
+    };
+
     const channelPost = await ChannelPost.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updates,
       {
         new: true,
       },

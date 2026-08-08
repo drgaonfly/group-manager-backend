@@ -155,7 +155,11 @@ const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { medias, ...otherFields } = req.body;
 
-  const updates: any = { ...otherFields };
+  const updates: any = {
+    ...otherFields,
+    lastSentTime: null,
+    lastSentMessageId: null,
+  };
 
   if (Array.isArray(medias)) {
     // 直接使用前端传来的 medias（前端已经维护好了最终列表）
