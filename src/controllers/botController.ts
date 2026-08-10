@@ -300,10 +300,6 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
       path: 'groups',
       populate: [
         {
-          path: 'botUsers',
-          select: 'id userName firstName lastName',
-        },
-        {
           path: 'creator',
           select: 'id userName firstName lastName',
         },
@@ -373,6 +369,31 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
   if (botObj.multi_image) {
     const signedUrl = await generateSignedUrl(botObj.multi_image);
     botObj.multi_image = signedUrl;
+  }
+
+  // 为每个群组添加成员数量统计
+  if (botObj.groups && botObj.groups.length > 0) {
+    const groupIds = botObj.groups.map((g: any) => g._id);
+
+    // 统计每个群组的成员数量
+    const memberCounts = await BotUser.aggregate([
+      { $match: { groups: { $in: groupIds } } },
+      { $unwind: '$groups' },
+      { $match: { groups: { $in: groupIds } } },
+      { $group: { _id: '$groups', count: { $sum: 1 } } },
+    ]);
+
+    // 创建成员数量映射
+    const memberCountMap = memberCounts.reduce((acc: any, item: any) => {
+      acc[item._id.toString()] = item.count;
+      return acc;
+    }, {});
+
+    // 为每个群组添加成员数量
+    botObj.groups = botObj.groups.map((group: any) => ({
+      ...group,
+      memberCount: memberCountMap[group._id.toString()] || 0,
+    }));
   }
 
   res.json({
@@ -685,12 +706,19 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
 
   console.log('req.body', req.body);
 
-  const botManager = await Bot.findById(id).populate('botUsers');
+  const botManager = await Bot.findById(id);
 
   if (!botManager) {
     res.status(404);
     throw new Error('机器人不存在');
   }
+
+  // 查找所有与该机器人相关的用户（通过 BotUser.groups 中包含该机器人的群组）
+  const botGroups = await Group.find({ bot: id }).select('_id');
+  const groupIds = botGroups.map((g) => g._id);
+  const botUsers = await BotUser.find({
+    groups: { $in: groupIds },
+  }).select('id userName firstName lastName');
 
   const telegramBot = setupBot(botManager.token);
 
@@ -698,7 +726,7 @@ const sendMessage = handleAsync(async (req: RequestCustom, res: Response) => {
   const replyMarkup = buildInlineKeyboard(menus, menus_per_row);
 
   const results = await Promise.allSettled(
-    botManager.botUsers.map(async (botUser: any) => {
+    botUsers.map(async (botUser: any) => {
       try {
         // 支持图片发送
         if (images && Array.isArray(images) && images.length > 0) {
@@ -761,9 +789,7 @@ const sendGroupMessage = handleAsync(
 
     const { content, medias, menus, isPinned } = req.body;
 
-    const botManager = await Bot.findById(id)
-      .populate('botUsers')
-      .populate('groups');
+    const botManager = await Bot.findById(id).populate('groups');
 
     const bot_groups = botManager.groups;
 

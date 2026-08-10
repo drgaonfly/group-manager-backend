@@ -1,6 +1,8 @@
 import BotUserMessage, { IBotUserMessage } from '../../models/botUserMessage';
 import Bot from '../../models/bot';
 import { IBotUser } from '../../models/botUser';
+import BotUser from '../../models/botUser';
+import Group from '../../models/group';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { setupBot } from '../../bot/botSetup';
 import { InlineKeyboard } from 'grammy';
@@ -18,8 +20,8 @@ export async function sendBotUserMessages() {
 
     console.log(`[当前时间] ${formatBeijingDate(currentTime)}`);
 
-    // 查询所有机器人并填充其关联的机器人用户消息
-    const bots = await Bot.find({}).populate('botUsers');
+    // 查询所有机器人
+    const bots = await Bot.find({});
 
     console.log(`[sendBotUserMessages] 查询到 ${bots.length} 个机器人`);
 
@@ -31,6 +33,15 @@ export async function sendBotUserMessages() {
     };
 
     for (const bot of bots) {
+      // 查找与该机器人相关的用户（通过 BotUser.groups 中包含该机器人的群组）
+      const botGroups = await Group.find({ bot: bot._id }).select('_id');
+      const groupIds = botGroups.map((g) => g._id);
+      const botUsers = (await BotUser.find({
+        groups: { $in: groupIds },
+      })) as IBotUser[];
+
+      if (!botUsers || botUsers.length === 0) continue;
+
       const telegramBot = setupBot(bot.token);
 
       const raw_botUserMessages = await BotUserMessage.find({
@@ -50,10 +61,10 @@ export async function sendBotUserMessages() {
       for (const botUserMessage of processed_botUserMessages) {
         console.log('botUsers under botUserMessage', botUserMessage.botUsers);
 
-        const botUsers = bot.botUsers as IBotUser[];
-        if (!botUsers || botUsers.length === 0) continue;
+        const botUsersForMessage = botUsers;
+        if (!botUsersForMessage || botUsersForMessage.length === 0) continue;
 
-        for (const botUser of botUsers) {
+        for (const botUser of botUsersForMessage) {
           try {
             const history = await BotUserMessageHistory.findOne({
               bot: bot._id,
