@@ -1,6 +1,5 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import Group from '../../../models/group';
 import BotUser from '../../../models/botUser';
 import createDebug from 'debug';
 
@@ -72,10 +71,10 @@ export const channelSubscriptionHandler: Middleware<MyContext> = async (
         debug(`✅ 创建新 BotUser: ${user.id}`);
       }
 
-      // 将用户添加到频道的 botUsers 列表
-      await Group.updateOne(
-        { _id: ctx.currentGroup._id },
-        { $addToSet: { botUsers: botUser._id } },
+      // 新逻辑：将用户添加到 BotUser.groups
+      await BotUser.updateOne(
+        { _id: botUser._id },
+        { $addToSet: { groups: ctx.currentGroup._id } },
       );
       debug(`✅ 用户 ${user.id} 已添加到频道订阅者列表`);
     } catch (error) {
@@ -95,9 +94,10 @@ export const channelSubscriptionHandler: Middleware<MyContext> = async (
       });
 
       if (botUser) {
-        await Group.updateOne(
-          { _id: ctx.currentGroup._id },
-          { $pull: { botUsers: botUser._id } },
+        // 新逻辑：从 BotUser.groups 移除
+        await BotUser.updateOne(
+          { _id: botUser._id },
+          { $pull: { groups: ctx.currentGroup._id } },
         );
         debug(`✅ 用户 ${user.id} 已从频道订阅者列表移除`);
       }

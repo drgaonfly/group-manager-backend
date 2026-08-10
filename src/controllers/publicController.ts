@@ -32,10 +32,10 @@ export const getPublicBotGroupsForUser = handleAsync(
       return;
     }
 
-    // 找出该 bot 下、同时包含该 botUser 的群组
-    const groups = await Group.find({
-      _id: { $in: bot.groups },
-      botUsers: botUser._id,
+    // 直接从 botUser.groups 中筛选该 bot 的群组
+    const userGroups = await Group.find({
+      _id: { $in: botUser.groups },
+      bot: bot._id,
     }).select('_id title username type');
 
     res.json({
@@ -52,7 +52,7 @@ export const getPublicBotGroupsForUser = handleAsync(
           firstName: botUser.firstName,
           lastName: botUser.lastName,
         },
-        groups,
+        groups: userGroups,
       },
     });
   },

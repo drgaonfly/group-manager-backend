@@ -2,7 +2,7 @@ import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import { getGroupUserRankingList } from '../../services/rankingService';
 import { ITEMS_PER_PAGE } from '../../constants';
-// import BotUserConfig from '../../models/botUserConfig';
+import BotUser from '../../models/botUser';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:rankingPagination');
@@ -24,10 +24,16 @@ export const rankingPaginationHandler: Middleware<MyContext> = async (
   if (!botId) return;
 
   try {
+    // 获取当前群组的所有成员 ID
+    const groupMembers = await BotUser.find({
+      groups: ctx.currentGroup._id,
+    }).select('_id');
+    const groupMemberIds = groupMembers.map((m) => m._id);
+
     const rankingListData = await getGroupUserRankingList(
       ctx,
       botId,
-      ctx.currentGroup?.botUsers as any,
+      groupMemberIds,
       page,
       ITEMS_PER_PAGE,
     );

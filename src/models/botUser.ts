@@ -3,6 +3,7 @@ import { IBotUserMessage } from './botUserMessage';
 import { ITransaction } from './transaction';
 import { ISubscription } from './subscription';
 import { IUser } from './user';
+import { IGroup } from './group';
 
 export interface IBotUser extends Document {
   id: string;
@@ -11,6 +12,7 @@ export interface IBotUser extends Document {
   firstName: string;
   lastName: string;
   messages: mongoose.Types.ObjectId[] | IBotUserMessage[];
+  groups: mongoose.Schema.Types.ObjectId[] | IGroup[]; // 用户所在的群组列表
   transactions: ITransaction[]; // 虚拟字段，指向 Transaction 模型的 _id 数组
   subscriptions: ISubscription[]; // 虚拟字段，指向 Subscription 模型的 _id 数组
   isAuthorized: boolean; // 用户是否已授权
@@ -26,6 +28,7 @@ const botUserSchema = new mongoose.Schema(
     firstName: { type: String, required: false },
     lastName: { type: String, required: false },
     messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BotUserMessage' }],
+    groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }], // 用户所在的群组列表
     isAuthorized: { type: Boolean, default: false }, // 默认未授权
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -41,6 +44,7 @@ const botUserSchema = new mongoose.Schema(
 );
 
 botUserSchema.index({ id: 1, bot: 1 }, { unique: true });
+botUserSchema.index({ groups: 1 }); // 为群组查询优化
 
 botUserSchema.virtual('transactions', {
   ref: 'Transaction',

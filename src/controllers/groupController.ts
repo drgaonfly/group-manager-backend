@@ -41,9 +41,9 @@ const buildQuery = async (
     ];
   }
 
-  // groupBotUsers（用于 BotUser 查询，限定查询范围）
-  if (queryParams.groupBotUsers && Array.isArray(queryParams.groupBotUsers)) {
-    query._id = { $in: queryParams.groupBotUsers };
+  // groups（用于 BotUser 查询，按群组过滤）
+  if (queryParams.groups) {
+    query.groups = queryParams.groups;
   }
 
   // 公共机器人：根据 Telegram 用户 ID 过滤（只显示该用户是 creator 或 operator 的群组）
@@ -77,21 +77,22 @@ export const getGroupMembers = handleAsync(
     const { id } = req.params;
     const { current = '1', pageSize = '20' } = req.query;
 
-    const group = await Group.findById(id).populate({
-      path: 'botUsers',
-      select: 'id userName firstName lastName createdAt',
-    });
+    const group = await Group.findById(id).select('_id title username type');
 
     if (!group) {
       res.status(404);
       throw new Error('群组不存在');
     }
 
-    const botUsers = group.botUsers || [];
-    const total = botUsers.length;
+    // 新逻辑：通过 BotUser.groups 反向查询群组成员
+    const allMembers = await BotUser.find({ groups: group._id })
+      .select('id userName firstName lastName createdAt')
+      .sort('-createdAt');
+
+    const total = allMembers.length;
     const start = (+current - 1) * +pageSize;
     const end = start + +pageSize;
-    const paginatedMembers = botUsers.slice(start, end);
+    const paginatedMembers = allMembers.slice(start, end);
 
     res.json({
       success: true,
@@ -135,20 +136,18 @@ export const getGroupMembersWithBalance = handleAsync(
 
     console.log('req.query', req.query);
 
-    // 1. 获取群组基本信息（不 populate）
-    const group = await Group.findById(id).select(
-      'botUsers title username type',
-    );
+    // 1. 获取群组基本信息
+    const group = await Group.findById(id).select('title username type');
 
     if (!group) {
       res.status(404);
       throw new Error('群组不存在');
     }
 
-    // 2. 构造查询条件（使用统一的 buildQuery）
+    // 2. 构造查询条件（使用新的 groups 字段）
     const query = await buildQuery(
       {
-        groupBotUsers: group.botUsers,
+        groups: group._id, // 直接使用群组 ID
         keyword,
       },
       req,
@@ -330,7 +329,6 @@ const getGroups = handleAsync(async (req: RequestCustom, res: Response) => {
     .populate('proxy')
     .populate('creator')
     .populate('operators')
-    .populate('botUsers')
     .populate('transactions')
     .sort('-createdAt')
     .skip((+current - 1) * +pageSize)
@@ -354,7 +352,6 @@ const getGroupById = handleAsync(async (req: Request, res: Response) => {
     .populate('bot')
     .populate('creator')
     .populate('operators')
-    .populate('botUsers')
     .populate('transactions')
     .exec();
 

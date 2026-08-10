@@ -356,14 +356,13 @@ const getBotById = handleAsync(async (req: Request, res: Response) => {
   else if (username) {
     const cleanUsername = username.replace(/^@/, '');
     const botUser = await BotUser.findOne({ userName: cleanUsername }).select(
-      '_id',
+      '_id groups',
     );
     if (botUser) {
-      const botUserIdStr = botUser._id.toString();
+      // 新逻辑：直接从 botUser.groups 获取用户所在的群组
+      const userGroupIds = (botUser.groups || []).map((g) => g.toString());
       (botObj as any).groups = (botObj.groups || []).filter((g: any) =>
-        (g.botUsers || []).some(
-          (bu: any) => (bu._id?.toString() || bu.toString()) === botUserIdStr,
-        ),
+        userGroupIds.includes(g._id.toString()),
       );
     } else {
       (botObj as any).groups = [];

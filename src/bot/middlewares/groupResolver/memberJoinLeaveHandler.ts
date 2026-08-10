@@ -58,16 +58,12 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
         });
 
         if (botUser) {
-          await Group.updateOne(
-            { _id: ctx.currentGroup._id },
-            {
-              $pull: {
-                botUsers: botUser._id,
-                operators: botUser._id,
-              },
-            },
+          // 新逻辑：从 BotUser.groups 移除
+          await BotUser.updateOne(
+            { _id: botUser._id },
+            { $pull: { groups: ctx.currentGroup._id } },
           );
-          debug(`Removed member ${leftMemberId} from group botUsers`);
+          debug(`Removed member ${leftMemberId} from group`);
         }
       } catch (error) {
         debug('Error processing left member:', error);
@@ -93,15 +89,18 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
         });
 
         if (botUser) {
-          await Group.updateOne(
-            { _id: ctx.currentGroup._id },
-            {
-              $pull: {
-                botUsers: botUser._id,
-                operators: botUser._id,
-              },
-            },
-          );
+          // 新逻辑：从 BotUser.groups 移除，但保留 operators 操作（管理员状态独立维护）
+          await Promise.all([
+            BotUser.updateOne(
+              { _id: botUser._id },
+              { $pull: { groups: ctx.currentGroup._id } },
+            ),
+            // 管理员状态单独处理
+            Group.updateOne(
+              { _id: ctx.currentGroup._id },
+              { $pull: { operators: botUser._id } },
+            ),
+          ]);
           debug(`Removed kicked/restricted member ${memberId} from group`);
         }
       } catch (error) {
@@ -152,11 +151,13 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
         },
       );
 
-      await Group.updateOne(
-        { _id: ctx.currentGroup._id },
-        { $addToSet: { botUsers: botUser._id } },
+      // 新逻辑：更新 BotUser.groups（性能更好，无写锁竞争）
+      await BotUser.updateOne(
+        { _id: botUser._id },
+        { $addToSet: { groups: ctx.currentGroup._id } },
       );
-      debug(`✅ 新成员 ${member.id} 已写入群组 botUsers`);
+
+      debug(`✅ 新成员 ${member.id} 已写入群组关系`);
 
       // 标记新成员信息到 ctx，供欢迎/验证中间件使用
       ctx.newMember = {

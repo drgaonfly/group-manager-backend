@@ -327,10 +327,17 @@ export const getGroupsForRedPacket = handleAsync(
       throw new Error('缺少 botId 或 botUserId');
     }
 
-    // 该 bot 管辖、且 botUsers 数组包含该 botUser 的群
+    // 查找该 botUser 所在的、由该 bot 管辖的群组
+    const botUser = await BotUser.findById(botUserId).select('groups');
+
+    if (!botUser || !botUser.groups.length) {
+      res.json({ success: true, data: [] });
+      return;
+    }
+
     const groups = await Group.find({
+      _id: { $in: botUser.groups },
       bot: botId,
-      botUsers: botUserId,
     })
       .select('_id id title username')
       .lean();

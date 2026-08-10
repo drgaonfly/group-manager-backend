@@ -73,6 +73,7 @@
     "seed": "npx ts-node src/utils/seed.ts",
     "cron": "npx ts-node src/tasks/index.ts",
     "scrape": "npx ts-node src/scrapeData.ts | tee ./tmp/scrape.txt",
+    "migrate:botuser-groups": "cross-env DEBUG=migration* npx ts-node src/scripts/migrateBotUserGroups.ts",
     "deploy": "npm run build && npx vercel --prod",
     "lint-staged": "lint-staged",
     "prettier": "prettier --config .prettierrc --write .",

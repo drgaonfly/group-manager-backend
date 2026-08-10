@@ -1,6 +1,6 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../../types';
-import Group from '../../../models/group';
+import BotUser from '../../../models/botUser';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:group:update');
@@ -18,16 +18,13 @@ export const groupUpdateHandler: Middleware<MyContext> = async (ctx, next) => {
     return await next();
   }
 
-  // 使用 $addToSet 将当前用户添加到群组的用户列表中，避免重复
+  // 新逻辑：将用户添加到 BotUser.groups 而不是 Group.botUsers
   if (ctx.currentBotUser) {
-    const result = await Group.updateOne(
-      { _id: ctx.currentGroup._id },
-      { $addToSet: { botUsers: ctx.currentBotUser._id } },
+    await BotUser.updateOne(
+      { _id: ctx.currentBotUser._id },
+      { $addToSet: { groups: ctx.currentGroup._id } },
     );
-    // 只在真正添加时打印日志
-    if (result.modifiedCount > 0) {
-      debug('Added user to group botUsers:', ctx.currentBotUser.userName);
-    }
+    debug('Added user to groups:', ctx.currentBotUser.userName);
   }
 
   // 将群组添加到 bot 的 groups 列表

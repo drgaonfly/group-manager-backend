@@ -1,6 +1,7 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
 import ReplyRule from '../../models/replyRule';
+import BotUser from '../../models/botUser';
 import { replaceVariables, MemberInfo } from '../../utils/replaceVariables';
 import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
 import {
@@ -137,17 +138,23 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
 
     if (needsRankingData) {
       // 获取用户积分排名
+      // 获取当前群组的所有成员 ID
+      const groupMembers = await BotUser.find({
+        groups: ctx.currentGroup._id,
+      }).select('_id');
+      const groupMemberIds = groupMembers.map((m) => m._id);
+
       userBalanceRanking = await getGroupUserRanking(
         botId,
         ctx.currentBotUserConfig?.usdt_balance || 0,
-        ctx.currentGroup?.botUsers as any,
+        groupMemberIds,
       );
 
       // 获取用户积分榜单
       rankingListData = await getGroupUserRankingList(
         ctx,
         botId,
-        ctx.currentGroup?.botUsers as any,
+        groupMemberIds,
         1,
         ITEMS_PER_PAGE,
       );

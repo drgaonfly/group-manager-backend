@@ -11,6 +11,7 @@ import {
   getGroupUserRanking,
   getGroupUserRankingList,
 } from '../../../../services/rankingService';
+import { getCurrentGroupMemberIds } from '../../../utils/getGroupMembers';
 
 export const lotteryCommand = new Composer<MyContext>();
 
@@ -308,16 +309,19 @@ lotteryCommand.on('message:text', checkGroup, async (ctx, next) => {
 
     // 替换变量的辅助函数
     const replaceVariables = async (content: string) => {
+      // 获取当前群组的所有成员 ID
+      const groupMemberIds = await getCurrentGroupMemberIds(ctx);
+
       const userBalanceRanking = await getGroupUserRanking(
         ctx.currentBot._id,
         ctx.currentBotUserConfig?.usdt_balance || 0,
-        ctx.currentGroup?.botUsers as any,
+        groupMemberIds,
       );
 
       const rankingListData = await getGroupUserRankingList(
         ctx,
         ctx.currentBot._id,
-        ctx.currentGroup?.botUsers as any,
+        groupMemberIds,
       );
       const userBalanceRankingList = rankingListData.text;
 

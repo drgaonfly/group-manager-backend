@@ -1,5 +1,6 @@
 import { Composer } from 'grammy';
 import { MyContext } from '../../../types';
+import BotUser from '../../../../models/botUser';
 import CheckinRule from '../../../../models/checkInRule';
 import CheckinHistory from '../../../../models/checkinHistory';
 import BotUserConfig from '../../../../models/botUserConfig';
@@ -212,18 +213,24 @@ checkinCommand.on('message:text', checkGroup, async (ctx, next) => {
       successMessage = lines.join('\n');
     }
 
+    // 获取当前群组的所有成员 ID
+    const groupMembers = await BotUser.find({
+      groups: ctx.currentGroup._id,
+    }).select('_id');
+    const groupMemberIds = groupMembers.map((m) => m._id);
+
     // 替换消息中的变量（昵称优先于用户名；userBalance 为签到后的当前积分）
     const rankingNum = await getGroupUserRanking(
       botId,
       botUserConfig.usdt_balance || 0,
-      ctx.currentGroup?.botUsers as any,
+      groupMemberIds,
     );
     const userBalanceRanking = rankingNum ? String(rankingNum) : undefined;
 
     const rankingListData = await getGroupUserRankingList(
       ctx,
       botId,
-      ctx.currentGroup?.botUsers as any,
+      groupMemberIds,
       1,
       undefined,
       botUserConfig.usdt_balance, // 传入签到后的最新积分，避免读到 ctx 中的旧缓存值
