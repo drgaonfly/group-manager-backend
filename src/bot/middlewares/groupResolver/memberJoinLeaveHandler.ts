@@ -130,25 +130,27 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
 
     debug(`Processing new member: ${member.id} (${member.first_name})`);
 
-    // 查找或创建 BotUser
+    // 查找或创建 BotUser - 使用 findOneAndUpdate + upsert 合并查找+创建操作
     try {
-      let botUser = await BotUser.findOne({
-        id: member.id.toString(),
-        proxy: proxyUser._id,
-      });
-
-      if (!botUser) {
-        botUser = new BotUser({
+      const botUser = await BotUser.findOneAndUpdate(
+        {
           id: member.id.toString(),
-          userName: member.username || '',
-          firstName: member.first_name,
-          lastName: member.last_name || '',
-          bot: ctx.currentBot._id,
           proxy: proxyUser._id,
-        });
-        await botUser.save();
-        debug(`✅ 创建新 BotUser: ${member.id}`);
-      }
+        },
+        {
+          $setOnInsert: {
+            userName: member.username || '',
+            firstName: member.first_name,
+            lastName: member.last_name || '',
+            bot: ctx.currentBot._id,
+            proxy: proxyUser._id,
+          },
+        },
+        {
+          upsert: true,
+          new: true,
+        },
+      );
 
       await Group.updateOne(
         { _id: ctx.currentGroup._id },
