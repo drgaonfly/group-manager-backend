@@ -93,6 +93,11 @@ export async function channelPost() {
 
         stats.processed++;
 
+        // 先记录发送时间（用触发时刻而非完成时刻），避免累积漂移
+        await ChannelPost.findByIdAndUpdate(post._id, {
+          lastPostTime: currentTime,
+        });
+
         // 从 bot.groups 中查找 channel 对应的 Telegram ID
         const botGroups = bot.groups as any[];
         const channelGroup = botGroups.find(
@@ -200,8 +205,8 @@ export async function channelPost() {
             }
           }
 
+          // 更新消息ID（lastPostTime 已在发送前记录）
           await ChannelPost.findByIdAndUpdate(post._id, {
-            lastPostTime: new Date(),
             lastPostMessageId: sentMessageId,
           });
 
