@@ -98,6 +98,11 @@ export async function sendGroupMessages() {
 
         stats.processed++;
 
+        // 先记录发送时间（用触发时刻而非完成时刻），避免累积漂移
+        await GroupMessage.findByIdAndUpdate(msg._id, {
+          lastSentTime: currentTime,
+        });
+
         const telegramBot = setupBot(bot.token);
 
         const replyMarkup = buildInlineKeyboard(msg.menus);
@@ -193,9 +198,8 @@ export async function sendGroupMessages() {
             }
           }
 
-          // 更新 GroupMessage 的最后发送时间和消息ID
+          // 更新 GroupMessage 的消息ID（lastSentTime 已在发送前记录）
           await GroupMessage.findByIdAndUpdate(msg._id, {
-            lastSentTime: new Date(),
             lastSentMessageId: sentMessageId,
           });
 
