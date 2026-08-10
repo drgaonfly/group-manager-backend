@@ -17,9 +17,6 @@ export interface IGroup extends Document {
   fee_rate?: number;
   isOnline: boolean; // 是否在线，不用显示在后台
 
-  /** @deprecated 已废弃: 成员关系已迁移到 BotUser.groups，请勿在新代码中使用 */
-  botUsers: (mongoose.Schema.Types.ObjectId | IBotUser)[];
-
   startAt?: Date;
   unit?: string;
 
@@ -98,14 +95,7 @@ const groupSchema = new mongoose.Schema(
       required: false,
       default: false,
     },
-    // 注意：botUsers 字段已废弃，成员关系现在维护在 BotUser.groups 中
-    // 此字段仅在数据迁移完成前保留，迁移后将移除
-    botUsers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'BotUser',
-      },
-    ],
+
     startAt: {
       type: Date,
     },
