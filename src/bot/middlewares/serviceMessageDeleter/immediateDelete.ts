@@ -4,7 +4,7 @@ import createDebug from 'debug';
 
 const debug = createDebug('bot:service-message-deleter:immediate');
 
-const AGGREGATE_WINDOW_MS = 500; // 聚合窗口：500ms 内同一 chatId 的消息合并
+const AGGREGATE_WINDOW_MS = 2000; // 聚合窗口：2s 内同一 chatId 的消息合并（刷粉场景下消息密集，窗口拉大可显著减少 Job 数量）
 
 /**
  * 立即删除：写入 Redis List 缓冲，同一时间槽内只创建一个 Bull Job
