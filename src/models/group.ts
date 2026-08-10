@@ -16,7 +16,9 @@ export interface IGroup extends Document {
   exchange_rate?: number;
   fee_rate?: number;
   isOnline: boolean; // 是否在线，不用显示在后台
-  // 注意：botUsers 字段已迁移到 BotUser.groups，不再在此维护
+
+  /** @deprecated 已废弃: 成员关系已迁移到 BotUser.groups，请勿在新代码中使用 */
+  botUsers: (mongoose.Schema.Types.ObjectId | IBotUser)[];
 
   startAt?: Date;
   unit?: string;
