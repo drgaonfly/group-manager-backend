@@ -151,38 +151,40 @@ const addGroupMessage = handleAsync(
 );
 
 // 更新群消息
-const updateGroupMessage = handleAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { medias, ...otherFields } = req.body;
+const updateGroupMessage = handleAsync(
+  async (req: RequestCustom, res: Response) => {
+    const { id } = req.params;
+    const { medias, ...otherFields } = req.body;
 
-  const updates: any = {
-    ...otherFields,
-    lastSentTime: null,
-    lastSentMessageId: null,
-  };
+    const updates: any = {
+      ...otherFields,
+      lastSentTime: null,
+      lastSentMessageId: null,
+    };
 
-  if (Array.isArray(medias)) {
-    // 直接使用前端传来的 medias（前端已经维护好了最终列表）
-    // 空数组表示用户删除了所有媒体，也要写入
-    updates.medias = medias;
-  }
+    if (Array.isArray(medias)) {
+      // 直接使用前端传来的 medias（前端已经维护好了最终列表）
+      // 空数组表示用户删除了所有媒体，也要写入
+      updates.medias = medias;
+    }
 
-  const updatedGroupMessage = await GroupMessage.findByIdAndUpdate(
-    id,
-    updates,
-    { new: true, runValidators: true },
-  ).exec();
+    const updatedGroupMessage = await GroupMessage.findByIdAndUpdate(
+      id,
+      updates,
+      { new: true, runValidators: true },
+    ).exec();
 
-  if (!updatedGroupMessage) {
-    res.status(404);
-    throw new Error('Group message not found');
-  }
+    if (!updatedGroupMessage) {
+      res.status(404);
+      throw new Error('Group message not found');
+    }
 
-  res.json({
-    success: true,
-    data: updatedGroupMessage,
-  });
-});
+    res.json({
+      success: true,
+      data: updatedGroupMessage,
+    });
+  },
+);
 
 // 删除群消息
 const deleteGroupMessage = handleAsync(async (req: Request, res: Response) => {
