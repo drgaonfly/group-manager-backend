@@ -129,9 +129,9 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
 
     debug(`Processing new member: ${member.id} (${member.first_name})`);
 
-    // 查找或创建 BotUser - 使用 findOneAndUpdate + upsert 合并查找+创建操作
+    // 原子操作：创建用户（如果不存在）并添加群组关系
     try {
-      const botUser = await BotUser.findOneAndUpdate(
+      await BotUser.findOneAndUpdate(
         {
           id: member.id.toString(),
           proxy: proxyUser._id,
@@ -144,17 +144,12 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
             bot: ctx.currentBot._id,
             proxy: proxyUser._id,
           },
+          $addToSet: { groups: ctx.currentGroup._id },
         },
         {
           upsert: true,
           new: true,
         },
-      );
-
-      // 新逻辑：更新 BotUser.groups（性能更好，无写锁竞争）
-      await BotUser.updateOne(
-        { _id: botUser._id },
-        { $addToSet: { groups: ctx.currentGroup._id } },
       );
 
       debug(`✅ 新成员 ${member.id} 已写入群组关系`);
