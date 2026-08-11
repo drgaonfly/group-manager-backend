@@ -33,24 +33,28 @@ export async function syncGroupAdministrators(
         continue;
       }
 
-      // 查找或创建 BotUser
-      let botUser = await BotUser.findOne({
-        id: user.id.toString(),
-        proxy: proxyUser._id,
-      });
-
-      if (!botUser) {
-        botUser = new BotUser({
+      // 使用原子操作查找或创建 BotUser
+      const botUser = await BotUser.findOneAndUpdate(
+        {
           id: user.id.toString(),
-          userName: user.username || '',
-          firstName: user.first_name,
-          lastName: user.last_name || '',
-          bot: ctx.currentBot._id,
           proxy: proxyUser._id,
-        });
-        await botUser.save();
-        debug(`✅ 创建新 BotUser (管理员): ${user.id}`);
-      }
+        },
+        {
+          $setOnInsert: {
+            userName: user.username || '',
+            firstName: user.first_name,
+            lastName: user.last_name || '',
+            bot: ctx.currentBot._id,
+            proxy: proxyUser._id,
+            groups: [], // 初始化空数组
+          },
+        },
+        {
+          upsert: true,
+          new: true,
+        },
+      );
+      debug(`✅ BotUser (管理员) 已处理: ${user.id}`);
 
       const displayName = user.username
         ? `@${user.username}`

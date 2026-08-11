@@ -52,31 +52,28 @@ export const channelSubscriptionHandler: Middleware<MyContext> = async (
     debug(`📢 用户订阅频道: ${user.id} (${user.first_name})`);
 
     try {
-      // 查找或创建 BotUser
-      let botUser = await BotUser.findOne({
-        id: user.id.toString(),
-        proxy: proxyUser._id,
-      });
-
-      if (!botUser) {
-        botUser = new BotUser({
+      // 使用原子操作查找或创建 BotUser，并添加到群组
+      await BotUser.findOneAndUpdate(
+        {
           id: user.id.toString(),
-          userName: user.username || '',
-          firstName: user.first_name,
-          lastName: user.last_name || '',
-          bot: ctx.currentBot._id,
           proxy: proxyUser._id,
-        });
-        await botUser.save();
-        debug(`✅ 创建新 BotUser: ${user.id}`);
-      }
-
-      // 新逻辑：将用户添加到 BotUser.groups
-      await BotUser.updateOne(
-        { _id: botUser._id },
-        { $addToSet: { groups: ctx.currentGroup._id } },
+        },
+        {
+          $setOnInsert: {
+            userName: user.username || '',
+            firstName: user.first_name,
+            lastName: user.last_name || '',
+            bot: ctx.currentBot._id,
+            proxy: proxyUser._id,
+          },
+          $addToSet: { groups: ctx.currentGroup._id },
+        },
+        {
+          upsert: true,
+          new: true,
+        },
       );
-      debug(`✅ 用户 ${user.id} 已添加到频道订阅者列表`);
+      debug(`✅ BotUser 已处理: ${user.id}`);
     } catch (error) {
       debug('处理频道订阅事件失败:', error);
     }

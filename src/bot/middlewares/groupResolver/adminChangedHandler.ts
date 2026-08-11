@@ -83,24 +83,28 @@ export const adminManagementHandler: Middleware<MyContext> = async (
   }
 
   try {
-    // 查找或创建 BotUser
-    let botUser = await BotUser.findOne({
-      id: memberId.toString(),
-      proxy: proxyUser._id,
-    });
-
-    if (!botUser) {
-      botUser = new BotUser({
+    // 使用原子操作查找或创建 BotUser，并添加到群组
+    const botUser = await BotUser.findOneAndUpdate(
+      {
         id: memberId.toString(),
-        userName: memberUser.username || '',
-        firstName: memberUser.first_name,
-        lastName: memberUser.last_name || '',
-        bot: ctx.currentBot._id,
         proxy: proxyUser._id,
-      });
-      await botUser.save();
-      debug(`✅ 创建新 BotUser: ${memberId}`);
-    }
+      },
+      {
+        $setOnInsert: {
+          userName: memberUser.username || '',
+          firstName: memberUser.first_name,
+          lastName: memberUser.last_name || '',
+          bot: ctx.currentBot._id,
+          proxy: proxyUser._id,
+        },
+        $addToSet: { groups: ctx.currentGroup._id },
+      },
+      {
+        upsert: true,
+        new: true,
+      },
+    );
+    debug(`✅ BotUser 已处理: ${memberId}`);
 
     if (isPromotedToAdmin) {
       // 只有管理员（不包括群主）才添加到 Group.operators
