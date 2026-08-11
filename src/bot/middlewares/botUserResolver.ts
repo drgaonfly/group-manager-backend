@@ -35,11 +35,6 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
         proxy: proxyUser._id,
         groups: [], // 初始化空群组数组
       },
-      $set: {
-        userName: username || '',
-        firstName: first_name || '',
-        lastName: last_name || '',
-      },
     },
     { new: true, upsert: true },
   ).populate('subscriptions');

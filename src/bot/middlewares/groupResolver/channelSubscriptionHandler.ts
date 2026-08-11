@@ -65,6 +65,7 @@ export const channelSubscriptionHandler: Middleware<MyContext> = async (
             lastName: user.last_name || '',
             bot: ctx.currentBot._id,
             proxy: proxyUser._id,
+            groups: [], // 初始化空群组数组
           },
           $addToSet: { groups: ctx.currentGroup._id },
         },

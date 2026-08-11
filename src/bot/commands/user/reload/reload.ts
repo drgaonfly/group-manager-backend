@@ -42,6 +42,7 @@ reloadCommand.command('reload', async (ctx) => {
         lastName: ctx.from!.last_name || '',
         bot: ctx.currentBot._id,
         proxy: ctx.currentProxyUser?._id,
+        groups: [], // 初始化空群组数组
       },
     },
     { new: true, upsert: true },
