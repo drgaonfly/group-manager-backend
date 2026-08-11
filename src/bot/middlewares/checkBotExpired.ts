@@ -43,10 +43,14 @@ export const checkBotExpired = async (
 
     // 如果是过期状态，返回提示信息
     if (ctx.callbackQuery) {
-      await ctx.answerCallbackQuery({
-        text: '❌ 机器人已过期，请续费后继续使用',
-        show_alert: true,
-      });
+      try {
+        await ctx.answerCallbackQuery({
+          text: '❌ 机器人已过期，请续费后继续使用',
+          show_alert: true,
+        });
+      } catch (error: any) {
+        debug('Failed to answer callback query (bot expired):', error.message);
+      }
     } else {
       const msg = [
         '❌ 机器人已过期，功能已禁用',
@@ -54,12 +58,17 @@ export const checkBotExpired = async (
         '请通过订阅服务续费以继续使用机器人功能.',
       ].join('\n');
 
-      await ctx.reply(msg, {
-        reply_markup: new InlineKeyboard().text(
-          '💎 订阅服务',
-          'subscription_start',
-        ),
-      });
+      try {
+        await ctx.reply(msg, {
+          reply_markup: new InlineKeyboard().text(
+            '💎 订阅服务',
+            'subscription_start',
+          ),
+        });
+      } catch (error: any) {
+        debug('Failed to send expired notification:', error.message);
+        // 用户可能阻止了机器人，忽略此错误
+      }
     }
     return;
   }
