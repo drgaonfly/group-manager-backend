@@ -224,34 +224,32 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
             `⚠️ ${userName}，禁止使用违禁词"${hitKeyword}"，` +
             `已警告 ${newCount} 次，达到 ${maxWarnings} 次将触发「${punishLabel}」。${selfDestructNote}`;
 
-          let warningMsg: any = null;
           try {
-            warningMsg = await ctx.api.sendMessage(chatId, warningText, {
-              parse_mode: undefined,
+            const warningMsg = await ctx.api.sendMessage(chatId, warningText, {
+              parse_mode: 'HTML',
             });
+
+            // 自焚：延迟删除警告消息
+            if (selfDestructSec > 0 && warningMsg?.message_id) {
+              setTimeout(async () => {
+                try {
+                  await ctx.api.deleteMessage(chatId, warningMsg.message_id);
+                } catch {
+                  // 忽略删除失败
+                  debug('Failed to send delete self');
+                }
+              }, selfDestructSec * 1000);
+            }
           } catch (err: any) {
             debug('Failed to send warning message:', err.message);
           }
 
-          // 自焚：延迟删除警告消息
-          if (selfDestructSec > 0 && warningMsg?.message_id) {
-            const warnMsgId = warningMsg.message_id;
-            setTimeout(async () => {
-              try {
-                await ctx.api.deleteMessage(chatId, warnMsgId);
-              } catch {
-                // 消息可能已被手动删除，忽略
-              }
-            }, selfDestructSec * 1000);
-          }
-
-          return; // 本次只警告，不处罚
+          return; // 警告完毕，不调用 next()
         }
 
         // 达到阈值 → 重置计数，继续走后续处罚逻辑
         resetWarningCount(ruleId, chatId, userId);
       }
-      // ── 警告机制结束 ──────────────────────────────────────────────────────
 
       // 1. 删除消息
       try {
@@ -262,11 +260,13 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
           err.description?.includes("can't delete") ||
           err.description?.includes('admin privileges')
         ) {
-          await ctx
-            .reply(
+          try {
+            await ctx.reply(
               `🛡️ **去除广告通知**\n检测到违规内容，但机器人目前**权限不足**，无法自动清理。\n请确保已授予机器人"**删除消息**"的管理员权限。`,
-            )
-            .catch(() => {});
+            );
+          } catch (err: any) {
+            debug('Failed to send permission warning:', err.message);
+          }
         }
       }
 
@@ -275,19 +275,20 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
         debug('Punishment: kick user', userId);
         try {
           await ctx.api.banChatMember(chatId, userId);
-          // 立即解封，相当于踢出（不永久封禁）
           await ctx.api.unbanChatMember(chatId, userId);
         } catch (err: any) {
           debug('Failed to kick user:', err.message);
           if (err.description?.includes('admin privileges')) {
-            await ctx
-              .reply(`🛡️ 检测到违规内容，但机器人**权限不足**，无法踢出用户。`)
-              .catch(() => {});
+            try {
+              await ctx.reply(
+                `🛡️ 检测到违规内容，但机器人**权限不足**，无法踢出用户。`,
+              );
+            } catch (err: any) {
+              debug('Failed to send kick warning:', err.message);
+            }
           }
         }
       } else if (punishment?.type === 'mute') {
-        // Telegram 规定 until_date 必须在 30 秒 ~ 366 天范围内
-        // 低于 30 秒会被视为永久禁言，因此做 clamp 处理
         const rawDuration = punishment.muteDuration ?? 60;
         const duration = Math.min(
           Math.max(rawDuration, MUTE_MIN_SECONDS),
@@ -295,15 +296,7 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
         );
         const untilDate = Math.floor(Date.now() / 1000) + duration;
 
-        debug(
-          'Punishment: mute user',
-          userId,
-          'for',
-          duration,
-          'seconds (requested:',
-          rawDuration,
-          ')',
-        );
+        debug('Punishment: mute user', userId, 'for', duration, 'seconds');
 
         try {
           await ctx.api.restrictChatMember(
@@ -327,19 +320,24 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
         } catch (err: any) {
           debug('Failed to mute user:', err.message);
           if (err.description?.includes('admin privileges')) {
-            await ctx
-              .reply(`🛡️ 检测到违规内容，但机器人**权限不足**，无法禁言用户。`)
-              .catch(() => {});
+            try {
+              await ctx.reply(
+                `🛡️ 检测到违规内容，但机器人**权限不足**，无法禁言用户。`,
+              );
+            } catch (err: any) {
+              debug('Failed to send mute warning:', err.message);
+            }
           }
         }
       }
 
-      return; // 命中即中止后续中间件
+      return; // 处罚完毕，不调用 next()
     }
 
+    // 没有检测到广告，继续下一个中间件
     return await next();
   } catch (error) {
     debug('Ad removal resolver error:', error);
-    return await next();
+    // 发生错误时直接返回，不调用 next()
   }
 };
