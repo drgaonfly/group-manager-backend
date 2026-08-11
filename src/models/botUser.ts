@@ -7,6 +7,7 @@ import { IGroup } from './group';
 
 export interface IBotUser extends Document {
   id: string;
+  bot: mongoose.Types.ObjectId; // 添加 bot 字段
   proxy: mongoose.Types.ObjectId | IUser;
   userName: string;
   firstName: string;
@@ -23,12 +24,15 @@ export interface IBotUser extends Document {
 
 const botUserSchema = new mongoose.Schema(
   {
-    id: { type: String, required: true, unique: true },
+    id: { type: String, required: true },
+    bot: { type: mongoose.Schema.Types.ObjectId, ref: 'Bot', required: false }, // 添加缺少的 bot 字段
     userName: { type: String, required: false },
     firstName: { type: String, required: false },
     lastName: { type: String, required: false },
     messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BotUserMessage' }],
-    groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }], // 用户所在的群组列表
+    groups: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Group', default: [] },
+    ], // 添加默认空数组
     isAuthorized: { type: Boolean, default: false }, // 默认未授权
     proxy: {
       type: mongoose.Schema.Types.ObjectId,
