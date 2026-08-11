@@ -18,30 +18,38 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
 
   const { proxyUser } = await findBotProxy(ctx.currentBot);
 
-  // 先查找现有用户，用于检测信息变更
-  const existingUser = await BotUser.findOne({ id: id.toString() });
+  // 先查找现有用户，用于检测信息
 
-  // 查找或创建关联用户，并填充 subscriptions 字段
+  // 查找或创建关联用户，使用新架构
   const botUser = await BotUser.findOneAndUpdate(
-    { id: id.toString() },
     {
-      $set: {
-        userName: username,
-        firstName: first_name,
-        lastName: last_name,
+      id: id.toString(),
+      proxy: proxyUser._id,
+    },
+    {
+      $setOnInsert: {
+        userName: username || '',
+        firstName: first_name || '',
+        lastName: last_name || '',
+        bot: ctx.currentBot._id,
         proxy: proxyUser._id,
+        groups: [], // 初始化空群组数组
+      },
+      $set: {
+        userName: username || '',
+        firstName: first_name || '',
+        lastName: last_name || '',
       },
     },
     { new: true, upsert: true },
   ).populate('subscriptions');
 
-  // 将当前用户添加到机器人的用户列表中
-  await ctx.currentBot.updateOne({
-    $addToSet: {
-      // 使用 $addToSet 来避免重复添加
-      botUsers: botUser._id,
-    },
-  });
+  // 移除旧架构：不再更新 Bot.botUsers
+  // await ctx.currentBot.updateOne({
+  //   $addToSet: {
+  //     botUsers: botUser._id,
+  //   },
+  // });
 
   ctx.currentBotUser = botUser;
 
