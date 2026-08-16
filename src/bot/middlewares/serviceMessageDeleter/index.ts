@@ -4,27 +4,64 @@ import ServiceMessage, {
   IServiceMessage,
 } from '../../../models/serviceMessage';
 import { getCache } from '../../../utils/cache';
-import { getDeletionQueue } from './deletionQueue';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:service-message-deleter');
+
+const TG_API_BASE = 'https://api.telegram.org';
+
+/**
+ * 直接用原生 fetch 調用 Telegram deleteMessage。
+ * 繞開主 bot 的 apiThrottler，不佔用限流配額，不影響私聊響應。
+ * fire-and-forget，不阻塞中間件鏈。
+ */
+function deleteMessageRaw(
+  token: string,
+  chatId: number,
+  messageId: number,
+  messageType: string,
+): void {
+  fetch(`${TG_API_BASE}/bot${token}/deleteMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, message_id: messageId }),
+  })
+    .then((res) => {
+      if (!res.ok) {
+        return res.json().then((body: any) => {
+          const desc: string = body?.description ?? '';
+          if (
+            desc.includes('message to delete not found') ||
+            desc.includes("message can't be deleted") ||
+            desc.includes('bot was kicked') ||
+            desc.includes('bot is not a member') ||
+            desc.includes('chat not found')
+          ) {
+            debug(`⚠️ 跳过 [${messageType}] ${messageId}: ${desc}`);
+          } else {
+            debug(`❌ 删除失败 [${messageType}] ${messageId}: ${desc}`);
+          }
+        });
+      } else {
+        debug(`✅ 删除成功 [${messageType}] ${messageId}`);
+      }
+    })
+    .catch((err: any) => {
+      debug(`❌ 网络错误 [${messageType}] ${messageId}: ${err.message}`);
+    });
+}
 
 /**
  * 服务消息删除中间件
  *
  * 检测入群、离群、改标题等系统消息，根据配置决定是否删除。
- * 删除操作通过 DeletionQueue 执行：
- * - 立即删除：聚合同 chatId 的消息批量处理，规模化场景高效
- * - 延迟删除：Bull delayed job，持久化，多实例安全
+ * 使用原生 fetch 绕开 apiThrottler，fire-and-forget 不阻塞中间件链。
  */
 export const serviceMessageDeleter: Middleware<MyContext> = async (
   ctx,
   next,
 ) => {
   if (!ctx.message || !ctx.currentGroup || !ctx.currentBot) {
-    debug(
-      `跳过: message=${!!ctx.message}, currentGroup=${!!ctx.currentGroup}, currentBot=${!!ctx.currentBot}`,
-    );
     return await next();
   }
 
@@ -69,26 +106,9 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
   const chatId = ctx.chat!.id;
   const messageId = msg.message_id;
   const botToken = ctx.currentBot!.token;
-  const delayMs =
-    config.deleteDelay && config.deleteDelay > 0
-      ? config.deleteDelay * 1000
-      : 0;
 
-  try {
-    const queue = getDeletionQueue();
-    await queue.add(chatId, messageId, messageType, botToken, delayMs);
-    debug(
-      `📥 已入队 [${messageType}] ${messageId}${
-        delayMs ? ` 延迟${config.deleteDelay}s` : ''
-      }`,
-    );
-  } catch (e: any) {
-    debug(`❌ 加入队列失败: ${e.message}`);
-    // 降级：直接删除，不阻塞中间件链
-    ctx.api.deleteMessage(chatId, messageId).catch((err: any) => {
-      debug(`❌ 降级删除失败 [${messageType}]: ${err.message}`);
-    });
-  }
+  // fire-and-forget，直接刪，不走隊列不阻塞
+  deleteMessageRaw(botToken, chatId, messageId, messageType);
 
   await next();
 };
