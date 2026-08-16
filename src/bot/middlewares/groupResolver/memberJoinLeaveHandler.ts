@@ -129,42 +129,39 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
 
     debug(`Processing new member: ${member.id} (${member.first_name})`);
 
-    // 原子操作：创建用户（如果不存在）并添加群组关系
-    try {
-      await BotUser.findOneAndUpdate(
-        {
-          id: member.id.toString(),
-          proxy: proxyUser._id,
-        },
-        {
-          $setOnInsert: {
-            userName: member.username || '',
-            firstName: member.first_name,
-            lastName: member.last_name || '',
-            bot: ctx.currentBot._id,
-            proxy: proxyUser._id,
-          },
-          $addToSet: { groups: ctx.currentGroup._id },
-        },
-        {
-          upsert: true,
-          new: true,
-        },
-      );
+    // 入群时不写 DB，标记 ctx.newMember 供欢迎/验证中间件使用
+    // 用户首次发言时由 botUserResolver + groupUpdateHandler 懒创建
+    ctx.newMember = {
+      id: member.id,
+      is_bot: member.is_bot,
+      first_name: member.first_name,
+      last_name: member.last_name,
+      username: member.username,
+    };
 
-      debug(`✅ 新成员 ${member.id} 已写入群组关系`);
-
-      // 标记新成员信息到 ctx，供欢迎/验证中间件使用
-      ctx.newMember = {
-        id: member.id,
-        is_bot: member.is_bot,
-        first_name: member.first_name,
-        last_name: member.last_name,
-        username: member.username,
-      };
-    } catch (error) {
-      debug('写入 botUsers 失败:', error);
-    }
+    // TODO: 如需恢复入群写库，取消以下注释
+    // try {
+    //   await BotUser.findOneAndUpdate(
+    //     {
+    //       id: member.id.toString(),
+    //       proxy: proxyUser._id,
+    //     },
+    //     {
+    //       $setOnInsert: {
+    //         userName: member.username || '',
+    //         firstName: member.first_name,
+    //         lastName: member.last_name || '',
+    //         bot: ctx.currentBot._id,
+    //         proxy: proxyUser._id,
+    //       },
+    //       $addToSet: { groups: ctx.currentGroup._id },
+    //     },
+    //     { upsert: true, new: true },
+    //   );
+    //   debug(`✅ 新成员 ${member.id} 已写入群组关系`);
+    // } catch (error) {
+    //   debug('写入 botUsers 失败:', error);
+    // }
   }
 
   await next();
