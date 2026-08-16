@@ -254,6 +254,26 @@ module.exports = {
       retain: 7,
       compress: true,
     },
+    // 入群服务消息删除任务 - 每分钟执行一次，从 Redis 队列批量删除入群消息
+    {
+      name: 'manager-service-deleter',
+      script: 'dist/tasks/serviceDeleter.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'task*',
+      },
+      error_file: './logs/service-deleter-error.log',
+      out_file: './logs/service-deleter-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
     // BotMessage 清理任务 - 每天凌晨2点执行，清理超过本月的发言记录
     {
       name: 'manager-cleanup-botmessages',
