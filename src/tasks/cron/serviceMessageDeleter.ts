@@ -3,7 +3,7 @@ import { setupBot } from '../../bot/botSetup';
 import { SVC_DEL_QUEUE_KEY } from '../../bot/middlewares/serviceMessageDeleter';
 import createDebug from 'debug';
 
-const debug = createDebug('task:service-deleter');
+const debug = createDebug('task:service-message-deleter');
 
 /** 单次任务最多消费的条数，防止一次取太多 */
 const MAX_BATCH = 500;
@@ -69,22 +69,23 @@ export async function deleteServiceMessages(): Promise<void> {
 
   debug(`分组数: ${groups.size}`);
 
-  // 逐组删除
-  for (const { token, chatId, ids } of groups.values()) {
-    const bot = setupBot(token);
+  // 逐组并行删除（不同 token/chatId 之间互不影响）
+  await Promise.all(
+    Array.from(groups.values()).map(async ({ token, chatId, ids }) => {
+      const bot = setupBot(token);
 
-    // 切片，每片最多 TG_BATCH_SIZE 条
-    for (let i = 0; i < ids.length; i += TG_BATCH_SIZE) {
-      const slice = ids.slice(i, i + TG_BATCH_SIZE);
-      try {
-        await bot.api.deleteMessages(chatId, slice);
-        debug(`✅ 删除成功 chatId=${chatId} count=${slice.length}`);
-      } catch (e: any) {
-        console.error(
-          `❌ 删除失败 chatId=${chatId}:`,
-          e?.description ?? e?.message ?? e,
-        );
+      for (let i = 0; i < ids.length; i += TG_BATCH_SIZE) {
+        const slice = ids.slice(i, i + TG_BATCH_SIZE);
+        try {
+          await bot.api.deleteMessages(chatId, slice);
+          debug(`✅ 删除成功 chatId=${chatId} count=${slice.length}`);
+        } catch (e: any) {
+          console.error(
+            `❌ 删除失败 chatId=${chatId}:`,
+            e?.description ?? e?.message ?? e,
+          );
+        }
       }
-    }
-  }
+    }),
+  );
 }

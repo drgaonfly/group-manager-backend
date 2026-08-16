@@ -256,8 +256,8 @@ module.exports = {
     },
     // 入群服务消息删除任务 - 每分钟执行一次，从 Redis 队列批量删除入群消息
     {
-      name: 'manager-service-deleter',
-      script: 'dist/tasks/serviceDeleter.js',
+      name: 'manager-service-message-deleter',
+      script: 'dist/tasks/serviceMessageDeleter.js',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
@@ -266,8 +266,8 @@ module.exports = {
         NODE_ENV: 'production',
         DEBUG: 'task*',
       },
-      error_file: './logs/service-deleter-error.log',
-      out_file: './logs/service-deleter-out.log',
+      error_file: './logs/service-message-deleter-error.log',
+      out_file: './logs/service-message-deleter-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       max_size: '10M',

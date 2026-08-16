@@ -1,6 +1,6 @@
 import { setupRedis } from '../utils/redis';
 import setupDB, { closeDB } from '../utils/db';
-import { deleteServiceMessages } from './cron/serviceDeleter';
+import { deleteServiceMessages } from './cron/serviceMessageDeleter';
 import cron from 'node-cron';
 import PQueue from 'p-queue';
 
