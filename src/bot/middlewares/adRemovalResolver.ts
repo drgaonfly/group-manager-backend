@@ -338,6 +338,6 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
     return await next();
   } catch (error) {
     debug('Ad removal resolver error:', error);
-    // 发生错误时直接返回，不调用 next()
+    return await next();
   }
 };
