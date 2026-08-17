@@ -5,10 +5,7 @@ import createDebug from 'debug';
 
 const debug = createDebug('task:service-message-deleter');
 
-/** 单次任务最多消费的条数，防止一次取太多 */
-const MAX_BATCH = 500;
-
-/** Telegram deleteMessages 单次上限 */
+/** Telegram deleteMessages 单次上限（同一 chatId） */
 const TG_BATCH_SIZE = 100;
 
 interface PendingItem {
@@ -17,33 +14,19 @@ interface PendingItem {
   messageId: number;
 }
 
-/**
- * 从 Redis List 批量读取入群消息，按 token+chatId 分组后批量删除。
- *
- * 流程：
- * 1. LRANGE 0 MAX_BATCH-1 读取队列头部
- * 2. LTRIM MAX_BATCH -1 截断（原子性由两步各自保证，极端情况重复删无害）
- * 3. 按 token+chatId 分组，每组切成 100 条分片调用 deleteMessages
- */
 export async function deleteServiceMessages(): Promise<void> {
   if (!redis) {
     debug('⚠️ Redis 未连接，跳过本次执行');
     return;
   }
 
-  // 原子读取并截断：先读，再 trim
-  const raw = await redis.lrange(SVC_DEL_QUEUE_KEY, 0, MAX_BATCH - 1);
-  if (raw.length === 0) {
-    debug('队列为空，无需处理');
-    return;
-  }
+  const raw = await redis.lrange(SVC_DEL_QUEUE_KEY, 0, -1);
+  if (raw.length === 0) return;
 
-  // 只 trim 已读取的部分
-  await redis.ltrim(SVC_DEL_QUEUE_KEY, raw.length, -1);
+  await redis.del(SVC_DEL_QUEUE_KEY);
+  debug(`📥 本次读取 ${raw.length} 条`);
 
-  debug(`📥 本次读取 ${raw.length} 条入群消息待删除`);
-
-  // 解析，忽略格式错误的条目
+  // 解析
   const items: PendingItem[] = [];
   for (const s of raw) {
     try {
@@ -53,38 +36,49 @@ export async function deleteServiceMessages(): Promise<void> {
     }
   }
 
-  // 按 token+chatId 分组
+  // 先按 token+chatId 分组
   const groups = new Map<
     string,
     { token: string; chatId: number; ids: number[] }
   >();
-
   for (const { token, chatId, messageId } of items) {
     const key = `${token}::${chatId}`;
-    if (!groups.has(key)) {
-      groups.set(key, { token, chatId, ids: [] });
-    }
+    if (!groups.has(key)) groups.set(key, { token, chatId, ids: [] });
     groups.get(key)!.ids.push(messageId);
+  }
+
+  // 每组超出 100 条的放回队列尾，下一分钟继续
+  const overflow: string[] = [];
+  for (const group of groups.values()) {
+    if (group.ids.length > TG_BATCH_SIZE) {
+      const extra = group.ids.splice(TG_BATCH_SIZE);
+      for (const id of extra) {
+        overflow.push(
+          JSON.stringify({
+            token: group.token,
+            chatId: group.chatId,
+            messageId: id,
+          }),
+        );
+      }
+    }
+  }
+  if (overflow.length > 0) {
+    await redis.rpush(SVC_DEL_QUEUE_KEY, ...overflow);
+    debug(`↩️ ${overflow.length} 条超出部分放回队列，下次处理`);
   }
 
   debug(`分组数: ${groups.size}`);
 
-  // 逐组并行删除（不同 token/chatId 之间互不影响）
+  // 各组并行，每组 ≤100 条，直接调 bot.api.deleteMessages
   await Promise.all(
     Array.from(groups.values()).map(async ({ token, chatId, ids }) => {
-      const bot = setupBot(token);
-
-      for (let i = 0; i < ids.length; i += TG_BATCH_SIZE) {
-        const slice = ids.slice(i, i + TG_BATCH_SIZE);
-        try {
-          await bot.api.deleteMessages(chatId, slice);
-          debug(`✅ 删除成功 chatId=${chatId} count=${slice.length}`);
-        } catch (e: any) {
-          console.error(
-            `❌ 删除失败 chatId=${chatId}:`,
-            e?.description ?? e?.message ?? e,
-          );
-        }
+      try {
+        const bot = setupBot(token);
+        await bot.api.deleteMessages(chatId, ids);
+        debug(`✅ 删除成功 chatId=${chatId} count=${ids.length}`);
+      } catch (e: any) {
+        debug(`❌ 删除失败 chatId=${chatId}: ${e?.description ?? e?.message}`);
       }
     }),
   );
