@@ -3,7 +3,6 @@ import Bot from '../../../../models/bot';
 import Group from '../../../../models/group';
 import { MyContext } from '../../../types';
 import { Composer, InlineKeyboard } from 'grammy';
-import { startClientAndGetSession } from '../../../services/gramClient';
 import { checkStartAllowedChats } from '../../../middlewares/checkInBot';
 import { handleJoinLottery } from './handleLottery';
 import { formatBeijingDate } from '../../../../utils/formatBeijingDate';
@@ -66,13 +65,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
 
     await ctx.reply(messageText, { reply_markup: inlineKeyboard });
     return;
-  }
-
-  // ── 初始化 session ─────────────────────────────────────────────────────────
-  if (!bot.session) {
-    const session = await startClientAndGetSession(bot.token);
-    bot.session = session as any;
-    await bot.save();
   }
 
   // ── 构建回复 ───────────────────────────────────────────────────────────────
