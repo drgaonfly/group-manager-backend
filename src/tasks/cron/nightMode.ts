@@ -2,20 +2,17 @@ import NightMode from '../../models/nightMode';
 import Group from '../../models/group';
 import Bot from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
-import createDebug from 'debug';
-
-const debug = createDebug('cron:night-mode');
 
 export async function checkNightModes() {
   const now = new Date();
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
-  debug(`检查夜间模式，当前 UTC 分钟: ${nowMinutes}`);
+  console.log(`[NightMode] 检查夜间模式，当前 UTC 分钟: ${nowMinutes}`);
 
   const configs = await NightMode.find({ isActive: true });
 
   if (!configs.length) {
-    debug('无夜间模式配置，跳过');
+    console.log('[NightMode] 无夜间模式配置，跳过');
     return;
   }
 
@@ -24,6 +21,14 @@ export async function checkNightModes() {
     const group = await Group.findById(config.group);
 
     if (!bot || !group || !bot.isOnline) continue;
+
+    // public Bot 不受付费限制；private Bot 过期后跳过
+    if (bot.type === 'private') {
+      if (bot.disabledAt && bot.disabledAt < now) {
+        console.log(`[NightMode] 跳过: Bot 已过期 botName=${bot.botName}`);
+        continue;
+      }
+    }
 
     const atStart = nowMinutes === config.startAt;
     const atEnd = nowMinutes === config.endAt;
@@ -35,7 +40,6 @@ export async function checkNightModes() {
       const chatId: number = group.id;
 
       if (atStart) {
-        // 进入夜间模式：全体禁言
         await telegramBot.api.setChatPermissions(chatId, {
           can_send_messages: false,
           can_send_audios: false,
@@ -52,9 +56,10 @@ export async function checkNightModes() {
           can_pin_messages: false,
           can_manage_topics: false,
         });
-        debug(`🌙 夜间模式开启: group=${chatId} (${group.title})`);
+        console.log(
+          `[NightMode] 🌙 夜间模式开启: group=${chatId} (${group.title})`,
+        );
       } else if (atEnd) {
-        // 退出夜间模式：恢复基础权限
         await telegramBot.api.setChatPermissions(chatId, {
           can_send_messages: true,
           can_send_audios: true,
@@ -71,10 +76,14 @@ export async function checkNightModes() {
           can_pin_messages: false,
           can_manage_topics: false,
         });
-        debug(`☀️ 夜间模式关闭: group=${chatId} (${group.title})`);
+        console.log(
+          `[NightMode] ☀️ 夜间模式关闭: group=${chatId} (${group.title})`,
+        );
       }
     } catch (err: any) {
-      debug(`setChatPermissions 失败 groupId=${group.id}: ${err.message}`);
+      console.log(
+        `[NightMode] setChatPermissions 失败 groupId=${group.id}: ${err.message}`,
+      );
     }
   }
 }

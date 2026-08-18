@@ -274,6 +274,26 @@ module.exports = {
       retain: 7,
       compress: true,
     },
+    // 夜间模式任务 - 每分钟执行一次，检查夜间模式配置并对群组全体禁言/解禁
+    {
+      name: 'manager-night-mode',
+      script: 'dist/tasks/nightMode.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DEBUG: 'bot*',
+      },
+      error_file: './logs/night-mode-error.log',
+      out_file: './logs/night-mode-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_size: '10M',
+      retain: 7,
+      compress: true,
+    },
     // BotMessage 清理任务 - 每天凌晨2点执行，清理超过本月的发言记录
     {
       name: 'manager-cleanup-botmessages',
