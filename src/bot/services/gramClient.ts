@@ -85,11 +85,8 @@ export async function getGramClient(botToken: string): Promise<TelegramClient> {
   return client;
 }
 
-// 兼容旧代码
-const defaultStringSession = '';
-export const client = createTelegramClient(defaultStringSession);
-
 export async function startClientAndGetSession(token: string) {
+  const client = createTelegramClient('');
   await client.start({
     botAuthToken: token,
   });
