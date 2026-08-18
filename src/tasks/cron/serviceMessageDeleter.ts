@@ -1,9 +1,6 @@
 import { redis } from '../../utils/redis';
 import { setupBot } from '../../bot/botSetup';
 import { SVC_DEL_QUEUE_KEY } from '../../bot/middlewares/serviceMessageDeleter';
-import createDebug from 'debug';
-
-const debug = createDebug('task:service-message-deleter');
 
 /** Telegram deleteMessages 单次上限（同一 chatId） */
 const TG_BATCH_SIZE = 100;
@@ -16,7 +13,7 @@ interface PendingItem {
 
 export async function deleteServiceMessages(): Promise<void> {
   if (!redis) {
-    debug('⚠️ Redis 未连接，跳过本次执行');
+    console.log('⚠️ Redis 未连接，跳过本次执行');
     return;
   }
 
@@ -24,7 +21,7 @@ export async function deleteServiceMessages(): Promise<void> {
   if (raw.length === 0) return;
 
   await redis.del(SVC_DEL_QUEUE_KEY);
-  debug(`📥 本次读取 ${raw.length} 条`);
+  console.log(`📥 本次读取 ${raw.length} 条`);
 
   // 解析
   const items: PendingItem[] = [];
@@ -32,7 +29,7 @@ export async function deleteServiceMessages(): Promise<void> {
     try {
       items.push(JSON.parse(s) as PendingItem);
     } catch {
-      debug(`⚠️ 解析失败，跳过: ${s}`);
+      console.log(`⚠️ 解析失败，跳过: ${s}`);
     }
   }
 
@@ -65,20 +62,22 @@ export async function deleteServiceMessages(): Promise<void> {
   }
   if (overflow.length > 0) {
     await redis.rpush(SVC_DEL_QUEUE_KEY, ...overflow);
-    debug(`↩️ ${overflow.length} 条超出部分放回队列，下次处理`);
+    console.log(`↩️ ${overflow.length} 条超出部分放回队列，下次处理`);
   }
 
-  debug(`分组数: ${groups.size}`);
+  console.log(`分组数: ${groups.size}`);
 
-  // 各组并行，每组 ≤100 条，直接调 bot.api.deleteMessages
+  // 各组并行，每组 ≤100 条
   await Promise.all(
     Array.from(groups.values()).map(async ({ token, chatId, ids }) => {
       try {
         const bot = setupBot(token);
         await bot.api.deleteMessages(chatId, ids);
-        debug(`✅ 删除成功 chatId=${chatId} count=${ids.length}`);
+        console.log(`✅ 删除成功 chatId=${chatId} count=${ids.length}`);
       } catch (e: any) {
-        debug(`❌ 删除失败 chatId=${chatId}: ${e?.description ?? e?.message}`);
+        console.log(
+          `❌ 删除失败 chatId=${chatId}: ${e?.description ?? e?.message}`,
+        );
       }
     }),
   );
