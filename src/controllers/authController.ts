@@ -269,10 +269,9 @@ const updateUserProfile = handleAsync(
       lotteryRule,
       auctionRule,
       adRemoval,
-      rankConferral,
-      recharge,
-      success,
       redPacket,
+      serviceMessage,
+      nightMode,
     } = req.body;
     const user = await User.findById(req.user._id).select('+password');
 
@@ -348,11 +347,14 @@ const updateUserProfile = handleAsync(
       if (typeof auctionRule !== 'undefined') {
         updateData.auctionRule = auctionRule;
       }
-      if (typeof success !== 'undefined') {
-        updateData.success = success;
-      }
       if (typeof redPacket !== 'undefined') {
         updateData.redPacket = redPacket;
+      }
+      if (typeof serviceMessage! == 'undefined') {
+        updateData.serviceMessage = serviceMessage;
+      }
+      if (typeof nightMode! == 'undefined') {
+        updateData.nightMode = nightMode;
       }
     }
 

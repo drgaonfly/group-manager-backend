@@ -41,6 +41,7 @@ export interface IUser extends Document {
   serviceMessage: boolean; // 服务消息配置
   success: boolean;
   redPacket: boolean; // 红包
+  nightMode: boolean; // 夜间模式
 }
 
 const userSchema = new mongoose.Schema(
@@ -104,6 +105,7 @@ const userSchema = new mongoose.Schema(
     serviceMessage: { type: Boolean, default: true }, // 服务消息配置
     success: { type: Boolean, default: true },
     redPacket: { type: Boolean, default: true }, // 红包
+    nightMode: { type: Boolean, default: true }, // 夜间模式
   },
   { timestamps: true },
 );

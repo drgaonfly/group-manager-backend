@@ -259,7 +259,8 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
     lotteryRule,
     auctionRule,
     adRemoval,
-    success,
+    serviceMessage,
+    nightMode,
     redPacket,
     ...body
   } = req.body;
@@ -308,8 +309,9 @@ export const updateUser = handleAsync(async (req: Request, res: Response) => {
       lotteryRule,
       auctionRule,
       adRemoval,
-      success,
       redPacket,
+      serviceMessage,
+      nightMode,
     },
     { new: true },
   );
