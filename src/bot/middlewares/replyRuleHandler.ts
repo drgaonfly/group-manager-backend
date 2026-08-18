@@ -87,7 +87,9 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       bot: botId,
       group: ctx.currentGroup!._id,
       isOnline: true,
-    }).exec();
+    })
+      .lean()
+      .exec();
 
     // 查找第一个关键词匹配的规则
     const matchedRule = replyRules.find((rule) => {
