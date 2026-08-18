@@ -21,8 +21,7 @@ const botResolver: Middleware<MyContext> = async (ctx, next) => {
   const currentBot = await Bot.findOne({
     token,
     isOnline: true,
-  })
-   
+  });
 
   if (!currentBot) {
     await ctx.reply('机器人已离线或不存在');
@@ -36,11 +35,17 @@ const botResolver: Middleware<MyContext> = async (ctx, next) => {
     id: ctx.me?.id,
   });
 
-  // 更新机器人元信息
-  currentBot.userName = ctx.me?.username || currentBot.userName;
-  currentBot.botName = ctx.me?.first_name || currentBot.botName;
-  currentBot.id = ctx.me?.id || currentBot.id;
-  await currentBot.save();
+  // 更新机器人元信息（只在有变化时才写库）
+  if (
+    currentBot.userName !== ctx.me?.username ||
+    currentBot.botName !== ctx.me?.first_name ||
+    currentBot.id !== ctx.me?.id
+  ) {
+    currentBot.userName = ctx.me?.username || currentBot.userName;
+    currentBot.botName = ctx.me?.first_name || currentBot.botName;
+    currentBot.id = ctx.me?.id || currentBot.id;
+    await currentBot.save();
+  }
 
   // 附加到上下文
   ctx.currentBot = currentBot;
