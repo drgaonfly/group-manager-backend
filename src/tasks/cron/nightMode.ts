@@ -3,6 +3,22 @@ import Group from '../../models/group';
 import Bot from '../../models/bot';
 import { setupBot } from '../../bot/botSetup';
 
+/**
+ * 判断 nowMinutes 是否处于 [startAt, endAt) 区间，支持跨午夜
+ */
+function isInNightRange(
+  startAt: number,
+  endAt: number,
+  nowMinutes: number,
+): boolean {
+  if (startAt <= endAt) {
+    return nowMinutes >= startAt && nowMinutes < endAt;
+  } else {
+    // 跨午夜，例如 startAt=1320 endAt=480
+    return nowMinutes >= startAt || nowMinutes < endAt;
+  }
+}
+
 export async function checkNightModes() {
   const now = new Date();
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
@@ -26,7 +42,7 @@ export async function checkNightModes() {
       `[NightMode] 配置 id=${config._id} startAt=${config.startAt} endAt=${config.endAt} isActive=${config.isActive}`,
     );
     console.log(
-      `[NightMode] bot=${bot?.botName} isOnline=${bot?.isOnline} type=${bot?.type} disabledAt=${bot?.disabledAt}`,
+      `[NightMode] bot=${bot?.botName} isOnline=${bot?.isOnline} type=${bot?.type}`,
     );
     console.log(`[NightMode] group=${group?.title} id=${group?.id}`);
 
@@ -35,7 +51,7 @@ export async function checkNightModes() {
       continue;
     }
 
-    // public Bot 不受付费限制；private Bot 过期后跳过
+    // private Bot 过期后跳过
     if (bot.type === 'private') {
       if (bot.disabledAt && bot.disabledAt < now) {
         console.log(`[NightMode] 跳过: Bot 已过期 botName=${bot.botName}`);
@@ -43,20 +59,17 @@ export async function checkNightModes() {
       }
     }
 
-    const atStart = nowMinutes === config.startAt;
-    const atEnd = nowMinutes === config.endAt;
-
+    const inNight = isInNightRange(config.startAt, config.endAt, nowMinutes);
     console.log(
-      `[NightMode] nowMinutes=${nowMinutes} startAt=${config.startAt} endAt=${config.endAt} atStart=${atStart} atEnd=${atEnd}`,
+      `[NightMode] nowMinutes=${nowMinutes} startAt=${config.startAt} endAt=${config.endAt} inNight=${inNight}`,
     );
-
-    if (!atStart && !atEnd) continue;
 
     try {
       const telegramBot = setupBot(bot.token);
       const chatId: number = group.id;
 
-      if (atStart) {
+      if (inNight) {
+        // 在区间内 → 禁言
         await telegramBot.api.setChatPermissions(chatId, {
           can_send_messages: false,
           can_send_audios: false,
@@ -73,10 +86,9 @@ export async function checkNightModes() {
           can_pin_messages: false,
           can_manage_topics: false,
         });
-        console.log(
-          `[NightMode] 🌙 夜间模式开启: group=${chatId} (${group.title})`,
-        );
-      } else if (atEnd) {
+        console.log(`[NightMode] 🌙 禁言中: group=${chatId} (${group.title})`);
+      } else {
+        // 不在区间内 → 解禁
         await telegramBot.api.setChatPermissions(chatId, {
           can_send_messages: true,
           can_send_audios: true,
@@ -93,9 +105,7 @@ export async function checkNightModes() {
           can_pin_messages: false,
           can_manage_topics: false,
         });
-        console.log(
-          `[NightMode] ☀️ 夜间模式关闭: group=${chatId} (${group.title})`,
-        );
+        console.log(`[NightMode] ☀️ 已解禁: group=${chatId} (${group.title})`);
       }
     } catch (err: any) {
       console.log(
