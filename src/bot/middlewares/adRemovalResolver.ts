@@ -1,77 +1,48 @@
 import { NextFunction } from 'grammy';
 import { MyContext } from '../types';
 import AdRemoval from '../../models/adRemoval';
+import AdWarning from '../../models/adWarning';
 import { PermissionChecker } from '../utils/permissionChecker';
+import { getCache } from '../../utils/cache';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:adRemovalResolver');
 
 /**
- * 内存中维护各用户的警告记录。
- * key: `${ruleId}:${chatId}:${userId}`
- * value: 警告时间戳数组
- *
- * 注意：Bot 重启后记录会丢失，如需持久化可改为 Redis/MongoDB。
+ * 警告计数存 MongoDB AdWarning，TTL 索引到期自动删除，无内存压力。
  */
-const warningRecords = new Map<string, number[]>();
+async function getWarningCount(
+  ruleId: string,
+  chatId: number,
+  userId: number,
+): Promise<number> {
+  const doc = await AdWarning.findOne({ ruleId, chatId, userId });
+  return doc ? doc.count : 0;
+}
 
-/**
- * 获取（并清理过期记录）某规则下某用户的当前有效警告次数。
- */
-function getWarningCount(
+async function recordWarning(
   ruleId: string,
   chatId: number,
   userId: number,
   windowSeconds: number,
-): number {
-  const key = `${ruleId}:${chatId}:${userId}`;
-  const now = Date.now();
-  const records = warningRecords.get(key) ?? [];
+): Promise<number> {
+  const ttl = windowSeconds > 0 ? windowSeconds : 86400;
+  const expiresAt = new Date(Date.now() + ttl * 1000);
 
-  if (windowSeconds <= 0) {
-    // 不限时间窗口：返回全部历史次数
-    return records.length;
-  }
-
-  const windowMs = windowSeconds * 1000;
-  const valid = records.filter((ts) => now - ts < windowMs);
-  warningRecords.set(key, valid);
-  return valid.length;
+  const doc = await AdWarning.findOneAndUpdate(
+    { ruleId, chatId, userId },
+    { $inc: { count: 1 }, $set: { expiresAt } },
+    { upsert: true, new: true },
+  );
+  return doc.count;
 }
 
-/**
- * 记录一次警告。
- */
-function recordWarning(
+async function resetWarningCount(
   ruleId: string,
   chatId: number,
   userId: number,
-  windowSeconds: number,
-): number {
-  const key = `${ruleId}:${chatId}:${userId}`;
-  const now = Date.now();
-  const records = warningRecords.get(key) ?? [];
-
-  let valid =
-    windowSeconds > 0
-      ? records.filter((ts) => now - ts < windowSeconds * 1000)
-      : records;
-
-  valid = [...valid, now];
-  warningRecords.set(key, valid);
-  return valid.length;
-}
-
-/**
- * 重置某规则下某用户的警告计数（处罚后清零）。
- */
-function resetWarningCount(
-  ruleId: string,
-  chatId: number,
-  userId: number,
-): void {
-  const key = `${ruleId}:${chatId}:${userId}`;
-  warningRecords.delete(key);
+): Promise<void> {
+  await AdWarning.deleteOne({ ruleId, chatId, userId });
 }
 
 /**
@@ -107,11 +78,19 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
   }
 
   try {
-    // 获取当前机器人所有开启状态的拦截规则
-    const configs = await AdRemoval.find({
-      bot: ctx.currentBot?._id,
-      isOnline: true,
-    }).exec();
+    // 获取当前机器人所有开启状态的拦截规则（带缓存，TTL 5 分钟）
+    const cacheKey = `adRules:${ctx.currentBot?._id}`;
+    const cache = getCache();
+    let configs = await cache.get<any[]>(cacheKey);
+    if (!configs) {
+      configs = await AdRemoval.find({
+        bot: ctx.currentBot?._id,
+        isOnline: true,
+      })
+        .lean()
+        .exec();
+      await cache.set(cacheKey, configs ?? [], 300000);
+    }
 
     if (!configs || configs.length === 0) {
       return await next();
@@ -183,11 +162,15 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
         const windowSec = warnConfig?.windowSeconds ?? 0;
         const selfDestructSec = warnConfig?.selfDestructSeconds ?? 0;
 
-        const currentCount = getWarningCount(ruleId, chatId, userId, windowSec);
+        const currentCount = await getWarningCount(ruleId, chatId, userId);
 
         if (currentCount < maxWarnings) {
-          // 还没达到处罚阈值 → 先删消息，发警告通知
-          const newCount = recordWarning(ruleId, chatId, userId, windowSec);
+          const newCount = await recordWarning(
+            ruleId,
+            chatId,
+            userId,
+            windowSec,
+          );
 
           // 删违规消息
           try {
@@ -248,7 +231,7 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
         }
 
         // 达到阈值 → 重置计数，继续走后续处罚逻辑
-        resetWarningCount(ruleId, chatId, userId);
+        await resetWarningCount(ruleId, chatId, userId);
       }
 
       // 1. 删除消息
