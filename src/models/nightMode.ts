@@ -23,6 +23,9 @@ export interface INightMode extends Document {
    */
   endAt: number;
 
+  /** 当前是否已处于禁言状态（避免重复调用 Telegram API） */
+  isBanned: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,6 +62,10 @@ const nightModeSchema = new mongoose.Schema(
       required: true,
       min: 0,
       max: 1439,
+    },
+    isBanned: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true },
