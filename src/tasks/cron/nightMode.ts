@@ -16,11 +16,24 @@ export async function checkNightModes() {
     return;
   }
 
+  console.log(`[NightMode] 找到 ${configs.length} 条配置`);
+
   for (const config of configs) {
     const bot = await Bot.findById(config.bot);
     const group = await Group.findById(config.group);
 
-    if (!bot || !group || !bot.isOnline) continue;
+    console.log(
+      `[NightMode] 配置 id=${config._id} startAt=${config.startAt} endAt=${config.endAt} isActive=${config.isActive}`,
+    );
+    console.log(
+      `[NightMode] bot=${bot?.botName} isOnline=${bot?.isOnline} type=${bot?.type} disabledAt=${bot?.disabledAt}`,
+    );
+    console.log(`[NightMode] group=${group?.title} id=${group?.id}`);
+
+    if (!bot || !group || !bot.isOnline) {
+      console.log(`[NightMode] 跳过：bot 或 group 无效或离线`);
+      continue;
+    }
 
     // public Bot 不受付费限制；private Bot 过期后跳过
     if (bot.type === 'private') {
@@ -32,6 +45,10 @@ export async function checkNightModes() {
 
     const atStart = nowMinutes === config.startAt;
     const atEnd = nowMinutes === config.endAt;
+
+    console.log(
+      `[NightMode] nowMinutes=${nowMinutes} startAt=${config.startAt} endAt=${config.endAt} atStart=${atStart} atEnd=${atEnd}`,
+    );
 
     if (!atStart && !atEnd) continue;
 
