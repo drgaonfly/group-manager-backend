@@ -44,9 +44,9 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
     return await next();
   }
 
-  // 其余服务消息：直接删
+  // 其余服务消息：直接删（成员变动暂时停用）
   const isServiceMessage =
-    msg.left_chat_member ||
+    // msg.left_chat_member ||   // 暂时停用
     msg.new_chat_title ||
     msg.new_chat_photo ||
     msg.delete_chat_photo ||
