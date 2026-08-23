@@ -115,7 +115,7 @@ export const setupBot = (token: string) => {
   // 处理广告的优先级高于一般消息处理
   bot.use(adRemovalResolver);
 
-  // 服务消息删除（在 logger 之前，避免记录已删除的消息）
+  // 服务消息删除（暂时停用，待性能优化后恢复）
   bot.use(serviceMessageDeleter);
 
   bot.use(logger);

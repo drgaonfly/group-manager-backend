@@ -1,6 +1,6 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
-import { redis } from '../../utils/redis';
+// import { redis } from '../../utils/redis';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:service-message-deleter');
@@ -25,22 +25,22 @@ export const serviceMessageDeleter: Middleware<MyContext> = async (
   const msg = ctx.message;
   const chatId = ctx.chat!.id;
   const messageId = msg.message_id;
-  const botToken = ctx.currentBot.token;
+  // const botToken = ctx.currentBot.token;
 
-  // 入群消息：高频，存 Redis 由定时任务批量删
+  // 入群消息删除暂时停用，待性能优化后恢复
   if (msg.new_chat_members) {
-    if (redis) {
-      await redis.rpush(
-        SVC_DEL_QUEUE_KEY,
-        JSON.stringify({ token: botToken, chatId, messageId }),
-      );
-      debug(`📥 入群消息入队 chatId=${chatId} messageId=${messageId}`);
-    } else {
-      debug('⚠️ Redis 不可用，降级直接删入群消息');
-      ctx.api.deleteMessage(chatId, messageId).catch((e) => {
-        debug(`❌ 降级删除失败 ${messageId}: ${e.message}`);
-      });
-    }
+    // if (redis) {
+    //   await redis.rpush(
+    //     SVC_DEL_QUEUE_KEY,
+    //     JSON.stringify({ token: botToken, chatId, messageId }),
+    //   );
+    //   debug(`📥 入群消息入队 chatId=${chatId} messageId=${messageId}`);
+    // } else {
+    //   debug('⚠️ Redis 不可用，降级直接删入群消息');
+    //   ctx.api.deleteMessage(chatId, messageId).catch((e) => {
+    //     debug(`❌ 降级删除失败 ${messageId}: ${e.message}`);
+    //   });
+    // }
     return await next();
   }
 
