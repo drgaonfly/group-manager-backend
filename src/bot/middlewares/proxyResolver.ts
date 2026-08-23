@@ -1,31 +1,18 @@
 import { Middleware } from 'grammy';
 import { MyContext } from '../types';
-import { findBotProxy } from '../services/findBotProxy';
+import User from '../../models/user';
 import createDebug from 'debug';
 
 const debug = createDebug('botProxy:Resolver');
 
 const proxyResolver: Middleware<MyContext> = async (ctx, next) => {
-  const currentBot = ctx.currentBot;
-
-  const { proxyUser } = await findBotProxy(currentBot);
+  const proxyUser = await User.findById(ctx.currentBot.user);
 
   ctx.currentProxyUser = proxyUser;
   if (!proxyUser) {
     debug('找不到代理');
   }
 
-  // ctx.currentProxyBotUser = proxyBotUser;
-  // if (!proxyBotUser) {
-  //   debug('找不到代理机器人');
-  // }
-
-  // ctx.currentProxyBotUserConfig = proxyBotUserConfig;
-  // if (!proxyBotUserConfig) {
-  //   debug('找不到代理机器人配置');
-  // }
-
-  // 继续处理后续中间件
   await next();
 };
 

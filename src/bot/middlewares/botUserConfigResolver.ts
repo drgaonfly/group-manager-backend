@@ -1,7 +1,6 @@
 import { Middleware } from 'grammy';
 import BotUserConfig from '../../models/botUserConfig';
 import { MyContext } from '../types';
-import { findBotProxy } from '../services/findBotProxy';
 
 const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
   if (!ctx.currentBot) {
@@ -14,7 +13,7 @@ const botUserConfigResolver: Middleware<MyContext> = async (ctx, next) => {
     return;
   }
 
-  const { proxyUser } = await findBotProxy(ctx.currentBot);
+  const proxyUser = ctx.currentProxyUser;
 
   // 查找或创建用户配置
   const botUserConfig = await BotUserConfig.findOneAndUpdate(

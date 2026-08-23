@@ -100,9 +100,9 @@ export const setupBot = (token: string) => {
   // 需要确保所有中间件都用 MyContext 类型
   bot.use(conversations());
   bot.use(botResolver);
+  bot.use(proxyResolver);
   bot.use(botUserResolver);
   bot.use(botUserConfigResolver);
-  bot.use(proxyResolver);
   bot.use(groupResolver);
   bot.use(errorHandler);
 
