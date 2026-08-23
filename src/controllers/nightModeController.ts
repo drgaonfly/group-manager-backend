@@ -5,6 +5,7 @@ import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { RequestCustom } from '../types/user';
 import { isProxy } from '../middlewares/authMiddleware';
+import { setupBot } from '../bot/botSetup';
 
 const buildQuery = async (
   queryParams: any,
@@ -122,13 +123,11 @@ export const createNightMode = handleAsync(
       .populate('group', 'title username id')
       .populate('proxy', 'name');
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: populated,
-        message: '夜间模式配置创建成功',
-      });
+    res.status(201).json({
+      success: true,
+      data: populated,
+      message: '夜间模式配置创建成功',
+    });
   },
 );
 
@@ -138,6 +137,38 @@ export const updateNightMode = handleAsync(
     if (!doc) {
       res.status(404);
       throw new Error('夜间模式配置不存在');
+    }
+
+    // 检测到 isActive 从 true 改为 false 且当前处于禁言状态
+    // → 先调用 Telegram API 解禁，失败则拒绝更新，保持数据库与 Telegram 状态一致
+    const turningOff =
+      req.body.isActive === false && doc.isActive === true && doc.isBanned;
+
+    if (turningOff) {
+      const bot = await Bot.findById(doc.bot);
+      const group = await Group.findById(doc.group);
+
+      if (bot && group && bot.isOnline) {
+        const telegramBot = setupBot(bot.token);
+        await telegramBot.api.setChatPermissions(group.id, {
+          can_send_messages: true,
+          can_send_audios: true,
+          can_send_documents: true,
+          can_send_photos: true,
+          can_send_videos: true,
+          can_send_video_notes: true,
+          can_send_voice_notes: true,
+          can_send_polls: true,
+          can_send_other_messages: true,
+          can_add_web_page_previews: true,
+          can_change_info: false,
+          can_invite_users: true,
+          can_pin_messages: false,
+          can_manage_topics: false,
+        });
+        // Telegram 解禁成功，同步重置 isBanned
+        req.body.isBanned = false;
+      }
     }
 
     const updated = await NightMode.findByIdAndUpdate(req.params.id, req.body, {
