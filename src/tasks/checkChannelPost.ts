@@ -21,9 +21,9 @@ const task = async () => {
   // 创建队列，同一时间只执行一个任务，防止任务重叠
   const queue = new PQueue({ concurrency: 1 });
 
-  // 使用 node-cron 每10秒执行一次
+  // 使用 node-cron 每分钟执行一次
   cron.schedule(
-    '*/10 * * * * *',
+    '0 * * * * *',
     () => {
       queue.add(async () => {
         try {
@@ -40,7 +40,7 @@ const task = async () => {
     },
   );
 
-  console.log('群发消息定时任务已启动，每10秒执行一次（使用队列防止任务重叠）');
+  console.log('群发消息定时任务已启动，每分钟执行一次（使用队列防止任务重叠）');
 
   // 优雅退出处理
   process.on('SIGINT', async () => {
