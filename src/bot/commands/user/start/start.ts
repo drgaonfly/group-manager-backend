@@ -123,6 +123,8 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     const isOwner =
       ownerIdStr && currentBotUserIdStr && ownerIdStr === currentBotUserIdStr;
 
+    debug('ownerIdStr', ownerIdStr, 'currentBotUserIdStr', currentBotUserIdStr);
+
     if (isOwner) {
       // Owner：可以添加到群组 + 显示登录和订阅按钮
       inlineKeyboard.url(
