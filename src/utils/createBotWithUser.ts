@@ -121,6 +121,7 @@ export async function createBotWithUser(
 
     // 6. 将操作者 BotUser 加入新 Bot 的用户列表
     //    并在新 Bot 下创建对应的 BotUser 记录（用于 botUserResolver 识别）
+    let newBotUser: any = null;
     if (botUser) {
       await Bot.findByIdAndUpdate(
         newBot._id,
@@ -129,7 +130,7 @@ export async function createBotWithUser(
       );
 
       // 在新 Bot 下创建对应的 BotUser 记录，使用相同的 Telegram 用户 ID
-      const newBotUser = await BotUser.findOneAndUpdate(
+      newBotUser = await BotUser.findOneAndUpdate(
         {
           id: botUser.id,
           bot: newBot._id,
@@ -148,6 +149,13 @@ export async function createBotWithUser(
         { new: true, upsert: true },
       );
       debug('[createBotWithUser] 新 Bot 下已创建 BotUser:', newBotUser._id);
+
+      // 更新 bot.owner 为新创建的 BotUser ID
+      await Bot.findByIdAndUpdate(newBot._id, { owner: newBotUser._id });
+      debug(
+        '[createBotWithUser] 已更新 bot.owner 为新 BotUser:',
+        newBotUser._id,
+      );
     }
 
     // 7. 用新 bot token 获取 JWT，生成自动登录链接
