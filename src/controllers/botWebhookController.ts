@@ -2,6 +2,23 @@ import { Request, Response, NextFunction } from 'express';
 import { webhookCallback } from 'grammy';
 import { default as BotManager } from '../models/bot';
 import { setupBot } from '../bot/botSetup';
+import { setupPrivateMessageBot } from '../bot/privateMessageBotSetup';
+
+/**
+ * 判断 update 是否来自私聊
+ */
+const isPrivateChat = (update: any): boolean => {
+  // inline 查询通常来自私聊
+  if (update.inline_query || update.chosen_inline_result) {
+    return true;
+  }
+  // 检查所有包含 chat 字段的 update 类型
+  const chat =
+    update.message?.chat ||
+    update.callback_query?.message?.chat ||
+    update.edited_message?.chat;
+  return chat?.type === 'private';
+};
 
 export const handleBotWebhook = async (
   req: Request,
@@ -20,7 +37,6 @@ export const handleBotWebhook = async (
 
     const botId = req.params.id;
 
-    // setupBot 内部已有 botCache（按 token 缓存），首次初始化后复用同一实例
     const botManager = await BotManager.findOne({ isOnline: true, _id: botId });
 
     if (!botManager) {
@@ -28,7 +44,17 @@ export const handleBotWebhook = async (
       return;
     }
 
-    const bot = setupBot(botManager.token);
+    // 根据消息类型选择不同的 bot 实例
+    // 私聊使用独立的 bot 实例，避免群聊高峰影响私聊响应
+    const isPrivate = isPrivateChat(req.body);
+    const bot = isPrivate
+      ? setupPrivateMessageBot(botManager.token)
+      : setupBot(botManager.token);
+
+    console.log(
+      `使用 ${isPrivate ? '私聊' : '群聊'} Bot 处理 update_id: ${req.body
+        ?.update_id}`,
+    );
 
     // timeoutMilliseconds: 0 = 立即回复 200，异步处理 update。
     // 默认行为是等整个中间件链跑完才回 200，上粉高峰时会导致 Telegram
