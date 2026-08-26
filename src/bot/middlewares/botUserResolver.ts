@@ -17,10 +17,10 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
 
   const proxyUser = ctx.currentProxyUser;
 
+  // 查询条件只使用 id 和 bot（匹配唯一索引）
   const botUser = await BotUser.findOneAndUpdate(
     {
       id: id.toString(),
-      proxy: proxyUser._id,
       bot: ctx.currentBot._id,
     },
     {
@@ -31,6 +31,9 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
         bot: ctx.currentBot._id,
         proxy: proxyUser._id,
         groups: [], // 初始化空群组数组
+      },
+      $set: {
+        proxy: proxyUser._id, // 确保 proxy 字段是最新的
       },
     },
     { new: true, upsert: true },
