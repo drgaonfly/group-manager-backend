@@ -18,6 +18,7 @@ import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import proxyResolver from './middlewares/proxyResolver';
 import { adRemovalResolver } from './middlewares/adRemovalResolver';
 import { serviceMessageDeleter } from './middlewares/serviceMessageDeleter';
+import managedBotHandler from './middlewares/managedBotHandler';
 import { MyContext } from './types';
 import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
@@ -136,6 +137,9 @@ export const setupBot = (token: string) => {
     await ctx.deleteMessage();
     await ctx.answerCallbackQuery({ text: '消息已删除' });
   });
+
+  // @ts-ignore
+  bot.on('managed_bot', managedBotHandler);
 
   bot.use(inlineMenuCallbackHandler);
 

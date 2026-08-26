@@ -193,9 +193,11 @@ export const setWebhook = async (botManager: IBot) => {
     'chat_member', // 群组成员变化（加入/离开）
     'my_chat_member', // bot 自己的成员状态变化
     'chat_join_request', // 加群请求
+    'managed_bot', // managed bot 创建/更新
   ] as const;
 
   await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`, {
+    // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+), TS cache may need refresh
     allowed_updates: allowedUpdates,
   });
 

@@ -52,6 +52,30 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     }
   }
 
+  // ── managed bot 创建引导 ───────────────────────────────────────────────────
+  if (startParam === 'managed') {
+    const messageText = [
+      `🤖 <b>快速创建机器人</b>`,
+      ``,
+      `通过 Telegram 的托管机器人功能，您可以快速创建一个由 ${bot.botName} 管理的专属机器人。`,
+      ``,
+      `点击下方按钮开始创建：`,
+      ``,
+      `创建后，机器人将自动连接到我们的管理系统，无需手动输入 token。`,
+    ].join('\n');
+
+    const inlineKeyboard = new InlineKeyboard().url(
+      '🚀 开始创建',
+      `https://t.me/${bot.userName}?startgroup=managed`,
+    );
+
+    await ctx.reply(messageText, {
+      parse_mode: 'HTML',
+      reply_markup: inlineKeyboard,
+    });
+    return;
+  }
+
   // ── 群组中显示提示消息 ─────────────────────────────────────────────────────
   if (chatType === 'group' || chatType === 'supergroup') {
     const messageText = [`请前往机器人聊天页面呼出设置，避免后台链接泄露`].join(
@@ -111,7 +135,9 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         .webApp('🖥️ 小程序后台设置', webappLoginUrl)
         .url('🌐 网页后台设置', urlLoginUrl)
         .row()
-        .text('🤖 克隆专属机器人', 'clone_start');
+        .url('🤖 克隆专属机器人', `https://t.me/newbot/${bot.userName}`)
+        .row()
+        .url('✨ 快速创建机器人', `https://t.me/${bot.userName}?start=managed`);
     }
   } else if (bot.type === 'private') {
     // ── private bot ────────────────────────────────────────────────────────
