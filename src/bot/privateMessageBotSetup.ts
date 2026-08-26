@@ -15,6 +15,7 @@ import { inlineMenuCallbackHandler } from './middlewares/inlineMenuCallbackHandl
 import { RedisAdapter } from '@grammyjs/storage-redis';
 import { redis } from '../utils/redis';
 import { hydrateFiles } from '@grammyjs/files';
+import { conversations } from '@grammyjs/conversations';
 import createDebug from 'debug';
 
 const log = createDebug('bot:private-message-setup');
@@ -67,6 +68,8 @@ export const setupPrivateMessageBot = (token: string): Bot<MyContext> => {
       storage,
     }),
   );
+
+  bot.use(conversations());
 
   // 私聊需要的核心中间件
   bot.use(botResolver);
