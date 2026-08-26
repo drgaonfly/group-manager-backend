@@ -19,7 +19,7 @@ async function handleManagedBot(ctx: MyContext) {
       return;
     }
 
-    const botId = managedBot.user_id;
+    const botId = managedBot.bot.id;
     const botUser = managedBot.user;
 
     debug('[handleManagedBot] Received managed_bot update:', {
