@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { webhookCallback } from 'grammy';
 import { default as BotManager } from '../models/bot';
 import { setupBot } from '../bot/botSetup';
-import { setupPrivateMessageBot } from '../bot/privateMessageBotSetup';
+import { setupPrivateMessageBot } from '../bot/privateChatBotSetup';
 
 /**
  * 判断 update 是否来自私聊
