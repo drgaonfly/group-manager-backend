@@ -2,7 +2,7 @@ import { Bot, GrammyError, HttpError, session } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import { apiThrottler } from '@grammyjs/transformer-throttler';
 import logger from './middlewares/logger';
-import userComposer from './commands/user';
+import groupChatComposer from './commands/user/groupChatIndex';
 import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
 import botUserResolver from './middlewares/botUserResolver';
@@ -123,7 +123,7 @@ export const setupBot = (token: string) => {
   bot.use(speechRewardHandler);
   bot.use(rankingPaginationHandler);
   bot.use(replyRuleHandler);
-  bot.use(userComposer.middleware());
+  bot.use(groupChatComposer.middleware());
   // bot.use(adminComposer.middleware());
 
   // bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));

@@ -4,7 +4,7 @@ import { apiThrottler } from '@grammyjs/transformer-throttler';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { MyContext } from './types';
 import logger from './middlewares/logger';
-import userComposer from './commands/user';
+import privateChatComposer from './commands/user/privateChatIndex';
 import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
 import proxyResolver from './middlewares/proxyResolver';
@@ -80,7 +80,7 @@ export const setupPrivateMessageBot = (token: string): Bot<MyContext> => {
   bot.use(checkBotExpired);
   bot.use(logger);
   bot.use(inlineMenuCallbackHandler);
-  bot.use(userComposer.middleware());
+  bot.use(privateChatComposer.middleware());
 
   bot.callbackQuery('close', async (ctx) => {
     log('私聊用户点击了按钮: close');
