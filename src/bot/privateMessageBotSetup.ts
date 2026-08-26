@@ -7,6 +7,7 @@ import logger from './middlewares/logger';
 import userComposer from './commands/user';
 import errorHandler from './middlewares/errorHandler';
 import botResolver from './middlewares/botResolver';
+import proxyResolver from './middlewares/proxyResolver';
 import botUserResolver from './middlewares/botUserResolver';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import { checkBotExpired } from './middlewares/checkBotExpired';
@@ -69,6 +70,7 @@ export const setupPrivateMessageBot = (token: string): Bot<MyContext> => {
 
   // 私聊需要的核心中间件
   bot.use(botResolver);
+  bot.use(proxyResolver);
   bot.use(botUserResolver);
   bot.use(botUserConfigResolver);
   bot.use(errorHandler);
