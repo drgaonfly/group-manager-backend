@@ -1,7 +1,7 @@
 import { MyContext } from '../types';
 import Bot from '../../models/bot';
-import BotUser from '../../models/botUser';
 import { createBotWithUser } from '../../utils/createBotWithUser';
+import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:managedBotHandler');
@@ -22,13 +22,13 @@ async function handleManagedBot(ctx: MyContext) {
     }
 
     const botId = managedBot.bot.id;
-    const telegramUser = managedBot.user;
-    userId = telegramUser.id;
+    const botUser = managedBot.user;
+    userId = botUser.id;
 
     debug('[handleManagedBot] Received managed_bot update:', {
       botId,
-      botUsername: telegramUser.username,
-      firstName: telegramUser.first_name,
+      botUsername: botUser.username,
+      firstName: botUser.first_name,
       userId,
     });
 
@@ -59,34 +59,52 @@ async function handleManagedBot(ctx: MyContext) {
       return;
     }
 
-    // 使用 managedBot.user（创建者）来查找或创建 BotUser
-    // BotUser 是与特定 bot 关联的，需要同时匹配 id 和 bot
-    let botUser = await BotUser.findOne({
-      id: userId.toString(),
-      bot: currentBot._id,
-    });
-    if (!botUser) {
-      // 如果 BotUser 不存在，创建一个新的并关联到当前 bot
-      botUser = new BotUser({
-        id: userId.toString(),
-        bot: currentBot._id,
-        userName: telegramUser.username,
-        firstName: telegramUser.first_name,
-        lastName: telegramUser.last_name,
-      });
-      await botUser.save();
-      debug('[handleManagedBot] Created new BotUser:', botUser._id);
+    // 获取当前用户（创建者）的 BotUser 信息
+    const currentBotUser = ctx.currentBotUser;
+    if (!currentBotUser) {
+      debug('[handleManagedBot] No current bot user found');
+      return;
     }
 
     debug(
       '[handleManagedBot] Creating bot with token:',
       token.slice(0, 10) + '...',
-      'for user:',
-      botUser.userName,
     );
 
     // 调用 createBotWithUser 创建机器人实例
-    await createBotWithUser(token, currentBot, botUser);
+    const result = await createBotWithUser(token, currentBot, currentBotUser);
+
+    if (result.success) {
+      const { loginUrl, userName, disabledAt } = result.account!;
+
+      await ctx.api.sendMessage(
+        userId,
+        [
+          '✅ <b>机器人创建成功！</b>',
+          '',
+          `您的专属机器人已创建完成。`,
+          '',
+          '请点击下方用户名打开您的机器人，并添加至群组设置为管理员。',
+          '',
+          `您的机器人：@${userName}`,
+          '',
+          `有效期：${formatBeijingDate(disabledAt)}`,
+          '',
+          `🌐 <a href="${loginUrl}">🖥️ 登录管理后台</a>`,
+          '',
+          '🤖 机器人正在初始化，稍后即可正常使用。',
+        ].join('\n'),
+        { parse_mode: 'HTML' },
+      );
+
+      debug('[handleManagedBot] Bot created successfully:', userName);
+    } else {
+      await ctx.api.sendMessage(
+        userId,
+        `❌ 机器人创建失败：${result.message || '请稍后再试'}`,
+      );
+      debug('[handleManagedBot] Bot creation failed:', result.message);
+    }
   } catch (e: any) {
     debug('[handleManagedBot] Error:', e.message);
     if (userId) {
