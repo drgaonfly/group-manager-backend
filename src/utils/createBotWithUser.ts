@@ -7,7 +7,7 @@ import Setting from '../models/setting';
 import { getBotInfoWithGramjs } from './getBotInfoWithGramjs';
 import { IdGen } from './idGen';
 import { generateUserInviteCode } from './generateUserInviteCode';
-import { IBotUser } from '../models/botUser';
+import BotUser, { IBotUser } from '../models/botUser';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:createBotWithUser');
@@ -120,12 +120,34 @@ export async function createBotWithUser(
       });
 
     // 6. 将操作者 BotUser 加入新 Bot 的用户列表
+    //    并在新 Bot 下创建对应的 BotUser 记录（用于 botUserResolver 识别）
     if (botUser) {
       await Bot.findByIdAndUpdate(
         newBot._id,
         { $addToSet: { botUsers: botUser._id } },
         { new: true },
       );
+
+      // 在新 Bot 下创建对应的 BotUser 记录，使用相同的 Telegram 用户 ID
+      const newBotUser = await BotUser.findOneAndUpdate(
+        {
+          id: botUser.id,
+          bot: newBot._id,
+          proxy: newUser._id,
+        },
+        {
+          $setOnInsert: {
+            userName: botUser.userName,
+            firstName: botUser.firstName,
+            lastName: botUser.lastName,
+            bot: newBot._id,
+            proxy: newUser._id,
+            groups: [],
+          },
+        },
+        { new: true, upsert: true },
+      );
+      debug('[createBotWithUser] 新 Bot 下已创建 BotUser:', newBotUser._id);
     }
 
     // 7. 用新 bot token 获取 JWT，生成自动登录链接
