@@ -21,6 +21,7 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
     {
       id: id.toString(),
       proxy: proxyUser._id,
+      bot: ctx.currentBot._id,
     },
     {
       $setOnInsert: {
