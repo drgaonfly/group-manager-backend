@@ -135,9 +135,7 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         .webApp('🖥️ 小程序后台设置', webappLoginUrl)
         .url('🌐 网页后台设置', urlLoginUrl)
         .row()
-        .url('🤖 克隆专属机器人', `https://t.me/newbot/${bot.userName}`)
-        .row()
-        .url('✨ 快速创建机器人', `https://t.me/${bot.userName}?start=managed`);
+        .url('🤖 克隆专属机器人', `https://t.me/newbot/${bot.userName}`);
     }
   } else if (bot.type === 'private') {
     // ── private bot ────────────────────────────────────────────────────────
