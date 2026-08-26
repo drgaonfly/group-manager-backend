@@ -151,10 +151,16 @@ export async function createBotWithUser(
       debug('[createBotWithUser] 新 Bot 下已创建 BotUser:', newBotUser._id);
 
       // 更新 bot.owner 为新创建的 BotUser ID
-      await Bot.findByIdAndUpdate(newBot._id, { owner: newBotUser._id });
+      const updatedBot = await Bot.findByIdAndUpdate(
+        newBot._id,
+        { owner: newBotUser._id },
+        { new: true },
+      );
       debug(
         '[createBotWithUser] 已更新 bot.owner 为新 BotUser:',
         newBotUser._id,
+        '当前 bot.owner:',
+        updatedBot?.owner,
       );
     }
 
