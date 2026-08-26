@@ -1,5 +1,6 @@
 import { MyContext } from '../types';
 import Bot from '../../models/bot';
+import BotUser from '../../models/botUser';
 import { createBotWithUser } from '../../utils/createBotWithUser';
 import createDebug from 'debug';
 
@@ -21,13 +22,13 @@ async function handleManagedBot(ctx: MyContext) {
     }
 
     const botId = managedBot.bot.id;
-    const botUser = managedBot.user;
-    userId = botUser.id;
+    const telegramUser = managedBot.user;
+    userId = telegramUser.id;
 
     debug('[handleManagedBot] Received managed_bot update:', {
       botId,
-      botUsername: botUser.username,
-      firstName: botUser.first_name,
+      botUsername: telegramUser.username,
+      firstName: telegramUser.first_name,
       userId,
     });
 
@@ -58,20 +59,34 @@ async function handleManagedBot(ctx: MyContext) {
       return;
     }
 
-    // 获取当前用户（创建者）的 BotUser 信息
-    const currentBotUser = ctx.currentBotUser;
-    if (!currentBotUser) {
-      debug('[handleManagedBot] No current bot user found');
-      return;
+    // 使用 managedBot.user（创建者）来查找或创建 BotUser
+    // BotUser 是与特定 bot 关联的，需要同时匹配 id 和 bot
+    let botUser = await BotUser.findOne({
+      id: userId.toString(),
+      bot: currentBot._id,
+    });
+    if (!botUser) {
+      // 如果 BotUser 不存在，创建一个新的并关联到当前 bot
+      botUser = new BotUser({
+        id: userId.toString(),
+        bot: currentBot._id,
+        userName: telegramUser.username,
+        firstName: telegramUser.first_name,
+        lastName: telegramUser.last_name,
+      });
+      await botUser.save();
+      debug('[handleManagedBot] Created new BotUser:', botUser._id);
     }
 
     debug(
       '[handleManagedBot] Creating bot with token:',
       token.slice(0, 10) + '...',
+      'for user:',
+      botUser.userName,
     );
 
     // 调用 createBotWithUser 创建机器人实例
-    await createBotWithUser(token, currentBot, currentBotUser);
+    await createBotWithUser(token, currentBot, botUser);
   } catch (e: any) {
     debug('[handleManagedBot] Error:', e.message);
     if (userId) {
