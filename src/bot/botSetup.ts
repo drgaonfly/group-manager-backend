@@ -138,8 +138,15 @@ export const setupBot = (token: string) => {
     await ctx.answerCallbackQuery({ text: '消息已删除' });
   });
 
-  // @ts-ignore
-  bot.on('managed_bot', managedBotHandler);
+  // 处理 managed_bot update（兼容旧版本 grammY）
+  bot.use(async (ctx, next) => {
+    // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+)
+    if (ctx.update.managed_bot) {
+      await managedBotHandler(ctx);
+      return;
+    }
+    return next();
+  });
 
   bot.use(inlineMenuCallbackHandler);
 
