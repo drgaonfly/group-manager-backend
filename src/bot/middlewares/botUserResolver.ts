@@ -29,7 +29,6 @@ const botUserResolver: Middleware<MyContext> = async (ctx, next) => {
         firstName: first_name || '',
         lastName: last_name || '',
         bot: ctx.currentBot._id,
-        proxy: proxyUser._id,
         groups: [], // 初始化空群组数组
       },
       $set: {
