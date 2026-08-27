@@ -13,7 +13,7 @@ export const checkBotPublic = async (
   const bot = ctx.currentBot;
   if (bot.type !== 'public') {
     debug('该功能仅对公共机器人开放');
-    ctx.reply('该功能仅对公共机器人开放。\n本机器人是定制的。');
+    // ctx.reply('该功能仅对公共机器人开放。\n本机器人是定制的。');
     return;
   }
 
