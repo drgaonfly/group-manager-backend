@@ -11,7 +11,6 @@ import proxyResolver from './middlewares/proxyResolver';
 import botUserResolver from './middlewares/botUserResolver';
 import botUserConfigResolver from './middlewares/botUserConfigResolver';
 import { checkBotExpired } from './middlewares/checkBotExpired';
-import { inlineMenuCallbackHandler } from './middlewares/inlineMenuCallbackHandler';
 import { RedisAdapter } from '@grammyjs/storage-redis';
 import { redis } from '../utils/redis';
 import { hydrateFiles } from '@grammyjs/files';
@@ -79,7 +78,6 @@ export const setupPrivateMessageBot = (token: string): Bot<MyContext> => {
   bot.use(errorHandler);
   bot.use(checkBotExpired);
   bot.use(logger);
-  bot.use(inlineMenuCallbackHandler);
   bot.use(privateChatComposer.middleware());
 
   bot.callbackQuery('close', async (ctx) => {
