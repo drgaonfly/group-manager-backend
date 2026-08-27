@@ -68,14 +68,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   }
 
   // ── 构建回复 ───────────────────────────────────────────────────────────────
-  const cloneHint =
-    bot.type === 'public'
-      ? [
-          ``,
-          `🤖直接发送机器人API克隆同款机器人，或点击下方按钮一键创建克隆同款机器人。`,
-        ].join('\n')
-      : '';
-
   const messageText = [
     `嗨！ ${bot.botName} 能帮助你方便地安全管理你的群组，是 TG 上最完善的机器人！`,
     ``,
@@ -83,11 +75,12 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
     ``,
     bot.type === 'private'
       ? `有效期截至 ${formatBeijingDate(bot.disabledAt)}`
-      : '',
-    cloneHint,
+      : `🤖直接发送机器人API克隆同款机器人，或点击下方按钮一键创建克隆同款机器人。`,
     ``,
     `点击 /help 查看所有指令及使用方法。`,
-  ].join('\n');
+  ]
+    .filter((line) => line !== undefined)
+    .join('\n');
 
   // 默认的 "把我加到群组" 按钮（Owner 和 Public Bot 用户可以看到）
   const inlineKeyboard = new InlineKeyboard();
