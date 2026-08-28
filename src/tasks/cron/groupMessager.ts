@@ -18,10 +18,11 @@ export async function sendGroupMessages() {
     const currentTime = new Date();
     console.log(`[当前时间] ${formatBeijingDate(currentTime)}`);
 
-    // 查询所有在线的群发消息，关联 bot、group
+    // 查询所有在线且状态正常的群发消息，关联 bot、group
     const groupMessages = await GroupMessage.find({
       isOnline: true,
       sendType: { $ne: 'immediate' },
+      status: { $ne: 'abnormal' },
     })
       .populate({
         path: 'bot',
@@ -40,6 +41,7 @@ export async function sendGroupMessages() {
       skipped: 0,
       noPermission: 0,
       errors: 0,
+      markedAbnormal: 0,
     };
 
     for (const msg of groupMessages) {
@@ -212,6 +214,25 @@ export async function sendGroupMessages() {
             `[sendGroupMessages] 向群 ${group?.id} 发送消息失败:`,
             sendErr,
           );
+
+          // 判断是否为不可恢复的错误，标记为 abnormal 避免持续重试
+          const description: string = sendErr?.description ?? '';
+          const isIrrecoverable =
+            description.includes('chat not found') ||
+            description.includes('CHAT_RESTRICTED') ||
+            description.includes('not enough rights');
+
+          if (isIrrecoverable) {
+            await GroupMessage.findByIdAndUpdate(msg._id, {
+              status: 'abnormal',
+              statusReason: description,
+            });
+            console.warn(
+              `[sendGroupMessages] 消息 ${msg._id} 标记为 abnormal: ${description}`,
+            );
+            stats.markedAbnormal++;
+          }
+
           stats.errors++;
         }
       } catch (err) {
@@ -226,6 +247,7 @@ export async function sendGroupMessages() {
     console.log(`[统计信息] 发送成功: ${stats.sent}`);
     console.log(`[统计信息] 无权限跳过: ${stats.noPermission}`);
     console.log(`[统计信息] 其他跳过: ${stats.skipped}`);
+    console.log(`[统计信息] 标记异常: ${stats.markedAbnormal}`);
     console.log(`[统计信息] 错误数: ${stats.errors}`);
     console.log(`[统计信息] 总耗时: ${taskDuration.toFixed(2)}秒`);
     console.log('========== 群发消息任务完成 ==========');

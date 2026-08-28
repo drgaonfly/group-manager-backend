@@ -44,7 +44,6 @@ export const menuSchema = new mongoose.Schema({
   },
 });
 
-// 只存客户发给机器人的消息（toBot），不存机器人发给客户的消息（fromBot）
 export interface IGroupMessage extends Document {
   bot: mongoose.Schema.Types.ObjectId | IBot;
   content: string;
@@ -57,6 +56,8 @@ export interface IGroupMessage extends Document {
   menus: IMenu[];
   weight: number;
   isOnline: boolean;
+  status: string;
+  statusReason?: string;
   autoDeletePrevious: boolean;
   isPinned: boolean;
   lastSentTime?: Date;
@@ -126,6 +127,16 @@ const groupMessageSchema = new mongoose.Schema(
       type: Boolean,
       required: false,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ['normal', 'abnormal'],
+      required: false,
+      default: 'normal',
+    },
+    statusReason: {
+      type: String,
+      required: false,
     },
     lastSentTime: {
       type: Date,
