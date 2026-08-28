@@ -202,7 +202,7 @@ export const setWebhook = async (botManager: IBot) => {
   });
 
   console.log(
-    `Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/bot-webhooks/${botManager._id}`,
+    `Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/bot-webhooks/${botManager.token}`,
   );
 
   console.log(`https://api.telegram.org/bot${botManager.token}/getWebhookInfo`);
@@ -210,7 +210,7 @@ export const setWebhook = async (botManager: IBot) => {
   console.log('修改 webhook 之后');
   await printWebhookInfo(bot);
 
-  botManager.webhook_url = `${WEBHOOK_URL}/bot-webhooks/${botManager._id}`;
+  botManager.webhook_url = `${WEBHOOK_URL}/bot-webhooks/${botManager.token}`;
   await botManager.save();
 };
 
