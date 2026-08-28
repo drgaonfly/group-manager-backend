@@ -1,4 +1,4 @@
-import { NextFunction } from 'grammy';
+﻿import { NextFunction } from 'grammy';
 import { MyContext } from '../types';
 import AdRemoval from '../../models/adRemoval';
 import AdWarning from '../../models/adWarning';
@@ -104,6 +104,15 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
     // ctx.currentGroup 由 groupResolver 提前挂载，直接取其 MongoDB _id
     const currentGroupId = ctx.currentGroup?._id?.toString();
 
+    // 判断当前用户是否是群主/管理员
+    // basicResolver 已 populate creator 和 operators，直接用 IBotUser.id（Telegram user ID）比对
+    const isAdmin = (() => {
+      const { creator, operators } = ctx.currentGroup;
+      const fromId = userId;
+      if ((creator as any).id == fromId) return true;
+      return (operators as any[]).some((op) => op?.id == fromId);
+    })();
+
     for (const config of configs) {
       const { keywords, mode, ignoreAdmin, punishment, warning } = config;
 
@@ -118,24 +127,14 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
         }
       }
 
-      // 检查管理员豁免
-      if (ignoreAdmin) {
-        try {
-          const member = await ctx.getChatMember(userId);
-          if (
-            member.status === 'administrator' ||
-            member.status === 'creator'
-          ) {
-            debug(
-              'Admin exempted by rule:',
-              config.name,
-              ctx.from?.username || userId,
-            );
-            continue;
-          }
-        } catch (error) {
-          debug('Failed to get chat member status for exemption:', error);
-        }
+      // 检查管理员豁免（使用已 populate 的 operators/creator，无需 API 调用）
+      if (ignoreAdmin && isAdmin) {
+        debug(
+          'Admin exempted by rule:',
+          config.name,
+          ctx.from?.username || userId,
+        );
+        continue;
       }
 
       if (!keywords || keywords.length === 0) continue;

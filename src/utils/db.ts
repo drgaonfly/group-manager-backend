@@ -18,8 +18,8 @@ const setupDB = async (): Promise<void | null> => {
     // mongoose.set('useCreateIndex', true);
 
     const options: ConnectOptions = {
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true,
+      maxPoolSize: 100, // 根据实际并发需求调大,默认可能不够用
+      minPoolSize: 10,
     };
 
     if (

@@ -146,20 +146,15 @@ const replyRuleHandler: Middleware<MyContext> = async (ctx, next) => {
       }).select('_id');
       const groupMemberIds = groupMembers.map((m) => m._id);
 
-      userBalanceRanking = await getGroupUserRanking(
-        botId,
-        ctx.currentBotUserConfig?.usdt_balance || 0,
-        groupMemberIds,
-      );
-
-      // 获取用户积分榜单
-      rankingListData = await getGroupUserRankingList(
-        ctx,
-        botId,
-        groupMemberIds,
-        1,
-        ITEMS_PER_PAGE,
-      );
+      // 两个查询互相无依赖，Promise.all 并行执行，减少一次串行 RTT
+      [userBalanceRanking, rankingListData] = await Promise.all([
+        getGroupUserRanking(
+          botId,
+          ctx.currentBotUserConfig?.usdt_balance || 0,
+          groupMemberIds,
+        ),
+        getGroupUserRankingList(ctx, botId, groupMemberIds, 1, ITEMS_PER_PAGE),
+      ]);
       userBalanceRankingList = rankingListData.text;
     }
 
