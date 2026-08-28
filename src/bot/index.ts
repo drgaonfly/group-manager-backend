@@ -37,7 +37,7 @@ export const startWebHookBot = async () => {
         console.log('未设置 webhook，执行删除操作');
         await bot.api.deleteWebhook();
         await bot.api.setWebhook(
-          `${WEBHOOK_URL}/bot-webhooks/${activeBot._id}`,
+          `${WEBHOOK_URL}/bot-webhooks/${activeBot.token}`,
           {
             // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+), TS cache may need refresh
             allowed_updates: allowedUpdates,
@@ -51,7 +51,7 @@ export const startWebHookBot = async () => {
       await setupBotCommands(bot);
 
       console.log(
-        `${activeBot.userName} Webhook ${activeBot.token} 已设置为 ${WEBHOOK_URL}/webhook-${activeBot.token}`,
+        `${activeBot.userName} Webhook 已设置为 ${WEBHOOK_URL}/bot-webhooks/${activeBot.token}`,
       );
     } catch (err) {
       console.error(

@@ -3,6 +3,6 @@ import { handleBotWebhook } from '../controllers/botWebhookController';
 
 const router: Router = express.Router();
 
-router.route('/:id').post(handleBotWebhook);
+router.route('/:token').post(handleBotWebhook);
 
 export default router;
