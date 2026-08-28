@@ -1,6 +1,7 @@
 import { Bot, GrammyError, HttpError, session } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import { apiThrottler } from '@grammyjs/transformer-throttler';
+import { sequentialize } from '@grammyjs/runner';
 import logger from './middlewares/logger';
 import groupChatComposer from './commands/user/groupChatIndex';
 import userComposer from './commands/user';
@@ -93,6 +94,17 @@ export const setupBot = (token: string) => {
     session({
       initial: () => ({}),
       storage,
+    }),
+  );
+
+  // sequentialize：按 chatId 隔离并发
+  // 同一 chat 的 update 串行处理，不同 chat 之间完全并行
+  // 群聊A大量入群 update 只会排在自己的队列，不阻塞私聊和其他群
+  bot.use(
+    sequentialize((ctx) => {
+      const chat =
+        ctx.chat?.id ?? ctx.chatMember?.chat?.id ?? ctx.myChatMember?.chat?.id;
+      return chat ? String(chat) : undefined;
     }),
   );
 
