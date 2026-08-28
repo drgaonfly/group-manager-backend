@@ -196,7 +196,7 @@ export const setWebhook = async (botManager: IBot) => {
     'managed_bot', // managed bot 创建/更新
   ] as const;
 
-  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager._id}`, {
+  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager.token}`, {
     // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+), TS cache may need refresh
     allowed_updates: allowedUpdates,
   });
