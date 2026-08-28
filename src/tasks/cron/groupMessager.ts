@@ -215,14 +215,9 @@ export async function sendGroupMessages() {
             sendErr,
           );
 
-          // 判断是否为不可恢复的错误，标记为 abnormal 避免持续重试
-          const description: string = sendErr?.description ?? '';
-          const isIrrecoverable =
-            description.includes('chat not found') ||
-            description.includes('CHAT_RESTRICTED') ||
-            description.includes('not enough rights');
-
-          if (isIrrecoverable) {
+          // 400 错误均为不可恢复，标记为 abnormal 避免持续重试
+          if (sendErr?.error_code === 400) {
+            const description: string = sendErr?.description ?? '';
             await GroupMessage.findByIdAndUpdate(msg._id, {
               status: 'abnormal',
               statusReason: description,
