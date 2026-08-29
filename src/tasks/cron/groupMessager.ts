@@ -1,4 +1,5 @@
 import User from '../../models/user';
+import Bot from '../../models/bot';
 import GroupMessage from '../../models/groupMessage';
 import { IGroup } from '../../models/group';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
@@ -18,16 +19,12 @@ export async function sendGroupMessages() {
     const currentTime = new Date();
     console.log(`[当前时间] ${formatBeijingDate(currentTime)}`);
 
-    // 查询所有在线且状态正常的群发消息，关联 bot、group
+    // 查询所有在线且状态正常的群发消息，关联 group
     const groupMessages = await GroupMessage.find({
       isOnline: true,
       sendType: { $ne: 'immediate' },
       status: { $ne: 'abnormal' },
     })
-      .populate({
-        path: 'bot',
-        populate: { path: 'user' },
-      })
       .populate('group')
       .sort({ weight: 1 });
 
@@ -46,7 +43,7 @@ export async function sendGroupMessages() {
 
     for (const msg of groupMessages) {
       try {
-        const bot = msg.bot as any;
+        const bot = await Bot.findById(msg.bot).populate('user');
         const group = msg.group as IGroup | undefined;
 
         if (!bot || !group) {
