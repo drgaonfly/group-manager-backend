@@ -79,13 +79,18 @@ export const setupBot = (token: string) => {
           agent: socksAgent,
           compress: true,
         },
+        timeoutSeconds: 30,
       },
     });
 
     log('Bot 正在使用 SOCKS 代理：', SOCKS_PROXY_URL);
   } else {
     // 未设置代理，正常初始化 Bot
-    bot = new Bot<MyContext>(token);
+    bot = new Bot<MyContext>(token, {
+      client: {
+        timeoutSeconds: 30, // 30秒超时，防止 API 调用无限挂起导致 cron 任务卡死
+      },
+    });
     log('Bot 未使用代理。');
   }
 
@@ -170,9 +175,10 @@ export const setupBot = (token: string) => {
 
   // API 转换器：顺序很重要！
   // 1. throttler 主动限流（排队），避免触发 429
-  // 2. autoRetry 被动重试（如果还是触发了 429）
+  // 2. autoRetry 被动重试，maxRetryAttempts 限制为 3 次
+  //    默认是 Infinity，群发消息触发 429 时会无限等待，导致 cron 任务卡死
   bot.api.config.use(apiThrottler());
-  bot.api.config.use(autoRetry());
+  bot.api.config.use(autoRetry({ maxRetryAttempts: 3 }));
   bot.api.config.use(hydrateFiles(token));
 
   // 写入缓存，后续同 token 的请求直接复用
