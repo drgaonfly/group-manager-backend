@@ -3,7 +3,6 @@ import { MyContext } from '../types';
 import AdRemoval from '../../models/adRemoval';
 import AdWarning from '../../models/adWarning';
 import { PermissionChecker } from '../utils/permissionChecker';
-import { getCache } from '../../utils/cache';
 import createDebug from 'debug';
 
 const debug = createDebug('bot:adRemovalResolver');
@@ -78,19 +77,14 @@ export const adRemovalResolver = async (ctx: MyContext, next: NextFunction) => {
   }
 
   try {
-    // 获取当前机器人所有开启状态的拦截规则（带缓存，TTL 5 分钟）
-    const cacheKey = `adRules:${ctx.currentBot?._id}`;
-    const cache = getCache();
-    let configs = await cache.get<any[]>(cacheKey);
-    if (!configs) {
-      configs = await AdRemoval.find({
-        bot: ctx.currentBot?._id,
-        isOnline: true,
-      })
-        .lean()
-        .exec();
-      await cache.set(cacheKey, configs ?? [], 300000);
-    }
+    // 获取当前机器人所有开启状态的拦截规则
+    const configs = await AdRemoval.find({
+      bot: ctx.currentBot?._id,
+      group: ctx.currentGroup?._id,
+      isOnline: true,
+    })
+      .lean()
+      .exec();
 
     if (!configs || configs.length === 0) {
       return await next();
