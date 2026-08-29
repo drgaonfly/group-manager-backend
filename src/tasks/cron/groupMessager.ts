@@ -3,7 +3,7 @@ import GroupMessage from '../../models/groupMessage';
 import { IGroup } from '../../models/group';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
-import { setupBot } from '../../bot/botSetup';
+import { getCronBot } from '../../bot/purifiedBotSetup';
 import { sendMediaMessage } from '../../utils/sendMultiMedia';
 import { buildInlineKeyboard } from '../../utils/buildInlineKeyboard';
 import { replaceMessageVariables } from '../../utils/telegramHtmlConvert';
@@ -105,7 +105,7 @@ export async function sendGroupMessages() {
           lastSentTime: currentTime,
         });
 
-        const telegramBot = setupBot(bot.token);
+        const telegramBot = getCronBot(bot.token);
 
         const replyMarkup = buildInlineKeyboard(msg.menus);
 
