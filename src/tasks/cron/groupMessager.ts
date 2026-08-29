@@ -1,7 +1,7 @@
 import User from '../../models/user';
 import Bot from '../../models/bot';
+import Group from '../../models/group';
 import GroupMessage from '../../models/groupMessage';
-import { IGroup } from '../../models/group';
 import { formatBeijingDate } from '../../utils/formatBeijingDate';
 import { isWithinTimeWindow, formatTimeWindow } from '../../utils/timeWindow';
 import { getCronBot } from '../../bot/purifiedBotSetup';
@@ -24,9 +24,7 @@ export async function sendGroupMessages() {
       isOnline: true,
       sendType: { $ne: 'immediate' },
       status: { $ne: 'abnormal' },
-    })
-      .populate('group')
-      .sort({ weight: 1 });
+    }).sort({ weight: 1 });
 
     console.log(
       `[sendGroupMessages] 查询到 ${groupMessages.length} 条群发消息`,
@@ -44,7 +42,7 @@ export async function sendGroupMessages() {
     for (const msg of groupMessages) {
       try {
         const bot = await Bot.findById(msg.bot).populate('user');
-        const group = msg.group as IGroup | undefined;
+        const group = await Group.findById(msg.group);
 
         if (!bot || !group) {
           console.warn(
