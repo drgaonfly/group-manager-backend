@@ -3,6 +3,7 @@ import Bot from '../models/bot';
 import User from '../models/user'
 import BotUser from '../models/botUser';
 import handleAsync from '../utils/handleAsync';
+import { generateToken, generateRefreshToken } from '../utils/generateToken';
 
 /**
  * GET /api/public/bots/:botId/user/:username
@@ -40,6 +41,9 @@ export const getPublicBotGroupsForUser = handleAsync(
       return;
     }
 
+    // 为 proxyUser 生成临时 token，用于后续 API 调用
+    const token = generateToken(proxyUser._id.toString());
+    const refreshToken = generateRefreshToken(proxyUser._id.toString());
 
     res.json({
       success: true,
@@ -48,6 +52,8 @@ export const getPublicBotGroupsForUser = handleAsync(
         botUser,
         proxyUser
       },
+      token,
+      refreshToken,
     });
   },
 );
