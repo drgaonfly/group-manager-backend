@@ -576,7 +576,7 @@ const addOwner = handleAsync(async (req: Request, res: Response) => {
   }
 
   const ownerUsername = req.body.owner.replace(/^@/, '');
-  const user = await getUserByUsername(botManager.session, ownerUsername);
+  const user = await getUserByUsername(botManager.token, ownerUsername);
 
   if (!user) {
     res.status(404);
@@ -630,7 +630,7 @@ const addAuthorizer = handleAsync(async (req: Request, res: Response) => {
 
   // 一定是字符串的，去掉 req.body.authorizer 前面的 @（如果有）
   const authorizerUsername = req.body.authorizer.replace(/^@/, '');
-  const user = await getUserByUsername(botManager.session, authorizerUsername);
+  const user = await getUserByUsername(botManager.token, authorizerUsername);
 
   if (user) {
     // 查找或创建 BotUser，并填充 subscriptions 字段
