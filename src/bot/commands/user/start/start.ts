@@ -38,6 +38,7 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   debug('start');
 
   const bot = ctx.currentBot;
+  const botUser = ctx.currentBotUser;
   const startParam = ctx.match as string;
   const frontendUrl = process.env.FRONTEND_URL;
   const chatType = ctx.chat?.type;
@@ -85,6 +86,14 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   // 默认的 "把我加到群组" 按钮（Owner 和 Public Bot 用户可以看到）
   const inlineKeyboard = new InlineKeyboard();
 
+  
+  const webappLoginUrl = `${frontendUrl}/bots/${bot._id}/${botUser._id}`;
+  const urlLoginUrl =  `${frontendUrl}/bots/${bot._id}/${botUser._id}`
+
+  debug('[start] webappLoginUrl:', webappLoginUrl);
+  debug('[start] urlLoginUrl:', urlLoginUrl);
+
+
   if (bot.type === 'public') {
     // ── public bot ─────────────────────────────────────────────────────────
     // 公共机器人：所有用户都能添加到群组
@@ -93,28 +102,13 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       `https://t.me/${bot.userName}?startgroup=start`,
     );
 
-    // 传递 Telegram 用户 ID 用于后端过滤群组
-    const telegramUserId = ctx.from?.id?.toString() || '';
-    const publicJwt = await getBotJwt(bot.token, telegramUserId);
-    if (publicJwt) {
-      const redirect = encodeURIComponent(
-        `/bots/${bot._id}?tgUserId=${telegramUserId}`,
-      );
-      const webappLoginUrl = `${frontendUrl}/webapp/login?jwtToken=${encodeURIComponent(
-        publicJwt,
-      )}&redirect=${redirect}`;
-      const urlLoginUrl = `${frontendUrl}/login?jwtToken=${encodeURIComponent(
-        publicJwt,
-      )}&redirect=${redirect}`;
-      debug('[start] webappLoginUrl:', webappLoginUrl);
-      debug('[start] urlLoginUrl:', urlLoginUrl);
       inlineKeyboard
         .row()
         .webApp('🖥️ 小程序后台设置', webappLoginUrl)
         .url('🌐 网页后台设置', urlLoginUrl)
         .row()
         .url('🤖 克隆专属机器人', `https://t.me/newbot/${bot.userName}`);
-    }
+    
   } else if (bot.type === 'private') {
     // ── private bot ────────────────────────────────────────────────────────
     // Owner 可以看所有功能
@@ -134,18 +128,6 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         `https://t.me/${bot.userName}?startgroup=start`,
       );
 
-      const telegramUserId = ctx.from?.id?.toString() || '';
-      const jwt = await getBotJwt(bot.token, telegramUserId);
-      if (jwt) {
-        const redirect = encodeURIComponent(`/bots/${bot._id}`);
-        const webappLoginUrl = `${frontendUrl}/webapp/login?jwtToken=${encodeURIComponent(
-          jwt,
-        )}&redirect=${redirect}`;
-        const urlLoginUrl = `${frontendUrl}/login?jwtToken=${encodeURIComponent(
-          jwt,
-        )}&redirect=${redirect}`;
-        debug('[start] webappLoginUrl:', webappLoginUrl);
-        debug('[start] urlLoginUrl:', urlLoginUrl);
         inlineKeyboard
           .row()
           .webApp('🖥️ 小程序后台设置', webappLoginUrl)
@@ -153,32 +135,19 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           .row()
           .text('💎 订阅服务', 'subscription_start')
           .text('👥 授权他人管理', 'how_to_grant_admin');
-      }
+      
     } else {
       // 非 owner：检查是否是该 bot 下任意群的 operator
-      const telegramUserId = ctx.from?.id?.toString() || '';
-      const botUserDoc = ctx.currentBotUser;
 
-      const isOperator = botUserDoc
+      const isOperator = botUser
         ? (await Group.countDocuments({
             bot: bot._id,
-            operators: botUserDoc._id,
+            operators: botUser._id,
           })) > 0
         : false;
 
       if (isOperator) {
         // Operator：只显示后台登录按钮，不能添加到群组
-        const jwt = await getBotJwt(bot.token, telegramUserId);
-        if (jwt) {
-          const redirect = encodeURIComponent(
-            `/bots/${bot._id}?tgUserId=${telegramUserId}`,
-          );
-          const webappLoginUrl = `${frontendUrl}/webapp/login?jwtToken=${encodeURIComponent(
-            jwt,
-          )}&redirect=${redirect}`;
-          const urlLoginUrl = `${frontendUrl}/login?jwtToken=${encodeURIComponent(
-            jwt,
-          )}&redirect=${redirect}`;
 
           // 查找公共机器人，提供克隆入口
           const public_bot = await Bot.findOne({ type: 'public' });
@@ -192,12 +161,9 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           if (public_bot) {
             inlineKeyboard
               .row()
-              .url(
-                '🤖 克隆自己的专属机器人',
-                `https://t.me/${public_bot.userName}`,
-              );
+              .url( '🤖 克隆自己的专属机器人',  `https://t.me/${public_bot.userName}`  );
           }
-        }
+        
       } else {
         const message = [
           `此机器人为他人专属克隆机器人，您无法使用。`,
