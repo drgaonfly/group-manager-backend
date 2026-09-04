@@ -39,7 +39,7 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
 
   const bot = ctx.currentBot;
   const startParam = ctx.match as string;
-  const adminUrl = process.env.ADMIN_URL || '';
+  const frontendUrl = process.env.FRONTEND_URL;
   const chatType = ctx.chat?.type;
 
   // ── deep link 参数处理 ─────────────────────────────────────────────────────
@@ -100,10 +100,10 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       const redirect = encodeURIComponent(
         `/bots/${bot._id}?tgUserId=${telegramUserId}`,
       );
-      const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+      const webappLoginUrl = `${frontendUrl}/webapp/login?jwtToken=${encodeURIComponent(
         publicJwt,
       )}&redirect=${redirect}`;
-      const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+      const urlLoginUrl = `${frontendUrl}/login?jwtToken=${encodeURIComponent(
         publicJwt,
       )}&redirect=${redirect}`;
       debug('[start] webappLoginUrl:', webappLoginUrl);
@@ -138,10 +138,10 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       const jwt = await getBotJwt(bot.token, telegramUserId);
       if (jwt) {
         const redirect = encodeURIComponent(`/bots/${bot._id}`);
-        const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+        const webappLoginUrl = `${frontendUrl}/webapp/login?jwtToken=${encodeURIComponent(
           jwt,
         )}&redirect=${redirect}`;
-        const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+        const urlLoginUrl = `${frontendUrl}/login?jwtToken=${encodeURIComponent(
           jwt,
         )}&redirect=${redirect}`;
         debug('[start] webappLoginUrl:', webappLoginUrl);
@@ -173,10 +173,10 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
           const redirect = encodeURIComponent(
             `/bots/${bot._id}?tgUserId=${telegramUserId}`,
           );
-          const webappLoginUrl = `${adminUrl}/webapp/login?jwtToken=${encodeURIComponent(
+          const webappLoginUrl = `${frontendUrl}/webapp/login?jwtToken=${encodeURIComponent(
             jwt,
           )}&redirect=${redirect}`;
-          const urlLoginUrl = `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+          const urlLoginUrl = `${frontendUrl}/login?jwtToken=${encodeURIComponent(
             jwt,
           )}&redirect=${redirect}`;
 

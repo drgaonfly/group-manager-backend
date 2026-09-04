@@ -3,7 +3,7 @@ import { default as BotManager } from '../models/bot';
 import createDebug from 'debug';
 import setupDB from '../utils/db';
 import { setupRedis } from '../utils/redis';
-import { run } from '@grammyjs/runner';
+
 
 const development = async () => {
   await setupDB();
@@ -39,10 +39,9 @@ const development = async () => {
 
     // run() 配合 sequentialize 使用：不同 chat 真正并发处理，
     // 同一 chat 的 update 由 sequentialize 保证串行，不互相阻塞
-    run(bot, {
-      // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+), TS cache may need refresh
-      allowed_updates: allowedUpdates,
-    });
+    await bot.start({
+      allowed_updates: allowedUpdates
+    })
   }
 };
 
