@@ -57,10 +57,12 @@ export const botJoinLeaveHandler: Middleware<MyContext> = async (ctx, next) => {
     });
 
     if (group) {
+      // 软删除：标记为离线，保留群组和功能数据
+      await group.updateOne({ isOnline: false });
       await ctx.currentBot.updateOne({
         $pull: { groups: group._id },
       });
-      debug('Bot removed from group/channel:', group.id);
+      debug('Bot removed from group/channel, marked offline:', group.id);
     }
 
     ctx.currentGroup = null;
@@ -78,7 +80,11 @@ export const botJoinLeaveHandler: Middleware<MyContext> = async (ctx, next) => {
 
     // 检查是否已有群组记录
     if (ctx.currentGroup) {
-      // 重新添加到已存在的群组，同步管理员信息
+      // 重新添加到已存在的群组，恢复在线状态并同步管理员信息
+      await ctx.currentGroup.updateOne({ isOnline: true });
+      await ctx.currentBot.updateOne({
+        $addToSet: { groups: ctx.currentGroup._id },
+      });
       if (chatType !== 'channel') {
         debug('🔄 Bot 被重新添加到群组，同步管理员信息');
         const syncResult = await syncGroupAdministrators(
