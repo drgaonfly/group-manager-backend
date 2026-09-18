@@ -43,11 +43,10 @@ export const getPublicBotGroupsForUser = handleAsync(
       return;
     }
 
-    // 直接查该 botUser 在这个 bot 下担任 creator 或 operator 的所有群组
-    // 不依赖 botUser.groups，因为管理员同步写入的群组不一定在 botUser.groups 里
+    // 直接用 botUser.groups 查询，这是用户实际参与的群组
     const filteredGroups = await Group.find({
+      _id: { $in: botUser.groups },
       bot: bot._id,
-      $or: [{ creator: botUser._id }, { operators: botUser._id }],
     }).select('_id title username type');
 
     // 为 proxyUser 生成临时 token，用于后续 API 调用
