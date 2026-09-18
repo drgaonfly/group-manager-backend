@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Bot from '../models/bot';
 import User from '../models/user';
 import BotUser from '../models/botUser';
+import Group from '../models/group';
 import handleAsync from '../utils/handleAsync';
 import { generateToken, generateRefreshToken } from '../utils/generateToken';
 
@@ -19,7 +20,9 @@ export const getPublicBotGroupsForUser = handleAsync(
     console.log('botId', botId, 'botUserId', botUserId);
 
     // 只允许查询 public bot
-    const bot = await Bot.findById(botId).populate('groups');
+    const bot = await Bot.findById(botId).select(
+      '_id botName userName isOnline type disabledAt',
+    );
 
     if (!bot) {
       res.status(404);
@@ -40,16 +43,13 @@ export const getPublicBotGroupsForUser = handleAsync(
       return;
     }
 
-    // 过滤群组：只返回该 botUser 是 creator 或 operator 的群组
-    const allGroups: any[] = (bot.groups as any[]) || [];
-    const botUserIdStr = botUser._id.toString();
-    const filteredGroups = allGroups.filter((g: any) => {
-      const creatorId = g.creator?.toString();
-      const operatorIds: string[] = (g.operators || []).map((op: any) =>
-        op.toString(),
-      );
-      return creatorId === botUserIdStr || operatorIds.includes(botUserIdStr);
-    });
+    // 从 BotUser.groups 出发，查该用户在这个 bot 下
+    // 担任 creator 或 operator 的群组
+    const filteredGroups = await Group.find({
+      _id: { $in: botUser.groups },
+      bot: bot._id,
+      $or: [{ creator: botUser._id }, { operators: botUser._id }],
+    }).select('_id title username type');
 
     // 为 proxyUser 生成临时 token，用于后续 API 调用
     const token = generateToken(proxyUser._id.toString());
@@ -58,9 +58,10 @@ export const getPublicBotGroupsForUser = handleAsync(
     res.json({
       success: true,
       data: {
-        bot: { ...bot.toObject(), groups: filteredGroups },
+        bot: bot.toObject(),
         botUser,
         proxyUser,
+        groups: filteredGroups,
       },
       token,
       refreshToken,
