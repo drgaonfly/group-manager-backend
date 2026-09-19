@@ -47,7 +47,8 @@ export const getPublicBotGroupsForUser = handleAsync(
     const allGroups = await Group.find({ bot: bot._id, isOnline: true })
       .populate({ path: 'creator', select: 'id' })
       .populate({ path: 'operators', select: 'id' })
-      .select('_id title username type creator operators');
+      .select('_id title username type creator operators')
+      .sort('-created');
 
     // 用 botUser.id（Telegram数字ID）过滤，和后台 canAccessGroup 逻辑一致
     const tgUserId = botUser.id;
