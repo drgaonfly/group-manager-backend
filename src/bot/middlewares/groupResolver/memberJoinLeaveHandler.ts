@@ -110,58 +110,24 @@ export const memberJoinLeaveHandler: Middleware<MyContext> = async (
   }
 
   // ── 处理新成员加入 ──────────────────────────────────────────────────
-  // 在 supergroup 中，新成员事件通过 chat_member update 传递
-  const isNewMemberFromChatMember =
-    chatMemberUpdate &&
-    chatMemberUpdate.old_chat_member.status === 'left' &&
-    ['member', 'administrator', 'creator'].includes(
-      chatMemberUpdate.new_chat_member.status,
-    );
+  // 不再依赖 chat_member 更新（已从 allowed_updates 移除）
+  // 改用 message.new_chat_members，上粉时压力小得多
+  const newMembers = ctx.message?.new_chat_members;
 
-  if (isNewMemberFromChatMember) {
-    const member = chatMemberUpdate.new_chat_member.user;
+  if (newMembers && newMembers.length > 0) {
+    for (const member of newMembers) {
+      if (member.is_bot && member.id === ctx.me.id) continue;
 
-    // 跳过机器人自己
-    if (member.is_bot && member.id === ctx.me.id) {
-      debug('Skipping bot itself');
-      return await next();
+      debug(`Processing new member: ${member.id} (${member.first_name})`);
+
+      ctx.newMember = {
+        id: member.id,
+        is_bot: member.is_bot,
+        first_name: member.first_name,
+        last_name: member.last_name,
+        username: member.username,
+      };
     }
-
-    debug(`Processing new member: ${member.id} (${member.first_name})`);
-
-    // 入群时不写 DB，标记 ctx.newMember 供欢迎/验证中间件使用
-    // 用户首次发言时由 botUserResolver + groupUpdateHandler 懒创建
-    ctx.newMember = {
-      id: member.id,
-      is_bot: member.is_bot,
-      first_name: member.first_name,
-      last_name: member.last_name,
-      username: member.username,
-    };
-
-    // TODO: 如需恢复入群写库，取消以下注释
-    // try {
-    //   await BotUser.findOneAndUpdate(
-    //     {
-    //       id: member.id.toString(),
-    //       proxy: proxyUser._id,
-    //     },
-    //     {
-    //       $setOnInsert: {
-    //         userName: member.username || '',
-    //         firstName: member.first_name,
-    //         lastName: member.last_name || '',
-    //         bot: ctx.currentBot._id,
-    //         proxy: proxyUser._id,
-    //       },
-    //       $addToSet: { groups: ctx.currentGroup._id },
-    //     },
-    //     { upsert: true, new: true },
-    //   );
-    //   debug(`✅ 新成员 ${member.id} 已写入群组关系`);
-    // } catch (error) {
-    //   debug('写入 botUsers 失败:', error);
-    // }
   }
 
   await next();
