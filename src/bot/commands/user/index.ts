@@ -6,6 +6,7 @@ import startComposer from './start';
 // import setComposer from './set';
 import contactComposer from './contact';
 import helpComposer from './help';
+import setadminComposer from './setadmin/setadmin';
 import subscriptionComposer from './subscription';
 import profileComposer from './profile';
 import speechStaticComposer from './speechStatic';
@@ -32,6 +33,7 @@ const userComposer = new Composer();
 // conversations 必须最先注册，确保 createConversation 在任何 enter() 调用前生效
 userComposer.use(conversationsComposer.middleware());
 userComposer.use(startComposer.middleware());
+userComposer.use(setadminComposer.middleware());
 userComposer.use(redpacketComposer.middleware());
 userComposer.use(rechargeComposer.middleware());
 userComposer.use(successComposer.middleware());
