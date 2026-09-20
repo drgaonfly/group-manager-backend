@@ -5,7 +5,7 @@ import { botJoinLeaveHandler } from './botJoinLeaveHandler';
 import { groupMigrationHandler } from './groupMigrationHandler';
 import { memberJoinLeaveHandler } from './memberJoinLeaveHandler';
 import { channelSubscriptionHandler } from './channelSubscriptionHandler';
-import { adminManagementHandler } from './adminChangedHandler';
+import { ownerUpdater } from './ownerUpdater';
 import { botAdminPromptHandler } from './botAdminPromptHandler';
 import { groupVerifyHandler } from './groupVerifyHandler';
 import { groupWelcomeHandler } from './groupWelcomeHandler';
@@ -36,7 +36,7 @@ groupResolver.use(groupMigrationHandler); // 迁移处理必须在 botJoinLeave 
 groupResolver.use(botJoinLeaveHandler);
 groupResolver.use(memberJoinLeaveHandler);
 groupResolver.use(channelSubscriptionHandler);
-groupResolver.use(adminManagementHandler);
+groupResolver.use(ownerUpdater);
 groupResolver.use(botAdminPromptHandler);
 groupResolver.use(groupVerifyHandler);
 groupResolver.use(groupWelcomeHandler);

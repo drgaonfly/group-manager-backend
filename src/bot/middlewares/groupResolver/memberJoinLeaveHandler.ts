@@ -8,110 +8,61 @@ const debug = createDebug('bot:group:memberJoinLeave');
 
 /**
  * 成员加入/离开处理中间件
- * 职责：
- * 1. 检测新成员加入群组（chat_member update）
- * 2. 检测成员离开群组
- * 3. 检测成员被踢出/限制
- * 4. 更新群组的 botUsers 列表
- * 5. 将新成员信息标记到 ctx，供后续中间件使用
  *
- * 注意：basicResolver 已处理类型检查，这里只需检查 ctx.currentGroup
+ * 不依赖 chat_member 事件（已从 allowed_updates 移除，避免上粉打满事件循环）
+ * 全部改用 message 里的 service message：
+ *   - 加入：message.new_chat_members
+ *   - 离开：message.left_chat_member
+ *
+ * 被踢/限制无 message 替代，忽略（数据库脏数据可接受，不影响实际权限）
  */
 export const memberJoinLeaveHandler: Middleware<MyContext> = async (
   ctx,
   next,
 ) => {
-  // basicResolver 已处理类型检查，只需检查 currentGroup 是否存在
   if (!ctx.currentGroup) {
     return await next();
   }
 
-  // 频道不需要处理成员加入/离开（使用 channelSubscriptionHandler）
   if (ctx.currentGroup.type === 'channel') {
     return await next();
   }
 
-  const chatMemberUpdate = ctx.chatMember;
   const proxyUser = ctx.currentProxyUser;
 
   // ── 处理成员离开 ──────────────────────────────────────────────────────
-  const isMemberLeft =
-    (chatMemberUpdate &&
-      ['member', 'administrator', 'creator'].includes(
-        chatMemberUpdate.old_chat_member.status,
-      ) &&
-      chatMemberUpdate.new_chat_member.status === 'left') ||
-    ctx.message?.left_chat_member;
+  const leftMember = ctx.message?.left_chat_member;
 
-  if (isMemberLeft) {
-    const leftMemberId =
-      chatMemberUpdate?.new_chat_member.user.id ||
-      ctx.message?.left_chat_member?.id;
-
-    if (leftMemberId) {
-      debug(`Processing left member: ${leftMemberId}`);
-
-      try {
-        const botUser = await BotUser.findOne({
-          id: leftMemberId.toString(),
-          proxy: proxyUser._id,
-        });
-
-        if (botUser) {
-          // 新逻辑：从 BotUser.groups 移除
-          await BotUser.updateOne(
+  if (leftMember) {
+    debug(`Processing left member: ${leftMember.id}`);
+    try {
+      const botUser = await BotUser.findOne({
+        id: leftMember.id.toString(),
+        proxy: proxyUser._id,
+      });
+      if (botUser) {
+        await Promise.all([
+          // 从群组成员列表移除
+          BotUser.updateOne(
             { _id: botUser._id },
             { $pull: { groups: ctx.currentGroup._id } },
-          );
-          debug(`Removed member ${leftMemberId} from group`);
-        }
-      } catch (error) {
-        debug('Error processing left member:', error);
+          ),
+          // 如果是群管，同步从 operators 移除
+          Group.updateOne(
+            { _id: ctx.currentGroup._id },
+            { $pull: { operators: botUser._id } },
+          ),
+        ]);
+        debug(`Removed member ${leftMember.id} from group and operators`);
       }
-    }
-  }
-
-  // ── 处理成员被踢出/限制 ─────────────────────────────────────────────
-  if (chatMemberUpdate && !isMemberLeft) {
-    const oldStatus = chatMemberUpdate.old_chat_member.status;
-    const newStatus = chatMemberUpdate.new_chat_member.status;
-    const memberId = chatMemberUpdate.new_chat_member.user.id;
-
-    const shouldRemoveMember =
-      ['member', 'administrator', 'creator'].includes(oldStatus) &&
-      ['kicked', 'restricted'].includes(newStatus);
-
-    if (shouldRemoveMember) {
-      try {
-        const botUser = await BotUser.findOne({
-          id: memberId.toString(),
-          proxy: proxyUser._id,
-        });
-
-        if (botUser) {
-          // 新逻辑：从 BotUser.groups 移除，但保留 operators 操作（管理员状态独立维护）
-          await Promise.all([
-            BotUser.updateOne(
-              { _id: botUser._id },
-              { $pull: { groups: ctx.currentGroup._id } },
-            ),
-            // 管理员状态单独处理
-            Group.updateOne(
-              { _id: ctx.currentGroup._id },
-              { $pull: { operators: botUser._id } },
-            ),
-          ]);
-          debug(`Removed kicked/restricted member ${memberId} from group`);
-        }
-      } catch (error) {
-        debug('Error processing member update:', error);
-      }
+    } catch (error) {
+      debug('Error processing left member:', error);
     }
   }
 
   // ── 处理新成员加入 ──────────────────────────────────────────────────
-  // 不再依赖 chat_member 更新（已从 allowed_updates 移除）
-  // 改用 message.new_chat_members，上粉时压力小得多
+  // 用户直接加入 / 管理员手动添加 → message.new_chat_members
+  // 邀请链接批量加入（上粉）→ chat_member（已不订阅，不处理，欢迎/验证不触发）
   const newMembers = ctx.message?.new_chat_members;
 
   if (newMembers && newMembers.length > 0) {
