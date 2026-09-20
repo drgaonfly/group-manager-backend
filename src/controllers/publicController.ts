@@ -20,9 +20,9 @@ export const getPublicBotGroupsForUser = handleAsync(
     console.log('botId', botId, 'botUserId', botUserId);
 
     // 只允许查询 public bot
-    const bot = await Bot.findById(botId).select(
-      '_id botName userName isOnline type disabledAt',
-    );
+    const bot = await Bot.findById(botId)
+      .select('_id botName userName isOnline type disabledAt')
+      .lean();
 
     if (!bot) {
       res.status(404);
@@ -44,21 +44,15 @@ export const getPublicBotGroupsForUser = handleAsync(
     }
 
     // Bot 所有群，populate creator 和 operators 的 Telegram id
-    const allGroups = await Group.find({ bot: bot._id, isOnline: true })
+    const allGroups = await Group.find({
+      bot: bot._id,
+      isOnline: true,
+      $or: [{ creator: botUser._id }, { operators: botUser._id }],
+    })
       .populate({ path: 'creator', select: 'id' })
       .populate({ path: 'operators', select: 'id' })
       .select('_id title username type creator operators')
       .sort('-created');
-
-    // 用 botUser.id（Telegram数字ID）过滤，和后台 canAccessGroup 逻辑一致
-    const tgUserId = botUser.id;
-    const filteredGroups = allGroups.filter((g: any) => {
-      const creatorId = g.creator?.id;
-      const operatorIds: string[] = (g.operators || []).map(
-        (op: any) => op?.id,
-      );
-      return creatorId === tgUserId || operatorIds.includes(tgUserId);
-    });
 
     // 为 proxyUser 生成临时 token，用于后续 API 调用
     const token = generateToken(proxyUser._id.toString());
@@ -67,10 +61,10 @@ export const getPublicBotGroupsForUser = handleAsync(
     res.json({
       success: true,
       data: {
-        bot: bot.toObject(),
+        bot,
         botUser,
         proxyUser,
-        groups: filteredGroups,
+        groups: allGroups,
       },
       token,
       refreshToken,
