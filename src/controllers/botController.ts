@@ -111,6 +111,44 @@ const buildQuery = async (
   return query;
 };
 
+export const setWebhook = async (botManager: IBot) => {
+  const bot = setupBot(botManager.token);
+  await printWebhookInfo(bot);
+
+  console.log('删除 webhook');
+  await bot.api.deleteWebhook();
+
+  const allowedUpdates = [
+    'message',
+    'edited_message',
+    'channel_post',
+    'edited_channel_post',
+    'callback_query',
+    'inline_query',
+    'chosen_inline_result',
+    'my_chat_member', // bot 自己的成员状态变化
+    'chat_join_request', // 加群请求
+    'managed_bot', // managed bot 创建/更新
+  ] as const;
+
+  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager.token}`, {
+    // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+), TS cache may need refresh
+    allowed_updates: allowedUpdates,
+  });
+
+  console.log(
+    `Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/bot-webhooks/${botManager.token}`,
+  );
+
+  console.log(`https://api.telegram.org/bot${botManager.token}/getWebhookInfo`);
+
+  console.log('修改 webhook 之后');
+  await printWebhookInfo(bot);
+
+  botManager.webhook_url = `${WEBHOOK_URL}/bot-webhooks/${botManager.token}`;
+  await botManager.save();
+};
+
 const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
   const { current = '1', pageSize = '10' } = req.query;
 
@@ -174,45 +212,6 @@ const getBots = handleAsync(async (req: RequestCustom, res: Response) => {
     pageSize: +pageSize,
   });
 });
-
-export const setWebhook = async (botManager: IBot) => {
-  const bot = setupBot(botManager.token);
-  await printWebhookInfo(bot);
-
-  console.log('删除 webhook');
-  await bot.api.deleteWebhook();
-
-  const allowedUpdates = [
-    'message',
-    'edited_message',
-    'channel_post',
-    'edited_channel_post',
-    'callback_query',
-    'inline_query',
-    'chosen_inline_result',
-    'chat_member', // 群组成员变化（加入/离开）
-    'my_chat_member', // bot 自己的成员状态变化
-    'chat_join_request', // 加群请求
-    'managed_bot', // managed bot 创建/更新
-  ] as const;
-
-  await bot.api.setWebhook(`${WEBHOOK_URL}/bot-webhooks/${botManager.token}`, {
-    // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+), TS cache may need refresh
-    allowed_updates: allowedUpdates,
-  });
-
-  console.log(
-    `Webhook ${botManager.token} 已设置为 ${WEBHOOK_URL}/bot-webhooks/${botManager.token}`,
-  );
-
-  console.log(`https://api.telegram.org/bot${botManager.token}/getWebhookInfo`);
-
-  console.log('修改 webhook 之后');
-  await printWebhookInfo(bot);
-
-  botManager.webhook_url = `${WEBHOOK_URL}/bot-webhooks/${botManager.token}`;
-  await botManager.save();
-};
 
 const addBot = handleAsync(async (req: RequestCustom, res: Response) => {
   console.log('WEBHOOK_URL', WEBHOOK_URL);
