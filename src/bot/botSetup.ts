@@ -25,7 +25,6 @@ import { hydrateFiles } from '@grammyjs/files';
 import { RedisAdapter } from '@grammyjs/storage-redis';
 import { redis } from '../utils/redis';
 import { conversations } from '@grammyjs/conversations';
-import { autoQuote } from '@roziscoding/grammy-autoquote';
 import reloadComposer from './commands/user/reload';
 
 import createDebug from 'debug';
@@ -110,10 +109,6 @@ export const setupBot = (token: string) => {
     }),
   );
 
-  bot.use(autoQuote());
-
-  // 由于 session 已经合并到 context，后续中间件类型也要兼容 MyContext
-  // 需要确保所有中间件都用 MyContext 类型
   bot.use(conversations());
   bot.use(botResolver);
   bot.use(proxyResolver);
