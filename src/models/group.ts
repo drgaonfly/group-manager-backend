@@ -93,7 +93,7 @@ const groupSchema = new mongoose.Schema(
     isOnline: {
       type: Boolean,
       required: false,
-      default: false,
+      default: true,
     },
 
     startAt: {
