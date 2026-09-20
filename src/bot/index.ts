@@ -25,27 +25,20 @@ export const startWebHookBot = async () => {
         'callback_query',
         'inline_query',
         'chosen_inline_result',
-        'chat_member', // 群组成员变化（加入/离开）
         'my_chat_member', // bot 自己的成员状态变化
         'chat_join_request', // 加群请求
         'managed_bot', // managed bot 创建/更新
       ] as const;
 
-      // 检查是否已设置 webhook
-      const webhookInfo = await bot.api.getWebhookInfo();
-      if (!webhookInfo.url) {
-        console.log('未设置 webhook，执行删除操作');
-        await bot.api.deleteWebhook();
-        await bot.api.setWebhook(
-          `${WEBHOOK_URL}/bot-webhooks/${activeBot.token}`,
-          {
-            // @ts-ignore - managed_bot is a new update type (grammy 1.45.1+), TS cache may need refresh
-            allowed_updates: allowedUpdates,
-          },
-        );
-      } else {
-        console.log('webhook 已存在，跳过删除操作');
-      }
+      // 强制重新设置 webhook，确保 allowed_updates 变更立即生效
+      await bot.api.deleteWebhook();
+      await bot.api.setWebhook(
+        `${WEBHOOK_URL}/bot-webhooks/${activeBot.token}`,
+        {
+          // @ts-ignore
+          allowed_updates: allowedUpdates,
+        },
+      );
 
       // 命令菜单只在启动时设置一次，每个 bot 串行执行避免并发限流
       await setupBotCommands(bot);
