@@ -65,7 +65,6 @@ export const sendGroupWelcomeMessage = async (
       try {
         const sentMsg = await ctx.reply(processedContent, {
           parse_mode: 'HTML',
-          reply_parameters: undefined, // 入群消息已被删除，不 reply 原消息
           ...(attachKeyboard ? { reply_markup: attachKeyboard } : {}),
         });
         sentMessageIds.push(sentMsg.message_id);
@@ -95,7 +94,6 @@ export const sendGroupWelcomeMessage = async (
               caption: processedCaption,
               reply_markup: keyboard,
               parse_mode: 'HTML',
-              reply_parameters: undefined,
             },
           );
           sentMessageIds.push(sentMsg.message_id);
@@ -106,7 +104,6 @@ export const sendGroupWelcomeMessage = async (
               caption: processedCaption,
               reply_markup: keyboard,
               parse_mode: 'HTML',
-              reply_parameters: undefined,
             },
           );
           sentMessageIds.push(sentMsg.message_id);
