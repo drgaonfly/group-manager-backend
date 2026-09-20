@@ -140,6 +140,11 @@ export const botJoinLeaveHandler: Middleware<MyContext> = async (ctx, next) => {
     await newGroup.save();
     ctx.currentGroup = newGroup;
 
+    // 将新群组关联到 Bot.groups
+    await ctx.currentBot.updateOne({
+      $addToSet: { groups: newGroup._id },
+    });
+
     debug(
       `✅ 已创建${chatType === 'channel' ? '频道' : '群组'}记录: ${chatTitle}`,
     );
