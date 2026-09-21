@@ -46,6 +46,7 @@ export const getPublicBotGroupsForUser = handleAsync(
     // Bot 所有群，populate creator 和 operators 的 Telegram id
     const allGroups = await Group.find({
       isOnline: true,
+      bot: bot._id,
       _id: { $in: botUser.groups },
     })
       .populate({ path: 'creator', select: 'id' })
