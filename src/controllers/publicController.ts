@@ -52,7 +52,7 @@ export const getPublicBotGroupsForUser = handleAsync(
       .populate({ path: 'creator', select: 'id' })
       .populate({ path: 'operators', select: 'id' })
       .select('_id title username type creator operators')
-      .sort('-created');
+      .sort('+created');
 
     // 为 proxyUser 生成临时 token，用于后续 API 调用
     const token = generateToken(proxyUser._id.toString());
