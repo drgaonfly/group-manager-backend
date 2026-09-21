@@ -1,8 +1,10 @@
 import mongoose, { Document } from 'mongoose';
 import { IMenu, menuSchema } from './groupMessage';
+import { IUser } from './user';
 
 // 群欢迎接口定义
 export interface IGroupWelcome extends Document {
+  proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId;
   group: mongoose.Schema.Types.ObjectId;
   contents: string[];
@@ -16,6 +18,11 @@ export interface IGroupWelcome extends Document {
 // 群欢迎 Schema
 const groupWelcomeSchema = new mongoose.Schema(
   {
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     bot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',

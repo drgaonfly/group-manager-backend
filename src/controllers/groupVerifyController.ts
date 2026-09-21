@@ -89,11 +89,6 @@ const createGroupVerify = handleAsync(
       throw new Error('该群组已有验证配置，请编辑现有配置');
     }
 
-    if (existingVerify) {
-      res.status(400);
-      throw new Error('该群组已有验证配置，请先删除或编辑现有配置');
-    }
-
     const groupVerify = await GroupVerify.create({
       bot,
       group,

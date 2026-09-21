@@ -1,9 +1,11 @@
 import mongoose, { Document } from 'mongoose';
 import { IBot } from './bot';
 import { IGroup } from './group';
+import { IUser } from './user';
 
 // 群验证接口定义
 export interface IGroupVerify extends Document {
+  proxy: mongoose.Schema.Types.ObjectId | IUser;
   bot: mongoose.Schema.Types.ObjectId | IBot;
   group: mongoose.Schema.Types.ObjectId | IGroup;
   question: string;
@@ -19,6 +21,11 @@ export interface IGroupVerify extends Document {
 // 群验证 Schema
 const groupVerifySchema = new mongoose.Schema(
   {
+    proxy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     bot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bot',
