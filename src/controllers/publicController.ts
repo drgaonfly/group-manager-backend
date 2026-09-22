@@ -51,6 +51,7 @@ export const getPublicBotGroupsForUser = handleAsync(
     })
       .populate({ path: 'creator', select: 'id' })
       .populate({ path: 'operators', select: 'id' })
+      .populate('memberCount')
       .select('_id title username type creator operators')
       .sort('+created');
 

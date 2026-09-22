@@ -117,6 +117,14 @@ groupSchema.virtual('transactions', {
   foreignField: 'group', // Transaction 中的 `group` 字段
 });
 
+// 配置虚拟属性 memberCount
+groupSchema.virtual('memberCount', {
+  ref: 'BotUser',
+  localField: '_id',
+  foreignField: 'groups',
+  count: true, // 核心配置：只返回匹配文档的数量，不返回实际文档数组
+});
+
 const Group = mongoose.model<IGroup>('Group', groupSchema);
 
 export default Group;
