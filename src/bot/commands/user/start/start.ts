@@ -79,6 +79,10 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       : `🤖直接发送机器人API克隆同款机器人，或点击下方按钮一键创建克隆同款机器人。`,
     ``,
     `点击 /help 查看所有指令及使用方法。`,
+    '',
+    `<a href="https://t.me/XR_grouper">👥虾仁机器人使用教程讨论群</a>`,
+    '',
+    `<a href="https://t.me/XRServiceBot">🤖双向机器人|免费克隆</a>`,
   ]
     .filter((line) => line !== undefined)
     .join('\n');
@@ -86,13 +90,11 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   // 默认的 "把我加到群组" 按钮（Owner 和 Public Bot 用户可以看到）
   const inlineKeyboard = new InlineKeyboard();
 
-  
   const webappLoginUrl = `${frontendUrl}/bots/${bot._id}/${botUser._id}`;
-  const urlLoginUrl =  `${frontendUrl}/bots/${bot._id}/${botUser._id}`
+  const urlLoginUrl = `${frontendUrl}/bots/${bot._id}/${botUser._id}`;
 
   debug('[start] webappLoginUrl:', webappLoginUrl);
   debug('[start] urlLoginUrl:', urlLoginUrl);
-
 
   if (bot.type === 'public') {
     // ── public bot ─────────────────────────────────────────────────────────
@@ -102,13 +104,12 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       `https://t.me/${bot.userName}?startgroup=start`,
     );
 
-      inlineKeyboard
-        .row()
-        .webApp('🖥️ 小程序后台设置', webappLoginUrl)
-        .url('🌐 网页后台设置', urlLoginUrl)
-        .row()
-        .url('🤖 克隆专属机器人', `https://t.me/newbot/${bot.userName}`);
-    
+    inlineKeyboard
+      .row()
+      .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+      .url('🌐 网页后台设置', urlLoginUrl)
+      .row()
+      .url('🤖 克隆专属机器人', `https://t.me/newbot/${bot.userName}`);
   } else if (bot.type === 'private') {
     // ── private bot ────────────────────────────────────────────────────────
     // Owner 可以看所有功能
@@ -128,14 +129,13 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
         `https://t.me/${bot.userName}?startgroup=start`,
       );
 
-        inlineKeyboard
-          .row()
-          .webApp('🖥️ 小程序后台设置', webappLoginUrl)
-          .url('🌐 网页后台设置', urlLoginUrl)
-          .row()
-          .text('💎 订阅服务', 'subscription_start')
-          .text('👥 授权他人管理', 'how_to_grant_admin');
-      
+      inlineKeyboard
+        .row()
+        .webApp('🖥️ 小程序后台设置', webappLoginUrl)
+        .url('🌐 网页后台设置', urlLoginUrl)
+        .row()
+        .text('💎 订阅服务', 'subscription_start')
+        .text('👥 授权他人管理', 'how_to_grant_admin');
     } else {
       // 非 owner：检查是否是该 bot 下任意群的 operator
 
@@ -149,21 +149,23 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
       if (isOperator) {
         // Operator：只显示后台登录按钮，不能添加到群组
 
-          // 查找公共机器人，提供克隆入口
-          const public_bot = await Bot.findOne({ type: 'public' });
+        // 查找公共机器人，提供克隆入口
+        const public_bot = await Bot.findOne({ type: 'public' });
 
+        inlineKeyboard
+          .row()
+          .webApp('🖥️ 小程序后台管理', webappLoginUrl)
+          .url('🌐 网页后台管理', urlLoginUrl);
+
+        // 如果有公共机器人，添加克隆按钮
+        if (public_bot) {
           inlineKeyboard
             .row()
-            .webApp('🖥️ 小程序后台管理', webappLoginUrl)
-            .url('🌐 网页后台管理', urlLoginUrl);
-
-          // 如果有公共机器人，添加克隆按钮
-          if (public_bot) {
-            inlineKeyboard
-              .row()
-              .url( '🤖 克隆自己的专属机器人',  `https://t.me/${public_bot.userName}`  );
-          }
-        
+            .url(
+              '🤖 克隆自己的专属机器人',
+              `https://t.me/${public_bot.userName}`,
+            );
+        }
       } else {
         const message = [
           `此机器人为他人专属克隆机器人，您无法使用。`,
@@ -187,7 +189,10 @@ startCommand.command('start', checkStartAllowedChats, async (ctx) => {
   }
 
   // 发送欢迎消息
-  await ctx.reply(messageText, { reply_markup: inlineKeyboard });
+  await ctx.reply(messageText, {
+    parse_mode: 'HTML',
+    reply_markup: inlineKeyboard,
+  });
 });
 
 export default startCommand;
