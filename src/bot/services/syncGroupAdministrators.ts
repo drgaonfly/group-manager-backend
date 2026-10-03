@@ -33,11 +33,12 @@ export async function syncGroupAdministrators(
         continue;
       }
 
-      // 使用原子操作查找或创建 BotUser
+      // 使用原子操作查找或创建 BotUser（必须限定 bot，避免复用其他 bot 下的记录）
       const botUser = await BotUser.findOneAndUpdate(
         {
           id: user.id.toString(),
           proxy: proxyUser._id,
+          bot: ctx.currentBot._id,
         },
         {
           $setOnInsert: {
