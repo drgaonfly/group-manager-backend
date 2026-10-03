@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import Bot from '../models/bot';
 import User from '../models/user';
 import BotUser from '../models/botUser';
@@ -10,12 +10,12 @@ import { generateToken, generateRefreshToken } from '../utils/generateToken';
  * GET /api/public/bots/:botId/:botUserId
  *
  * 无需鉴权的公开接口。
- * 返回该 Telegram 用户（username）在指定公共 bot 下参与的群组列表。
- * 只查 type=public 的 bot，防止滥用。
+ * 返回该 Telegram 用户在指定 bot 下，作为群主或管理员的群组/频道列表。
  */
 export const getPublicBotGroupsForUser = handleAsync(
   async (req: Request, res: Response) => {
     const { botId, botUserId } = req.params;
+
     // 1. 获取 query 参数
     const {
       type, // 'channel' 或 'group'
@@ -54,28 +54,33 @@ export const getPublicBotGroupsForUser = handleAsync(
       return;
     }
 
-    // 5. 构造列表查询条件
+    // 5. 构造可见性条件：用户是群主（creator）OR 是管理员（operators）
+    const visibilityCond = [
+      { creator: botUser._id },
+      { operators: botUser._id },
+    ];
+
+    // 用 $and 数组承载所有条件，避免 $or 之间互相覆盖
     const queryCond: any = {
       isOnline: true,
       bot: bot._id,
-      _id: { $in: botUser.groups },
+      $and: [{ $or: visibilityCond }],
     };
 
-    // 后端过滤 group/channel 类型
+    // 按类型过滤
     if (type === 'channel') {
       queryCond.type = 'channel';
-    } else if (type === 'group' || type === 'supergroup') {
-      queryCond.type = { $ne: 'channel' }; // 排除 channel 即为群组
+    } else {
+      queryCond.type = { $ne: 'channel' };
     }
 
-    // 搜索关键词（支持 title 和 username）
+    // 搜索关键词（支持 title 和 username），追加到 $and 避免覆盖
     if (keyword) {
       const regex = new RegExp(keyword as string, 'i');
-      queryCond.$or = [{ title: regex }, { username: regex }];
+      queryCond.$and.push({ $or: [{ title: regex }, { username: regex }] });
     }
 
-    // 6. 并行查询：当前过滤条件下的总数 + 当前页群组/频道列表
-    // 注意：如果有 Virtual Populate，不能直接使用 .lean()，或者使用 lean({ virtuals: true })
+    // 6. 并行查询列表 + 总数
     const [total, groups] = await Promise.all([
       Group.countDocuments(queryCond),
       Group.find(queryCond)
@@ -88,18 +93,18 @@ export const getPublicBotGroupsForUser = handleAsync(
         .limit(limitNum),
     ]);
 
-    // 7. 并行统计顶部卡片的“群组总数”和“频道总数”
+    // 7. 统计顶部卡片：群组数 / 频道数（与列表使用相同的可见性条件）
     const [groupCount, channelCount] = await Promise.all([
       Group.countDocuments({
         isOnline: true,
         bot: bot._id,
-        _id: { $in: botUser.groups },
+        $or: visibilityCond,
         type: { $ne: 'channel' },
       }),
       Group.countDocuments({
         isOnline: true,
         bot: bot._id,
-        _id: { $in: botUser.groups },
+        $or: visibilityCond,
         type: 'channel',
       }),
     ]);
@@ -114,7 +119,7 @@ export const getPublicBotGroupsForUser = handleAsync(
         bot,
         botUser,
         proxyUser,
-        groups, // Mongoose 填充后会自动带有 memberCount
+        groups,
         pagination: {
           total,
           page: pageNum,
