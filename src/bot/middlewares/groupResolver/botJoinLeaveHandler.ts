@@ -53,6 +53,7 @@ export const botJoinLeaveHandler: Middleware<MyContext> = async (ctx, next) => {
 
     const group = await Group.findOne({
       id: chatId,
+      bot: ctx.currentBot._id,
       proxy: proxyUser._id,
     });
 

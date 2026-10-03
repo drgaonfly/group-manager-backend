@@ -31,9 +31,10 @@ export const basicResolver: Middleware<MyContext> = async (ctx, next) => {
 
   const proxyUser = ctx.currentProxyUser;
 
-  // 查询数据库中的群组信息
+  // 查询数据库中的群组信息（必须限定 bot，每个 bot 在同一群里有独立的 Group 记录）
   let currentGroup = await Group.findOne({
     id: chatId,
+    bot: ctx.currentBot._id,
     proxy: proxyUser._id,
   }).populate(['bot', 'creator', 'operators']);
 
