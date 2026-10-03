@@ -7,7 +7,7 @@ import handleAsync from '../utils/handleAsync';
 import { generateToken, generateRefreshToken } from '../utils/generateToken';
 
 /**
- * GET /api/public/bots/:botId/user/:username
+ * GET /api/public/bots/:botId/:botUserId
  *
  * 无需鉴权的公开接口。
  * 返回该 Telegram 用户（username）在指定公共 bot 下参与的群组列表。
@@ -64,7 +64,7 @@ export const getPublicBotGroupsForUser = handleAsync(
     // 后端过滤 group/channel 类型
     if (type === 'channel') {
       queryCond.type = 'channel';
-    } else if (type === 'group') {
+    } else if (type === 'group' || type === 'supergroup') {
       queryCond.type = { $ne: 'channel' }; // 排除 channel 即为群组
     }
 
