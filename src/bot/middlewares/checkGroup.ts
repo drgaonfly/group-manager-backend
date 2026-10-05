@@ -15,8 +15,8 @@ const debug = createDebug('bot:middleware:checkGroup');
 export const checkGroup = async (ctx: MyContext, next: () => Promise<void>) => {
   if (!ctx.currentGroup) {
     debug('群组不存在或未初始化，跳过处理');
-    // 不回复消息，静默跳过
-    return;
+    // 不回复消息，静默跳过，继续执行后续中间件
+    return await next();
   }
 
   await next();
