@@ -176,10 +176,9 @@ export async function createBotWithUser(
       debug('[createBotWithUser] 获取 JWT 失败:', e?.message);
     }
 
-    const adminUrl = process.env.ADMIN_URL || '';
     const redirect = encodeURIComponent(`/bots/${newBot._id}`);
     const loginUrl = jwtToken
-      ? `${adminUrl}/user/login?jwtToken=${encodeURIComponent(
+      ? `${backendUrl}/user/login?jwtToken=${encodeURIComponent(
           jwtToken,
         )}&redirect=${redirect}`
       : null;
