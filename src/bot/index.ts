@@ -18,27 +18,6 @@ const isUnauthorizedError = (err: unknown): boolean => {
  */
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * 用 getMe 探测 token 是否真的失效。
- * 返回 true 表示确认失效，返回 false 表示 token 仍然有效（可能是暂时性网络抖动）。
- */
-const confirmTokenInvalid = async (token: string): Promise<boolean> => {
-  const { Bot } = await import('grammy');
-  const probe = new Bot(token);
-  try {
-    await probe.api.getMe();
-    // getMe 成功 → token 有效，是暂时性错误，不下线
-    return false;
-  } catch (e) {
-    if (isUnauthorizedError(e)) {
-      // getMe 也返回 401 → token 确实失效
-      return true;
-    }
-    // 其他错误（网络超时等）→ 保守处理，不下线
-    return false;
-  }
-};
-
 export const startWebHookBot = async () => {
   await setupDB();
   await setupRedis();
@@ -119,13 +98,25 @@ export const startWebHookBot = async () => {
           continue;
         } catch (retryErr) {
           if (isUnauthorizedError(retryErr)) {
-            // 重试仍然 401 → 用 getMe 做最终确认，避免网络抖动误伤
+            // 重试仍然 401 → 用同一个 bot 实例的 getMe 做最终确认，避免网络抖动误伤
             console.warn(
               `[bot:setup] ${botLabel} 重试仍然 401，正在用 getMe 确认 token 有效性...`,
             );
-            const invalid = await confirmTokenInvalid(activeBot.token);
+            let tokenInvalid = false;
+            try {
+              const bot = setupBot(activeBot.token);
+              await bot.api.getMe();
+              // getMe 成功 → token 有效，是暂时性故障，保留在线状态
+              console.warn(
+                `[bot:setup] ${botLabel} getMe 探测成功，token 仍有效，跳过本次初始化（保持在线）`,
+              );
+            } catch (getMeErr) {
+              if (isUnauthorizedError(getMeErr)) {
+                tokenInvalid = true;
+              }
+            }
 
-            if (invalid) {
+            if (tokenInvalid) {
               // 确认 token 失效 → 下线并从缓存中清除
               evictBotCache(activeBot.token);
               await BotManager.updateOne(
@@ -134,11 +125,6 @@ export const startWebHookBot = async () => {
               );
               console.error(
                 `[bot:setup] ${botLabel} token 已确认失效，已标记为 isOnline: false`,
-              );
-            } else {
-              // getMe 成功 → token 有效，可能是暂时性故障，保留在线状态
-              console.warn(
-                `[bot:setup] ${botLabel} getMe 探测成功，token 仍有效，跳过本次初始化（保持在线）`,
               );
             }
           } else {
