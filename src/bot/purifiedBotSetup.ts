@@ -31,12 +31,12 @@ export const getCronBot = (token: string): Bot => {
             agent: new SocksProxyAgent(SOCKS_PROXY_URL),
             compress: true,
           },
-          timeoutSeconds: 30,
+          timeoutSeconds: 10,
         },
       })
     : new Bot(token, {
         client: {
-          timeoutSeconds: 30,
+          timeoutSeconds: 10,
         },
       });
 

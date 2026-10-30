@@ -4,7 +4,7 @@ import { getCronBot } from './purifiedBotSetup';
 import { default as BotManager } from '../models/bot';
 import setupDB from '../utils/db';
 import { setupRedis } from '../utils/redis';
-import { GrammyError } from 'grammy';
+import { GrammyError, HttpError } from 'grammy';
 dotenv.config();
 
 export const startWebHookBot = async () => {
@@ -58,6 +58,17 @@ export const startWebHookBot = async () => {
             0,
             10,
           )}...) 时收到 401，token 可能已失效，跳过`,
+        );
+        continue;
+      }
+
+      // 网络超时/连接失败：跳过，下次 cron 重试
+      if (err instanceof HttpError) {
+        console.warn(
+          `设置 bot ${activeBot.userName} (${activeBot.token.slice(
+            0,
+            10,
+          )}...) 时网络错误，跳过: ${err.message}`,
         );
         continue;
       }
