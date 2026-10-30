@@ -98,6 +98,13 @@ export async function checkAndDrawLotteries() {
       return;
     }
 
+    if (!bot.token) {
+      console.error(
+        `[抽奖任务] 抽奖 ${lottery._id} 关联的机器人 token 为空，跳过`,
+      );
+      return;
+    }
+
     const telegramBot = setupBot(bot.token);
 
     // 机器人本位架构简化：所有参与者都有资格中奖
