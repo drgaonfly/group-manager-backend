@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { setupBot, setupBotCommands } from './botSetup';
+import { getCronBot } from './purifiedBotSetup';
 import { default as BotManager } from '../models/bot';
 import setupDB from '../utils/db';
 import { setupRedis } from '../utils/redis';
@@ -13,7 +14,8 @@ export const startWebHookBot = async () => {
 
   for (const activeBot of activeBots) {
     try {
-      const bot = await setupBot(activeBot.token);
+      // deleteWebhook/setWebhook 用 cronBot（无 autoRetry/throttler），超时即抛，不会卡住脚本
+      const cronBot = getCronBot(activeBot.token);
       const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
       console.log('Bot 正在运行于生产模式');
@@ -32,8 +34,8 @@ export const startWebHookBot = async () => {
       ] as const;
 
       // 强制重新设置 webhook，确保 allowed_updates 变更立即生效
-      await bot.api.deleteWebhook();
-      await bot.api.setWebhook(
+      await cronBot.api.deleteWebhook();
+      await cronBot.api.setWebhook(
         `${WEBHOOK_URL}/bot-webhooks/${activeBot.token}`,
         {
           // @ts-ignore
@@ -41,8 +43,9 @@ export const startWebHookBot = async () => {
         },
       );
 
-      // 命令菜单只在启动时设置一次，每个 bot 串行执行避免并发限流
-      await setupBotCommands(bot);
+      // 命令菜单用完整实例设置（带 apiThrottler 避免限流）
+      const fullBot = setupBot(activeBot.token);
+      await setupBotCommands(fullBot);
 
       console.log(
         `${activeBot.userName} Webhook 已设置为 ${WEBHOOK_URL}/bot-webhooks/${activeBot.token}`,
